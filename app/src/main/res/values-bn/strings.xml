@@ -1140,4 +1140,5 @@
     <string name="song_info_unavailable">পাওয়া যাচ্ছে না</string>
     <string name="song_info_error">কিছু তথ্য লোড করা যায়নি।</string>
     <string name="song_info_retry">আবার চেষ্টা করুন</string>
+    <string name="user_agent">ইউজার-এজেন্ট</string>
 </resources>

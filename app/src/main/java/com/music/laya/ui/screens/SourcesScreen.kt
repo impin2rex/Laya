@@ -77,6 +77,7 @@ import com.music.laya.data.sources.SourceConfig
 import com.music.laya.data.sources.SourceHealth
 import com.music.laya.data.sources.SourceKind
 import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.addon.AddonClient
 import com.music.laya.ui.components.AddonEditorAlert
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.Dispatchers
@@ -929,6 +930,7 @@ internal fun SourceEditorAlert(
 ) {
     val isNew = SourceRegistry.config(config.id) == null
     var baseUrl by remember { mutableStateOf(config.baseUrl) }
+    var userAgent by remember { mutableStateOf(config.userAgent) }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var statusIsGood by remember { mutableStateOf(false) }
@@ -950,7 +952,7 @@ internal fun SourceEditorAlert(
         status = null
         scope.launch {
             val identified = withContext(Dispatchers.IO) {
-                runCatching { SourceRegistry.identify(baseUrl.trim(), config.takeUnless { isNew }) }
+                runCatching { SourceRegistry.identify(baseUrl.trim(), config.takeUnless { isNew }, userAgent) }
                     .getOrElse { Result.failure(it) }
             }
             val found = identified.getOrNull()
@@ -1027,6 +1029,10 @@ internal fun SourceEditorAlert(
         onTest = { run(thenSave = false) },
         onSave = { run(thenSave = true) },
         onRemove = if (isNew) null else onDelete,
+        userAgent = userAgent,
+        // A new agent is a new question, so the last answer no longer stands.
+        onUserAgentChange = { userAgent = it; status = null },
+        defaultUserAgent = AddonClient.DEFAULT_USER_AGENT,
         onDismiss = onDismiss,
     )
 }

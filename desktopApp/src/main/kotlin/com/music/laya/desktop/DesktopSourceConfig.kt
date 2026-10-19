@@ -104,6 +104,11 @@ internal data class DesktopSourceConfig(
     val enabled: Boolean = true,
     /** The addon manifest's `allowDownloads`, as last read. */
     val allowDownloads: Boolean = true,
+    /**
+     * The User-Agent this addon is asked with, or blank for [DesktopAddonClient.USER_AGENT]. Some
+     * addons only answer the client they were written for — `BitChord/v1.8.1`, say.
+     */
+    val userAgent: String = "",
 ) {
     val displayName: String
         get() = label.ifBlank {

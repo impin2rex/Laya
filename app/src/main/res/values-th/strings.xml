@@ -1355,4 +1355,5 @@
     <string name="song_info_unavailable">ไม่มีข้อมูล</string>
     <string name="song_info_error">ไม่สามารถโหลดข้อมูลบางส่วนได้</string>
     <string name="song_info_retry">ลองอีกครั้ง</string>
+    <string name="user_agent">ตัวแทนผู้ใช้</string>
 </resources>

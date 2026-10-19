@@ -38,7 +38,7 @@ class AddonSource(
     override val kind: SourceKind get() = config.kind
     override val displayName: String get() = config.displayName
 
-    private val client = AddonClient(config.baseUrl)
+    private val client = AddonClient(config.baseUrl, config.userAgent)
 
     /**
      * Rows this addon has recently handed over, by their own track id.
@@ -360,6 +360,10 @@ class AddonSource(
             url = url,
             format = format,
             durationSec = rows[trackId]?.durationSec,
+            // Served from the addon's own host, the stream is gated the same way
+            // its API is — so it is asked for with the same agent. A CDN the
+            // addon hands off to is left with the player's own, as before.
+            headers = if (client.ownsHost(url)) mapOf("User-Agent" to client.userAgent) else emptyMap(),
         )
     }
 

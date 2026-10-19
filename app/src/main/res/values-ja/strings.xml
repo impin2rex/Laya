@@ -1350,4 +1350,5 @@
     <string name="song_info_unavailable">情報なし</string>
     <string name="song_info_error">一部の情報を読み込めませんでした。</string>
     <string name="song_info_retry">再試行</string>
+    <string name="user_agent">ユーザーエージェント</string>
 </resources>

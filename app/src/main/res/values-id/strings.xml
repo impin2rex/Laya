@@ -1349,4 +1349,5 @@
     <string name="song_info_unavailable">Tidak tersedia</string>
     <string name="song_info_error">Sebagian informasi tidak dapat dimuat.</string>
     <string name="song_info_retry">Coba lagi</string>
+    <string name="user_agent">Agen pengguna</string>
 </resources>

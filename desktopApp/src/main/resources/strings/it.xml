@@ -751,4 +751,6 @@
     <string name="listen_together_open">Ascolta insieme</string>
     <string name="listen_together_open_count">Ascolto insieme · %1$d</string>
     <string name="miscellaneous_footer">Quando attivo, chiudere l\'app dalla schermata delle app recenti interrompe anche la riproduzione musicale.</string>
+    <string name="user_agent">Agente utente</string>
+    <string name="app_icon_default">Predefinita</string>
 </resources>

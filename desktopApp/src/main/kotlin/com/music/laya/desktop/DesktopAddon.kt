@@ -258,10 +258,19 @@ internal class DesktopAddonUnavailable(message: String) : DesktopAddonException(
 // ── Client ───────────────────────────────────────────────────────────────
 
 /** One addon server, and every question this app knows how to ask it. */
-internal class DesktopAddonClient(rawBaseUrl: String) {
+internal class DesktopAddonClient(rawBaseUrl: String, userAgent: String = "") {
 
     /** Where this addon lives, with `/manifest.json` and trailing slashes off. */
     val baseUrl: String = normalizeBase(rawBaseUrl)
+
+    /** What every request to this addon says it is — see [DesktopSourceConfig.userAgent]. */
+    val userAgent: String = userAgent.trim().ifBlank { USER_AGENT }
+
+    /** Whether [url] is on this addon's own server rather than somewhere it hands off to. */
+    fun ownsHost(url: String): Boolean {
+        val host = runCatching { Url(url).host }.getOrNull()?.takeIf(String::isNotBlank) ?: return false
+        return host.equals(runCatching { Url(baseUrl).host }.getOrNull(), ignoreCase = true)
+    }
 
     private val calls = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val manifests = DesktopSharedCalls<DesktopAddonManifest>(MANIFEST_TTL_MS, calls)
@@ -401,7 +410,7 @@ internal class DesktopAddonClient(rawBaseUrl: String) {
 
             val response = http.get(url) {
                 header("Accept", "application/json")
-                header("User-Agent", USER_AGENT)
+                header("User-Agent", userAgent)
             }
             val code = response.status.value
             val wait = when {
@@ -528,9 +537,10 @@ internal object DesktopAddonSource {
     private fun client(config: DesktopSourceConfig): DesktopAddonClient {
         val base = DesktopAddonClient.normalizeBase(config.baseUrl)
         val existing = clients[config.id]
-        if (existing != null && existing.baseUrl == base) return existing
+        val agent = config.userAgent.trim().ifBlank { DesktopAddonClient.USER_AGENT }
+        if (existing != null && existing.baseUrl == base && existing.userAgent == agent) return existing
         existing?.clear()
-        return DesktopAddonClient(config.baseUrl).also { clients[config.id] = it }
+        return DesktopAddonClient(config.baseUrl, config.userAgent).also { clients[config.id] = it }
     }
 
     /** Drops everything held for a source that was edited or removed. */
@@ -714,9 +724,12 @@ internal object DesktopAddonSource {
             )
             return null
         }
+        val client = client(config)
         return DesktopStream(
             url = url,
             format = formatOf(answer, url, tier),
+            // Served from the addon's own host, the stream is gated the way its API is.
+            headers = if (client.ownsHost(url)) mapOf("User-Agent" to client.userAgent) else emptyMap(),
             sourceId = config.id,
             isDolbyAtmos = answer.isDolbyAtmos,
             transport = answer.transport,
@@ -807,7 +820,8 @@ internal sealed interface DesktopDetectedFormat {
 /** Identifies what a pasted URL actually points at. */
 internal object DesktopSourceFormats {
 
-    suspend fun identify(rawUrl: String): Result<DesktopDetectedFormat> = withContext(Dispatchers.IO) {
+    suspend fun identify(rawUrl: String, userAgent: String = ""): Result<DesktopDetectedFormat> = withContext(Dispatchers.IO) {
+        val agent = userAgent.trim().ifBlank { DesktopAddonClient.USER_AGENT }
         val url = rawUrl.trim().trimEnd('/')
         val parsed = runCatching { Url(url) }.getOrNull()
         if (
@@ -829,7 +843,7 @@ internal object DesktopSourceFormats {
         var lastFailure: Throwable? = null
         var firstUnsupported: DesktopDetectedFormat.Unsupported? = null
         for (attempt in attempts) {
-            val body = fetch(attempt).getOrElse { failure ->
+            val body = fetch(attempt, agent).getOrElse { failure ->
                 lastFailure = failure
                 continue
             }
@@ -840,7 +854,7 @@ internal object DesktopSourceFormats {
         }
 
         // Nothing readable was published.
-        if (DesktopAddonClient(base).probeSearch().isSuccess) {
+        if (DesktopAddonClient(base, agent).probeSearch().isSuccess) {
             return@withContext Result.success(
                 DesktopDetectedFormat.Addon(manifest = synthesised(base), baseUrl = base),
             )
@@ -903,10 +917,10 @@ internal object DesktopSourceFormats {
         resources = listOf("search", "stream"),
     )
 
-    private suspend fun fetch(url: String): Result<String> = runCatching {
+    private suspend fun fetch(url: String, userAgent: String): Result<String> = runCatching {
         val response = http.get(url) {
             header("Accept", "application/json")
-            header("User-Agent", DesktopAddonClient.USER_AGENT)
+            header("User-Agent", userAgent)
         }
         val code = response.status.value
         when {

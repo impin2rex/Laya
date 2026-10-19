@@ -1061,6 +1061,53 @@ class AddonSourceTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
+    // ── User-Agent ────────────────────────────────────────────────────────
+
+    /**
+     * Some addons only answer the client they were written for, so the agent
+     * the user set has to be what every request to that addon carries — the
+     * stream too when the addon serves it itself, and not a CDN it hands off to.
+     */
+    @Test
+    fun `a custom User-Agent goes to the addon and its own streams, not a CDN`() = runBlocking {
+        val own = server.url("/files/a.flac").toString()
+        route("/manifest.json", manifest())
+        route("/stream/mine", json("""{"url":"$own","codec":"flac"}"""))
+        route("/stream/cdn", json("""{"url":"https://cdn.example.com/a.flac","codec":"flac"}"""))
+        val source = AddonSource(config().copy(userAgent = "  BitChord/v1.8.1 "))
+
+        val mine = source.stream("mine", StreamRequest.Lossless)
+        val cdn = source.stream("cdn", StreamRequest.Lossless)
+
+        assertEquals("BitChord/v1.8.1", agentFor("/stream/mine"))
+        assertEquals(mapOf("User-Agent" to "BitChord/v1.8.1"), mine?.headers)
+        assertEquals(emptyMap<String, String>(), cdn?.headers)
+    }
+
+    @Test
+    fun `a blank User-Agent sends the default`() = runBlocking {
+        route("/manifest.json", manifest())
+        route("/stream/t1", json("""{"url":"https://cdn/a.flac"}"""))
+
+        AddonSource(config()).stream("t1", StreamRequest.Lossless)
+
+        assertEquals(AddonClient.DEFAULT_USER_AGENT, agentFor("/stream/t1"))
+    }
+
+    /** Sources saved before the field existed have to keep loading, as the default. */
+    @Test
+    fun `a stored config without a User-Agent still loads`() {
+        val stored = """{"id":"a","kind":"ADDON","baseUrl":"https://a.example.com"}"""
+        val config = storedJson.decodeFromString(SourceConfig.serializer(), stored)
+        assertEquals("", config.userAgent)
+    }
+
+    private val storedJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    private fun agentFor(path: String) = synchronized(seen) {
+        seen.first { it.requestUrl?.encodedPath == path }.getHeader("User-Agent")
+    }
+
     private fun route(path: String, response: MockResponse) {
         routes[path] = response
     }

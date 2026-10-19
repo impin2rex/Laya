@@ -113,6 +113,7 @@
     <string name="lossless_source_subtitle">FLAC and ALAC straight from the source</string>
     <string name="overridden">Overridden</string>
     <string name="add_module_source">Add a module source</string>
+    <string name="user_agent">User-Agent</string>
     <string name="remove_source">Remove this source</string>
     <string name="test">Test</string>
     <string name="testing">Testing…</string>

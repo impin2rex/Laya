@@ -199,7 +199,7 @@ const val EXTRA_BOUNDED_CONTEXT_CONTINUATION = "laya.boundedContext.continuation
 
 /** Session command used to smoothly swap the current track's version (film vs release). */
 const val ACTION_SWAP_VERSION = "com.music.laya.action.SWAP_VERSION"
-const val EXTRA_SWAP_MEDIA_ITEM = "bitchord.swap.media_item"
+const val EXTRA_SWAP_MEDIA_ITEM = "laya.swap.media_item"
 
 /** Session command used by the media notification's and the 4×1 widget's Favorite button. */
 /** How long the service may stay in the foreground, paused, while the watch plays. */
