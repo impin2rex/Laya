@@ -26,11 +26,12 @@ val targetOs: String = (providers.gradleProperty("laya.target").orNull ?: when {
 val hostArch = System.getProperty("os.arch").lowercase()
 val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 
-// Windows installer metadata requires MAJOR.MINOR.BUILD even though the app's public version is
-// intentionally displayed without a patch number (1.7 rather than 1.7.0).
-// The build number is the desktop version code; it also keeps "-beta1" out of the numeric installer version.
-val desktopVersionCode = 30
-val nativePackageVersion = appVersion.substringBefore('-').split('.').take(2).joinToString(".") + ".$desktopVersionCode"
+// The installers stamp the app's own version: 1.8.2 stays 1.8.2. Windows metadata needs exactly
+// MAJOR.MINOR.BUILD, so a two-part version is padded (1.8 → 1.8.0) and a "-beta1" suffix is left
+// out of the numeric version.
+val nativePackageVersion = appVersion.substringBefore('-').split('.')
+    .let { (it + listOf("0", "0")).take(3) }
+    .joinToString(".")
 
 // FFmpeg decodes audio; see DesktopAudioDecoder.
 val javacppVersion = "1.5.12"

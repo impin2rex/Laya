@@ -1,3 +1,8 @@
+// Virtualizer is deprecated in favour of Spatializer, which only reports what the
+// device does on its own and cannot widen arbitrary stereo; this engine needs the
+// effect itself, which every TV this runs on still provides.
+@file:Suppress("DEPRECATION")
+
 package com.music.laya.ui.tv.audio
 
 import android.media.audiofx.Virtualizer
