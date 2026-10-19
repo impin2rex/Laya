@@ -31,6 +31,9 @@ fun MainViewModel.onSignedIn(cookie: String, onComplete: (Boolean) -> Unit = {})
 @SuppressLint("SetJavaScriptEnabled")
 fun configureTvSignInWebView(webView: WebView) {
     webView.apply {
+        // Deprecated with Web SQL, and a no-op on current WebViews; kept for the
+        // older Android TV WebViews (minSdk 26) the sign-in page still runs on.
+        @Suppress("DEPRECATION")
         settings.databaseEnabled = true
         settings.setSupportZoom(true)
         settings.builtInZoomControls = false

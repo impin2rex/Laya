@@ -131,11 +131,11 @@ object TvAuthServer {
                 val query = if (rawPath.contains("?")) rawPath.substringAfter("?") else ""
 
                 var contentLength = 0
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    if (line.isNullOrBlank()) break
-                    if (line!!.startsWith("Content-Length:", ignoreCase = true)) {
-                        contentLength = line!!.substringAfter(":").trim().toIntOrNull() ?: 0
+                while (true) {
+                    val line = reader.readLine() ?: break
+                    if (line.isBlank()) break
+                    if (line.startsWith("Content-Length:", ignoreCase = true)) {
+                        contentLength = line.substringAfter(":").trim().toIntOrNull() ?: 0
                     }
                 }
 

@@ -197,7 +197,6 @@ fun TvSearchScreen(
                             EntityType.ARTIST -> BrowseType.ARTIST
                             EntityType.PLAYLIST -> BrowseType.PLAYLIST
                             EntityType.TRACK -> null
-                            else -> BrowseType.OTHER
                         }
                         when {
                             type != null -> onNavigateToDetail(entity.id, entity.title, entity.subtitle, entity.artworkUrl, type)
