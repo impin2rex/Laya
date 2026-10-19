@@ -126,7 +126,8 @@ fun GlassNavBar(
 
     // A factory, not a value — see the note in FloatingTabBar's header. Each of
     // the three surfaces gets its own glass modifier and so its own shape cache.
-    val glassSurface: @Composable () -> Modifier = { Modifier.liquidGlass(shape = pillShape) }
+    val barTint = glassBarTint()
+    val glassSurface: @Composable () -> Modifier = { Modifier.liquidGlass(shape = pillShape, surfaceTint = barTint) }
 
     FloatingTabBar(
         selectedTabKey = selectedIndex,
@@ -182,7 +183,7 @@ fun GlassNavBar(
         colors = FloatingTabBarDefaults.colors(
             backgroundColor = Color.Transparent,
             accessoryBackgroundColor = Color.Transparent,
-            indicatorColor = glassIndicatorColor().copy(alpha = 0.5f),
+            indicatorColor = glassIndicatorColor(),
         ),
         // Flat, because the glass is not. Every surface here already draws its
         // own [Shadow.Default] as part of the backdrop pass, and the library's
@@ -301,6 +302,12 @@ private fun GlassNowPlaying(
     )
 
     val artSize = if (isInline) 32.dp else 40.dp
+    // Collapsed, the cover is a circle, as in the iOS 26 bar: it sits at the
+    // round end of a pill and echoes it. Expanded it keeps its rounded square.
+    // Half the size rather than a percent so the player, flying its artwork
+    // into this cover as it closes, can round off into the same radius it
+    // lands on — see [playerDockArt].
+    val artCorner = if (isInline) artSize / 2 else 8.dp
     val glyphSlot = if (isInline) 32.dp else 40.dp
     val glyphSize = if (isInline) 24.dp else 32.dp
 
@@ -359,8 +366,8 @@ private fun GlassNowPlaying(
                     .size(artSize)
                     // Whichever of the two densities is on screen is the one
                     // the player flies to: only one is composed at rest.
-                    .playerDockArt(dock, if (isInline) 6.dp else 8.dp)
-                    .clip(RoundedCornerShape(if (isInline) 6.dp else 8.dp))
+                    .playerDockArt(dock, artCorner)
+                    .clip(RoundedCornerShape(artCorner))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             )
             Spacer(Modifier.width(if (isInline) 8.dp else 10.dp))

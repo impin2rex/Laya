@@ -1257,6 +1257,10 @@
     <string name="cached_songs">Zwischengespeicherte Songs</string>
     <string name="cached_songs_subtitle">Songs von YouTube und JioSaavn im Song-Cache</string>
     <string name="cached_songs_empty">Noch keine zwischengespeicherten Songs. Songs, die du von YouTube oder JioSaavn abspielst, erscheinen hier.</string>
+    <string name="cached_song_partial">Teilweise</string>
+    <string name="remove_from_cache">Aus dem Cache entfernen</string>
+    <string name="cached_song_remove">Entfernen</string>
+    <string name="removed_from_cache">Aus dem Song-Cache entfernt</string>
     <string name="show_cache_folder">Ordner für zwischengespeicherte Songs anzeigen</string>
     <string name="show_cache_folder_subtitle">Fügt der Mediathek einen Ordner mit den YouTube- und JioSaavn-Songs im Song-Cache hinzu</string>
     <string name="song_cache_unlimited">Unbegrenzt</string>
@@ -1311,6 +1315,10 @@
     <string name="replay_songs_end_week"> deine Woche.</string>
     <string name="replay_summary_end_week">Woche</string>
     <string name="replay_this_week">Diese Woche</string>
+    <string name="replay_period_weekly">Wöchentlich</string>
+    <string name="replay_period_monthly">Monatlich</string>
+    <string name="replay_period_yearly">Jährlich</string>
+    <string name="replay_period_lifetime">Gesamt</string>
     <string name="onboarding_title">Millionen Songs, gestreamt auf Laya</string>
     <string name="onboarding_name_prompt">Wie sollen wir dich nennen?</string>
     <string name="onboarding_name_hint">Dein Name</string>
@@ -1355,4 +1363,13 @@
     <string name="wear_os_code_hint">Kopplungscode</string>
     <string name="wear_os_done">Fertig</string>
     <string name="signed_by">Signiert von %1$s</string>
+    <string name="song_info">Titelinformationen</string>
+    <string name="song_info_album">Album</string>
+    <string name="song_info_release_date">Veröffentlichungsdatum</string>
+    <string name="song_info_views">Wiedergaben / Aufrufe</string>
+    <string name="song_info_likes">Gefällt mir</string>
+    <string name="song_info_comments">Kommentare</string>
+    <string name="song_info_unavailable">Nicht verfügbar</string>
+    <string name="song_info_error">Einige Informationen konnten nicht geladen werden.</string>
+    <string name="song_info_retry">Erneut versuchen</string>
 </resources>

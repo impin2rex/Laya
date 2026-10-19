@@ -32,3 +32,17 @@ enum class EntityType {
     @SerialName("ARTIST") ARTIST,
     @SerialName("PLAYLIST") PLAYLIST,
 }
+
+/**
+ * The track this entry plays, or null when it isn't one. A raw search term is
+ * also stored as a TRACK (id "q:<term>") for backwards compatibility, and has
+ * no video behind it.
+ */
+fun SearchHistoryEntity.toSong(): Song? = if (entityType == EntityType.TRACK && !id.startsWith("q:")) {
+    Song(
+        videoId = id,
+        title = title,
+        artist = subtitle,
+        thumbnailUrl = artworkUrl,
+    )
+} else null

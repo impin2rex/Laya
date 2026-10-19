@@ -1234,6 +1234,10 @@
     <string name="cached_songs">已快取的歌曲</string>
     <string name="cached_songs_subtitle">歌曲快取中的 YouTube 和 JioSaavn 歌曲</string>
     <string name="cached_songs_empty">還沒有已快取的歌曲。你從 YouTube 或 JioSaavn 播放的歌曲會顯示在這裡。</string>
+    <string name="cached_song_partial">部分</string>
+    <string name="remove_from_cache">從快取中移除</string>
+    <string name="cached_song_remove">移除</string>
+    <string name="removed_from_cache">已從歌曲快取中移除</string>
     <string name="show_cache_folder">顯示已快取歌曲資料夾</string>
     <string name="show_cache_folder_subtitle">在資料庫中新增一個資料夾，列出歌曲快取中儲存的 YouTube 和 JioSaavn 歌曲</string>
     <string name="song_cache_unlimited">無限制</string>

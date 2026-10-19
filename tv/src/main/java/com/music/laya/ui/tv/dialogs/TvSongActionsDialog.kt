@@ -31,19 +31,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.session.MediaController
+import com.music.laya.R
 import com.music.laya.data.LikeState
+import com.music.laya.data.SongInfo
+import com.music.laya.data.SongInfoRepository
+import com.music.laya.data.compactCount
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.LikeStatus
@@ -131,6 +138,10 @@ fun TvSongActionMenuDialog(
         }
         SongSheet.Equalizer -> {
             TvEqualizerDialog(onDismiss = onDismiss)
+            return
+        }
+        SongSheet.Info -> {
+            TvSongInfoDialog(song = song, onDismiss = { sheet = SongSheet.Actions })
             return
         }
         SongSheet.Actions -> Unit
@@ -226,6 +237,13 @@ fun TvSongActionMenuDialog(
             }
             item {
                 TvListRow(
+                    title = stringResource(R.string.song_info),
+                    trailingIcon = Icons.Rounded.Info,
+                    onClick = { sheet = SongSheet.Info },
+                )
+            }
+            item {
+                TvListRow(
                     title = "Equalizer",
                     trailingIcon = Icons.Rounded.Equalizer,
                     onClick = { sheet = SongSheet.Equalizer },
@@ -251,7 +269,60 @@ fun TvSongActionMenuDialog(
     }
 }
 
-private enum class SongSheet { Actions, Playlist, Sleep, Equalizer }
+private enum class SongSheet { Actions, Playlist, Sleep, Equalizer, Info }
+
+/**
+ * The phone's Song Info, as a TV sheet: the release and its YouTube counts,
+ * one focusable row each so the remote can walk them. Back returns to the
+ * song's actions rather than closing everything.
+ */
+@Composable
+private fun TvSongInfoDialog(song: Song, onDismiss: () -> Unit) {
+    var retry by remember(song.videoId) { mutableIntStateOf(0) }
+    val info by produceState<SongInfo?>(null, song, retry) {
+        value = null
+        value = SongInfoRepository.load(song)
+    }
+    val unavailable = stringResource(R.string.song_info_unavailable)
+    val rows = listOf(
+        R.string.song_info_album to (info?.album ?: song.albumName),
+        R.string.song_info_release_date to (info?.releaseDate ?: info?.releaseYear),
+        R.string.song_info_views to info?.views?.let(::compactCount),
+        R.string.song_info_likes to info?.likes,
+        R.string.song_info_comments to info?.comments,
+    )
+    TvDialog(
+        title = stringResource(R.string.song_info),
+        message = listOf(song.title, song.artist).filter { it.isNotBlank() }.joinToString(" · "),
+        onDismissRequest = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            rows.forEachIndexed { index, (label, value) ->
+                TvListRow(
+                    title = stringResource(label),
+                    // "…" while the lookup is out; "Not available" once it has
+                    // answered without this one.
+                    value = value ?: if (info != null) unavailable else "…",
+                    modifier = if (index == 0) Modifier.tvInitialFocus() else Modifier,
+                    onClick = {},
+                )
+            }
+            if (info?.failed == true) {
+                Text(
+                    text = stringResource(R.string.song_info_error),
+                    style = TvType.Caption,
+                    color = TvGlass.TextSecondary,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+                TvListRow(title = stringResource(R.string.song_info_retry), onClick = { retry++ })
+            }
+            TvListRow(title = stringResource(R.string.done), onClick = onDismiss)
+        }
+    }
+}
 
 /**
  * A station seeded from [song], as the phone builds one: YouTube's radio for
@@ -265,9 +336,13 @@ private suspend fun MediaController.startStation(song: Song) {
     beginRadioQueue()
     val index = currentMediaItemIndex
     if (index >= 0 && currentMediaItem?.mediaId == song.videoId) {
-        if (index + 1 < mediaItemCount) removeMediaItems(index + 1, mediaItemCount)
+        // Station first, old tail after: removing first leaves the current
+        // track briefly last, and AutoPlay answers that by appending this same
+        // radio a second time.
+        addMediaItems(index + 1, related.map { it.toMediaItem() })
+        val oldTail = index + 1 + related.size
+        if (oldTail < mediaItemCount) removeMediaItems(oldTail, mediaItemCount)
         if (index > 0) removeMediaItems(0, index)
-        addMediaItems(1, related.map { it.toMediaItem() })
     } else {
         playSongs(listOf(song) + related, 0)
     }

@@ -2,6 +2,7 @@ package com.music.laya.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,10 +27,14 @@ import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.DownloadDone
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,6 +59,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.music.laya.R
 import com.music.laya.data.LocalGroup
@@ -66,7 +72,9 @@ import com.music.laya.data.model.artworkAt
 import com.music.laya.data.model.playingRowMatcher
 import com.music.laya.data.settings.LibraryViewType
 import com.music.laya.data.settings.LocalMusicSort
+import com.music.laya.download.DownloadState
 import com.music.laya.download.DownloadedCollection
+import com.music.laya.download.Downloads
 import com.music.laya.ui.components.CoverPlaceholder
 import com.music.laya.ui.components.ExplicitSongTitle
 import com.music.laya.ui.components.LIBRARY_GRID_SPACING
@@ -118,6 +126,14 @@ class LocalFolder(
     val onDelete: ((List<Song>) -> Unit)? = null,
     /** Copies the selection to WebDAV; null (no server configured) hides the action. */
     val onUpload: ((List<Song>) -> Unit)? = null,
+    /**
+     * Cached songs only: saves tracks to Downloads straight from the song
+     * cache. Set, it puts a download button on every row, Download all in the
+     * header, and Download on the selection.
+     */
+    val onDownload: ((List<Song>) -> Unit)? = null,
+    /** Cached songs only: takes the selection out of the song cache. */
+    val onRemoveFromCache: ((List<Song>) -> Unit)? = null,
 )
 
 enum class LocalFolderTab { SONGS, ARTISTS, ALBUMS }
@@ -299,6 +315,9 @@ internal fun LazyListScope.localFolderItems(
                     onLongPress = { songHold(song) },
                     onMore = { onSongLongPress(song) },
                     onSwipeToQueue = { onSongSwipe(song) },
+                    trailing = folder.onDownload?.let { download ->
+                        { RowDownloadButton(song, palette) { download(listOf(song)) } }
+                    },
                 )
                 if (index < songs.lastIndex) FolderDivider(palette)
             }
@@ -728,6 +747,24 @@ internal fun LocalFolderSelectionBar(
                 onClick = { upload(chosen()) },
             )
         }
+        folder.onDownload?.let { download ->
+            SelectionAction(
+                icon = Icons.Rounded.Download,
+                label = stringResource(R.string.download),
+                color = MaterialTheme.colorScheme.primary,
+                enabled = count > 0,
+                onClick = { download(chosen()) },
+            )
+        }
+        folder.onRemoveFromCache?.let { remove ->
+            SelectionAction(
+                icon = Icons.Rounded.Delete,
+                label = stringResource(R.string.cached_song_remove),
+                color = DESTRUCTIVE,
+                enabled = count > 0,
+                onClick = { remove(chosen()) },
+            )
+        }
         folder.onDelete?.let { delete ->
             SelectionAction(
                 icon = Icons.Rounded.Delete,
@@ -738,6 +775,68 @@ internal fun LocalFolderSelectionBar(
             )
         }
         TextButton(onClick = state::clear) { Text(stringResource(R.string.cancel)) }
+    }
+}
+
+/**
+ * A Cached songs row's own download button, showing where that track's download
+ * stands: tap to save it, a ring while it is queued or saving (tap again to
+ * call it off), a tick once it is in Downloads, and a retry after a failure.
+ *
+ * Read straight from [Downloads] where it is drawn, as the song menu's download
+ * row does, so it moves as the download does without the page reloading.
+ */
+@Composable
+private fun RowDownloadButton(song: Song, palette: ArtworkPalette, onDownload: () -> Unit) {
+    val active by Downloads.active.collectAsStateWithLifecycle()
+    val saved by Downloads.saved.collectAsStateWithLifecycle()
+    val state = active[song.videoId]
+    val done = state == null && song.videoId in saved
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .clickable(enabled = !done) {
+                when (state) {
+                    is DownloadState.Queued, is DownloadState.Running -> Downloads.cancel(song.videoId)
+                    else -> onDownload()
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        when (state) {
+            is DownloadState.Queued -> CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = palette.accent,
+            )
+            is DownloadState.Running -> if (state.fraction > 0f) {
+                CircularProgressIndicator(
+                    progress = { state.fraction },
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = palette.accent,
+                )
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = palette.accent,
+                )
+            }
+            is DownloadState.Failed -> Icon(
+                Icons.Rounded.ErrorOutline,
+                contentDescription = stringResource(R.string.retry),
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(20.dp),
+            )
+            null -> Icon(
+                if (done) Icons.Rounded.DownloadDone else Icons.Rounded.Download,
+                contentDescription = stringResource(if (done) R.string.downloaded else R.string.download),
+                tint = if (done) palette.accent else palette.onBackgroundVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 

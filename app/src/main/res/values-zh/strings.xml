@@ -1234,6 +1234,10 @@
     <string name="cached_songs">已缓存的歌曲</string>
     <string name="cached_songs_subtitle">歌曲缓存中的 YouTube 和 JioSaavn 歌曲</string>
     <string name="cached_songs_empty">还没有已缓存的歌曲。你从 YouTube 或 JioSaavn 播放的歌曲会显示在这里。</string>
+    <string name="cached_song_partial">部分</string>
+    <string name="remove_from_cache">从缓存中移除</string>
+    <string name="cached_song_remove">移除</string>
+    <string name="removed_from_cache">已从歌曲缓存中移除</string>
     <string name="show_cache_folder">显示已缓存歌曲文件夹</string>
     <string name="show_cache_folder_subtitle">在资料库中添加一个文件夹，列出歌曲缓存中保存的 YouTube 和 JioSaavn 歌曲</string>
     <string name="song_cache_unlimited">无限制</string>
@@ -1282,6 +1286,10 @@
     <string name="replay_songs_end_week"> 填满了你的这一周。</string>
     <string name="replay_summary_end_week">周</string>
     <string name="replay_this_week">本周</string>
+    <string name="replay_period_weekly">每周</string>
+    <string name="replay_period_monthly">每月</string>
+    <string name="replay_period_yearly">每年</string>
+    <string name="replay_period_lifetime">全部</string>
     <string name="onboarding_title">数百万首歌曲，在 Laya 上畅听</string>
     <string name="onboarding_name_prompt">我们该怎么称呼你？</string>
     <string name="onboarding_name_hint">你的名字</string>
@@ -1325,11 +1333,20 @@
     <string name="wear_os_unsupported">安装到手表需要这部手机运行 Android 11 或更高版本。</string>
     <string name="wear_os_code_hint">配对码</string>
     <string name="wear_os_done">完成</string>
-    <string name="artist_signatures">艺术家签名</string>
+    <string name="song_info">歌曲信息</string>
+    <string name="song_info_album">专辑</string>
+    <string name="song_info_release_date">发行日期</string>
+    <string name="song_info_views">播放 / 观看次数</string>
+    <string name="song_info_likes">点赞数</string>
+    <string name="song_info_comments">评论数</string>
+    <string name="song_info_unavailable">暂无信息</string>
+    <string name="song_info_error">部分信息无法加载。</string>
+    <string name="song_info_retry">重试</string>
+    <string name="artist_signatures">艺人签名</string>
     <string name="artist_signatures_subtitle">当 Apple Music 没有标题标志时显示手写签名</string>
     <string name="artist_signatures_url">签名 API 地址</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
-    <string name="artist_signatures_unconfigured">未配置 — 点按以设置 API 地址</string>
-    <string name="artist_signatures_test_failed">无法访问该地址的 API</string>
-    <string name="signed_by">签名：%1$s</string>
+    <string name="artist_signatures_unconfigured">尚未配置 — 点按以设置 API 地址</string>
+    <string name="artist_signatures_test_failed">无法连接到该地址的 API</string>
+    <string name="signed_by">%1$s 的签名</string>
 </resources>

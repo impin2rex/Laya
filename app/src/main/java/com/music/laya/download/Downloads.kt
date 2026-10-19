@@ -15,6 +15,7 @@ import com.music.laya.data.sources.SourceResolver
 import com.music.laya.data.sources.SourceStream
 import com.music.laya.data.sources.StreamFormat
 import com.music.laya.data.sources.TrackMatcher
+import com.music.laya.playback.AudioCache
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -177,7 +178,9 @@ object Downloads {
      */
     fun enqueue(context: Context, song: Song, from: String? = null) {
         val id = song.videoId
-        if (!AppSettings.downloadsAllowedNow) {
+        // A copy straight out of the song cache spends no data, so the Wi-Fi
+        // rule has nothing to say about it.
+        if (!AppSettings.downloadsAllowedNow && !servableFromCache(id)) {
             // Distinct from the duplicate-tap no-op below: nothing is in flight
             // here to leave alone, and a refusal nobody is told about reads as a
             // dead button. A download already queued or running started on a
@@ -208,6 +211,32 @@ object Downloads {
             fail(id, "Downloads can't start right now")
         }
     }
+
+    /**
+     * Tracks asked for from the Cached songs folder, which are saved from the
+     * cache's own complete copy when it holds one — see [AudioCache.completeCopyOf].
+     *
+     * Kept apart from every other download on purpose. Anywhere else the
+     * listener is asking for the Download quality setting, which can be a
+     * lossless file a source holds; from the folder they are asking for the
+     * song they already have, and taking that copy is instant and works
+     * offline. Any download still falls back to the cache when the network
+     * route fails — see [prepare].
+     */
+    private val fromCache = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    /** Marks [videoIds] as wanted from the song cache; see [fromCache]. Call before [enqueue]. */
+    fun preferCachedCopy(videoIds: Collection<String>) {
+        fromCache += videoIds
+    }
+
+    /**
+     * Whether [videoId] was asked for from the cache and the cache can serve
+     * it whole — a download that needs no network at all. Reads the cache's
+     * index and the first bytes of one file.
+     */
+    fun servableFromCache(videoId: String): Boolean =
+        videoId in fromCache && AudioCache.completeCopyOf(videoId)?.let(::cachedRoute) != null
 
     /**
      * Drop [videoId] from the queue, or stop it if it is one of the ones
@@ -897,7 +926,25 @@ object Downloads {
             }
         }
 
-        val route = routeFor(context, track, quality)
+        // Asked for from the Cached songs folder: the copy already on disk is
+        // the answer, if it is whole. See [fromCache].
+        if (fromCache.remove(song.videoId)) {
+            AudioCache.completeCopyOf(song.videoId)?.let(::cachedRoute)?.let { route ->
+                Log.d(TAG, "downloading ${song.videoId} from the song cache as .${route.extension}")
+                return@withContext Prepared(song.videoId, track, route = route, alreadyAt = null)
+            }
+        }
+        val route = try {
+            routeFor(context, track, quality)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // No connection, or nothing would resolve. A complete copy in the
+            // song cache is still the song, and better saved than refused.
+            AudioCache.completeCopyOf(song.videoId)?.let(::cachedRoute)
+                ?.also { Log.w(TAG, "${song.videoId} could not be fetched (${e.message}); saving the cached copy") }
+                ?: throw e
+        }
         Log.d(TAG, "downloading ${song.videoId} as .${route.extension} (${route.describe}, ${quality.label})")
         Prepared(song.videoId, track, route = route, alreadyAt = null)
     }
@@ -1156,6 +1203,23 @@ object Downloads {
             write = { sink, onProgress ->
                 Downloader.fetch(track.videoId, stream, quality.maxKbps, requireM4a, sink, onProgress)
             },
+        )
+    }
+
+    /**
+     * A route that copies [copy] out of the song cache instead of fetching
+     * anything, or null when it cannot be filed where downloads go: exported
+     * downloads are pinned away from WebM for the same MediaStore reason
+     * [routeFor] gives.
+     */
+    private fun cachedRoute(copy: AudioCache.CompleteCopy): Route? {
+        if (copy.extension == "webm" && AppSettings.exportDownloads.value) return null
+        return Route(
+            extension = copy.extension,
+            mimeType = copy.mimeType,
+            describe = "song cache, ${copy.length} bytes",
+            downloadFormat = if (copy.extension == "flac") "FLAC" else null,
+            write = { sink, onProgress -> AudioCache.copyOut(copy, sink, onProgress) },
         )
     }
 

@@ -272,6 +272,7 @@ class ModuleSource(
                     if (it < 1000) (it * 1000).toInt() else it.toInt()
                 }?.takeIf { it > 0 },
                 bitDepth = trackMeta?.bitDepth?.takeIf { it > 0 },
+                kbpsInferred = trackMeta?.bitrate == null,
             )
             val playsAtmos = DeviceCodecs.playsDolbyAtmos
             if (unplayable(format, atmosAllowed = playsAtmos && AppSettings.dolbyAtmos.value)) {

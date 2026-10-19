@@ -1240,6 +1240,10 @@
     <string name="cached_songs">เพลงในแคช</string>
     <string name="cached_songs_subtitle">เพลงจาก YouTube และ JioSaavn ในแคชเพลง</string>
     <string name="cached_songs_empty">ยังไม่มีเพลงในแคช เพลงที่คุณเล่นจาก YouTube หรือ JioSaavn จะแสดงที่นี่</string>
+    <string name="cached_song_partial">บางส่วน</string>
+    <string name="remove_from_cache">นำออกจากแคช</string>
+    <string name="cached_song_remove">นำออก</string>
+    <string name="removed_from_cache">นำออกจากแคชเพลงแล้ว</string>
     <string name="show_cache_folder">แสดงโฟลเดอร์เพลงในแคช</string>
     <string name="show_cache_folder_subtitle">เพิ่มโฟลเดอร์ในคลังเพลงที่มีเพลงจาก YouTube และ JioSaavn ที่เก็บไว้ในแคช</string>
     <string name="song_cache_unlimited">ไม่จำกัด</string>
@@ -1294,6 +1298,10 @@
     <string name="replay_songs_end_week"> เติมเต็มสัปดาห์ของคุณ</string>
     <string name="replay_summary_end_week">สัปดาห์</string>
     <string name="replay_this_week">สัปดาห์นี้</string>
+    <string name="replay_period_weekly">รายสัปดาห์</string>
+    <string name="replay_period_monthly">รายเดือน</string>
+    <string name="replay_period_yearly">รายปี</string>
+    <string name="replay_period_lifetime">ตลอดกาล</string>
     <string name="onboarding_title">เพลงนับล้าน สตรีมบน Laya</string>
     <string name="onboarding_name_prompt">ให้เราเรียกคุณว่าอะไรดี</string>
     <string name="onboarding_name_hint">ชื่อของคุณ</string>
@@ -1338,4 +1346,13 @@
     <string name="wear_os_code_hint">รหัสจับคู่</string>
     <string name="wear_os_done">เสร็จสิ้น</string>
     <string name="signed_by">ลงนามโดย %1$s</string>
+    <string name="song_info">ข้อมูลเพลง</string>
+    <string name="song_info_album">อัลบั้ม</string>
+    <string name="song_info_release_date">วันที่เผยแพร่</string>
+    <string name="song_info_views">จำนวนการเล่น / การดู</string>
+    <string name="song_info_likes">การกดชอบ</string>
+    <string name="song_info_comments">ความคิดเห็น</string>
+    <string name="song_info_unavailable">ไม่มีข้อมูล</string>
+    <string name="song_info_error">ไม่สามารถโหลดข้อมูลบางส่วนได้</string>
+    <string name="song_info_retry">ลองอีกครั้ง</string>
 </resources>

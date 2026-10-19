@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -312,6 +314,51 @@ private fun DialogHeading(title: String, message: String, isError: Boolean = fal
  * somewhere the listener would not expect. Songs with no match are listed afterwards rather than
  * dropped without a word. The link has to be public; no Spotify sign-in is involved.
  */
+/**
+ * The languages offered to steer the matching — see [SpotifyImporter.resolveToSongs]. The last
+ * two are the phone's too: no steer at all, and a language typed in.
+ */
+private val IMPORT_LANGUAGES = listOf(
+    "Tamil", "Telugu", "Kannada", "Malayalam", "Hindi", "English", "Multilingual",
+)
+private const val IMPORT_NO_PREFERENCE = "No Preference"
+private const val IMPORT_LANGUAGE_OTHER = "Manual / Other"
+
+/** One pill per language, as the phone's import sheet lays them out. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SpotifyLanguagePicker(selected: String, onSelect: (String) -> Unit, enabled: Boolean) {
+    Text(
+        DesktopStrings["spotify_import_language_preference", "Language preference"],
+        modifier = Modifier.fillMaxWidth().padding(horizontal = panelInset(22.dp)).padding(top = 12.dp, bottom = 6.dp),
+        style = MaterialTheme.typography.labelMedium,
+        color = DesktopSecondary,
+    )
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = panelInset(22.dp)),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        (IMPORT_LANGUAGES + IMPORT_NO_PREFERENCE + IMPORT_LANGUAGE_OTHER).forEach { lang ->
+            val on = lang == selected
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable(enabled = enabled) { onSelect(lang) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    lang,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 internal fun DesktopSpotifyImportDialog(
     signedIn: Boolean,
@@ -324,6 +371,8 @@ internal fun DesktopSpotifyImportDialog(
     var status by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
     var unmatched by remember { mutableStateOf<List<SpotifyImportTrack>?>(null) }
+    var selectedLanguage by remember { mutableStateOf(IMPORT_NO_PREFERENCE) }
+    var customLanguage by remember { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     val title = DesktopStrings["spotify_import_title", "Import Spotify playlist"]
@@ -341,7 +390,12 @@ internal fun DesktopSpotifyImportDialog(
         scope.launch {
             try {
                 val (name, tracks) = SpotifyImporter.fetchPlaylistTracks(id)
-                val (songs, missed) = SpotifyImporter.resolveToSongs(tracks) { done, total ->
+                val language = if (selectedLanguage == IMPORT_LANGUAGE_OTHER) {
+                    customLanguage.trim().ifBlank { null }
+                } else {
+                    selectedLanguage
+                }
+                val (songs, missed) = SpotifyImporter.resolveToSongs(tracks, language) { done, total ->
                     status = DesktopStrings.format("spotify_import_matching", done, total, fallback = "Matching songs %1\$d of %2\$d")
                 }
                 if (songs.isEmpty()) {
@@ -396,6 +450,21 @@ internal fun DesktopSpotifyImportDialog(
                 onSubmit = ::start,
                 modifier = Modifier.focusRequester(focus),
             )
+            SpotifyLanguagePicker(
+                selected = selectedLanguage,
+                onSelect = { selectedLanguage = it },
+                enabled = !working,
+            )
+            if (selectedLanguage == IMPORT_LANGUAGE_OTHER) {
+                Spacer(Modifier.height(8.dp))
+                DialogField(
+                    value = customLanguage,
+                    onValueChange = { customLanguage = it },
+                    placeholder = DesktopStrings["spotify_import_language_hint", "e.g. Punjabi, Marathi, Korean…"],
+                    enabled = !working,
+                    onSubmit = ::start,
+                )
+            }
             status?.let {
                 Text(
                     it,

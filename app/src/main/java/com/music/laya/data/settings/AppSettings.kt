@@ -1991,6 +1991,7 @@ object AppSettings {
         "downloaded_collections",
         KEY_LOCAL_MUSIC_FOLDER_URI,
         KEY_LAST_VERSION_CODE,
+        KEY_ONBOARDING_COMPLETE,
     )
 
     const val DEFAULT_CACHE_LIMIT_BYTES = 512L * 1024 * 1024

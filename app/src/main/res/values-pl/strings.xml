@@ -1297,6 +1297,10 @@
     <string name="cached_songs">Utwory w pamięci podręcznej</string>
     <string name="cached_songs_subtitle">Utwory z YouTube i JioSaavn w pamięci podręcznej utworów</string>
     <string name="cached_songs_empty">Brak utworów w pamięci podręcznej. Utwory odtwarzane z YouTube lub JioSaavn pojawią się tutaj.</string>
+    <string name="cached_song_partial">Częściowo</string>
+    <string name="remove_from_cache">Usuń z pamięci podręcznej</string>
+    <string name="cached_song_remove">Usuń</string>
+    <string name="removed_from_cache">Usunięto z pamięci podręcznej utworów</string>
     <string name="show_cache_folder">Pokaż folder utworów w pamięci podręcznej</string>
     <string name="show_cache_folder_subtitle">Dodaje do Biblioteki folder z utworami z YouTube i JioSaavn przechowywanymi w pamięci podręcznej</string>
     <string name="song_cache_unlimited">Bez limitu</string>
@@ -1351,6 +1355,10 @@
     <string name="replay_songs_end_week"> wypełniły twój tydzień.</string>
     <string name="replay_summary_end_week">tydzień</string>
     <string name="replay_this_week">W tym tygodniu</string>
+    <string name="replay_period_weekly">Tydzień</string>
+    <string name="replay_period_monthly">Miesiąc</string>
+    <string name="replay_period_yearly">Rok</string>
+    <string name="replay_period_lifetime">Cały czas</string>
     <string name="onboarding_title">Miliony utworów w streamingu w Laya</string>
     <string name="onboarding_name_prompt">Jak mamy się do ciebie zwracać?</string>
     <string name="onboarding_name_hint">Twoje imię</string>
@@ -1395,4 +1403,13 @@
     <string name="wear_os_code_hint">Kod parowania</string>
     <string name="wear_os_done">Gotowe</string>
     <string name="signed_by">Podpisano przez %1$s</string>
+    <string name="song_info">Informacje o utworze</string>
+    <string name="song_info_album">Album</string>
+    <string name="song_info_release_date">Data wydania</string>
+    <string name="song_info_views">Odtworzenia / wyświetlenia</string>
+    <string name="song_info_likes">Polubienia</string>
+    <string name="song_info_comments">Komentarze</string>
+    <string name="song_info_unavailable">Niedostępne</string>
+    <string name="song_info_error">Nie udało się wczytać części informacji.</string>
+    <string name="song_info_retry">Spróbuj ponownie</string>
 </resources>

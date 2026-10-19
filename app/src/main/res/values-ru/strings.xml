@@ -1289,6 +1289,10 @@
     <string name="cached_songs">Кэшированные треки</string>
     <string name="cached_songs_subtitle">Треки из YouTube и JioSaavn в кэше треков</string>
     <string name="cached_songs_empty">Кэшированных треков пока нет. Здесь появятся треки, которые вы слушаете из YouTube или JioSaavn.</string>
+    <string name="cached_song_partial">Частично</string>
+    <string name="remove_from_cache">Удалить из кеша</string>
+    <string name="cached_song_remove">Удалить</string>
+    <string name="removed_from_cache">Удалено из кеша треков</string>
     <string name="show_cache_folder">Показывать папку кэшированных треков</string>
     <string name="show_cache_folder_subtitle">Добавляет в Библиотеку папку с треками из YouTube и JioSaavn, сохранёнными в кэше</string>
     <string name="song_cache_unlimited">Без ограничений</string>
@@ -1343,6 +1347,10 @@
     <string name="replay_songs_end_week"> заполнили вашу неделю.</string>
     <string name="replay_summary_end_week">неделя</string>
     <string name="replay_this_week">На этой неделе</string>
+    <string name="replay_period_weekly">Неделя</string>
+    <string name="replay_period_monthly">Месяц</string>
+    <string name="replay_period_yearly">Год</string>
+    <string name="replay_period_lifetime">Всё время</string>
     <string name="onboarding_title">Миллионы треков в Laya</string>
     <string name="onboarding_name_prompt">Как к вам обращаться?</string>
     <string name="onboarding_name_hint">Ваше имя</string>
@@ -1387,4 +1395,13 @@
     <string name="wear_os_code_hint">Код подключения</string>
     <string name="wear_os_done">Готово</string>
     <string name="signed_by">Подпись: %1$s</string>
+    <string name="song_info">Информация о песне</string>
+    <string name="song_info_album">Альбом</string>
+    <string name="song_info_release_date">Дата выпуска</string>
+    <string name="song_info_views">Прослушивания / просмотры</string>
+    <string name="song_info_likes">Отметки «Нравится»</string>
+    <string name="song_info_comments">Комментарии</string>
+    <string name="song_info_unavailable">Недоступно</string>
+    <string name="song_info_error">Не удалось загрузить часть информации.</string>
+    <string name="song_info_retry">Повторить</string>
 </resources>

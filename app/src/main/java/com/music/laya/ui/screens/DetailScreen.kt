@@ -53,6 +53,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import com.music.laya.data.model.LibraryState
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
@@ -337,6 +338,12 @@ fun DetailScreen(
      * [LocalFolder].
      */
     folder: LocalFolder? = null,
+    /**
+     * Set while this playlist's songs are being rearranged: drawn in place of
+     * the track list, over the same page colour, and handed the page's
+     * [ArtworkPalette] so it reads as this page rather than a sheet over it.
+     */
+    reorder: (@Composable (ArtworkPalette) -> Unit)? = null,
 ) {
     val rawSongs = (page.songs as? UiState.Success)?.data.orEmpty()
     // A folder keeps its own sort — the one its top bar menu sets — rather
@@ -537,7 +544,9 @@ fun DetailScreen(
                     )
                 }
 
-                LazyColumn(
+                if (reorder != null) {
+                    reorder(palette)
+                } else LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     // The artist photo runs edge-to-edge up under the glass bar;
@@ -559,6 +568,7 @@ fun DetailScreen(
                         // A folder's credit says where its tracks live, not who made them.
                         onArtistClick = onArtistClick.takeIf { folder == null },
                         onToggleLibrary = onToggleLibrary,
+                        onDownloadAll = folder?.onDownload?.let { download -> { download(songs) } },
                     )
                 }
             }
@@ -880,6 +890,8 @@ private fun ReleaseHeader(
     onShuffle: () -> Unit,
     onArtistClick: ((String, String) -> Unit)?,
     onToggleLibrary: (() -> Unit)?,
+    /** The Cached songs folder's: saves every track on it to Downloads. Null hides it. */
+    onDownloadAll: (() -> Unit)? = null,
 ) {
     val (credit, meta) = page.headerLines(songs.size, songs.playtime())
     // Every row on a release carries the same credit — see [pageCredit] — so
@@ -1016,6 +1028,16 @@ private fun ReleaseHeader(
                         size = RELEASE_SIDE_BUTTON,
                         modifier = Modifier.weight(1f),
                     )
+                    // The song cache's copies, saved to Downloads in one go —
+                    // from disk, so it works offline. See [LocalFolder.onDownload].
+                    onDownloadAll?.let {
+                        CircleIconButton(
+                            icon = Icons.Rounded.Download,
+                            contentDescription = stringResource(R.string.download_all),
+                            onClick = it,
+                            size = RELEASE_SIDE_BUTTON,
+                        )
+                    }
                     return@Row
                 }
                 CircleIconButton(

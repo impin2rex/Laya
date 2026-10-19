@@ -870,4 +870,13 @@
     <string name="listen_together_open_count">Listening together · %1$d</string>
     <string name="miscellaneous_footer">When enabled, closing the app from the recent apps screen will also stop music playback.</string>
     <string name="translate">Translate</string>
+    <string name="song_info">Song Info</string>
+    <string name="song_info_album">Album</string>
+    <string name="song_info_release_date">Release date</string>
+    <string name="song_info_views">Plays / views</string>
+    <string name="song_info_likes">Likes</string>
+    <string name="song_info_comments">Comments</string>
+    <string name="song_info_unavailable">Not available</string>
+    <string name="song_info_error">Some information could not be loaded.</string>
+    <string name="song_info_retry">Retry</string>
 </resources>

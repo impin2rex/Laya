@@ -1214,6 +1214,10 @@
     <string name="cached_songs">Önbellekteki şarkılar</string>
     <string name="cached_songs_subtitle">Şarkı önbelleğindeki YouTube ve JioSaavn şarkıları</string>
     <string name="cached_songs_empty">Henüz önbellekte şarkı yok. YouTube veya JioSaavn üzerinden çaldığın şarkılar burada görünecek.</string>
+    <string name="cached_song_partial">Kısmi</string>
+    <string name="remove_from_cache">Önbellekten kaldır</string>
+    <string name="cached_song_remove">Kaldır</string>
+    <string name="removed_from_cache">Şarkı önbelleğinden kaldırıldı</string>
     <string name="show_cache_folder">Önbellekteki şarkılar klasörünü göster</string>
     <string name="show_cache_folder_subtitle">Kitaplığa, önbellekte tutulan YouTube ve JioSaavn şarkılarını içeren bir klasör ekler</string>
     <string name="song_cache_unlimited">Sınırsız</string>
@@ -1251,6 +1255,15 @@
     <string name="spotify_sign_in">Spotify ile oturum aç</string>
     <string name="spotify_use_spdc_token">sp_dc token\'ı kullan</string>
     <string name="spotify_track_unavailable">O şarkı YouTube Music’de bulunamadı</string>
+    <string name="song_info">Şarkı Bilgisi</string>
+    <string name="song_info_album">Albüm</string>
+    <string name="song_info_release_date">Yayın tarihi</string>
+    <string name="song_info_views">Dinlenme / görüntülenme</string>
+    <string name="song_info_likes">Beğeniler</string>
+    <string name="song_info_comments">Yorumlar</string>
+    <string name="song_info_unavailable">Mevcut değil</string>
+    <string name="song_info_error">Bazı bilgiler yüklenemedi.</string>
+    <string name="song_info_retry">Tekrar dene</string>
     <string name="artist_signatures">Sanatçı imzaları</string>
     <string name="artist_signatures_subtitle">Apple Music\'te başlık logosu yokken el yazısı imza gösterir</string>
     <string name="artist_signatures_url">İmza API URL\'si</string>
@@ -1268,6 +1281,10 @@
     <string name="replay_songs_end_week"> haftanızı doldurdu.</string>
     <string name="replay_summary_end_week">hafta</string>
     <string name="replay_this_week">Bu hafta</string>
+    <string name="replay_period_weekly">Haftalık</string>
+    <string name="replay_period_monthly">Aylık</string>
+    <string name="replay_period_yearly">Yıllık</string>
+    <string name="replay_period_lifetime">Tüm zamanlar</string>
     <string name="onboarding_title">Milyonlarca şarkı, Laya’da akışta</string>
     <string name="onboarding_name_prompt">Size nasıl hitap edelim?</string>
     <string name="onboarding_name_hint">Adınız</string>
