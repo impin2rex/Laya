@@ -1174,6 +1174,10 @@
     <string name="cached_songs">Bài hát đã lưu bộ nhớ đệm</string>
     <string name="cached_songs_subtitle">Bài hát từ YouTube và JioSaavn trong bộ nhớ đệm</string>
     <string name="cached_songs_empty">Chưa có bài hát nào trong bộ nhớ đệm. Bài hát bạn phát từ YouTube hoặc JioSaavn sẽ hiện ở đây.</string>
+    <string name="cached_song_partial">Một phần</string>
+    <string name="remove_from_cache">Xóa khỏi bộ nhớ đệm</string>
+    <string name="cached_song_remove">Xóa</string>
+    <string name="removed_from_cache">Đã xóa khỏi bộ nhớ đệm bài hát</string>
     <string name="show_cache_folder">Hiện thư mục bài hát trong bộ nhớ đệm</string>
     <string name="show_cache_folder_subtitle">Thêm vào Thư viện một thư mục chứa các bài hát YouTube và JioSaavn được lưu trong bộ nhớ đệm</string>
     <string name="song_cache_unlimited">Không giới hạn</string>
@@ -1228,6 +1232,10 @@
     <string name="replay_songs_end_week"> đã lấp đầy tuần của bạn.</string>
     <string name="replay_summary_end_week">tuần</string>
     <string name="replay_this_week">Tuần này</string>
+    <string name="replay_period_weekly">Tuần</string>
+    <string name="replay_period_monthly">Tháng</string>
+    <string name="replay_period_yearly">Năm</string>
+    <string name="replay_period_lifetime">Mọi lúc</string>
     <string name="onboarding_title">Hàng triệu bài hát, phát trực tuyến trên Laya</string>
     <string name="onboarding_name_prompt">Chúng tôi nên gọi bạn là gì?</string>
     <string name="onboarding_name_hint">Tên của bạn</string>
@@ -1272,4 +1280,13 @@
     <string name="wear_os_code_hint">Mã ghép nối</string>
     <string name="wear_os_done">Xong</string>
     <string name="signed_by">Được ký bởi %1$s</string>
+    <string name="song_info">Thông tin bài hát</string>
+    <string name="song_info_album">Album</string>
+    <string name="song_info_release_date">Ngày phát hành</string>
+    <string name="song_info_views">Lượt phát / lượt xem</string>
+    <string name="song_info_likes">Lượt thích</string>
+    <string name="song_info_comments">Bình luận</string>
+    <string name="song_info_unavailable">Không có thông tin</string>
+    <string name="song_info_error">Không thể tải một số thông tin.</string>
+    <string name="song_info_retry">Thử lại</string>
 </resources>

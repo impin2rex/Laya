@@ -2,8 +2,11 @@ package com.music.laya.playback
 
 import android.content.Context
 import android.media.MediaDataSource
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.SystemClock
+import com.music.laya.R
 import com.music.laya.data.TrackLog
 import com.music.laya.playback.smart.AutomixAnalysisSource
 import androidx.media3.common.C
@@ -33,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -193,21 +197,35 @@ object AudioCache {
 
     private lateinit var cache: SimpleCache
 
+    private lateinit var appContext: Context
+
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     /**
-     * Kept in the app's cache directory: this is disposable by definition, and
-     * that is where the system and the "clear cache" button expect to reclaim
-     * it from. [SimpleCache] copes with files disappearing underneath it by
+     * Kept in the app's no-backup files directory, not its cache directory.
+     *
+     * It used to live in `cacheDir`, on the reasoning that it is disposable.
+     * It is not disposable to the listener any more: the Cached songs folder
+     * lists it, offline playback reads from it, and Settings lets it grow
+     * without a ceiling. Android treats `cacheDir` as its own to reclaim — it
+     * empties whole cache directories, largest-over-quota first, during idle
+     * maintenance whenever storage runs low — and a multi-gigabyte song cache
+     * is exactly the app it picks first. That is the "everything vanished
+     * overnight, all at once" report: the evictor never touched it, the system
+     * did. Here only [DynamicLruCacheEvictor], [clear] and the folder's own
+     * remove actions take anything out. No-backup rather than plain
+     * `filesDir` so gigabytes of audio are never offered to Auto Backup.
+     *
+     * [SimpleCache] still copes with files disappearing underneath it by
      * dropping the spans that named them.
      */
     fun init(context: Context) {
+        appContext = context.applicationContext
         evictor.maxBytes = AppSettings.audioCacheLimitBytes.value
-        cache = SimpleCache(
-            File(context.cacheDir, "audio"),
-            evictor,
-            StandaloneDatabaseProvider(context),
-        )
+        val dir = File(context.noBackupFilesDir, CACHE_DIR_NAME)
+        val databaseProvider = StandaloneDatabaseProvider(context)
+        migrateFromCacheDir(File(context.cacheDir, LEGACY_CACHE_DIR_NAME), dir, databaseProvider)
+        cache = SimpleCache(dir, evictor, databaseProvider)
         // Builds before album/explicit/video-aware and credit-aware matching
         // may have cached a completely different recording under a YouTube
         // track's `#alt` key.
@@ -216,6 +234,17 @@ object AudioCache {
         // no quality gain. Drop only the substitution-capable entries once;
         // ordinary YouTube cache entries remain warm.
         val state = context.getSharedPreferences(CACHE_STATE_PREFS, Context.MODE_PRIVATE)
+        // Replaces wiping the whole cache on every app update, which emptied
+        // the Cached songs folder each time a new build was installed. Only a
+        // build that actually changes what a key means, or how its bytes are
+        // laid out, bumps [CACHE_FORMAT]. An install that has never recorded a
+        // format is taken to be current rather than wiped.
+        val format = state.getInt(KEY_CACHE_FORMAT, -1)
+        if (format in 0 until CACHE_FORMAT) {
+            cache.keys.toList().forEach { runCatching { cache.removeResource(it) } }
+            TrackLog.d(TAG, "cleared the song cache for cache format $CACHE_FORMAT")
+        }
+        if (format != CACHE_FORMAT) state.edit().putInt(KEY_CACHE_FORMAT, CACHE_FORMAT).apply()
         if (state.getInt(KEY_MATCHING_SCHEMA, 0) < MATCHING_SCHEMA) {
             val stale = cache.keys.filter { it.endsWith(ALT_SUFFIX) }
             stale.forEach { runCatching { cache.removeResource(it) } }
@@ -234,6 +263,26 @@ object AudioCache {
                 evictor.applyNow(cache)
             }
         }
+    }
+
+    /**
+     * Moves a cache left in `cacheDir` by an older build to [dir], keeping
+     * every track in it. A rename within app storage, so instant and free; the
+     * index survives with it, because [SimpleCache] keys its database tables on
+     * the uid file inside the directory. Should the rename fail, the old copy
+     * is deleted rather than left for the system to find.
+     */
+    private fun migrateFromCacheDir(legacy: File, dir: File, databaseProvider: StandaloneDatabaseProvider) {
+        if (!legacy.isDirectory) return
+        if (!dir.exists()) {
+            dir.parentFile?.mkdirs()
+            if (legacy.renameTo(dir)) {
+                TrackLog.d(TAG, "moved the song cache out of the system-clearable cache directory")
+                return
+            }
+        }
+        runCatching { SimpleCache.delete(legacy, databaseProvider) }
+            .onFailure { legacy.deleteRecursively() }
     }
 
     /** Drops everything on disk. The listener asked; no grace period. */
@@ -275,14 +324,25 @@ object AudioCache {
      * Runs on the caller's thread rather than off in [scope], so that a caller
      * about to re-open the track can be sure the old bytes are gone first.
      * Call it off the main thread.
+     *
+     * @param keepComplete spare every entry that is on disk in full. For a
+     *   failure that was the network's rather than the file's — a dropped
+     *   connection, an expired URL, no connection at all. A complete entry is
+     *   never written to again, so it cannot be the half-filled seam this
+     *   exists to clear, and throwing it away for a network error is how
+     *   playing offline used to delete the very songs it was playing.
      */
-    fun discard(uri: Uri) {
+    fun discard(uri: Uri, keepComplete: Boolean = false) {
         val exact = keyFactory.buildCacheKey(DataSpec(uri))
         val about = mediaIdIn(uri)
         val family = uri.getQueryParameter("v")?.let { videoId ->
             cache.keys.filter { it == videoId || it.startsWith("$videoId#") }
         } ?: emptyList()
         (family + exact).distinct().forEach { key ->
+            if (keepComplete && isComplete(key)) {
+                TrackLog.d(TAG, "kept complete cache entry $key through a network failure", about = about)
+                return@forEach
+            }
             runCatching { cache.removeResource(key) }
                 .onSuccess { TrackLog.d(TAG, "discarded cache entry $key", about = about) }
                 .onFailure { TrackLog.d(TAG, "cache entry $key still in use: ${it.message}", about = about) }
@@ -403,8 +463,9 @@ object AudioCache {
                 val rendition = QualityUpgrade.cacheTag(spec.uri)
                 when {
                     rendition != null -> "$videoId#$rendition"
-                    SourceResolver.canSubstituteForYouTube() -> "$videoId#alt${atmosKeySuffix()}"
-                    else -> videoId
+                    SourceResolver.canSubstituteForYouTube() ->
+                        "$videoId#alt${atmosKeySuffix()}".let { completeSibling(videoId, it) ?: it }
+                    else -> completeSibling(videoId, videoId) ?: videoId
                 }
             }
             // A source-backed track keys on the source and its track id alone.
@@ -428,6 +489,75 @@ object AudioCache {
             }
             ?: spec.key
             ?: spec.uri.toString()
+
+    /**
+     * The complete copy of [videoId] the cache holds under a sibling key, when
+     * [preferred] — the key the current settings name — holds nothing at all.
+     *
+     * Which key a track lands under depends on settings that can change after
+     * it was cached: ranking a source above YouTube, or turning Dolby Atmos
+     * off, moves it from `videoId` to `videoId#alt` or `#alt-noatmos`, and
+     * un-ranking it moves it back. Offline that made a track the Cached songs
+     * folder lists — fully on disk — fail to play at all, because the player
+     * asked for an empty entry and the network to fill it was not there.
+     *
+     * Only for a copy that is complete: a complete entry is never written to
+     * again, so reading it cannot start the mixed-file seam [phoneKey] keeps
+     * renditions apart to prevent.
+     *
+     * Online it depends on the direction. With a source ranked above YouTube
+     * the preferred `#alt` key keeps its own rendition — falling back to the
+     * plain entry would hand back a YouTube Opus copy in place of the better
+     * one a source would resolve, and `#alt` against `#alt-noatmos` is the
+     * Atmos setting itself. With nothing ranked above YouTube, the plain key
+     * would only ever resolve the same YouTube stream, so a kept YouTube or
+     * JioSaavn copy under `#alt` is taken online too. Measured: East Side Flow
+     * cached under `#alt` while a source was ranked first, the source then
+     * dropped — every online play re-resolved through InnerTubeX and wrote a
+     * second, byte-identical 3.8 MB itag 251 file under the plain key, while
+     * offline plays came straight off disk.
+     */
+    private fun completeSibling(videoId: String, preferred: String): String? {
+        if (!::cache.isInitialized) return null
+        // Ahead of the connectivity check, which is a binder call: nearly every
+        // open is of an entry that already holds something.
+        if (cache.getCachedSpans(preferred).isNotEmpty()) return null
+        val siblings = listOf(videoId, "$videoId$ALT_SUFFIX", "$videoId$ALT_SUFFIX-noatmos")
+            .filter { it != preferred }
+        if (isOffline()) return siblings.firstOrNull(::isComplete)
+        if (preferred != videoId) return null
+        return siblings.firstOrNull { key -> isComplete(key) && isKeptOrigin(key) }
+    }
+
+    /**
+     * Whether [key]'s bytes came from YouTube or JioSaavn — the copies kept
+     * past playback, see [Origin]. An addon's file is dropped once the queue
+     * moves past it, but until then may sit under `#alt` as an Atmos or
+     * lossless rendition nothing ranked above YouTube would serve.
+     */
+    private fun isKeptOrigin(key: String): Boolean = runCatching {
+        val origin = cache.getContentMetadata(key).get(META_ORIGIN, null as String?)
+        origin == Origin.YOUTUBE.name || origin == Origin.JIOSAAVN.name
+    }.getOrDefault(false)
+
+    /** Whether every byte of the entry [key] is on disk. */
+    private fun isComplete(key: String): Boolean = runCatching {
+        val length = ContentMetadata.getContentLength(cache.getContentMetadata(key))
+        length > 0 && cache.isCached(key, 0, length)
+    }.getOrDefault(false)
+
+    /**
+     * Whether the device has no usable connection right now. Asked by the
+     * places that must behave differently offline — choosing a cache entry,
+     * and deciding whether a failed read means the bytes on disk are bad.
+     */
+    fun isOffline(): Boolean {
+        if (!::appContext.isInitialized) return false
+        val connectivity = appContext.getSystemService(ConnectivityManager::class.java) ?: return false
+        val capabilities = runCatching { connectivity.getNetworkCapabilities(connectivity.activeNetwork) }
+            .getOrNull()
+        return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) != true
+    }
 
     /**
      * Splits the `#alt` bucket in two along whatever this process currently
@@ -478,6 +608,12 @@ object AudioCache {
         val bytes: Long,
         /** When any of those bytes were last read or written, epoch millis. */
         val lastUsedMs: Long,
+        /**
+         * Whether one of those renditions is on disk from first byte to last —
+         * what playing it with no connection, and saving it to Downloads
+         * straight from the cache, both need. See [completeCopyOf].
+         */
+        val complete: Boolean,
     )
 
     private val _contentsChanged = MutableStateFlow(0)
@@ -670,7 +806,13 @@ object AudioCache {
      */
     suspend fun cachedSongs(): List<CachedSong> = withContext(Dispatchers.IO) {
         if (!::cache.isInitialized) return@withContext emptyList()
-        class Entry(val origin: Origin, val meta: ContentMetadata, val bytes: Long, val touched: Long)
+        class Entry(
+            val origin: Origin,
+            val meta: ContentMetadata,
+            val bytes: Long,
+            val touched: Long,
+            val complete: Boolean,
+        )
         val byTrack = LinkedHashMap<String, MutableList<Entry>>()
         for (key in cache.keys) {
             val meta = runCatching { cache.getContentMetadata(key) }.getOrNull() ?: continue
@@ -684,7 +826,9 @@ object AudioCache {
             val bytes = spans.sumOf { it.length }
             if (bytes <= 0L) continue
             val touched = spans.maxOf { it.lastTouchTimestamp }
-            byTrack.getOrPut(mediaId) { mutableListOf() } += Entry(origin, meta, bytes, touched)
+            val length = ContentMetadata.getContentLength(meta)
+            val complete = length > 0 && bytes >= length && cache.isCached(key, 0, length)
+            byTrack.getOrPut(mediaId) { mutableListOf() } += Entry(origin, meta, bytes, touched, complete)
         }
         byTrack.map { (mediaId, entries) ->
             fun field(name: String): String? =
@@ -692,6 +836,7 @@ object AudioCache {
             val bytes = entries.sumOf { it.bytes }
             val lastUsed = entries.maxOf { it.touched }
             val origin = entries.maxBy { it.bytes }.origin
+            val complete = entries.any { it.complete }
             val noted = notedSongs[mediaId]
             val art = field(META_ART) ?: noted?.thumbnailUrl
                 ?: mediaId.takeIf { SourceRegistry.parseTrackKey(it) == null }
@@ -704,16 +849,167 @@ object AudioCache {
                     thumbnailUrl = art,
                     durationText = field(META_DURATION) ?: noted?.durationText,
                     albumName = field(META_ALBUM) ?: noted?.albumName,
-                    // The row's second line: where the copy came from and
-                    // what it costs on disk.
-                    downloadFormat = "${origin.label} · ${formatBytes(bytes)}",
+                    // The row's second line: where the copy came from, what
+                    // it costs on disk, and — when only part of it is there —
+                    // that it will need a connection to play to the end.
+                    downloadFormat = listOfNotNull(
+                        origin.label,
+                        formatBytes(bytes),
+                        appContext.getString(R.string.cached_song_partial).takeUnless { complete },
+                    ).joinToString(" · "),
                     localDateAddedSeconds = lastUsed / 1000,
                 ),
                 origin = origin,
                 bytes = bytes,
                 lastUsedMs = lastUsed,
+                complete = complete,
             )
         }.sortedByDescending { it.lastUsedMs }
+    }
+
+    /** Every cache key holding a rendition of [mediaId]; see [keyFactory]. */
+    private fun keysOf(mediaId: String): List<String> {
+        val base = cacheKeyBaseOf(mediaId)
+        return cache.keys.filter { key ->
+            key == base || key.startsWith("$base#") ||
+                runCatching { cache.getContentMetadata(key).get(META_MEDIA_ID, null as String?) }
+                    .getOrNull() == mediaId
+        }
+    }
+
+    /**
+     * Whether the cache holds any bytes of [mediaId] — what decides whether a
+     * song's menu offers to remove it from the cache. Reads the index, so call
+     * it off the main thread.
+     */
+    fun holds(mediaId: String): Boolean {
+        if (!::cache.isInitialized || mediaId.isBlank()) return false
+        return keysOf(mediaId).any { key -> cache.getCachedSpans(key).any { it.isCached } }
+    }
+
+    /**
+     * Takes every rendition of [mediaId] off disk, and with it the track's row
+     * in the Cached songs folder. The listener asked, from a song's menu or
+     * the folder itself.
+     *
+     * A track that is playing right now keeps playing: the reader already has
+     * its file open, and whatever it fetches after this is written back. It is
+     * forgotten as played, though, so those bytes come back as ordinary cache
+     * the folder does not list rather than undoing the removal in front of the
+     * listener.
+     *
+     * @return how many entries went.
+     */
+    suspend fun remove(mediaId: String): Int = withContext(Dispatchers.IO) {
+        if (!::cache.isInitialized || mediaId.isBlank()) return@withContext 0
+        playedIds.remove(mediaId)
+        analysisHeads.remove(mediaId)
+        analysisHeadsInFlight.remove(mediaId)
+        analysisHeadWant.remove(mediaId)
+        renditionKeys.remove(mediaId)
+        var removed = 0
+        keysOf(mediaId).forEach { key ->
+            runCatching { cache.removeResource(key) }
+                .onSuccess { removed++ }
+                .onFailure { TrackLog.d(TAG, "cache entry $key still in use: ${it.message}", about = mediaId) }
+        }
+        TrackLog.d(TAG, "removed $removed cache entries at the listener's request", about = mediaId)
+        _contentsChanged.value++
+        removed
+    }
+
+    /**
+     * One rendition of a track that is on disk in full, ready to be copied out
+     * by [copyOut] — see [completeCopyOf].
+     */
+    class CompleteCopy(
+        internal val key: String,
+        val length: Long,
+        /** The file extension its container is saved under: `webm`, `m4a` or `flac`. */
+        val extension: String,
+        val mimeType: String,
+    )
+
+    /**
+     * The best complete copy of [mediaId] the cache holds, or null when none
+     * is whole or its container is not one a download can be filed as.
+     *
+     * This is what lets the Cached songs folder save a track to Downloads
+     * without the network — the bytes are already here, and fetching them
+     * again would spend the listener's data on a file they have. The largest
+     * complete rendition is taken, which across one track's renditions is the
+     * highest quality. A copy made for the watch is never offered: it is
+     * capped below what the phone would keep.
+     *
+     * The container is read off the file's own first bytes rather than
+     * inferred from where it came from: a substituted rendition can be any of
+     * several, and a manifest cached by mistake must not become a `.flac`.
+     */
+    fun completeCopyOf(mediaId: String): CompleteCopy? {
+        if (!::cache.isInitialized || mediaId.isBlank()) return null
+        return keysOf(mediaId)
+            .filterNot { it.endsWith("#watch") }
+            .mapNotNull { key ->
+                val length = runCatching { ContentMetadata.getContentLength(cache.getContentMetadata(key)) }
+                    .getOrDefault(C.LENGTH_UNSET.toLong())
+                if (length <= 0 || !cache.isCached(key, 0, length)) return@mapNotNull null
+                val (extension, mime) = containerOf(key) ?: return@mapNotNull null
+                CompleteCopy(key, length, extension, mime)
+            }
+            .maxByOrNull { it.length }
+    }
+
+    /** The container of the entry [key], from the magic at its very start. */
+    private fun containerOf(key: String): Pair<String, String>? {
+        val head = cache.getCachedSpans(key)
+            .firstOrNull { it.position == 0L && it.isCached }
+            ?.file
+            ?.takeIf { it.exists() }
+            ?: return null
+        val magic = ByteArray(CONTAINER_MAGIC_BYTES)
+        val read = runCatching { head.inputStream().use { it.read(magic) } }.getOrDefault(-1)
+        if (read < magic.size) return null
+        return cachedContainerOf(magic)
+    }
+
+    /**
+     * Writes [copy] to [sink] from disk alone, never the network.
+     *
+     * Read through a [CacheDataSource] with no upstream at all, so a span that
+     * has gone missing since [completeCopyOf] looked fails the copy instead of
+     * being quietly filled from a stream that may be a different file.
+     */
+    suspend fun copyOut(
+        copy: CompleteCopy,
+        sink: java.io.OutputStream,
+        onProgress: (written: Long, total: Long) -> Unit,
+    ) = withContext(Dispatchers.IO) {
+        // No upstream factory, so anything not on disk fails rather than streams.
+        val source = CacheDataSource.Factory().setCache(cache).createDataSource()
+        val spec = DataSpec.Builder()
+            .setUri(Uri.parse("laya://cache"))
+            .setKey(copy.key)
+            .setPosition(0)
+            .setLength(copy.length)
+            .build()
+        try {
+            source.open(spec)
+            val buffer = ByteArray(COPY_BUFFER_BYTES)
+            var written = 0L
+            while (written < copy.length) {
+                ensureActive()
+                val read = source.read(buffer, 0, buffer.size)
+                if (read == C.RESULT_END_OF_INPUT) break
+                sink.write(buffer, 0, read)
+                written += read
+                onProgress(written, copy.length)
+            }
+            if (written < copy.length) {
+                throw IOException("cached copy ended at $written of ${copy.length} bytes")
+            }
+        } finally {
+            source.close()
+        }
     }
 
     /**
@@ -789,8 +1085,19 @@ object AudioCache {
     /** Set once the player has played the track from this entry. */
     private const val META_PLAYED = "bc_played"
     private const val MAX_NOTED_SONGS = 256
+    private const val COPY_BUFFER_BYTES = 64 * 1024
 
+    private const val CACHE_DIR_NAME = "audio_cache"
+    private const val LEGACY_CACHE_DIR_NAME = "audio"
     private const val CACHE_STATE_PREFS = "audio_cache_state"
+    private const val KEY_CACHE_FORMAT = "cache_format"
+
+    /**
+     * Bumped only by a build whose keys or bytes the previous one's cache
+     * cannot be read under. Bumping it empties the Cached songs folder for
+     * everyone who updates, so it is not for ordinary releases.
+     */
+    private const val CACHE_FORMAT = 1
     private const val KEY_MATCHING_SCHEMA = "matching_schema"
     private const val MATCHING_SCHEMA = 2
     private const val ALT_SUFFIX = "#alt"
@@ -1894,5 +2201,26 @@ object AudioCache {
                 about = about,
             )
         }
+    }
+}
+
+/** How many leading bytes [cachedContainerOf] needs to tell the containers apart. */
+internal const val CONTAINER_MAGIC_BYTES = 12
+
+/**
+ * The file extension and MIME type a download of a cached file is filed under,
+ * from the file's first [CONTAINER_MAGIC_BYTES] — or null for anything that is
+ * not WebM, MP4 or FLAC, which a download made from the cache refuses rather
+ * than misnames. See [AudioCache.completeCopyOf].
+ */
+internal fun cachedContainerOf(magic: ByteArray): Pair<String, String>? {
+    if (magic.size < CONTAINER_MAGIC_BYTES) return null
+    fun ascii(from: Int, to: Int) = String(magic, from, to - from, Charsets.US_ASCII)
+    return when {
+        magic[0] == 0x1A.toByte() && magic[1] == 0x45.toByte() &&
+            magic[2] == 0xDF.toByte() && magic[3] == 0xA3.toByte() -> "webm" to "audio/webm"
+        ascii(4, 8) == "ftyp" -> "m4a" to "audio/mp4"
+        ascii(0, 4) == "fLaC" -> "flac" to "audio/flac"
+        else -> null
     }
 }

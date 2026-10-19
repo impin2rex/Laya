@@ -1106,7 +1106,8 @@ fun NowPlayingScreen(
     val swipeHintShown by remember(swipeThreshold) {
         derivedStateOf { abs(swipeSettle.value) / swipeThreshold > 0.01f }
     }
-    val swipeHintNext by remember { derivedStateOf { swipeSettle.value > 0f } }
+    // A leftward drag (negative offset) is the one that skips forward.
+    val swipeHintNext by remember { derivedStateOf { swipeSettle.value < 0f } }
 
     // Signature Apple Music touch: the sleeve shrinks back while paused.
     val artScale by animateFloatAsState(
@@ -2022,6 +2023,7 @@ fun NowPlayingScreen(
                                     picked = lyricPicker.picks,
                                     onPickLine = lyricPicker.pick,
                                     onTogglePick = lyricPicker.toggle,
+                                    centerFocus = true,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }

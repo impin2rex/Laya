@@ -1123,4 +1123,21 @@
     <string name="wear_os_code_hint">পেয়ারিং কোড</string>
     <string name="wear_os_done">হয়ে গেছে</string>
     <string name="signed_by">%1$s-এর সই</string>
+    <string name="cached_song_partial">আংশিক</string>
+    <string name="cached_song_remove">সরান</string>
+    <string name="remove_from_cache">ক্যাশ থেকে সরান</string>
+    <string name="removed_from_cache">গানের ক্যাশ থেকে সরানো হয়েছে</string>
+    <string name="replay_period_weekly">সাপ্তাহিক</string>
+    <string name="replay_period_monthly">মাসিক</string>
+    <string name="replay_period_yearly">বার্ষিক</string>
+    <string name="replay_period_lifetime">সব সময়</string>
+    <string name="song_info">গানের তথ্য</string>
+    <string name="song_info_album">অ্যালবাম</string>
+    <string name="song_info_release_date">প্রকাশের তারিখ</string>
+    <string name="song_info_views">প্লে / ভিউ</string>
+    <string name="song_info_likes">পছন্দ</string>
+    <string name="song_info_comments">মন্তব্য</string>
+    <string name="song_info_unavailable">পাওয়া যাচ্ছে না</string>
+    <string name="song_info_error">কিছু তথ্য লোড করা যায়নি।</string>
+    <string name="song_info_retry">আবার চেষ্টা করুন</string>
 </resources>

@@ -1262,6 +1262,10 @@
     <string name="cached_songs">שירים במטמון</string>
     <string name="cached_songs_subtitle">שירים מ-YouTube ומ-JioSaavn במטמון השירים</string>
     <string name="cached_songs_empty">אין עדיין שירים במטמון. שירים שתנגן מ-YouTube או מ-JioSaavn יופיעו כאן.</string>
+    <string name="cached_song_partial">חלקי</string>
+    <string name="remove_from_cache">הסרה מהמטמון</string>
+    <string name="cached_song_remove">הסרה</string>
+    <string name="removed_from_cache">הוסר ממטמון השירים</string>
     <string name="show_cache_folder">הצג תיקיית שירים במטמון</string>
     <string name="show_cache_folder_subtitle">מוסיף לספרייה תיקייה עם שירי YouTube ו-JioSaavn שנשמרו במטמון</string>
     <string name="song_cache_unlimited">ללא הגבלה</string>
@@ -1316,6 +1320,10 @@
     <string name="replay_songs_end_week"> מילאו את השבוע שלך.</string>
     <string name="replay_summary_end_week">שבוע</string>
     <string name="replay_this_week">השבוע</string>
+    <string name="replay_period_weekly">שבועי</string>
+    <string name="replay_period_monthly">חודשי</string>
+    <string name="replay_period_yearly">שנתי</string>
+    <string name="replay_period_lifetime">כל הזמן</string>
     <string name="onboarding_title">מיליוני שירים, בסטרימינג ב-Laya</string>
     <string name="onboarding_name_prompt">איך לקרוא לך?</string>
     <string name="onboarding_name_hint">השם שלך</string>
@@ -1360,4 +1368,13 @@
     <string name="wear_os_code_hint">קוד צימוד</string>
     <string name="wear_os_done">סיום</string>
     <string name="signed_by">נחתם על ידי %1$s</string>
+    <string name="song_info">מידע על השיר</string>
+    <string name="song_info_album">אלבום</string>
+    <string name="song_info_release_date">תאריך יציאה</string>
+    <string name="song_info_views">השמעות / צפיות</string>
+    <string name="song_info_likes">לייקים</string>
+    <string name="song_info_comments">תגובות</string>
+    <string name="song_info_unavailable">לא זמין</string>
+    <string name="song_info_error">לא ניתן לטעון חלק מהמידע.</string>
+    <string name="song_info_retry">ניסיון חוזר</string>
 </resources>

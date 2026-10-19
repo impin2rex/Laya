@@ -35,6 +35,7 @@ import com.music.laya.ui.screens.MoodGenrePlaylistsScreen
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.data.NerdStats
 import com.music.laya.playback.PlaybackPosition
+import com.music.laya.playback.QueueBuilder
 import com.music.laya.playback.QueueSource
 import com.music.laya.playback.QueueTimeline
 import com.music.laya.playback.QueueTimeline.asQueueEntry
@@ -1174,7 +1175,11 @@ fun LayaDesktopApp() {
      * than fetched — nothing about it depends on the tracks or the account. Albums and playlists
      * only: an artist's is a channel link, not a release.
      */
+    /** A playlist saved on this computer — a Spotify import made signed out — has no YouTube Music page. */
+    fun isLocalPlaylist(collection: DesktopCollection) = playlists.any { it.id == collection.browseId }
+
     fun shareCollection(collection: DesktopCollection) {
+        if (isLocalPlaylist(collection)) return
         val id = collection.browseId
         val url = when (collection.type) {
             BrowseType.PLAYLIST -> "https://music.youtube.com/playlist?list=${id.removePrefix("VL")}"
@@ -1329,7 +1334,16 @@ fun LayaDesktopApp() {
                     }
                     if (playFirst) DesktopListenTogether.next()
                 } else {
-                    liveQueue = liveQueue.append(queuedSuggestions)
+                    // The queue may have changed while the station was out — a radio started
+                    // on this same track is the usual case — so check against what is queued
+                    // now, not the snapshot the request was built from.
+                    val room = MAX_QUEUED_AUTOPLAY -
+                        liveQueue.songs.drop(liveQueue.index + 1).count { it.fromAutoplay }
+                    val fresh = queuedSuggestions
+                        .filterNot { song -> liveQueue.songs.any { QueueBuilder.isSameRecording(it, song) } }
+                        .take(room.coerceAtLeast(0))
+                    if (fresh.isEmpty()) return@launch
+                    liveQueue = liveQueue.append(fresh)
                     saveQueue()
                     // The mix continues from where it was added rather than starting a queue of
                     // its own.
@@ -4098,6 +4112,7 @@ fun LayaDesktopApp() {
                             onRename = { overlays.rename = true }.takeIf { openedCollection?.owned == true },
                             onShare = openedCollection
                                 ?.takeIf { it.type == BrowseType.ALBUM || it.type == BrowseType.PLAYLIST }
+                                ?.takeUnless(::isLocalPlaylist)
                                 ?.let { collection -> { shareCollection(collection) } },
                             onDelete = { overlays.delete = true }.takeIf { openedCollection?.owned == true },
                             onReorder = { overlays.reorder = true }.takeIf {

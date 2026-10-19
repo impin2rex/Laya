@@ -293,7 +293,8 @@ fun SettingsScreen(
 
     // Filters the rows below — see [SettingsSearch]. Blank shows everything,
     // exactly as if the field weren't there.
-    var searchQuery by remember { mutableStateOf("") }
+    // Saveable so a search survives a trip into one of the pages it found.
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     var picking by remember { mutableStateOf<QualityTarget?>(null) }
     var pickingDownloadQuality by remember { mutableStateOf(false) }
     var pickingAutomixPerformance by remember { mutableStateOf(false) }
@@ -384,9 +385,10 @@ fun SettingsScreen(
     val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
     var isFirstSearchComposition by remember { mutableStateOf(true) }
     LaunchedEffect(searchQuery) {
-        if (isFirstSearchComposition && searchQuery.isEmpty()) {
-            // Skip the initial composition during Activity recreation:
-            // rememberSaveable already restored the scroll position.
+        if (isFirstSearchComposition) {
+            // Skip the initial composition — on Activity recreation, and on
+            // coming back from a page opened here: rememberSaveable already
+            // restored the scroll position and the query it belongs to.
             isFirstSearchComposition = false
         } else {
             isFirstSearchComposition = false

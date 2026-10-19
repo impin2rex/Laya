@@ -1,16 +1,18 @@
 package com.music.laya.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,6 +43,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -54,10 +59,16 @@ import com.music.laya.data.model.Song
 import com.music.laya.data.model.UiState
 import com.music.laya.data.model.UserPlaylist
 import com.music.laya.data.model.artworkAt
+import com.music.laya.ui.theme.ArtworkPalette
 
 /**
  * Rearranges one of the account's playlists: every entry with a handle to drag
  * it by, and nothing sent until Save.
+ *
+ * Drawn in place of the playlist page's own track list, on that page's
+ * artwork colours ([palette]), rather than in a sheet over it — the page is
+ * already the playlist, and a sheet's own drag-to-dismiss was one more
+ * gesture competing with the rows'. Back closes it, as the X does.
  *
  * Held locally and saved as one edit, rather than sent a move at a time while
  * dragging, because a drag passes through a dozen positions on the way to the
@@ -68,19 +79,22 @@ import com.music.laya.data.model.artworkAt
  * list to start from. [saving] holds the form while the edit is out.
  */
 @Composable
-fun ReorderPlaylistSheet(
+fun ReorderPlaylistPage(
     playlist: UserPlaylist,
     entries: UiState<List<Song>>,
     saving: Boolean,
+    palette: ArtworkPalette,
     onSave: (List<Song>) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
+    BackHandler(onBack = onClose)
     val original = (entries as? UiState.Success)?.data.orEmpty()
     val order = remember(original) { mutableStateListOf<Song>().apply { addAll(original) } }
     val changed = order.map { it.setVideoId } != original.map { it.setVideoId }
 
-    Column(modifier.fillMaxWidth().navigationBarsPadding()) {
+    Column(modifier.fillMaxSize().padding(top = topBarContentPadding())) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -91,32 +105,46 @@ fun ReorderPlaylistSheet(
                 Icon(
                     Icons.Rounded.Close,
                     contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = palette.onBackground,
                 )
             }
             Column(Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.reorder_songs),
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = palette.onBackground,
                 )
                 Text(
                     text = playlist.title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = palette.onBackgroundVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Button(onClick = { onSave(order.toList()) }, enabled = changed && !saving) {
+            // The page's filled pill — white with dark text, as its Play is.
+            Button(
+                onClick = { onSave(order.toList()) },
+                enabled = changed && !saving,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black,
+                    disabledContainerColor = Color.White.copy(alpha = 0.16f),
+                    disabledContentColor = palette.onBackgroundVariant,
+                ),
+            ) {
                 if (saving) {
-                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        color = palette.onBackground,
+                        modifier = Modifier.size(16.dp),
+                    )
                 } else {
                     Text(stringResource(R.string.save_order))
                 }
             }
         }
-        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+        HorizontalDivider(thickness = 0.5.dp, color = palette.divider)
 
         when (entries) {
             UiState.Loading -> Box(
@@ -125,17 +153,21 @@ fun ReorderPlaylistSheet(
                     .height(200.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(strokeWidth = 2.5.dp, modifier = Modifier.size(26.dp))
+                CircularProgressIndicator(
+                    strokeWidth = 2.5.dp,
+                    color = palette.onBackground,
+                    modifier = Modifier.size(26.dp),
+                )
             }
 
             is UiState.Error -> Text(
                 text = entries.message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = palette.onBackgroundVariant,
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
             )
 
-            is UiState.Success -> ReorderableSongList(order, enabled = !saving)
+            is UiState.Success -> ReorderableSongList(order, enabled = !saving, palette, contentPadding)
         }
     }
 }
@@ -151,7 +183,12 @@ fun ReorderPlaylistSheet(
  * the finger rather than jumping with the swap.
  */
 @Composable
-private fun ReorderableSongList(order: MutableList<Song>, enabled: Boolean) {
+private fun ReorderableSongList(
+    order: MutableList<Song>,
+    enabled: Boolean,
+    palette: ArtworkPalette,
+    contentPadding: PaddingValues,
+) {
     val listState = rememberLazyListState()
     var held by remember { mutableStateOf<String?>(null) }
     var offset by remember { mutableFloatStateOf(0f) }
@@ -166,12 +203,16 @@ private fun ReorderableSongList(order: MutableList<Song>, enabled: Boolean) {
         val dragged = items.firstOrNull { it.key == key } ?: return
         val top = dragged.offset + offset
         val center = top + dragged.size / 2f
+        // Songs only: the footer after the last row is a list item too, and
+        // carrying a row onto it would move it to an index past the end.
         val target = items.firstOrNull { item ->
-            item.key != key && center >= item.offset && center <= item.offset + item.size
+            item.key != key && item.index < order.size &&
+                center >= item.offset && center <= item.offset + item.size
         }
         if (target != null) {
             val from = dragged.index
             val to = target.index
+            if (from !in order.indices) return
             // LazyColumn holds its place by the key of the first visible row;
             // moving that row would drag the whole list along with it, so the
             // current position is pinned explicitly across the swap.
@@ -213,7 +254,7 @@ private fun ReorderableSongList(order: MutableList<Song>, enabled: Boolean) {
         }
     }
 
-    LazyColumn(state = listState, modifier = Modifier.fillMaxWidth()) {
+    LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
         itemsIndexed(order, key = { _, song -> song.setVideoId ?: song.videoId }) { _, song ->
             val key = song.setVideoId ?: song.videoId
             val dragging = held == key
@@ -227,6 +268,7 @@ private fun ReorderableSongList(order: MutableList<Song>, enabled: Boolean) {
             }
             ReorderRow(
                 song = song,
+                palette = palette,
                 lifted = dragging,
                 enabled = enabled,
                 onDragStart = start,
@@ -245,6 +287,7 @@ private fun ReorderableSongList(order: MutableList<Song>, enabled: Boolean) {
 @Composable
 private fun ReorderRow(
     song: Song,
+    palette: ArtworkPalette,
     lifted: Boolean,
     enabled: Boolean,
     onDragStart: () -> Unit,
@@ -270,9 +313,8 @@ private fun ReorderRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                if (lifted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.background,
-            )
+            // Opaque when lifted: it is drawn over the rows it passes.
+            .background(if (lifted) palette.elevated.compositeOver(palette.background) else Color.Transparent)
             .then(gestures)
             .padding(start = 22.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -284,19 +326,19 @@ private fun ReorderRow(
                 .size(44.dp)
                 .clip(RoundedCornerShape(7.dp))
                 .thumbnailBorder(RoundedCornerShape(7.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(palette.elevated),
         )
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             ExplicitSongTitle(
                 song = song,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = palette.onBackground,
             )
             Text(
                 text = song.artist,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = palette.onBackgroundVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -304,7 +346,7 @@ private fun ReorderRow(
         Icon(
             imageVector = Icons.Rounded.DragHandle,
             contentDescription = stringResource(R.string.drag_to_reorder),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = palette.onBackgroundVariant,
             modifier = Modifier
                 .size(48.dp)
                 .padding(12.dp)

@@ -1234,6 +1234,10 @@
     <string name="cached_songs">已快取的歌曲</string>
     <string name="cached_songs_subtitle">歌曲快取中的 YouTube 和 JioSaavn 歌曲</string>
     <string name="cached_songs_empty">還沒有已快取的歌曲。你從 YouTube 或 JioSaavn 播放的歌曲會顯示在這裡。</string>
+    <string name="cached_song_partial">部分</string>
+    <string name="remove_from_cache">從快取中移除</string>
+    <string name="cached_song_remove">移除</string>
+    <string name="removed_from_cache">已從歌曲快取中移除</string>
     <string name="show_cache_folder">顯示已快取歌曲資料夾</string>
     <string name="show_cache_folder_subtitle">在資料庫中新增一個資料夾，列出歌曲快取中儲存的 YouTube 和 JioSaavn 歌曲</string>
     <string name="song_cache_unlimited">無限制</string>
@@ -1281,6 +1285,10 @@
     <string name="replay_songs_end_week"> 填滿了你的這一週。</string>
     <string name="replay_summary_end_week">週</string>
     <string name="replay_this_week">本週</string>
+    <string name="replay_period_weekly">每週</string>
+    <string name="replay_period_monthly">每月</string>
+    <string name="replay_period_yearly">每年</string>
+    <string name="replay_period_lifetime">全部</string>
     <string name="onboarding_title">數百萬首歌曲，在 Laya 上暢聽</string>
     <string name="onboarding_name_prompt">我們該怎麼稱呼你？</string>
     <string name="onboarding_name_hint">你的名字</string>
@@ -1325,11 +1333,20 @@
     <string name="wear_os_code_hint">配對碼</string>
     <string name="wear_os_done">完成</string>
     <string name="spotify_use_spdc_token">使用 sp_dc 權杖</string>
+    <string name="song_info">歌曲資訊</string>
+    <string name="song_info_album">專輯</string>
+    <string name="song_info_release_date">發行日期</string>
+    <string name="song_info_views">播放 / 觀看次數</string>
+    <string name="song_info_likes">喜歡次數</string>
+    <string name="song_info_comments">留言數</string>
+    <string name="song_info_unavailable">暫無資訊</string>
+    <string name="song_info_error">部分資訊無法載入。</string>
+    <string name="song_info_retry">重試</string>
     <string name="artist_signatures">藝人簽名</string>
     <string name="artist_signatures_subtitle">當 Apple Music 沒有標題標誌時顯示手寫簽名</string>
     <string name="artist_signatures_url">簽名 API 網址</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
-    <string name="artist_signatures_unconfigured">尚未設定 — 點按以設定 API 網址</string>
+    <string name="artist_signatures_unconfigured">尚未設定 — 點選以設定 API 網址</string>
     <string name="artist_signatures_test_failed">無法連線至該網址的 API</string>
-    <string name="signed_by">簽名：%1$s</string>
+    <string name="signed_by">%1$s 的簽名</string>
 </resources>

@@ -26,6 +26,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -1766,6 +1767,12 @@ internal fun LyricsPanel(
     onPickLine: (Int) -> Unit = {},
     /** Tap while picking: add or drop that line. */
     onTogglePick: (Int) -> Unit = {},
+    /**
+     * Holds the sung line in the middle of the panel rather than at its top.
+     * For the wide layouts — TV, landscape, tablet — where a column of lyrics
+     * read from its top edge leaves most of the screen below the words.
+     */
+    centerFocus: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val panelPlaying = isPlaying && active
@@ -1907,6 +1914,20 @@ internal fun LyricsPanel(
     // every line while the reader's place in the song is unchanged, and a reset
     // here would snap the panel back to the top mid-read.
     var placed by remember(trackKey) { mutableStateOf(false) }
+    // Unsynced text has no line to hold anywhere, and centred it would only
+    // open with half a screen of nothing above the first verse.
+    val centered = centerFocus && isSynced
+    // Where a row [size] tall has to sit, in the list's own item offsets, to be
+    // the line being read: its top on the top padding, or its middle on the
+    // middle of the viewport.
+    val focusOffset: (Int) -> Int = { size ->
+        if (!centered) {
+            0
+        } else {
+            val info = listState.layoutInfo
+            (info.viewportStartOffset + info.viewportEndOffset) / 2 - size / 2
+        }
+    }
     // Nothing resets [browsing] off [controlsOpen] any more. It used to, so
     // that tapping the controls back resumed following — but the controls now
     // also come back by scrolling up, and clearing the flag there handed the
@@ -1919,12 +1940,24 @@ internal fun LyricsPanel(
         if (active && isSynced && !browsing &&
             focusLine >= 0 && focusLine in lines.indices
         ) {
-            snapshotFlow { listState.layoutInfo.viewportSize.height }.first { it > 0 }
-            // Keep the same top anchor whether the playback controls are visible or hidden.
+            // Centred, the top padding is half the viewport, and it only exists
+            // a frame after the viewport does. Placing against the frame before
+            // it lands would leave the line that whole padding off centre.
+            snapshotFlow { listState.layoutInfo }.first {
+                it.viewportSize.height > 0 && (!centered || it.beforeContentPadding > 0)
+            }
+            // Keep the same anchor whether the playback controls are visible or hidden.
             val visible = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == focusLine }
             when {
                 !placed -> {
-                    listState.scrollToItem(focusLine, scrollOffset = 0)
+                    listState.scrollToItem(focusLine, scrollOffset = -focusOffset(0))
+                    // The row's height is only known once it is laid out, and
+                    // centring needs half of it.
+                    if (centered) {
+                        listState.layoutInfo.visibleItemsInfo
+                            .firstOrNull { it.index == focusLine }
+                            ?.let { listState.scrollBy((it.offset - focusOffset(it.size)).toFloat()) }
+                    }
                     placed = true
                 }
                 // Already on screen, which is the ordinary case of handing over
@@ -1933,20 +1966,35 @@ internal fun LyricsPanel(
                 // list's default spring.
                 visible != null -> {
                     val span = scrollLead(lines, clock.longValue).toInt()
-                    run = ScrollRun(run.id + 1, visible.offset.toFloat(), span)
+                    val distance = (visible.offset - focusOffset(visible.size)).toFloat()
+                    run = ScrollRun(run.id + 1, distance, span)
                     // The same curve the rows catch up on. Two different
                     // curves and a row with no delay at all still trails the
                     // list it is sitting in, which is most of the way to
                     // looking like the panel cannot keep up with itself.
                     listState.animateScrollBy(
-                        value = visible.offset.toFloat(),
+                        value = distance,
                         animationSpec = tween(durationMillis = span, easing = LYRIC_EASING),
                     )
                 }
                 // Somewhere off screen — after a seek, or a long instrumental
                 // scrolled past. How far is not known without laying the rows
                 // out, so this hands back to the list's own staged scroll.
-                else -> listState.animateScrollToItem(focusLine, scrollOffset = 0)
+                else -> {
+                    listState.animateScrollToItem(focusLine, scrollOffset = -focusOffset(0))
+                    // That lands the row's top on the middle; the last half
+                    // line is settled once its height is known.
+                    if (centered) {
+                        listState.layoutInfo.visibleItemsInfo
+                            .firstOrNull { it.index == focusLine }
+                            ?.let {
+                                listState.animateScrollBy(
+                                    value = (it.offset - focusOffset(it.size)).toFloat(),
+                                    animationSpec = tween(LYRIC_SETTLE_MS, easing = LYRIC_EASING),
+                                )
+                            }
+                    }
+                }
             }
         }
     }
@@ -1984,8 +2032,14 @@ internal fun LyricsPanel(
         // Each row carries GLOW_ROOM of its own inset for the halo, so the
         // list hands that much back — otherwise the lines would sit a glow's
         // width further apart and further in than they used to.
+        // Centred, half the viewport above the first line, so that it too can
+        // be brought to the middle.
         contentPadding = PaddingValues(
-            top = 40.dp - GLOW_ROOM,
+            top = if (centered) {
+                with(LocalDensity.current) { viewportHeight.toDp() } * 0.5f
+            } else {
+                40.dp - GLOW_ROOM
+            },
             bottom = with(LocalDensity.current) { viewportHeight.toDp() } * 0.8f,
             start = PLAYER_GUTTER - GLOW_ROOM,
             end = PLAYER_GUTTER - GLOW_ROOM,

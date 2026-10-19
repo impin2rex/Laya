@@ -151,12 +151,16 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // one to hand — see SpotifyToken's doc for why.
         SpotifyToken.init(this)
         // A sideloaded update is just a new APK over the old one, so app data —
-        // including whatever the old build left in these caches — survives it
-        // untouched. Wipe both on the first launch of a higher versionCode so a
-        // format or key change between builds can't serve stale or mismatched
-        // bytes from a cache the new code didn't write.
+        // including whatever the old build left in the image cache — survives
+        // it untouched. Wipe that on the first launch of a higher versionCode so
+        // a format change between builds can't serve stale bytes.
+        //
+        // The song cache is deliberately *not* wiped here any more. It is the
+        // Cached songs folder and what plays offline, and clearing it on every
+        // update is what made the whole folder disappear overnight whenever a
+        // new build was installed. A build that really does change its keys or
+        // its bytes says so through AudioCache's own cache format instead.
         if (AppSettings.consumeVersionUpdate(BuildConfig.VERSION_CODE)) {
-            AudioCache.clear()
             SingletonImageLoader.get(this).let { loader ->
                 loader.memoryCache?.clear()
                 loader.diskCache?.clear()

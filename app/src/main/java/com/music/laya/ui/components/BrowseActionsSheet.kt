@@ -157,7 +157,7 @@ fun BrowseActionsSheet(
     onTogglePin: (() -> Unit)? = null,
     onRename: ((String) -> Unit)? = null,
     /**
-     * Opens the reorder sheet for one of the account's own playlists — set
+     * Opens the reorder page for one of the account's own playlists — set
      * under the same rule as [onRename], since YouTube refuses to rearrange a
      * playlist the account only saved.
      */

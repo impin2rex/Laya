@@ -1235,6 +1235,10 @@
     <string name="cached_songs">キャッシュ済みの曲</string>
     <string name="cached_songs_subtitle">曲キャッシュ内のYouTubeとJioSaavnの曲</string>
     <string name="cached_songs_empty">キャッシュ済みの曲はまだありません。YouTubeやJioSaavnで再生した曲がここに表示されます。</string>
+    <string name="cached_song_partial">一部のみ</string>
+    <string name="remove_from_cache">キャッシュから削除</string>
+    <string name="cached_song_remove">削除</string>
+    <string name="removed_from_cache">曲のキャッシュから削除しました</string>
     <string name="show_cache_folder">キャッシュ済みの曲フォルダを表示</string>
     <string name="show_cache_folder_subtitle">曲キャッシュに保存されたYouTubeとJioSaavnの曲のフォルダをライブラリに追加します</string>
     <string name="song_cache_unlimited">無制限</string>
@@ -1289,6 +1293,10 @@
     <string name="replay_songs_end_week">があなたの1週間を彩りました。</string>
     <string name="replay_summary_end_week">週</string>
     <string name="replay_this_week">今週</string>
+    <string name="replay_period_weekly">週間</string>
+    <string name="replay_period_monthly">月間</string>
+    <string name="replay_period_yearly">年間</string>
+    <string name="replay_period_lifetime">全期間</string>
     <string name="onboarding_title">数百万曲を Laya でストリーミング</string>
     <string name="onboarding_name_prompt">どうお呼びしましょうか?</string>
     <string name="onboarding_name_hint">あなたの名前</string>
@@ -1333,4 +1341,13 @@
     <string name="wear_os_code_hint">ペア設定コード</string>
     <string name="wear_os_done">完了</string>
     <string name="signed_by">%1$s のサイン</string>
+    <string name="song_info">曲の情報</string>
+    <string name="song_info_album">アルバム</string>
+    <string name="song_info_release_date">リリース日</string>
+    <string name="song_info_views">再生回数 / 視聴回数</string>
+    <string name="song_info_likes">高評価</string>
+    <string name="song_info_comments">コメント</string>
+    <string name="song_info_unavailable">情報なし</string>
+    <string name="song_info_error">一部の情報を読み込めませんでした。</string>
+    <string name="song_info_retry">再試行</string>
 </resources>

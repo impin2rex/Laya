@@ -391,18 +391,21 @@ class AddonSource(
                     .lowercase(Locale.ROOT).takeIf { it in AUDIO_CODECS }
             }
 
+        // The tier's own published meaning is the last resort and only for
+        // the lossy rungs, where "HIGH" is a statement of 320 and the
+        // number is what says "this is not what you asked for". Flagged, so
+        // stats for nerds measures the stream instead of repeating the tier.
+        val tierKbps = when (tier) {
+            AddonClient.TIER_HIGH -> 320
+            AddonClient.TIER_LOW -> 128
+            else -> null
+        }
         return StreamFormat(
             codec = codec,
-            // The tier's own published meaning is the last resort and only for
-            // the lossy rungs, where "HIGH" is a statement of 320 and the
-            // number is what says "this is not what you asked for".
-            kbps = answer.kbps ?: when (tier) {
-                AddonClient.TIER_HIGH -> 320
-                AddonClient.TIER_LOW -> 128
-                else -> null
-            },
+            kbps = answer.kbps ?: tierKbps,
             sampleRateHz = answer.sampleRateHz,
             bitDepth = answer.bits,
+            kbpsInferred = answer.kbps == null && tierKbps != null,
         )
     }
 

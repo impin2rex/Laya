@@ -174,6 +174,7 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.roundToInt
+import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import java.util.Locale
@@ -736,6 +737,10 @@ class PlaybackService : MediaLibraryService() {
     private var boundedEditState = BoundedQueueEditState()
 
     private val localBitrateCache = ConcurrentHashMap<String, Int>()
+
+    /** [measuredStreamKbps]'s answers, keyed by rendition URI, and the ones still being read. */
+    private val measuredBitrateCache = ConcurrentHashMap<String, Int>()
+    private val measuringBitrate: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     /**
      * The stream resolver the player's own data source runs, kept so a Cast
@@ -1301,6 +1306,7 @@ class PlaybackService : MediaLibraryService() {
         // state lives.
         NerdStats.forgetLastSession()
         localBitrateCache.clear()
+        measuredBitrateCache.clear()
         QualityUpgrade.forgetLastSession()
 
         setMediaNotificationProvider(
@@ -2084,11 +2090,14 @@ class PlaybackService : MediaLibraryService() {
 
             beginRadioQueue()
             val currentIndex = activePlayer.currentMediaItemIndex
-            if (currentIndex + 1 < activePlayer.mediaItemCount) {
-                activePlayer.removeMediaItems(currentIndex + 1, activePlayer.mediaItemCount)
+            // Station first, old tail after, so the current track is never
+            // briefly last and AutoPlay does not append this radio again.
+            activePlayer.addMediaItems(currentIndex + 1, related.map { it.toMediaItem() })
+            val oldTail = currentIndex + 1 + related.size
+            if (oldTail < activePlayer.mediaItemCount) {
+                activePlayer.removeMediaItems(oldTail, activePlayer.mediaItemCount)
             }
             if (currentIndex > 0) activePlayer.removeMediaItems(0, currentIndex)
-            activePlayer.addMediaItems(1, related.map { it.toMediaItem() })
             saveQueueSnapshotImmediately(activePlayer)
         }
     }
@@ -2613,7 +2622,7 @@ class PlaybackService : MediaLibraryService() {
             if (window.currentCanonicalIndex != anchor) window.jumpTo(anchor)
         }
         if (edit.desiredShuffle != null) {
-            window.setShuffle(edit.desiredShuffle)
+            window.setShuffle(edit.desiredShuffle, shuffleSeed = Random.nextLong())
             QueueShuffle.setEnabled(edit.desiredShuffle)
             AppSettings.setShuffleEnabled(edit.desiredShuffle)
             replaceBoundedUpcoming(exoPlayer, window)
@@ -2695,7 +2704,10 @@ class PlaybackService : MediaLibraryService() {
         val selectedIndex = registered.songs.indexOfFirst { it.contextEntryKey() == selectedKey }
             .takeIf { it >= 0 } ?: 0
         val shuffle = request.shuffle
-        val window = QueueWindow(registered.songs.size).startAt(selectedIndex, shuffle)
+        // A fresh seed per start: the default one is fixed, which gave the
+        // same album the same "shuffled" order every time it was played.
+        val window = QueueWindow(registered.songs.size, shuffleSeed = Random.nextLong())
+            .startAt(selectedIndex, shuffle)
 
         boundedContinuationJob?.cancel()
         boundedContextWindow = window
@@ -3067,7 +3079,19 @@ class PlaybackService : MediaLibraryService() {
                             return@launch
                         }
                     } else {
-                        latestPlayer.addMediaItems(resolved.map { it.toMediaItem() })
+                        // The queue may have changed while the radio request
+                        // was out — a station landing behind it is the usual
+                        // case — so check against what is queued now, not the
+                        // snapshot the batch was picked against.
+                        val queuedNow = (0 until latestPlayer.mediaItemCount)
+                            .map { latestPlayer.getMediaItemAt(it).toSong() }
+                        val room = MAX_QUEUED_AUTOPLAY -
+                            (latestPlayer.currentMediaItemIndex + 1 until latestPlayer.mediaItemCount)
+                                .count { latestPlayer.getMediaItemAt(it).fromAutoplay }
+                        val fresh = resolved
+                            .filterNot { song -> queuedNow.any { QueueBuilder.isSameRecording(it, song) } }
+                            .take(room.coerceAtLeast(0))
+                        if (fresh.isNotEmpty()) latestPlayer.addMediaItems(fresh.map { it.toMediaItem() })
                     }
                     if (AppSettings.dontRepeatSuggestions.value) sessionSongHistory += resolved
                     return@launch
@@ -3451,7 +3475,10 @@ class PlaybackService : MediaLibraryService() {
             saveBoundedContextSnapshot(exoPlayer)
         }
         currentAudioInputFormat = null
-        NerdStats.onTrackTransition()
+        NerdStats.onTrackTransition(mediaItem?.mediaId)
+        // A rendition discarded and fetched again comes back under the same
+        // URI, so a size measured for the last track isn't kept past it.
+        measuredBitrateCache.clear()
         AudioOutputStatus.onTrackTransition()
         // The entry this track is read from now counts as played — the only
         // kind the Cached songs folder lists. See [AudioCache.Origin].
@@ -3760,6 +3787,18 @@ class PlaybackService : MediaLibraryService() {
     }
 
     /**
+     * Whether [error] was the connection's fault rather than the bytes': the
+     * network failed or timed out, a URL had expired, or there was no
+     * connection to begin with. Such a failure says nothing against what is
+     * cached, so recovery keeps every complete entry — see [AudioCache.discard].
+     */
+    private fun isNetworkFault(error: PlaybackException): Boolean =
+        error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ||
+            error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
+            AudioCache.isOffline()
+
+    /**
      * Puts a track that died mid-read back on its feet.
      *
      * Two things get thrown away before trying again, because both have been
@@ -3824,7 +3863,7 @@ class PlaybackService : MediaLibraryService() {
         // again. Rebuild it as an explicit YouTube request instead. This also
         // clears a DASH/HLS MIME left on an upgraded item, which otherwise makes
         // Media3 parse YouTube's WebM bytes as a manifest forever.
-        if (fallbackFailedAlternativeToYouTube(item, uri, position)) return
+        if (fallbackFailedAlternativeToYouTube(item, uri, position, error)) return
         // Giving up on the *retry*, not on everything below it.
         //
         // A track that has exhausted its attempts is not finished with.
@@ -3922,11 +3961,14 @@ class PlaybackService : MediaLibraryService() {
                 QualityUpgrade.refuseUpgrades(videoId)
             }
         uri?.getQueryParameter("v")?.let(StreamChoice::forget)
+        // Read now, not after the delay: it describes the failure, and the
+        // connection may be back by then.
+        val networkFault = isNetworkFault(error)
         scope.launch(TrackLog.about(mediaId)) {
             // Long enough for the released source to let go of the cache keys
             // about to be removed, short enough to read as a stutter.
             delay(RECOVERY_DELAY_MS)
-            uri?.let { withContext(Dispatchers.IO) { AudioCache.discard(it) } }
+            uri?.let { withContext(Dispatchers.IO) { AudioCache.discard(it, keepComplete = networkFault) } }
             // The bytes go even when nothing is going to be prepared after
             // them. A half-filled entry whose owner has just been forgotten is
             // the seam this file's [StreamChoice] note is about: the next play
@@ -3968,6 +4010,7 @@ class PlaybackService : MediaLibraryService() {
         item: MediaItem,
         uri: Uri?,
         position: Long,
+        error: PlaybackException,
     ): Boolean {
         val playbackUri = uri ?: return false
         // A track the listener picked from an addon is that addon's or nothing:
@@ -3994,9 +4037,10 @@ class PlaybackService : MediaLibraryService() {
             about = mediaId,
         )
 
+        val networkFault = isNetworkFault(error)
         scope.launch(TrackLog.about(mediaId)) {
             delay(RECOVERY_DELAY_MS)
-            withContext(Dispatchers.IO) { AudioCache.discard(playbackUri) }
+            withContext(Dispatchers.IO) { AudioCache.discard(playbackUri, keepComplete = networkFault) }
             withContext(Dispatchers.Main) {
                 val live = this@PlaybackService.player ?: return@withContext
                 if (live.currentMediaItem?.mediaId != mediaId) return@withContext
@@ -5712,6 +5756,7 @@ class PlaybackService : MediaLibraryService() {
         val player = player ?: return
         val format = player.audioFormat
         val mediaId = player.currentMediaItem?.mediaId
+        val generation = NerdStats.currentGeneration
         val measured = format?.measure()
         // DSD reaches the renderer already decimated to PCM (DsdExtractor), so
         // its sample mime is `audio/raw`; the extractor leaves `dsd64` and the
@@ -5731,23 +5776,14 @@ class PlaybackService : MediaLibraryService() {
                 Pair((format.bitrate + 500) / 1000, TelemetryProvenance.AUTHORITATIVE)
             mediaId != null && localBitrateCache.containsKey(mediaId) ->
                 Pair(localBitrateCache[mediaId], TelemetryProvenance.AUTHORITATIVE)
-            NerdStats.declaredFormat(mediaId)?.kbps != null ->
-                Pair(NerdStats.declaredFormat(mediaId)?.kbps, TelemetryProvenance.AUTHORITATIVE)
-            // YouTube's figure — it is what [NerdStats.pickedBitrateKbps]
-            // records, and YouTube is never lossless. A FLAC that won the race
-            // (or swapped in) for a YouTube id still has YouTube's walk on
-            // record under that id, which read as "FLAC · 148 kbps".
-            !isLossless && NerdStats.pickedBitrateKbps(mediaId) != null ->
-                Pair(NerdStats.pickedBitrateKbps(mediaId), TelemetryProvenance.AUTHORITATIVE)
-            // Lossless with no stated encoded bitrate: its PCM rate (1411 for
-            // 16-bit/44.1 stereo) is the honest figure, marked as derived.
-            dsd == null && (isRawPcm || isLossless) && pcmDataRate != null ->
+            dsd == null && isRawPcm && pcmDataRate != null ->
                 Pair(pcmDataRate, TelemetryProvenance.DERIVED)
             else ->
-                Pair(null, TelemetryProvenance.UNKNOWN)
+                NerdStats.sourceBitrate(mediaId) { measuredStreamKbps(player) }
+                    ?: Pair(null, TelemetryProvenance.UNKNOWN)
         }
 
-        NerdStats.current.value = NerdStats.Snapshot(
+        NerdStats.publish(NerdStats.Snapshot(
             mimeType = dsd?.let { "audio/$it" } ?: format?.sampleMimeType,
             bitrateKbps = bitrate,
             bitrateProvenance = provenance,
@@ -5762,7 +5798,41 @@ class PlaybackService : MediaLibraryService() {
                 "audio/x-dff" -> "DFF"
                 else -> null
             },
-        )
+            mediaId = mediaId,
+        ), expectedGeneration = generation)
+    }
+
+    /**
+     * The playing stream's real bitrate: its full size over its length, or
+     * null until both are known.
+     *
+     * For an addon that didn't state a bitrate and got one guessed from the
+     * tier it was asked for — see [NerdStats.sourceBitrate]. The size is what
+     * the server's response said, recorded in the cache index the first time
+     * the rendition was opened, so this works on a stream still downloading.
+     * Slightly high, because container overhead counts toward the bytes and
+     * not toward the audio. Read off the main thread, once per rendition: the
+     * cache index lookup takes the cache's lock, which a loader may be holding.
+     */
+    private fun measuredStreamKbps(player: Player): Int? {
+        val uri = player.currentMediaItem?.localConfiguration?.uri ?: return null
+        val key = uri.toString()
+        measuredBitrateCache[key]?.let { return it }
+        val durationMs = player.duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: return null
+        if (measuringBitrate.add(key)) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val bytes = AudioCache.contentLengthOf(uri)
+                    if (bytes > 0) {
+                        val kbps = (bytes * 8 / durationMs).toInt()
+                        if (kbps > 0) measuredBitrateCache[key] = kbps
+                    }
+                } finally {
+                    measuringBitrate.remove(key)
+                }
+            }
+        }
+        return null
     }
 
     /** Serialize only the bounded window needed for a future cold-start resume. */
@@ -7357,6 +7427,7 @@ class PlaybackService : MediaLibraryService() {
         AudioOutputStatus.reset()
         NerdStats.forgetLastSession()
         localBitrateCache.clear()
+        measuredBitrateCache.clear()
         super.onDestroy()
     }
 
