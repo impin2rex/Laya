@@ -21,6 +21,8 @@ jobs:
     env:
       LISTEN_TOGETHER_SERVER: ${{ secrets.LISTEN_TOGETHER_SERVER }}
       SIGNATURE_API_URL: ${{ secrets.SIGNATURE_API_URL }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+      LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
     steps:
     - name: Checkout Repository
@@ -48,39 +50,39 @@ jobs:
       id: version
       shell: bash
       run: |
-        version=$(sed -n 's/.*extra\["bitchordVersionName"\] = "\(.*\)".*/\1/p' build.gradle.kts | head -1)
+        version=$(sed -n 's/.*extra\["layaVersionName"\] = "\(.*\)".*/\1/p' build.gradle.kts | head -1)
         echo "value=$version" >> "$GITHUB_OUTPUT"
         echo "Building $version"
 
     - name: Tests
-      run: .\gradlew.bat :shared:jvmTest :desktopApp:test "-Pbitchord.version=${{ steps.version.outputs.value }}"
+      run: .\gradlew.bat :shared:jvmTest :desktopApp:test "-Playa.version=${{ steps.version.outputs.value }}"
 
     # createDistributable alongside, as in release.yml: packageExe alone leaves
     # no app image at binaries/main/app, which the check below reads the jar from.
     - name: Build EXE
-      run: .\gradlew.bat :desktopApp:packageExe :desktopApp:createDistributable "-Pbitchord.version=${{ steps.version.outputs.value }}"
+      run: .\gradlew.bat :desktopApp:packageExe :desktopApp:createDistributable "-Playa.version=${{ steps.version.outputs.value }}"
 
     # A build that silently drops a native piece still produces an .exe; this
     # is what says the Automix analyser and media controls made it in.
     - name: The analyser and models are in the jar
       shell: bash
       run: |
-        jar=$(ls desktopApp/build/compose/binaries/main/app/BitChord/app/desktopApp*.jar)
-        jar tf "$jar" | grep -q 'native/bitchord_analysis.dll'
+        jar=$(ls desktopApp/build/compose/binaries/main/app/Laya/app/desktopApp*.jar)
+        jar tf "$jar" | grep -q 'native/laya_analysis.dll'
         jar tf "$jar" | grep -q 'models/.*\.onnx'
-        jar tf "$jar" | grep -q 'native/bitchord_smtc.dll'
+        jar tf "$jar" | grep -q 'native/laya_smtc.dll'
 
     - name: Name the installer
       shell: pwsh
       run: |
         $v = "${{ steps.version.outputs.value }}"
         New-Item -ItemType Directory -Force dist | Out-Null
-        Copy-Item desktopApp/build/compose/binaries/main/exe/*.exe "dist/BitChord-$v-windows-x64-setup.exe"
+        Copy-Item desktopApp/build/compose/binaries/main/exe/*.exe "dist/Laya-$v-windows-x64-setup.exe"
         Get-ChildItem dist | Format-Table Name, Length
 
     - name: Upload EXE Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: bitchord-windows-x64-exe
+        name: laya-windows-x64-exe
         path: dist/*.exe
         if-no-files-found: error

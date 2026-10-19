@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BitChord</string>
+    <string name="app_name">Laya</string>
     <string name="playback_channel_name">এখন চলছে</string>
     <string name="download_channel_name">ডাউনলোড</string>
     <string name="download_channel_description">আপনার Music ফোল্ডারে যে গানগুলো সেভ হচ্ছে</string>
@@ -37,7 +37,7 @@
     <string name="auto_recents">সাম্প্রতিক</string>
     <string name="auto_liked">পছন্দের গান</string>
     <string name="auto_login_title">আপনার ফোনে YouTube-এ সাইন ইন করুন</string>
-    <string name="auto_login_subtitle">সাইন ইন করতে ফোনে BitChord খুলুন</string>
+    <string name="auto_login_subtitle">সাইন ইন করতে ফোনে Laya খুলুন</string>
     <string name="auto_empty_recents_title">সাম্প্রতিক কোনো গান নেই</string>
     <string name="auto_empty_recents_subtitle">আপনি যে গান চালাবেন, সেগুলো এখানে দেখা যাবে</string>
     <string name="auto_empty_quick_picks_title">কোনো সাজেশন নেই</string>
@@ -122,10 +122,10 @@
     <string name="dolby_atmos_open_failed">Dolby Atmos সেটিংস খোলা গেল না</string>
     <string name="update_available">আপডেট এসেছে: v%1$s</string>
     <string name="software_update">সফটওয়্যার আপডেট</string>
-    <string name="update_available_body">bitchord %1$s ডাউনলোডের জন্য তৈরি।</string>
-    <string name="update_downloading_body">bitchord %1$s ডাউনলোড হচ্ছে…</string>
-    <string name="update_ready_body">bitchord %1$s ইনস্টলের জন্য তৈরি।</string>
-    <string name="update_failed_body">bitchord %1$s ডাউনলোড করা গেল না।</string>
+    <string name="update_available_body">laya %1$s ডাউনলোডের জন্য তৈরি।</string>
+    <string name="update_downloading_body">laya %1$s ডাউনলোড হচ্ছে…</string>
+    <string name="update_ready_body">laya %1$s ইনস্টলের জন্য তৈরি।</string>
+    <string name="update_failed_body">laya %1$s ডাউনলোড করা গেল না।</string>
     <string name="download_now">এখনই ডাউনলোড করুন</string>
     <string name="install_now">এখনই ইনস্টল করুন</string>
     <string name="later">পরে</string>
@@ -143,7 +143,7 @@
     <string name="personalized_recommendations">আপনার জন্য বাছাই করা সাজেশন পান</string>
     <string name="play_next">এর পরে চালান</string>
     <string name="queue">কিউ</string>
-    <string name="source_unrecognised">লিংকটি কী, BitChord বুঝতে পারেনি</string>
+    <string name="source_unrecognised">লিংকটি কী, Laya বুঝতে পারেনি</string>
     <string name="source_already_added">আগেই %1$s হিসেবে যোগ করা আছে</string>
     <string name="source_setup_required">সেটআপ শেষ করতে ট্যাপ করুন</string>
     <string name="source_skipped_by_quality">%1$s-এ ব্যবহার হচ্ছে না · কোয়ালিটি %2$s-এ সেট করা আছে</string>
@@ -160,7 +160,7 @@
     <string name="widget_previous">আগের</string>
     <string name="widget_artwork">অ্যালবাম আর্ট</string>
     <string name="widget_nothing_played">এখনও কিছু চালানো হয়নি</string>
-    <string name="widget_open_bitchord">BitChord খুলুন</string>
+    <string name="widget_open_laya">Laya খুলুন</string>
     <string name="widget_preview_title">গানের নাম</string>
     <string name="widget_preview_artist">শিল্পী</string>
     <string name="download_quality">ডাউনলোড কোয়ালিটি</string>
@@ -190,7 +190,7 @@
     <string name="cancel_all">সব বাতিল করুন</string>
     <string name="language">ভাষা</string>
     <string name="app_language">অ্যাপের ভাষা</string>
-    <string name="app_language_description">BitChord কোন ভাষায় চলবে, বেছে নিন।</string>
+    <string name="app_language_description">Laya কোন ভাষায় চলবে, বেছে নিন।</string>
     <string name="english">ইংরেজি</string>
     <string name="spanish">স্প্যানিশ</string>
     <string name="french">ফরাসি</string>
@@ -248,7 +248,7 @@
     <string name="skip_silence_subtitle">এক সেকেন্ডের বেশি ফাঁক ছেঁটে দেয়</string>
     <string name="equalizer">ইকুয়ালাইজার</string>
     <string name="equalizer_subtitle">টোন, সাতটা ব্যান্ড আর ব্যালান্স</string>
-    <string name="equalizer_footer">সিস্টেমে পৌঁছনোর আগেই BitChord-এর ভেতরে সাউন্ড সাজিয়ে নেয়।</string>
+    <string name="equalizer_footer">সিস্টেমে পৌঁছনোর আগেই Laya-এর ভেতরে সাউন্ড সাজিয়ে নেয়।</string>
     <string name="equalizer_dynamic">ডায়নামিক</string>
     <string name="equalizer_manual">ম্যানুয়াল</string>
     <string name="equalizer_tone">টোন</string>
@@ -271,7 +271,7 @@
     <string name="equalizer_float_footer">Android ফ্লোট অডিও এমন পথে চালায় যেখানে এফেক্টের জায়গা নেই, তাই ইকুয়ালাইজার, স্পেশাল অডিও আর সাইলেন্স স্কিপিং সবই বাদ পড়ে। এগুলো ব্যবহার করতে আউটপুট 16-bit PCM-এ সেট করুন।</string>
     <string name="system_equalizer">সিস্টেম ইকুয়ালাইজার</string>
     <string name="system_equalizer_subtitle">আপনার ডিভাইসের নিজস্ব প্যানেল</string>
-    <string name="system_equalizer_footer">BitChord-এর পরে, পুরো অডিও সেশনে চলে। দুটোই চালু থাকলে দুটোই কাজ করবে।</string>
+    <string name="system_equalizer_footer">Laya-এর পরে, পুরো অডিও সেশনে চলে। দুটোই চালু থাকলে দুটোই কাজ করবে।</string>
     <string name="eq_preset_flat">ফ্ল্যাট</string>
     <string name="eq_preset_acoustic">অ্যাকুস্টিক</string>
     <string name="eq_preset_bass_boost">বেস বুস্ট</string>
@@ -339,10 +339,10 @@
     <string name="beta">বিটা</string>
     <string name="refresh_rate">রিফ্রেশ রেট</string>
     <string name="high_performance_before_enabling">চালু করার আগে</string>
-    <string name="high_performance_battery_warning">আগে BitChord-এর ব্যাটারি ব্যবহার Unrestricted-এ সেট করুন। বেশি রিফ্রেশ রেটে ব্যাটারি, CPU আর GPU বেশি খরচ হয়, ডিভাইস গরমও হতে পারে।</string>
+    <string name="high_performance_battery_warning">আগে Laya-এর ব্যাটারি ব্যবহার Unrestricted-এ সেট করুন। বেশি রিফ্রেশ রেটে ব্যাটারি, CPU আর GPU বেশি খরচ হয়, ডিভাইস গরমও হতে পারে।</string>
     <string name="open_battery_settings">ব্যাটারি সেটিংস খুলুন</string>
     <string name="enable_high_performance_title">হাই পারফরম্যান্স মোড চালু করবেন?</string>
-    <string name="enable_high_performance_confirmation">BitChord-এর ব্যাটারি ব্যবহার Unrestricted-এ সেট থাকলে তবেই চালু করুন। ডিভাইস গরম হলে বা চার্জ কম থাকলে Android তখনও রিফ্রেশ রেট কমিয়ে দিতে পারে।</string>
+    <string name="enable_high_performance_confirmation">Laya-এর ব্যাটারি ব্যবহার Unrestricted-এ সেট থাকলে তবেই চালু করুন। ডিভাইস গরম হলে বা চার্জ কম থাকলে Android তখনও রিফ্রেশ রেট কমিয়ে দিতে পারে।</string>
     <string name="enable">চালু করুন</string>
     <string name="not_yet">এখন নয়</string>
     <string name="activity">অ্যাক্টিভিটি</string>
@@ -353,7 +353,7 @@
     <string name="activity_playing">চালাচ্ছেন</string>
     <string name="activity_watching">দেখছেন</string>
     <string name="add_addon">অ্যাডঅন যোগ করুন</string>
-    <string name="add_addon_detail">আপনার নিজের হোস্ট করা বা লিঙ্ক পাওয়া কোনো অ্যাডঅন সার্ভারের সঙ্গে BitChord যুক্ত করুন</string>
+    <string name="add_addon_detail">আপনার নিজের হোস্ট করা বা লিঙ্ক পাওয়া কোনো অ্যাডঅন সার্ভারের সঙ্গে Laya যুক্ত করুন</string>
     <string name="add_to_queue">কিউতে যোগ করুন</string>
     <string name="after_this_song">এই গানের পরে</string>
     <string name="always_on">সবসময় চালু</string>
@@ -391,7 +391,7 @@
     <string name="discord_button_variables">{song_name}, {artist_name} এবং {album_name} এখনকার গান দিয়ে বদলে যাবে।</string>
     <string name="discord_buttons_footer">{song_name}, {artist_name} এবং {album_name} গানটি দিয়ে বদলে যাবে। প্রথম বোতামটি YouTube Music-এ গানটি খোলে, আর দ্বিতীয়টি এই প্রোজেক্ট খোলে।</string>
     <string name="discord_presence_footer">গান, পজিশন বা প্লেব্যাকের অবস্থা বদলালে কার্ড আপডেট হয়। প্লেব্যাক থামলে কার্ড মুছে যায়।</string>
-    <string name="discord_sign_in_footer">সাইন ইন করলে Discord-এর লগইন পেজ খুলবে। BitChord-এ কিছুই টাইপ করতে হয় না।</string>
+    <string name="discord_sign_in_footer">সাইন ইন করলে Discord-এর লগইন পেজ খুলবে। Laya-এ কিছুই টাইপ করতে হয় না।</string>
     <string name="discord_token">Discord টোকেন</string>
     <string name="discord_token_description">আপনার Discord অ্যাকাউন্টের টোকেন পেস্ট করুন। এটি এই ডিভাইসে এনক্রিপ্ট করা থাকে এবং শুধু Discord-কেই পাঠানো হয়।</string>
     <string name="discord_token_rejected">Discord এই টোকেনটি গ্রহণ করেনি।</string>
@@ -475,7 +475,7 @@
     <string name="played_by">চালিয়েছেন %1$s</string>
     <string name="shared_link">শেয়ার করা লিঙ্ক</string>
     <string name="radio_started">%1$s রেডিও শুরু হয়েছে</string>
-    <string name="saved_to_bitchord_folder">Music/BitChord-এ সেভ হয়েছে</string>
+    <string name="saved_to_laya_folder">Music/Laya-এ সেভ হয়েছে</string>
     <string name="nothing_downloading">কিছু ডাউনলোড হচ্ছে না</string>
     <string name="nothing_to_explore">এই মুহূর্তে এক্সপ্লোর করার মতো কিছু নেই</string>
     <string name="no_youtube_music_results">YouTube Music থেকে কোনো ফলাফল নেই</string>
@@ -557,7 +557,7 @@
     <string name="max_delay_subtitle">সেকেন্ডে সর্বোচ্চ স্ক্রবল দেরি</string>
     <string name="min_song_duration">গানের ন্যূনতম দৈর্ঘ্য</string>
     <string name="min_song_duration_subtitle">এর চেয়ে ছোট গান স্ক্রবল হবে না</string>
-    <string name="addon_url_description">অ্যাডঅনের URL পেস্ট করুন — এর রুট বা manifest.json। BitChord দেখে নেয় এটি কী সার্চ ও স্ট্রিম করতে পারে, তারপর সাধারণ HTTP-তে এর কাছ থেকে গান চায়।</string>
+    <string name="addon_url_description">অ্যাডঅনের URL পেস্ট করুন — এর রুট বা manifest.json। Laya দেখে নেয় এটি কী সার্চ ও স্ট্রিম করতে পারে, তারপর সাধারণ HTTP-তে এর কাছ থেকে গান চায়।</string>
     <string name="monthly_listeners">%1$s মাসিক শ্রোতা</string>
     <string name="name">নাম</string>
     <string name="no_lyrics_for_track">এই গানের কোনো লিরিক্স নেই</string>
@@ -609,7 +609,7 @@
     <string name="signing_in">সাইন ইন হচ্ছে…</string>
     <string name="sleep_timer">স্লিপ টাইমার</string>
     <string name="sources_no_lossless">চালু থাকা কোনো সোর্সই lossless অডিও দিতে পারে না। ট্রান্সকোডিং ছাড়া lossless ফাইল চালাতে একটা অ্যাডঅন যোগ করুন।</string>
-    <string name="sources_order_footer">কোনো সোর্সে গান না থাকলে বা সেটায় পৌঁছানো না গেলে BitChord পরেরটা চেষ্টা করে। YouTube-এর উপরের সোর্সগুলো ভালো ভার্সন পেলে তার রেকর্ডিংয়ের বদলে সেটা চালাতে পারে।</string>
+    <string name="sources_order_footer">কোনো সোর্সে গান না থাকলে বা সেটায় পৌঁছানো না গেলে Laya পরেরটা চেষ্টা করে। YouTube-এর উপরের সোর্সগুলো ভালো ভার্সন পেলে তার রেকর্ডিংয়ের বদলে সেটা চালাতে পারে।</string>
     <string name="sources_order_header">সোর্স, এই ক্রমে চেষ্টা করা হয়</string>
     <string name="sources_quality_capped">এই কানেকশনে কোয়ালিটি High-এর নিচে সেট করা আছে, তাই স্ট্রিম সেই সীমার মধ্যে ট্রান্সকোড করা হয়। ডাউনলোডে এর প্রভাব পড়ে না।</string>
     <string name="sources_subtitle">অডিও কোথা থেকে আসে আর কোন ক্রমে</string>
@@ -644,7 +644,7 @@
     <string name="biggest_day_note">আপনার সবচেয়ে বড় দিন ছিল %1$s, সেদিন শুনেছেন %2$s।</string>
     <string name="close_replay">Replay বন্ধ করুন</string>
     <string name="couldnt_draw_picture">ছবিটা তৈরি করা গেল না</string>
-    <string name="default_replay_holder">BitChord শ্রোতা</string>
+    <string name="default_replay_holder">Laya শ্রোতা</string>
     <string name="different_albums">আলাদা অ্যালবাম</string>
     <string name="genres_pending">আপনার শোনার হিস্ট্রি বাড়লে শৈলীগুলো দেখা যাবে</string>
     <string name="hour_am">%1$d AM</string>
@@ -670,7 +670,7 @@
     <string name="replay_artist_end"> বারবার ফিরে এসেছেন।</string>
     <string name="replay_artist_focus">একজন শিল্পী</string>
     <string name="replay_artist_start">সারা মাস ধরে, </string>
-    <string name="replay_empty_description">আরেকটু শুনুন, BitChord আপনার হিস্ট্রি দিয়ে একটা Replay বানিয়ে দেবে।</string>
+    <string name="replay_empty_description">আরেকটু শুনুন, Laya আপনার হিস্ট্রি দিয়ে একটা Replay বানিয়ে দেবে।</string>
     <string name="replay_genre_end"> আপনার সাউন্ড গড়ে দিয়েছে।</string>
     <string name="replay_genre_focus">আপনার শৈলী</string>
     <string name="replay_genre_start">সব মিলিয়ে, </string>
@@ -772,7 +772,7 @@
     </plurals>
     <string name="no_local_albums">এখানে এখনও কিছুই কোনো অ্যালবাম বা প্লেলিস্টের অংশ নয়। পুরো একটা অ্যালবাম বা প্লেলিস্ট ডাউনলোড করুন, এখানে দেখা যাবে।</string>
     <string name="play_your_replay">আপনার Replay চালান</string>
-    <string name="counted_on_device_with_bitchord">এই ডিভাইসে BitChord দিয়ে গোনা হয়েছে</string>
+    <string name="counted_on_device_with_laya">এই ডিভাইসে Laya দিয়ে গোনা হয়েছে</string>
     <string name="this_month">এই মাস</string>
     <string name="this_year">এই বছর</string>
     <string name="all_time">সব সময়</string>
@@ -822,7 +822,7 @@
     <string name="listen_together_code">পার্টি কোড</string>
     <string name="listen_together_code_footer">পড়ে শোনান বা পাঠিয়ে দিন। O আর I ব্যবহার করা হয় না, তাই “ও” মানে সবসময় শূন্য।</string>
     <string name="copy_code">কোড কপি করুন</string>
-    <string name="listen_together_share_text">BitChord-এ আমার সাথে শুনুন — পার্টি কোড %1$s</string>
+    <string name="listen_together_share_text">Laya-এ আমার সাথে শুনুন — পার্টি কোড %1$s</string>
     <string name="listen_together_now_playing">এখন চলছে</string>
     <string name="listen_together_nothing_playing">এখনও কিছু চলছে না</string>
     <string name="listen_together_listening">শুনছেন · %2$d জনের মধ্যে %1$d জন</string>

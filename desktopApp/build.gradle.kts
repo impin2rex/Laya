@@ -4,23 +4,23 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 /** What the packages, the launcher and the settings footer all say. */
-val appVersion: String = providers.gradleProperty("bitchord.version").orNull
+val appVersion: String = providers.gradleProperty("laya.version").orNull
     ?.removePrefix("v")
     ?.takeIf { it.isNotBlank() }
     // The same version the Android build ships, from the root build — a hard-coded fallback here
     // went stale and made every local or unversioned build announce itself as 1.8-beta1, which
     // the update checker then offered to "update" to an older release.
-    ?: rootProject.extra["bitchordVersionName"] as String
+    ?: rootProject.extra["layaVersionName"] as String
 
 /** Which platform this build is *for*, which is the host unless told otherwise. */
 val hostIsWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
 val hostIsLinux = System.getProperty("os.name").contains("Linux", ignoreCase = true)
 val hostIsMac = System.getProperty("os.name").contains("Mac", ignoreCase = true)
-val targetOs: String = (providers.gradleProperty("bitchord.target").orNull ?: when {
+val targetOs: String = (providers.gradleProperty("laya.target").orNull ?: when {
     hostIsWindows -> "windows"
     hostIsLinux -> "linux"
     hostIsMac -> "macos"
-    else -> error("BitChord desktop supports Linux, Windows, and macOS only")
+    else -> error("Laya desktop supports Linux, Windows, and macOS only")
 }).lowercase()
 
 val hostArch = System.getProperty("os.arch").lowercase()
@@ -39,7 +39,7 @@ val nativeClassifier = when (targetOs) {
     "windows" -> "windows-x86_64"
     "linux" -> "linux-x86_64"
     "macos" -> if (isArm64) "macosx-arm64" else "macosx-x86_64"
-    else -> error("BitChord desktop supports Linux, Windows, and macOS only")
+    else -> error("Laya desktop supports Linux, Windows, and macOS only")
 }
 private fun localProperty(name: String): String = rootProject.file("local.properties")
     .takeIf { it.isFile }
@@ -398,7 +398,7 @@ val windowsPortableAssemble by tasks.registering {
     group = "distribution"
     description = "Lays out a Windows-runnable folder: application jars, Windows natives, launcher."
     dependsOn(tasks.named("jar"))
-    val stage = windowsPortableDir.map { it.dir("BitChord") }
+    val stage = windowsPortableDir.map { it.dir("Laya") }
     val appJar = tasks.named<Jar>("jar").flatMap { it.archiveFile }
     val runtime = configurations.named("runtimeClasspath")
     val version = appVersion
@@ -427,22 +427,22 @@ val windowsPortableAssemble by tasks.registering {
             val name = if (group.isNullOrBlank()) artifact.file.name else "$group.${artifact.file.name}"
             artifact.file.copyTo(File(lib, name), overwrite = true)
         }
-        appJar.get().asFile.copyTo(File(lib, "bitchord-app.jar"), overwrite = true)
+        appJar.get().asFile.copyTo(File(lib, "laya-app.jar"), overwrite = true)
 
         // `lib\*` rather than a spelled-out classpath: the wildcard is what keeps this working when
         // a dependency is added, and the JVM is what expands it.
-        File(target, "BitChord.bat").writeText(
+        File(target, "Laya.bat").writeText(
             buildString {
                 appendLine("@echo off")
                 appendLine("setlocal")
-                appendLine("rem BitChord, portable. Needs a Java 21+ runtime on PATH or in JAVA_HOME.")
+                appendLine("rem Laya, portable. Needs a Java 21+ runtime on PATH or in JAVA_HOME.")
                 appendLine("set \"HERE=%~dp0\"")
                 appendLine("set \"RUNNER=java\"")
                 appendLine("if defined JAVA_HOME set \"RUNNER=%JAVA_HOME%\\bin\\java\"")
-                append("\"%RUNNER%\" -Dbitchord.version=$version")
-                if (moduleIndex.isNotBlank()) append(" -Dbitchord.module.index=$moduleIndex")
+                append("\"%RUNNER%\" -Dlaya.version=$version")
+                if (moduleIndex.isNotBlank()) append(" -Dlaya.module.index=$moduleIndex")
                 if (lastfmKey.isNotBlank() && lastfmSharedSecret.isNotBlank()) {
-                    append(" -Dbitchord.lastfm.key=$lastfmKey -Dbitchord.lastfm.secret=$lastfmSharedSecret")
+                    append(" -Dlaya.lastfm.key=$lastfmKey -Dlaya.lastfm.secret=$lastfmSharedSecret")
                 }
                 appendLine(" -cp \"%HERE%lib\\*\" $mainClass %*")
                 appendLine("endlocal")
@@ -456,8 +456,8 @@ val windowsPortableAssemble by tasks.registering {
             ZipFile(jar).use { zip -> zip.getEntry(entry) != null }
         }
         val problems = buildList {
-            if (!holds("com/music/bitchord/desktop/MainKt.class")) {
-                add("the BitChord desktop entry point is missing")
+            if (!holds("com/music/laya/desktop/MainKt.class")) {
+                add("the Laya desktop entry point is missing")
             }
             if (!holds("androidx/compose/runtime/Composer.class")) {
                 add("the Compose runtime is missing")
@@ -476,12 +476,12 @@ val windowsPortableAssemble by tasks.registering {
         }
         check(problems.isEmpty()) { "windowsPortable: " + problems.joinToString("; ") }
 
-        val analyser = File(analysisNativeDir.get().asFile, "bitchord_analysis.dll").isFile
+        val analyser = File(analysisNativeDir.get().asFile, "laya_analysis.dll").isFile
         logger.lifecycle(
             if (analyser) {
                 "windowsPortable: verified — Compose runtime, Windows renderer, Windows FFmpeg, Automix analyser."
             } else {
-                "windowsPortable: verified, but no bitchord_analysis.dll — Automix will not run in this archive. " +
+                "windowsPortable: verified, but no laya_analysis.dll — Automix will not run in this archive. " +
                     "Rebuild with: nix-shell -p cmake pkgsCross.mingwW64.buildPackages.gcc"
             },
         )
@@ -493,12 +493,12 @@ val windowsPortable by tasks.registering(Zip::class) {
     description = "Zips the portable Windows folder for copying to a Windows machine."
     dependsOn(windowsPortableAssemble)
     from(windowsPortableDir)
-    archiveFileName.set("BitChord-$appVersion-windows-portable.zip")
+    archiveFileName.set("Laya-$appVersion-windows-portable.zip")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
     doLast { logger.lifecycle("windowsPortable: ${archiveFile.get().asFile.absolutePath}") }
 }
 
-val composeMainClass = "com.music.bitchord.desktop.MainKt"
+val composeMainClass = "com.music.laya.desktop.MainKt"
 
 compose.desktop {
     application {
@@ -508,18 +508,18 @@ compose.desktop {
         mainClass = composeMainClass
         jvmArgs("-Xmx512m")
         jvmArgs("-XX:+UseG1GC", "-XX:G1PeriodicGCInterval=20000", "-XX:G1PeriodicGCSystemLoadThreshold=0")
-        jvmArgs("-Dbitchord.version=$appVersion")
+        jvmArgs("-Dlaya.version=$appVersion")
         if (desktopModuleIndexUrl.isNotBlank()) {
-            jvmArgs("-Dbitchord.module.index=$desktopModuleIndexUrl")
+            jvmArgs("-Dlaya.module.index=$desktopModuleIndexUrl")
         }
         if (lastfmApiKey.isNotBlank() && lastfmSecret.isNotBlank()) {
-            jvmArgs("-Dbitchord.lastfm.key=$lastfmApiKey", "-Dbitchord.lastfm.secret=$lastfmSecret")
+            jvmArgs("-Dlaya.lastfm.key=$lastfmApiKey", "-Dlaya.lastfm.secret=$lastfmSecret")
         }
         if (listenTogetherServer.isNotBlank()) {
-            jvmArgs("-Dbitchord.listentogether.server=$listenTogetherServer")
+            jvmArgs("-Dlaya.listentogether.server=$listenTogetherServer")
         }
         if (signatureApiUrl.isNotBlank()) {
-            jvmArgs("-Dbitchord.signature.url=$signatureApiUrl")
+            jvmArgs("-Dlaya.signature.url=$signatureApiUrl")
         }
 
         buildTypes.release.proguard {
@@ -538,11 +538,11 @@ compose.desktop {
                 TargetFormat.Deb,
                 TargetFormat.Rpm,
             )
-            packageName = "BitChord"
+            packageName = "Laya"
             packageVersion = nativePackageVersion
-            description = if (targetOs == "windows") "BitChord" else "Aesthetic YouTube Music client"
-            vendor = "BitChord contributors"
-            copyright = "Copyright © 2026 BitChord contributors"
+            description = if (targetOs == "windows") "Laya" else "Aesthetic YouTube Music client"
+            vendor = "Laya contributors"
+            copyright = "Copyright © 2026 BitChord and Laya contributors"
 
             modules(
                 "java.base",
@@ -570,9 +570,9 @@ compose.desktop {
 
             macOS {
                 iconFile.set(project.file("packaging/icons/AppIcon.icns"))
-                bundleID = "com.music.bitchord"
+                bundleID = "com.music.laya"
                 appCategory = "public.app-category.music"
-                dockName = "BitChord"
+                dockName = "Laya"
                 infoPlist {
                     extraKeysRawXml = """
                         <key>NSRequiresAquaSystemAppearance</key>
@@ -585,14 +585,14 @@ compose.desktop {
                 iconFile.set(project.file("packaging/icons/AppIcon.png"))
                 menuGroup = "Audio"
                 appCategory = "AudioVideo;Audio;Player"
-                debMaintainer = "85984486+AbhiTheModder@users.noreply.github.com"
+                debMaintainer = "impin2rex@gmail.com"
                 rpmLicenseType = "GPL-3.0"
             }
 
             windows {
                 iconFile.set(project.file("packaging/icons/AppIcon.ico"))
-                upgradeUuid = "8f3c1d24-6a2b-4f5e-9c17-2b8d54e0a913"
-                menuGroup = "BitChord"
+                upgradeUuid = "8cf8f381-55fe-4d99-9116-863b769e2de5"
+                menuGroup = "Laya"
                 shortcut = true
                 dirChooser = false
                 perUserInstall = true

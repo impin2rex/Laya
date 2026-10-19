@@ -1,10 +1,10 @@
 # Maintainers
 
-This document lists the maintainers responsible for BitChord.
+This document lists the maintainers responsible for Laya.
 
 | Maintainer | GitHub | Responsibilities |
 |---|---|---|
-| Kushagra Singh | [@kushagrasinghx](https://github.com/kushagrasinghx) | Project creator, core architecture, release management, and PR reviews |
+| Pintu Das | [@impin2rex](https://github.com/impin2rex) | Maintainer, release management, and PR reviews |
 
 ## Responsibilities
 

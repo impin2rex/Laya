@@ -105,7 +105,7 @@ kotlin {
 android {
     // lintVital (run on every release build) prints Kotlin-metadata errors: AGP 8.10 lint embeds Kotlin 2.1. Full `lint` still runs on demand.
     lint { checkReleaseBuilds = false }
-    namespace = "com.music.bitchord.sharedui"
+    namespace = "com.music.laya.sharedui"
     compileSdk = 36
     defaultConfig {
         minSdk = 26
@@ -114,6 +114,6 @@ android {
 
 compose.resources {
     publicResClass = true
-    packageOfResClass = "com.music.bitchord.sharedui.resources"
+    packageOfResClass = "com.music.laya.sharedui.resources"
     generateResClass = always
 }

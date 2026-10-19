@@ -8,7 +8,7 @@
 # implementation that drifts.
 #
 # The JNI symbol names encode the Java package, which is why the desktop's
-# analysis classes live in `com.music.bitchord.playback.smart` exactly as
+# analysis classes live in `com.music.laya.playback.smart` exactly as
 # Android's do.
 
 cmake_minimum_required(VERSION 3.16)
@@ -17,7 +17,7 @@ if(POLICY CMP0091)
     cmake_policy(SET CMP0091 NEW)
 endif()
 
-project(bitchord_analysis LANGUAGES CXX)
+project(laya_analysis LANGUAGES CXX)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
@@ -32,7 +32,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_library(bitchord_analysis SHARED
+add_library(laya_analysis SHARED
     ${REPO_ROOT}/native/analyzer/audio_analysis.cpp
     ${REPO_ROOT}/native/analyzer/tempo_analysis.cpp
     ${REPO_ROOT}/native/analyzer/resampler.cpp
@@ -43,7 +43,7 @@ add_library(bitchord_analysis SHARED
     ${REPO_ROOT}/app/src/main/cpp/jni/vocal_jni.cpp
 )
 
-target_include_directories(bitchord_analysis PRIVATE
+target_include_directories(laya_analysis PRIVATE
     ${REPO_ROOT}/native
     ${REPO_ROOT}/app/src/main/cpp
 )
@@ -51,7 +51,7 @@ target_include_directories(bitchord_analysis PRIVATE
 # JNI headers come from the JDK running the build rather than from find_package,
 # which on a JDK with no JAVA_HOME set reports a stale system install.
 if(DEFINED ENV{JAVA_HOME})
-    target_include_directories(bitchord_analysis PRIVATE
+    target_include_directories(laya_analysis PRIVATE
         $ENV{JAVA_HOME}/include
         $ENV{JAVA_HOME}/include/linux
         $ENV{JAVA_HOME}/include/win32
@@ -59,26 +59,26 @@ if(DEFINED ENV{JAVA_HOME})
     )
 else()
     find_package(JNI REQUIRED)
-    target_include_directories(bitchord_analysis PRIVATE ${JNI_INCLUDE_DIRS})
+    target_include_directories(laya_analysis PRIVATE ${JNI_INCLUDE_DIRS})
 endif()
 
 # Cross-building for Windows, the one case where the JDK running the build has
 # no header for the platform being built: `jni.h` is shared, `jni_md.h` is not.
 # Listed after the JDK's own paths so a real Windows JDK always wins.
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND NOT CMAKE_HOST_WIN32)
-    target_include_directories(bitchord_analysis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
+    target_include_directories(laya_analysis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
 endif()
 
-target_compile_options(bitchord_analysis PRIVATE -O2)
+target_compile_options(laya_analysis PRIVATE -O2)
 
-# `System.mapLibraryName` asks for `bitchord_analysis.dll` on Windows, with no
+# `System.mapLibraryName` asks for `laya_analysis.dll` on Windows, with no
 # prefix — but MinGW's CMake defaults to the Unix `lib` one, so a cross-built
-# library came out as `libbitchord_analysis.dll` and the loader never found it.
+# library came out as `liblaya_analysis.dll` and the loader never found it.
 # Set on the target rather than in the toolchain file, because `project()`
 # reinitialises CMAKE_SHARED_LIBRARY_PREFIX per language and overwrites
 # anything the toolchain set beforehand.
 if(WIN32)
-    set_target_properties(bitchord_analysis PROPERTIES PREFIX "")
+    set_target_properties(laya_analysis PROPERTIES PREFIX "")
 endif()
 
 # The app unpacks this DLL into its private runtime directory and loads it from
@@ -86,7 +86,7 @@ endif()
 # statically is what makes the library self-contained; leaving them dynamic makes
 # it import libwinpthread-1.dll and fail to load on a machine without MinGW.
 if(MINGW)
-    target_link_options(bitchord_analysis PRIVATE -static -static-libgcc -static-libstdc++)
+    target_link_options(laya_analysis PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 
 # The Windows media controls, which are WinRT. MSVC builds them with C++/WinRT;
@@ -94,40 +94,40 @@ endif()
 # against the raw ABI headers — whenever its headers carry the Media namespace.
 include(CheckIncludeFileCXX)
 if(MINGW)
-    check_include_file_cxx(systemmediatransportcontrolsinterop.h BITCHORD_HAVE_SMTC_INTEROP)
+    check_include_file_cxx(systemmediatransportcontrolsinterop.h LAYA_HAVE_SMTC_INTEROP)
     # The same guard smtc_abi.cpp defines: MinGW's windows.foundation.h does not compile without it.
     set(CMAKE_REQUIRED_DEFINITIONS -D____FIReference_1_BYTE_INTERFACE_DEFINED__)
-    check_include_file_cxx(windows.media.h BITCHORD_HAVE_WINRT_MEDIA)
+    check_include_file_cxx(windows.media.h LAYA_HAVE_WINRT_MEDIA)
     unset(CMAKE_REQUIRED_DEFINITIONS)
 endif()
-if(MINGW AND BITCHORD_HAVE_SMTC_INTEROP AND BITCHORD_HAVE_WINRT_MEDIA)
-    add_library(bitchord_smtc SHARED ${CMAKE_CURRENT_SOURCE_DIR}/smtc/smtc_abi.cpp)
-    set_target_properties(bitchord_smtc PROPERTIES PREFIX "")
+if(MINGW AND LAYA_HAVE_SMTC_INTEROP AND LAYA_HAVE_WINRT_MEDIA)
+    add_library(laya_smtc SHARED ${CMAKE_CURRENT_SOURCE_DIR}/smtc/smtc_abi.cpp)
+    set_target_properties(laya_smtc PROPERTIES PREFIX "")
     if(DEFINED ENV{JAVA_HOME})
-        target_include_directories(bitchord_smtc PRIVATE $ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
+        target_include_directories(laya_smtc PRIVATE $ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
     else()
         find_package(JNI REQUIRED)
-        target_include_directories(bitchord_smtc PRIVATE ${JNI_INCLUDE_DIRS})
+        target_include_directories(laya_smtc PRIVATE ${JNI_INCLUDE_DIRS})
     endif()
     if(NOT CMAKE_HOST_WIN32)
-        target_include_directories(bitchord_smtc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
+        target_include_directories(laya_smtc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
     endif()
-    target_compile_options(bitchord_smtc PRIVATE -O2)
-    target_link_libraries(bitchord_smtc PRIVATE runtimeobject ole32 user32)
+    target_compile_options(laya_smtc PRIVATE -O2)
+    target_link_libraries(laya_smtc PRIVATE runtimeobject ole32 user32)
     # Loaded from the app's private runtime directory, where MinGW's own DLLs are not.
-    target_link_options(bitchord_smtc PRIVATE -static -static-libgcc -static-libstdc++)
+    target_link_options(laya_smtc PRIVATE -static -static-libgcc -static-libstdc++)
 elseif(MSVC)
-    add_library(bitchord_smtc SHARED ${CMAKE_CURRENT_SOURCE_DIR}/smtc/smtc_jni.cpp)
+    add_library(laya_smtc SHARED ${CMAKE_CURRENT_SOURCE_DIR}/smtc/smtc_jni.cpp)
     # C++20 rather than the 17 the analyser uses: under 17, C++/WinRT reaches for
     # <experimental/coroutine>, and current MSVC refuses to compile that header
     # at all. C++20 gives it the standard <coroutine> instead.
-    set_target_properties(bitchord_smtc PROPERTIES PREFIX "" CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+    set_target_properties(laya_smtc PROPERTIES PREFIX "" CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
     if(DEFINED ENV{JAVA_HOME})
-        target_include_directories(bitchord_smtc PRIVATE $ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
+        target_include_directories(laya_smtc PRIVATE $ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
     else()
         find_package(JNI REQUIRED)
-        target_include_directories(bitchord_smtc PRIVATE ${JNI_INCLUDE_DIRS})
+        target_include_directories(laya_smtc PRIVATE ${JNI_INCLUDE_DIRS})
     endif()
     # The WinRT umbrella import library.
-    target_link_libraries(bitchord_smtc PRIVATE windowsapp gdi32)
+    target_link_libraries(laya_smtc PRIVATE windowsapp gdi32)
 endif()

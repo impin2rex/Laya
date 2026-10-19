@@ -62,7 +62,7 @@ jobs:
       - name: Upload the TV dev APK
         uses: actions/upload-artifact@v4
         with:
-          name: bitchord-tv-dev-debug
+          name: laya-tv-dev-debug
           path: tv/build/outputs/apk/dev/debug/*universal*.apk
 
       - name: Upload build reports

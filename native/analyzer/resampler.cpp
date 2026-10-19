@@ -6,7 +6,7 @@
  *
  * Orchard's original source is licensed under the GNU Affero General Public
  * License, version 3 or later. Per AGPLv3 section 13, this file is combined
- * here into BitChord -- a work licensed under the GNU General Public
+ * here into Laya -- a work licensed under the GNU General Public
  * License, version 3 or later -- and remains itself governed by the AGPLv3
  * as part of that combination.
  *
@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace bitchord::smart {
+namespace laya::smart {
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;
@@ -122,4 +122,4 @@ std::vector<float> Resample(
   return output;
 }
 
-}  // namespace bitchord::smart
+}  // namespace laya::smart

@@ -12,7 +12,7 @@ jobs:
     if: >-
       !github.event.issue.pull_request &&
       startsWith(github.event.comment.body, '/close') &&
-      contains(fromJSON('["kushagrasinghx", "Galaxyyss"]'), github.event.comment.user.login)
+      contains(fromJSON('["impin2rex"]'), github.event.comment.user.login)
     runs-on: ubuntu-latest
     steps:
       - name: Close the issue

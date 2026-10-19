@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Modified for BitChord (2026): the media3 1.11.0 file, built against
+ * Modified for Laya (2026): the media3 1.11.0 file, built against
  * librempeg rather than FFmpeg. librempeg has no libswresample, so the sample
  * format conversion swr_convert did is done by convertFrame below — only
  * ever a format change (planar -> interleaved, int/double -> float or s16),

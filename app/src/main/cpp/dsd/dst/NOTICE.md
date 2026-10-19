@@ -13,7 +13,7 @@ validated, table/filter errors are propagated, and a JNI entry point
 (`jni.cpp`) is added. The files in this directory are distributed under the
 same LGPL terms. Existing copyright notices remain in `decoder.c`.
 
-The decoder is built as its own shared library, `libbitchord_dst.so`, by the
+The decoder is built as its own shared library, `liblaya_dst.so`, by the
 parent CMake file, so it can be rebuilt or replaced independently of the rest
 of the app with the NDK and the repository's Gradle wrapper. Reverse
 engineering for debugging modifications to this library is permitted.

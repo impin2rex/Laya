@@ -15,6 +15,8 @@ jobs:
     env:
       LISTEN_TOGETHER_SERVER: ${{ secrets.LISTEN_TOGETHER_SERVER }}
       SIGNATURE_API_URL: ${{ secrets.SIGNATURE_API_URL }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+      LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
     steps:
     - name: Checkout Repository
@@ -31,7 +33,7 @@ jobs:
     - name: Work out the version
       id: version
       run: |
-        version=$(sed -n 's/.*extra\["bitchordVersionName"\] = "\(.*\)".*/\1/p' build.gradle.kts | head -1)
+        version=$(sed -n 's/.*extra\["layaVersionName"\] = "\(.*\)".*/\1/p' build.gradle.kts | head -1)
         echo "value=$version" >> "$GITHUB_OUTPUT"
         echo "Building $version"
 
@@ -39,14 +41,14 @@ jobs:
       run: chmod +x gradlew
 
     - name: Tests
-      run: ./gradlew :shared:jvmTest :desktopApp:test -Pbitchord.version=${{ steps.version.outputs.value }}
+      run: ./gradlew :shared:jvmTest :desktopApp:test -Playa.version=${{ steps.version.outputs.value }}
 
     - name: Build DMG
-      run: ./gradlew :desktopApp:packageDmg -Pbitchord.version=${{ steps.version.outputs.value }}
+      run: ./gradlew :desktopApp:packageDmg -Playa.version=${{ steps.version.outputs.value }}
 
     - name: Upload DMG Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: bitchord-macos-arm64-dmg
+        name: laya-macos-arm64-dmg
         path: desktopApp/build/compose/binaries/main/dmg/*.dmg
         if-no-files-found: error

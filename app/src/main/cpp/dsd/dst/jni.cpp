@@ -5,14 +5,14 @@
 #include "decoder.h"
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_com_music_bitchord_playback_dsd_DstDecoder_create(JNIEnv*, jobject, jint channels) {
+Java_com_music_laya_playback_dsd_DstDecoder_create(JNIEnv*, jobject, jint channels) {
     dst_decoder_t* decoder = nullptr;
     if (dst_decoder_init(&decoder, channels, 2822400) != 0) return 0;
     return reinterpret_cast<jlong>(decoder);
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_music_bitchord_playback_dsd_DstDecoder_decode(JNIEnv* env, jobject, jlong handle,
+Java_com_music_laya_playback_dsd_DstDecoder_decode(JNIEnv* env, jobject, jlong handle,
         jbyteArray input, jbyteArray output) {
     if (!handle || !input || !output) return -1;
     const int size = env->GetArrayLength(input), capacity = env->GetArrayLength(output);
@@ -31,6 +31,6 @@ Java_com_music_bitchord_playback_dsd_DstDecoder_decode(JNIEnv* env, jobject, jlo
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_music_bitchord_playback_dsd_DstDecoder_destroy(JNIEnv*, jobject, jlong handle) {
+Java_com_music_laya_playback_dsd_DstDecoder_destroy(JNIEnv*, jobject, jlong handle) {
     dst_decoder_close(reinterpret_cast<dst_decoder_t*>(handle));
 }

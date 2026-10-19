@@ -49,8 +49,8 @@ ISystemMediaTransportControls2* g_controls2 = nullptr;
 EventRegistrationToken g_seek_token{};
 std::mutex g_mutex;
 
-constexpr UINT WM_BITCHORD_UPDATE = WM_APP + 1;
-constexpr UINT WM_BITCHORD_QUIT = WM_APP + 2;
+constexpr UINT WM_LAYA_UPDATE = WM_APP + 1;
+constexpr UINT WM_LAYA_QUIT = WM_APP + 2;
 
 struct Update {
     std::wstring title;
@@ -114,7 +114,7 @@ void notify(jint button) {
         if (g_vm->AttachCurrentThreadAsDaemon(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) return;
         attached = true;
     }
-    jclass type = env->FindClass("com/music/bitchord/desktop/DesktopWindowsMedia");
+    jclass type = env->FindClass("com/music/laya/desktop/DesktopWindowsMedia");
     if (type != nullptr) {
         jmethodID method = env->GetStaticMethodID(type, "onButton", "(I)V");
         if (method != nullptr) env->CallStaticVoidMethod(type, method, button);
@@ -133,7 +133,7 @@ void notify_seek(long long position_ms) {
         if (g_vm->AttachCurrentThreadAsDaemon(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) return;
         attached = true;
     }
-    jclass type = env->FindClass("com/music/bitchord/desktop/DesktopWindowsMedia");
+    jclass type = env->FindClass("com/music/laya/desktop/DesktopWindowsMedia");
     if (type != nullptr) {
         jmethodID method = env->GetStaticMethodID(type, "onSeek", "(J)V");
         if (method != nullptr) env->CallStaticVoidMethod(type, method, static_cast<jlong>(position_ms));
@@ -306,13 +306,13 @@ void apply(const Update& update) {
 }
 
 LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
-    if (message == WM_BITCHORD_UPDATE) {
+    if (message == WM_LAYA_UPDATE) {
         auto* update = reinterpret_cast<Update*>(lparam);
         apply(*update);
         delete update;
         return 0;
     }
-    if (message == WM_BITCHORD_QUIT) {
+    if (message == WM_LAYA_QUIT) {
         PostQuitMessage(0);
         return 0;
     }
@@ -355,13 +355,13 @@ void pump() {
     description.cbSize = sizeof(description);
     description.lpfnWndProc = WindowProc;
     description.hInstance = GetModuleHandleW(nullptr);
-    description.lpszClassName = L"BitChordSmtcWindow";
+    description.lpszClassName = L"LayaSmtcWindow";
     RegisterClassExW(&description);
 
     // Never shown. SMTC only needs a handle to hang itself off, and a visible
-    // window here would be a second BitChord in the taskbar.
+    // window here would be a second Laya in the taskbar.
     g_window = CreateWindowExW(
-        0, L"BitChordSmtcWindow", L"BitChord", WS_OVERLAPPED,
+        0, L"LayaSmtcWindow", L"Laya", WS_OVERLAPPED,
         0, 0, 0, 0, nullptr, nullptr, description.hInstance, nullptr);
 
     if (g_window != nullptr && create_controls()) {
@@ -406,7 +406,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_music_bitchord_desktop_DesktopWindowsMedia_nativeStart(JNIEnv*, jobject) {
+Java_com_music_laya_desktop_DesktopWindowsMedia_nativeStart(JNIEnv*, jobject) {
     if (g_thread.joinable()) return g_running ? JNI_TRUE : JNI_FALSE;
     g_finished = false;
     g_thread = std::thread(pump);
@@ -417,7 +417,7 @@ Java_com_music_bitchord_desktop_DesktopWindowsMedia_nativeStart(JNIEnv*, jobject
 }
 
 JNIEXPORT void JNICALL
-Java_com_music_bitchord_desktop_DesktopWindowsMedia_nativeUpdate(
+Java_com_music_laya_desktop_DesktopWindowsMedia_nativeUpdate(
     JNIEnv* env, jobject, jstring title, jstring artist, jstring album, jstring art,
     jboolean playing, jlong position_ms, jlong duration_ms) {
     if (!g_running) return;
@@ -425,14 +425,14 @@ Java_com_music_bitchord_desktop_DesktopWindowsMedia_nativeUpdate(
         widen(env, title), widen(env, artist), widen(env, album), widen(env, art),
         playing == JNI_TRUE, position_ms, duration_ms,
     };
-    if (!PostMessageW(g_window, WM_BITCHORD_UPDATE, 0, reinterpret_cast<LPARAM>(update))) {
+    if (!PostMessageW(g_window, WM_LAYA_UPDATE, 0, reinterpret_cast<LPARAM>(update))) {
         delete update;
     }
 }
 
 JNIEXPORT void JNICALL
-Java_com_music_bitchord_desktop_DesktopWindowsMedia_nativeStop(JNIEnv*, jobject) {
-    if (g_window != nullptr) PostMessageW(g_window, WM_BITCHORD_QUIT, 0, 0);
+Java_com_music_laya_desktop_DesktopWindowsMedia_nativeStop(JNIEnv*, jobject) {
+    if (g_window != nullptr) PostMessageW(g_window, WM_LAYA_QUIT, 0, 0);
     if (g_thread.joinable()) g_thread.join();
 }
 

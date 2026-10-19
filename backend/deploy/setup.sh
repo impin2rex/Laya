@@ -2,7 +2,7 @@
 # One-shot installer for the Listen Together server on an Oracle Cloud
 # (or any Ubuntu 22.04/24.04) VM. Safe to re-run: it rebuilds and restarts.
 #
-#   sudo DOMAIN=jam.bitchord.kushagrasingh.in bash deploy/setup.sh
+#   sudo DOMAIN=laya-listen-together.onrender.com bash deploy/setup.sh
 #
 # First run on a fresh VM also takes DEPLOY_PUBKEY (the public half of the
 # GitHub Actions deploy key) to create the restricted `deploy` user.
@@ -12,7 +12,7 @@
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
-DOMAIN="${DOMAIN:?set DOMAIN, e.g. DOMAIN=jam.bitchord.kushagrasingh.in}"
+DOMAIN="${DOMAIN:?set DOMAIN, e.g. DOMAIN=laya-listen-together.onrender.com}"
 GO_VERSION="${GO_VERSION:-1.27.0}"
 BACKEND_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -35,20 +35,20 @@ if ! /usr/local/go/bin/go version 2>/dev/null | grep -q "go$GO_VERSION"; then
 fi
 
 echo "== build"
-id bitchord >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin bitchord
-install -d -o bitchord -g bitchord /opt/bitchord-jam
-(cd "$BACKEND_DIR" && /usr/local/go/bin/go build -o /opt/bitchord-jam/server .)
-chown bitchord:bitchord /opt/bitchord-jam/server
+id laya >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin laya
+install -d -o laya -g laya /opt/laya-jam
+(cd "$BACKEND_DIR" && /usr/local/go/bin/go build -o /opt/laya-jam/server .)
+chown laya:laya /opt/laya-jam/server
 
 echo "== service"
-install -m 644 "$BACKEND_DIR/deploy/bitchord-jam.service" /etc/systemd/system/bitchord-jam.service
+install -m 644 "$BACKEND_DIR/deploy/laya-jam.service" /etc/systemd/system/laya-jam.service
 systemctl daemon-reload
-systemctl enable bitchord-jam
-systemctl restart bitchord-jam
+systemctl enable laya-jam
+systemctl restart laya-jam
 # The CPU keepalive burner is retired; clean it off VMs that still have it.
-if [ -f /etc/systemd/system/bitchord-keepalive.service ]; then
-  systemctl disable --now bitchord-keepalive || true
-  rm -f /etc/systemd/system/bitchord-keepalive.service
+if [ -f /etc/systemd/system/laya-keepalive.service ]; then
+  systemctl disable --now laya-keepalive || true
+  rm -f /etc/systemd/system/laya-keepalive.service
   systemctl daemon-reload
 fi
 
@@ -76,25 +76,25 @@ UNIT
 systemctl daemon-reload
 
 echo "== deploy hook"
-echo "$DOMAIN" > /etc/bitchord-domain
-install -m 755 "$BACKEND_DIR/deploy/bitchord-deploy.sh" /usr/local/sbin/bitchord-deploy
+echo "$DOMAIN" > /etc/laya-domain
+install -m 755 "$BACKEND_DIR/deploy/laya-deploy.sh" /usr/local/sbin/laya-deploy
 
 if [ -n "${DEPLOY_PUBKEY:-}" ]; then
   echo "== deploy user"
   # The GitHub Actions key may only run the deploy hook (forced command).
   id deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash deploy
   install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
-  printf 'command="sudo /usr/local/sbin/bitchord-deploy",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty %s\n' "$DEPLOY_PUBKEY" > /home/deploy/.ssh/authorized_keys
+  printf 'command="sudo /usr/local/sbin/laya-deploy",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty %s\n' "$DEPLOY_PUBKEY" > /home/deploy/.ssh/authorized_keys
   chown deploy:deploy /home/deploy/.ssh/authorized_keys && chmod 600 /home/deploy/.ssh/authorized_keys
-  echo 'deploy ALL=(root) NOPASSWD: /usr/local/sbin/bitchord-deploy' > /etc/sudoers.d/bitchord-deploy
-  chmod 440 /etc/sudoers.d/bitchord-deploy && visudo -cf /etc/sudoers.d/bitchord-deploy
+  echo 'deploy ALL=(root) NOPASSWD: /usr/local/sbin/laya-deploy' > /etc/sudoers.d/laya-deploy
+  chmod 440 /etc/sudoers.d/laya-deploy && visudo -cf /etc/sudoers.d/laya-deploy
 fi
 
 echo "== kernel network limits"
 # The micro VM's default conntrack table is tiny (7680) and keeps an idle
 # established TCP flow for five days, which is how a crowd of phones that
 # vanish without a FIN would fill it. Give it room and a one-hour memory.
-cat > /etc/sysctl.d/90-bitchord.conf <<'SYSCTL'
+cat > /etc/sysctl.d/90-laya.conf <<'SYSCTL'
 net.netfilter.nf_conntrack_max = 65536
 net.netfilter.nf_conntrack_tcp_timeout_established = 3600
 SYSCTL
@@ -108,43 +108,43 @@ if ! swapon --show --noheadings | grep -q .; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
   grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 fi
-echo 'vm.swappiness = 1' > /etc/sysctl.d/91-bitchord-swap.conf
-sysctl -q -p /etc/sysctl.d/91-bitchord-swap.conf || true
+echo 'vm.swappiness = 1' > /etc/sysctl.d/91-laya-swap.conf
+sysctl -q -p /etc/sysctl.d/91-laya-swap.conf || true
 
 echo "== tcp buffers + health watchdog"
 # Smaller default TCP buffers so thousands of idle sockets cost less kernel memory.
-cat > /etc/sysctl.d/92-bitchord-tcp.conf <<'SYSCTL'
+cat > /etc/sysctl.d/92-laya-tcp.conf <<'SYSCTL'
 net.ipv4.tcp_rmem = 4096 16384 262144
 net.ipv4.tcp_wmem = 4096 16384 262144
 SYSCTL
-sysctl -q -p /etc/sysctl.d/92-bitchord-tcp.conf || true
-cat > /usr/local/sbin/bitchord-watchdog <<'WATCHDOG'
+sysctl -q -p /etc/sysctl.d/92-laya-tcp.conf || true
+cat > /usr/local/sbin/laya-watchdog <<'WATCHDOG'
 #!/usr/bin/env bash
 # Restarts Caddy when the public health check has failed twice in a row. The 1 GB
 # VM can get wedged under a connection surge; this heals it within ~2 minutes
 # instead of waiting for a human. At most one restart per 5 minutes.
-DOMAIN="$(cat /etc/bitchord-domain)"
-F=/run/bitchord-watchdog.fails; L=/run/bitchord-watchdog.last
+DOMAIN="$(cat /etc/laya-domain)"
+F=/run/laya-watchdog.fails; L=/run/laya-watchdog.last
 if curl -sk -m6 -o /dev/null -f --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/healthz"; then echo 0 > $F; exit 0; fi
 n=$(( $(cat $F 2>/dev/null || echo 0) + 1 )); echo $n > $F
 [ "$n" -lt 2 ] && exit 0
 now=$(date +%s); last=$(cat $L 2>/dev/null || echo 0)
 [ $((now - last)) -lt 300 ] && exit 0
 echo $now > $L; echo 0 > $F
-logger -t bitchord-watchdog "health check failed twice; restarting caddy"
+logger -t laya-watchdog "health check failed twice; restarting caddy"
 systemctl restart caddy
 WATCHDOG
-chmod 755 /usr/local/sbin/bitchord-watchdog
-cat > /etc/systemd/system/bitchord-watchdog.service <<'UNIT'
+chmod 755 /usr/local/sbin/laya-watchdog
+cat > /etc/systemd/system/laya-watchdog.service <<'UNIT'
 [Unit]
 Description=Restart Caddy if the health check keeps failing
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/bitchord-watchdog
+ExecStart=/usr/local/sbin/laya-watchdog
 UNIT
-cat > /etc/systemd/system/bitchord-watchdog.timer <<'UNIT'
+cat > /etc/systemd/system/laya-watchdog.timer <<'UNIT'
 [Unit]
-Description=Run the BitChord health watchdog every minute
+Description=Run the Laya health watchdog every minute
 [Timer]
 OnBootSec=3min
 OnUnitActiveSec=60s
@@ -153,7 +153,7 @@ AccuracySec=5s
 WantedBy=timers.target
 UNIT
 systemctl daemon-reload
-systemctl enable --now bitchord-watchdog.timer >/dev/null 2>&1 || true
+systemctl enable --now laya-watchdog.timer >/dev/null 2>&1 || true
 
 echo "== firewall"
 # Oracle's Ubuntu images ship an iptables REJECT rule that blocks everything

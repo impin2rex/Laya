@@ -16,7 +16,7 @@
 # --disable-everything it carries no filters.
 #
 # Run from any bash with GNU make, e.g. MSYS2 on Windows:
-#   D:/msys64/usr/bin/bash.exe -lc "/d/AndroidPorjects/BitChord/native/ffmpeg/build.sh"
+#   D:/msys64/usr/bin/bash.exe -lc "/d/AndroidPorjects/Laya/native/ffmpeg/build.sh"
 # Needs: git, make, a host C compiler (HOST_CC, default gcc — configure only
 # probes it), and an Android NDK (ANDROID_NDK or the one pinned below).
 set -euo pipefail

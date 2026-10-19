@@ -1,6 +1,6 @@
 # Reverb
 
-BitChord has a reverb of its own. It runs inside the app's audio pipeline,
+Laya has a reverb of its own. It runs inside the app's audio pipeline,
 before the samples reach the system, and works the same on every platform.
 
 ## Where it is
@@ -50,7 +50,7 @@ engines use it:
   blend and the speed stretch. The tail carries across track transitions, and a
   crossfade doesn't run a second reverb.
 
-Rather than convolving against synthesised impulse responses, BitChord uses an
+Rather than convolving against synthesised impulse responses, Laya uses an
 algorithmic tank in Freeverb's layout: per side, 8 damped feedback combs feed
 4 allpasses. With this design:
 

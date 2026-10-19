@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BitChord</string>
+    <string name="app_name">Laya</string>
     <string name="playback_channel_name">กำลังเล่น</string>
     <string name="download_channel_name">การดาวน์โหลด</string>
     <string name="download_channel_description">เพลงที่กำลังบันทึกลงในโฟลเดอร์เพลงของคุณ</string>
@@ -95,10 +95,10 @@
     <string name="dolby_atmos_open_failed">เปิดการตั้งค่า Dolby Atmos ไม่ได้</string>
     <string name="update_available">มีอัปเดต: v%1$s</string>
     <string name="software_update">การอัปเดตซอฟต์แวร์</string>
-    <string name="update_available_body">bitchord %1$s พร้อมให้ดาวน์โหลดแล้ว</string>
-    <string name="update_downloading_body">กำลังดาวน์โหลด bitchord %1$s…</string>
-    <string name="update_ready_body">bitchord %1$s พร้อมติดตั้งแล้ว</string>
-    <string name="update_failed_body">ดาวน์โหลด bitchord %1$s ไม่สำเร็จ</string>
+    <string name="update_available_body">laya %1$s พร้อมให้ดาวน์โหลดแล้ว</string>
+    <string name="update_downloading_body">กำลังดาวน์โหลด laya %1$s…</string>
+    <string name="update_ready_body">laya %1$s พร้อมติดตั้งแล้ว</string>
+    <string name="update_failed_body">ดาวน์โหลด laya %1$s ไม่สำเร็จ</string>
     <string name="download_now">ดาวน์โหลดตอนนี้</string>
     <string name="install_now">ติดตั้งตอนนี้</string>
     <string name="later">ภายหลัง</string>
@@ -130,7 +130,7 @@
     <string name="widget_previous">ก่อนหน้า</string>
     <string name="widget_artwork">ปกอัลบั้ม</string>
     <string name="widget_nothing_played">ยังไม่มีการเล่นเพลง</string>
-    <string name="widget_open_bitchord">เปิด BitChord</string>
+    <string name="widget_open_laya">เปิด Laya</string>
     <string name="widget_preview_title">ชื่อเพลง</string>
     <string name="widget_preview_artist">ศิลปิน</string>
     <string name="download_quality">คุณภาพการดาวน์โหลด</string>
@@ -156,7 +156,7 @@
     <string name="cancel_all">ยกเลิกทั้งหมด</string>
     <string name="language">ภาษา</string>
     <string name="app_language">ภาษาแอป</string>
-    <string name="app_language_description">เลือกภาษาที่ใช้ใน BitChord</string>
+    <string name="app_language_description">เลือกภาษาที่ใช้ใน Laya</string>
     <string name="english">อังกฤษ</string>
     <string name="spanish">สเปน</string>
     <string name="french">ฝรั่งเศส</string>
@@ -252,10 +252,10 @@
     <string name="beta">เบต้า</string>
     <string name="refresh_rate">อัตรารีเฟรช</string>
     <string name="high_performance_before_enabling">ก่อนเปิดใช้งาน</string>
-    <string name="high_performance_battery_warning">ตั้งค่าการใช้แบตเตอรี่ของ BitChord เป็นไม่จำกัดก่อน อัตรารีเฟรชที่สูงขึ้นใช้แบตเตอรี่ CPU และ GPU มากขึ้น และอาจทำให้อุปกรณ์ร้อนขึ้น</string>
+    <string name="high_performance_battery_warning">ตั้งค่าการใช้แบตเตอรี่ของ Laya เป็นไม่จำกัดก่อน อัตรารีเฟรชที่สูงขึ้นใช้แบตเตอรี่ CPU และ GPU มากขึ้น และอาจทำให้อุปกรณ์ร้อนขึ้น</string>
     <string name="open_battery_settings">เปิดการตั้งค่าแบตเตอรี่</string>
     <string name="enable_high_performance_title">เปิดใช้งานโหมดประสิทธิภาพสูงหรือไม่</string>
-    <string name="enable_high_performance_confirmation">เปิดใช้งานเฉพาะเมื่อการใช้แบตเตอรี่ของ BitChord ตั้งเป็นไม่จำกัด Android ยังสามารถจำกัดอัตรารีเฟรชเมื่ออุปกรณ์ร้อนหรือแบตเตอรี่ต่ำ</string>
+    <string name="enable_high_performance_confirmation">เปิดใช้งานเฉพาะเมื่อการใช้แบตเตอรี่ของ Laya ตั้งเป็นไม่จำกัด Android ยังสามารถจำกัดอัตรารีเฟรชเมื่ออุปกรณ์ร้อนหรือแบตเตอรี่ต่ำ</string>
     <string name="enable">เปิดใช้งาน</string>
     <string name="not_yet">ยังไม่ใช่ตอนนี้</string>
     <string name="activity">กิจกรรม</string>
@@ -296,7 +296,7 @@
     <string name="discord_button_variables">{song_name}, {artist_name} และ {album_name} จะถูกแทนที่ด้วยข้อมูลแทร็กปัจจุบัน</string>
     <string name="discord_buttons_footer">{song_name}, {artist_name} และ {album_name} จะถูกแทนที่ด้วยข้อมูลแทร็ก ปุ่มแรกเปิดเพลงบน YouTube Music ส่วนปุ่มที่สองเปิดโปรเจกต์นี้</string>
     <string name="discord_presence_footer">การ์ดจะอัปเดตเมื่อแทร็ก ตำแหน่ง หรือสถานะการเล่นเปลี่ยนไป และจะล้างเมื่อหยุดเล่น</string>
-    <string name="discord_sign_in_footer">การลงชื่อเข้าใช้จะเปิดหน้าเข้าสู่ระบบของ Discord ไม่มีการพิมพ์สิ่งใดลงใน BitChord</string>
+    <string name="discord_sign_in_footer">การลงชื่อเข้าใช้จะเปิดหน้าเข้าสู่ระบบของ Discord ไม่มีการพิมพ์สิ่งใดลงใน Laya</string>
     <string name="discord_token">โทเคน Discord</string>
     <string name="discord_token_description">วางโทเคนบัญชี Discord ของคุณ โทเคนจะถูกเข้ารหัสไว้ในอุปกรณ์นี้และส่งไปยัง Discord เท่านั้น</string>
     <string name="discord_token_rejected">Discord ปฏิเสธโทเคนนั้น</string>
@@ -352,7 +352,7 @@
     <string name="start_radio">เริ่มวิทยุ</string>
     <string name="playing_radio">กำลังเล่นวิทยุ %1$s</string>
     <string name="radio_started">เริ่มวิทยุ %1$s แล้ว</string>
-    <string name="saved_to_bitchord_folder">บันทึกลง Music/BitChord แล้ว</string>
+    <string name="saved_to_laya_folder">บันทึกลง Music/Laya แล้ว</string>
     <string name="nothing_downloading">ไม่มีการดาวน์โหลด</string>
     <string name="nothing_to_explore">ยังไม่มีอะไรให้สำรวจตอนนี้</string>
     <string name="no_youtube_music_results">ไม่มีผลลัพธ์จาก YouTube Music</string>
@@ -472,7 +472,7 @@
     <string name="signing_in">กำลังลงชื่อเข้าใช้…</string>
     <string name="sleep_timer">ตัวจับเวลาปิดเพลง</string>
     <string name="sources_no_lossless">ไม่มีแหล่งข้อมูลที่เปิดใช้งานสามารถให้เสียงแบบไม่สูญเสียคุณภาพได้ เพิ่มแอดออนเพื่อเล่นไฟล์ไม่สูญเสียคุณภาพโดยไม่ต้องแปลงไฟล์</string>
-    <string name="sources_order_footer">หากแหล่งข้อมูลหนึ่งไม่มีแทร็กหรือเชื่อมต่อไม่ได้ BitChord จะลองแหล่งถัดไป แหล่งข้อมูลที่อยู่เหนือ YouTube สามารถแทนที่การบันทึกของ YouTube ได้เมื่อให้เวอร์ชันที่ดีกว่า</string>
+    <string name="sources_order_footer">หากแหล่งข้อมูลหนึ่งไม่มีแทร็กหรือเชื่อมต่อไม่ได้ Laya จะลองแหล่งถัดไป แหล่งข้อมูลที่อยู่เหนือ YouTube สามารถแทนที่การบันทึกของ YouTube ได้เมื่อให้เวอร์ชันที่ดีกว่า</string>
     <string name="sources_order_header">แหล่งข้อมูล เรียงตามลำดับที่ลอง</string>
     <string name="sources_quality_capped">การเชื่อมต่อนี้ตั้งไว้ต่ำกว่าคุณภาพสูง สตรีมจึงถูกแปลงให้พอดีกับขีดจำกัดนั้น การดาวน์โหลดไม่ได้รับผลกระทบ</string>
     <string name="sources_subtitle">เสียงมาจากที่ใดและลำดับที่ใช้</string>
@@ -506,7 +506,7 @@
     <string name="biggest_day_note">วันที่คุณฟังมากที่สุดคือ %1$s ด้วยเวลาฟัง %2$s</string>
     <string name="close_replay">ปิด Replay</string>
     <string name="couldnt_draw_picture">สร้างภาพไม่สำเร็จ</string>
-    <string name="default_replay_holder">ผู้ฟัง BitChord</string>
+    <string name="default_replay_holder">ผู้ฟัง Laya</string>
     <string name="different_albums">อัลบั้มที่แตกต่างกัน</string>
     <string name="genres_pending">แนวเพลงจะปรากฏขึ้นเมื่อประวัติการฟังของคุณเพิ่มมากขึ้น</string>
     <string name="hour_am">%1$d โมงเช้า</string>
@@ -532,7 +532,7 @@
     <string name="replay_artist_end"> คือคนที่คุณกลับมาฟังซ้ำแล้วซ้ำอีก</string>
     <string name="replay_artist_focus">หนึ่งศิลปิน</string>
     <string name="replay_artist_start">ตลอดทั้งเดือน </string>
-    <string name="replay_empty_description">ฟังเพลงเพิ่มอีกนิด แล้ว BitChord จะเปลี่ยนประวัติการฟังของคุณให้เป็น Replay</string>
+    <string name="replay_empty_description">ฟังเพลงเพิ่มอีกนิด แล้ว Laya จะเปลี่ยนประวัติการฟังของคุณให้เป็น Replay</string>
     <string name="replay_genre_end"> หล่อหลอมสไตล์เสียงเพลงของคุณ</string>
     <string name="replay_genre_focus">แนวเพลงของคุณ</string>
     <string name="replay_genre_start">รวมกันแล้ว </string>
@@ -625,7 +625,7 @@
     </plurals>
     <string name="no_local_albums">ยังไม่มีอะไรที่นี่เป็นของอัลบั้มหรือเพลย์ลิสต์ ดาวน์โหลดอัลบั้มหรือเพลย์ลิสต์ทั้งชุดแล้วจะปรากฏที่นี่</string>
     <string name="play_your_replay">เล่น Replay ของคุณ</string>
-    <string name="counted_on_device_with_bitchord">นับบนอุปกรณ์นี้ด้วย BitChord</string>
+    <string name="counted_on_device_with_laya">นับบนอุปกรณ์นี้ด้วย Laya</string>
     <string name="this_month">เดือนนี้</string>
     <string name="this_year">ปีนี้</string>
     <string name="all_time">ตลอดเวลา</string>
@@ -697,7 +697,7 @@
     <string name="listen_together_code">รหัสปาร์ตี้</string>
     <string name="listen_together_code_footer">อ่านออกเสียงหรือส่งให้ก็ได้ ไม่ใช้ตัว O และ I ดังนั้น “โอ” คือเลขศูนย์เสมอ</string>
     <string name="copy_code">คัดลอกรหัส</string>
-    <string name="listen_together_share_text">มาฟังกับฉันใน BitChord — รหัสปาร์ตี้ %1$s</string>
+    <string name="listen_together_share_text">มาฟังกับฉันใน Laya — รหัสปาร์ตี้ %1$s</string>
     <string name="listen_together_now_playing">กำลังเล่น</string>
     <string name="listen_together_nothing_playing">ยังไม่มีอะไรเล่น</string>
     <string name="listen_together_listening">กำลังฟัง · %1$d จาก %2$d</string>

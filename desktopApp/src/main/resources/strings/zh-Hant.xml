@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BitChord</string>
+    <string name="app_name">Laya</string>
     <string name="playback_channel_name">正在播放</string>
     <string name="download_channel_name">下載</string>
     <string name="download_channel_description">正在儲存到你的音樂資料夾的歌曲</string>
@@ -91,10 +91,10 @@
     <string name="dolby_atmos_open_failed">無法開啟杜比全景聲設定</string>
     <string name="update_available">有可用更新：v%1$s</string>
     <string name="software_update">軟體更新</string>
-    <string name="update_available_body">bitchord %1$s 現已可供下載。</string>
-    <string name="update_downloading_body">正在下載 bitchord %1$s…</string>
-    <string name="update_ready_body">bitchord %1$s 已準備好安裝。</string>
-    <string name="update_failed_body">無法下載 bitchord %1$s。</string>
+    <string name="update_available_body">laya %1$s 現已可供下載。</string>
+    <string name="update_downloading_body">正在下載 laya %1$s…</string>
+    <string name="update_ready_body">laya %1$s 已準備好安裝。</string>
+    <string name="update_failed_body">無法下載 laya %1$s。</string>
     <string name="download_now">立即下載</string>
     <string name="install_now">立即安裝</string>
     <string name="later">以後再說</string>
@@ -122,7 +122,7 @@
     <string name="widget_previous">上一首</string>
     <string name="widget_artwork">專輯封面</string>
     <string name="widget_nothing_played">尚未播放任何內容</string>
-    <string name="widget_open_bitchord">開啟 BitChord</string>
+    <string name="widget_open_laya">開啟 Laya</string>
     <string name="widget_preview_title">歌曲標題</string>
     <string name="widget_preview_artist">藝人</string>
     <string name="download_quality">下載質量</string>
@@ -145,7 +145,7 @@
     <string name="cancel_all">取消全部</string>
     <string name="language">語言</string>
     <string name="app_language">應用語言</string>
-    <string name="app_language_description">選擇 BitChord 使用的語言。</string>
+    <string name="app_language_description">選擇 Laya 使用的語言。</string>
     <string name="english">英語</string>
     <string name="spanish">西班牙語</string>
     <string name="french">法語</string>
@@ -231,10 +231,10 @@
     <string name="beta">測試版</string>
     <string name="refresh_rate">重新整理率</string>
     <string name="high_performance_before_enabling">啟用前</string>
-    <string name="high_performance_battery_warning">請先將 BitChord 的電量使用設定為“不受限制”。更高的重新整理率會消耗更多電量、CPU 和 GPU 資源，並可能使裝置發熱。</string>
+    <string name="high_performance_battery_warning">請先將 Laya 的電量使用設定為“不受限制”。更高的重新整理率會消耗更多電量、CPU 和 GPU 資源，並可能使裝置發熱。</string>
     <string name="open_battery_settings">開啟電量設定</string>
     <string name="enable_high_performance_title">要啟用高效能模式嗎？</string>
-    <string name="enable_high_performance_confirmation">僅當 BitChord 的電量使用設定為“不受限制”時才啟用。裝置發熱或電量不足時，Android 仍可能限制重新整理率。</string>
+    <string name="enable_high_performance_confirmation">僅當 Laya 的電量使用設定為“不受限制”時才啟用。裝置發熱或電量不足時，Android 仍可能限制重新整理率。</string>
     <string name="enable">啟用</string>
     <string name="not_yet">暫不</string>
     <string name="activity">活動</string>
@@ -275,7 +275,7 @@
     <string name="discord_button_variables">{song_name}、{artist_name} 和 {album_name} 會被替換為當前曲目的資訊。</string>
     <string name="discord_buttons_footer">{song_name}、{artist_name} 和 {album_name} 會被替換為該曲目的資訊。第一個按鈕會在 YouTube Music 中開啟這首歌，第二個按鈕會開啟本專案。</string>
     <string name="discord_presence_footer">當曲目、播放進度或播放狀態發生變化時，卡片會隨之更新；播放停止時會清除。</string>
-    <string name="discord_sign_in_footer">登入會開啟 Discord 的登入頁面，你不會在 BitChord 中輸入任何內容。</string>
+    <string name="discord_sign_in_footer">登入會開啟 Discord 的登入頁面，你不會在 Laya 中輸入任何內容。</string>
     <string name="discord_token">Discord 令牌</string>
     <string name="discord_token_description">貼上你的 Discord 賬號令牌。它會在此裝置上加密儲存，且只會傳送給 Discord。</string>
     <string name="discord_token_rejected">Discord 拒絕了該令牌。</string>
@@ -328,7 +328,7 @@
     <string name="downloads_finished">下載 · 已完成</string>
     <string name="downloading_progress">正在下載 · %1$d%%</string>
     <string name="starting">正在開始</string>
-    <string name="saved_to_bitchord_folder">已儲存到 Music/BitChord</string>
+    <string name="saved_to_laya_folder">已儲存到 Music/Laya</string>
     <string name="nothing_downloading">當前沒有下載任務</string>
     <string name="nothing_to_explore">目前沒有可探索的內容</string>
     <string name="no_youtube_music_results">YouTube Music 沒有搜尋結果</string>
@@ -446,7 +446,7 @@
     <string name="signing_in">正在登入…</string>
     <string name="sleep_timer">睡眠定時器</string>
     <string name="sources_no_lossless">已啟用的來源均無法提供無損音訊。新增自定義模組即可播放可用的無損檔案，而無需轉碼。</string>
-    <string name="sources_order_footer">如果某個來源沒有該曲目或無法訪問，BitChord 會嘗試下一個來源。排在 YouTube 之前的來源如果返回更好的版本，可以替換其錄音。</string>
+    <string name="sources_order_footer">如果某個來源沒有該曲目或無法訪問，Laya 會嘗試下一個來源。排在 YouTube 之前的來源如果返回更好的版本，可以替換其錄音。</string>
     <string name="sources_order_header">來源，按此順序嘗試</string>
     <string name="sources_quality_capped">此連線的設定低於高品質，因此串流會被轉碼以符合該限制，下載不受影響。</string>
     <string name="sources_subtitle">音訊的來源及使用順序</string>
@@ -480,7 +480,7 @@
     <string name="biggest_day_note">你收聽最多的一天是 %1$s，共收聽了 %2$s。</string>
     <string name="close_replay">關閉 Replay</string>
     <string name="couldnt_draw_picture">無法生成圖片</string>
-    <string name="default_replay_holder">BitChord 聽眾</string>
+    <string name="default_replay_holder">Laya 聽眾</string>
     <string name="different_albums">不同專輯</string>
     <string name="genres_pending">隨著收聽記錄增多，流派資訊會逐漸顯示</string>
     <string name="hour_am">上午%1$d點</string>
@@ -506,7 +506,7 @@
     <string name="replay_artist_end">讓你一聽再聽。</string>
     <string name="replay_artist_focus">同一位藝人</string>
     <string name="replay_artist_start">整月裡，</string>
-    <string name="replay_empty_description">再多聽一會兒，BitChord 就會把你的收聽記錄變成一份 Replay。</string>
+    <string name="replay_empty_description">再多聽一會兒，Laya 就會把你的收聽記錄變成一份 Replay。</string>
     <string name="replay_genre_end">塑造了你的聽感。</string>
     <string name="replay_genre_focus">你的流派</string>
     <string name="replay_genre_start">總的來說，</string>
@@ -597,7 +597,7 @@
     </plurals>
     <string name="no_local_albums">這裡還沒有任何屬於專輯或播放列表的內容。下載完整的專輯或播放列表後，它們會顯示在這裡。</string>
     <string name="play_your_replay">播放你的 Replay</string>
-    <string name="counted_on_device_with_bitchord">由 BitChord 在此裝置上統計</string>
+    <string name="counted_on_device_with_laya">由 Laya 在此裝置上統計</string>
     <string name="this_month">本月</string>
     <string name="this_year">今年</string>
     <string name="all_time">全部時間</string>
@@ -652,7 +652,7 @@
     <string name="listen_together_code">派對程式碼</string>
     <string name="listen_together_code_footer">讀出來或發出去。字母 O 和 I 不會用到，所以“歐”永遠是零。</string>
     <string name="copy_code">複製程式碼</string>
-    <string name="listen_together_share_text">在 BitChord 上和我一起聽 — 派對程式碼 %1$s</string>
+    <string name="listen_together_share_text">在 Laya 上和我一起聽 — 派對程式碼 %1$s</string>
     <string name="listen_together_now_playing">正在播放</string>
     <string name="listen_together_nothing_playing">還沒有播放任何內容</string>
     <string name="listen_together_listening">正在收聽 · %1$d / %2$d</string>

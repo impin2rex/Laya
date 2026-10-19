@@ -1,6 +1,6 @@
-# BitChord Desktop
+# Laya Desktop
 
-BitChord has a Kotlin Multiplatform shared module and a Compose Multiplatform
+Laya has a Kotlin Multiplatform shared module and a Compose Multiplatform
 desktop application for macOS, Linux, and Windows. Desktop uses the JVM target, which is
 the supported Compose Multiplatform desktop model.
 
@@ -27,28 +27,28 @@ running `gradlew.bat :desktopApp:run`.
 
 ## Installing a release
 
-Every download on the [releases page](https://github.com/kushagrasinghx/BitChord/releases) carries its own Java
+Every download on the [releases page](https://github.com/impin2rex/Laya/releases) carries its own Java
 runtime, the FFmpeg and ONNX natives, the Automix analyser and its models.
 Nothing else has to be installed first — no JDK, no codec pack.
 
 | Platform | Download | Notes |
 |---|---|---|
-| macOS | `BitChord-<version>-macos-arm64.dmg` | For Apple Silicon Macs (M1/M2/M3/M4/later). Drag to Applications. |
-| macOS | `BitChord-<version>-macos-x64.dmg` | For Intel Macs. Drag to Applications. |
-| macOS | `BitChord-<version>-macos-*.pkg` | Standard macOS installer package for automated or managed installations. |
-| Linux | `BitChord-<version>-linux-x86_64.AppImage` | `chmod +x` it and run. No install, works on any distribution. |
-| Linux | `BitChord-<version>-linux-amd64.deb` | `sudo apt install ./BitChord-*.deb` on Debian, Ubuntu and derivatives. |
-| Linux | `BitChord-<version>-linux-x86_64.rpm` | `sudo dnf install ./BitChord-*.rpm` on Fedora, RHEL and openSUSE. |
-| Windows | `BitChord-<version>-windows-x64-setup.exe` | The ordinary installer. Installs for the current user, so it never asks for an administrator. |
-| Windows | `BitChord-<version>-windows-x64.msi` | The same thing for anyone who deploys by MSI. |
-| Windows | `BitChord-<version>-windows-x64-portable.zip` | Unzip anywhere and run `BitChord.exe`. Writes nothing outside the folder. |
+| macOS | `Laya-<version>-macos-arm64.dmg` | For Apple Silicon Macs (M1/M2/M3/M4/later). Drag to Applications. |
+| macOS | `Laya-<version>-macos-x64.dmg` | For Intel Macs. Drag to Applications. |
+| macOS | `Laya-<version>-macos-*.pkg` | Standard macOS installer package for automated or managed installations. |
+| Linux | `Laya-<version>-linux-x86_64.AppImage` | `chmod +x` it and run. No install, works on any distribution. |
+| Linux | `Laya-<version>-linux-amd64.deb` | `sudo apt install ./Laya-*.deb` on Debian, Ubuntu and derivatives. |
+| Linux | `Laya-<version>-linux-x86_64.rpm` | `sudo dnf install ./Laya-*.rpm` on Fedora, RHEL and openSUSE. |
+| Windows | `Laya-<version>-windows-x64-setup.exe` | The ordinary installer. Installs for the current user, so it never asks for an administrator. |
+| Windows | `Laya-<version>-windows-x64.msi` | The same thing for anyone who deploys by MSI. |
+| Windows | `Laya-<version>-windows-x64-portable.zip` | Unzip anywhere and run `Laya.exe`. Writes nothing outside the folder. |
 
 **macOS Gatekeeper.** Unsigned binaries built locally or downloaded outside the Mac App Store
-may trigger a macOS security prompt ("BitChord is damaged and can't be opened" or "unidentified developer").
+may trigger a macOS security prompt ("Laya is damaged and can't be opened" or "unidentified developer").
 To clear the quarantine flag, run:
 
 ```bash
-xattr -cr /Applications/BitChord.app
+xattr -cr /Applications/Laya.app
 ```
 
 The Linux packages are built on Ubuntu 22.04 against its glibc, so they install
@@ -63,7 +63,7 @@ time.
 
 **Windows and the Visual C++ runtime.** The Automix analyser is linked against a
 static C runtime, so on almost every machine there is nothing to install. If
-BitChord starts but Automix never analyses anything, install the
+Laya starts but Automix never analyses anything, install the
 [Microsoft Visual C++ 2015–2022 Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe)
 and restart it — that is the one dependency the bundled runtime cannot carry
 itself, because Windows expects it to be a system component.
@@ -83,9 +83,9 @@ On macOS:
 # Builds the .pkg installer
 ./gradlew :desktopApp:packagePkg
 
-# Standalone BitChord.app bundle
+# Standalone Laya.app bundle
 ./gradlew :desktopApp:createDistributable
-# Output is at: desktopApp/build/compose/binaries/main/app/BitChord.app
+# Output is at: desktopApp/build/compose/binaries/main/app/Laya.app
 ```
 
 On Linux — `rpm`, `fakeroot` and `binutils` must be installed for the packages,
@@ -98,8 +98,8 @@ bash ./gradlew :desktopApp:packageRpm
 # The AppImage is wrapped around the app image jpackage produces.
 bash ./gradlew :desktopApp:createDistributable
 desktopApp/packaging/appimage.sh \
-  desktopApp/build/compose/binaries/main/app/BitChord \
-  dist/BitChord-linux-x86_64.AppImage
+  desktopApp/build/compose/binaries/main/app/Laya \
+  dist/Laya-linux-x86_64.AppImage
 ```
 
 On Windows — [WiX Toolset 3](https://github.com/wixtoolset/wix3/releases) must
@@ -113,5 +113,5 @@ REM The portable build is the app image, zipped.
 gradlew.bat :desktopApp:createDistributable
 ```
 
-Pass `-Pbitchord.version=1.2.3` to stamp a version other than the one in
+Pass `-Playa.version=1.2.3` to stamp a version other than the one in
 `desktopApp/build.gradle.kts`; a release build takes it from the tag.
