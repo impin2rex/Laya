@@ -51,6 +51,7 @@ data class SourceConfig(
      * already break that. Refreshed whenever the manifest is next read.
      */
     val checkValidLossless: Boolean = false,
+    val userAgent: String = "",
 ) {
     /** Whether this source is shut out right now because it needs an output that isn't connected. */
     val awaitsLosslessOutput: Boolean
@@ -378,8 +379,12 @@ object SourceRegistry {
      * [existing] is carried through so editing a saved source keeps its id and
      * its on/off state; a new source gets a fresh config.
      */
-    suspend fun identify(url: String, existing: SourceConfig? = null): Result<SourceConfig> {
-        val detected = SourceFormats.identify(url).getOrElse { return Result.failure(it) }
+    suspend fun identify(
+        url: String,
+        existing: SourceConfig? = null,
+        userAgent: String = existing?.userAgent.orEmpty(),
+    ): Result<SourceConfig> {
+        val detected = SourceFormats.identify(url, userAgent).getOrElse { return Result.failure(it) }
         return when (detected) {
             is DetectedFormat.Addon -> Result.success(
                 (existing ?: SourceConfig(kind = SourceKind.ADDON)).copy(
@@ -388,6 +393,7 @@ object SourceRegistry {
                     label = detected.manifest.displayName,
                     allowDownloads = detected.manifest.downloadsAllowed,
                     checkValidLossless = detected.manifest.requiresLosslessOutput,
+                    userAgent = userAgent.trim(),
                 ),
             )
             is DetectedFormat.ModuleIndex -> Result.success(
@@ -397,6 +403,7 @@ object SourceRegistry {
                     // document, where an addon's manifest only points at one.
                     baseUrl = detected.url,
                     label = existing?.label.orEmpty(),
+                    userAgent = userAgent.trim(),
                 ),
             )
             is DetectedFormat.Unsupported -> Result.failure(AddonException(detected.reason))

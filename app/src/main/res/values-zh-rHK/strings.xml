@@ -1292,4 +1292,5 @@
     <string name="onboarding_sign_in_google">使用 Google 登入</string>
     <string name="onboarding_skip_sign_in">略過登入</string>
     <string name="onboarding_back">返回</string>
+    <string name="user_agent">使用者代理</string>
 </resources>

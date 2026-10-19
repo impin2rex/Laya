@@ -6877,10 +6877,12 @@ private fun DesktopSourceEditorDialog(
 ) {
     var label by remember(config.id) { mutableStateOf(config.label) }
     var baseUrl by remember(config.id) { mutableStateOf(config.baseUrl) }
+    var userAgent by remember(config.id) { mutableStateOf(config.userAgent) }
+    var editingAgent by remember(config.id) { mutableStateOf(false) }
     var checking by remember(config.id) { mutableStateOf(false) }
     var message by remember(config.id) { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    val candidate = config.copy(label = label.trim(), baseUrl = baseUrl.trim())
+    val candidate = config.copy(label = label.trim(), baseUrl = baseUrl.trim(), userAgent = userAgent.trim())
 
     /** Works out what is actually on the end of the URL before storing it. */
     fun identify(thenSave: Boolean) {
@@ -6888,7 +6890,7 @@ private fun DesktopSourceEditorDialog(
         checking = true
         message = null
         scope.launch {
-            val outcome = DesktopSourceFormats.identify(candidate.baseUrl)
+            val outcome = DesktopSourceFormats.identify(candidate.baseUrl, candidate.userAgent)
             checking = false
             outcome.fold(
                 onSuccess = { detected ->
@@ -6957,6 +6959,37 @@ private fun DesktopSourceEditorDialog(
                     placeholder = { Text(DesktopStrings["d_my_music_source", "My music source"]) },
                     singleLine = true,
                 )
+                // Shown as it stands and only editable through the pen: some addons answer only
+                // the client they were written for, and this is the one place to say which.
+                if (editingAgent) {
+                    OutlinedTextField(
+                        value = userAgent,
+                        onValueChange = {
+                            userAgent = it
+                            message = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(DesktopStrings["user_agent", "User-Agent"]) },
+                        placeholder = { Text(DesktopAddonClient.USER_AGENT) },
+                        singleLine = true,
+                    )
+                } else {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(DesktopStrings["user_agent", "User-Agent"], color = DesktopSecondary, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                userAgent.trim().ifBlank {
+                                    "${DesktopAddonClient.USER_AGENT} · ${DesktopStrings["app_icon_default", "Default"]}"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 2,
+                            )
+                        }
+                        IconButton(onClick = { editingAgent = true }, enabled = !checking) {
+                            Icon(Icons.Rounded.Edit, contentDescription = DesktopStrings["user_agent", "User-Agent"])
+                        }
+                    }
+                }
                 (message ?: status)?.let {
                     Text(it, color = DesktopSecondary, style = MaterialTheme.typography.bodySmall)
                 }

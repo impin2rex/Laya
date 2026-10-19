@@ -1289,4 +1289,5 @@
     <string name="song_info_unavailable">Không có thông tin</string>
     <string name="song_info_error">Không thể tải một số thông tin.</string>
     <string name="song_info_retry">Thử lại</string>
+    <string name="user_agent">Tác nhân người dùng</string>
 </resources>

@@ -715,4 +715,6 @@
     <string name="listen_together_open">Escuchar juntos</string>
     <string name="listen_together_open_count">Escuchando juntos · %1$d</string>
     <string name="miscellaneous_footer">Al activarlo, cerrar la app desde recientes también detiene la música.</string>
+    <string name="user_agent">Agente de usuario</string>
+    <string name="app_icon_default">Predeterminado</string>
 </resources>

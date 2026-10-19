@@ -672,4 +672,6 @@
     <string name="miscellaneous_footer">啟用後，從最近任務介面關閉應用也會停止音樂播放。</string>
     <string name="lyrics_original_title">用原標題搜歌詞</string>
     <string name="lyrics_original_title_desc">先還原 YouTube 原標題再搜歌詞，翻譯過的標題也能找到</string>
+    <string name="user_agent">使用者代理</string>
+    <string name="app_icon_default">預設</string>
 </resources>

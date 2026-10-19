@@ -1372,4 +1372,5 @@
     <string name="song_info_unavailable">Nicht verfügbar</string>
     <string name="song_info_error">Einige Informationen konnten nicht geladen werden.</string>
     <string name="song_info_retry">Erneut versuchen</string>
+    <string name="user_agent">User-Agent</string>
 </resources>

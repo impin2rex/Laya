@@ -708,4 +708,6 @@
     <string name="listen_together_open">Слушать вместе</string>
     <string name="listen_together_open_count">Слушаем вместе · %1$d</string>
     <string name="miscellaneous_footer">При включении закрытие приложения из недавних также останавливает воспроизведение музыки.</string>
+    <string name="user_agent">Агент пользователя</string>
+    <string name="app_icon_default">По умолчанию</string>
 </resources>

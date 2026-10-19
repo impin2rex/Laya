@@ -879,4 +879,6 @@
     <string name="song_info_unavailable">Not available</string>
     <string name="song_info_error">Some information could not be loaded.</string>
     <string name="song_info_retry">Retry</string>
+    <string name="user_agent">User-Agent</string>
+    <string name="app_icon_default">Default</string>
 </resources>

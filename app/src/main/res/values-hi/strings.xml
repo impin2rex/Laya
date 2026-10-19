@@ -1372,4 +1372,5 @@
     <string name="song_info_unavailable">उपलब्ध नहीं</string>
     <string name="song_info_error">कुछ जानकारी लोड नहीं हो सकी।</string>
     <string name="song_info_retry">फिर से कोशिश करें</string>
+    <string name="user_agent">यूज़र-एजेंट</string>
 </resources>

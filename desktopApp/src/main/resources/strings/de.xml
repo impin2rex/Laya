@@ -686,4 +686,6 @@
     <string name="listen_together_open">Gemeinsam hören</string>
     <string name="listen_together_open_count">Gemeinsam hören · %1$d</string>
     <string name="miscellaneous_footer">Wenn aktiviert, stoppt das Schließen der App aus den letzten Apps auch die Musikwiedergabe.</string>
+    <string name="user_agent">User-Agent</string>
+    <string name="app_icon_default">Standard</string>
 </resources>

@@ -841,4 +841,6 @@
     <string name="listen_together_open_count">একসঙ্গে শোনা · %1$d</string>
     <string name="miscellaneous_footer">চালু থাকলে, সাম্প্রতিক অ্যাপের স্ক্রিন থেকে অ্যাপ বন্ধ করলে গান চলাও থেমে যাবে।</string>
     <string name="translate">অনুবাদ করুন</string>
+    <string name="user_agent">ইউজার-এজেন্ট</string>
+    <string name="app_icon_default">ডিফল্ট</string>
 </resources>

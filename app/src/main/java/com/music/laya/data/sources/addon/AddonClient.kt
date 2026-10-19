@@ -33,10 +33,19 @@ import java.util.concurrent.TimeUnit
  * request abandoned after it has already reached somebody's server is work
  * their server did for nobody.
  */
-class AddonClient(rawBaseUrl: String) {
+class AddonClient(rawBaseUrl: String, userAgent: String = "") {
 
     /** Where this addon lives, with `/manifest.json` and trailing slashes off. */
     val baseUrl: String = normalizeBase(rawBaseUrl)
+
+    /** What every request to this addon says it is — see [SourceConfig.userAgent]. */
+    val userAgent: String = userAgent.trim().ifBlank { DEFAULT_USER_AGENT }
+
+    /** Whether [url] is on this addon's own server rather than somewhere it hands off to. */
+    fun ownsHost(url: String): Boolean {
+        val host = url.toHttpUrlOrNull()?.host ?: return false
+        return host.equals(baseUrl.toHttpUrlOrNull()?.host, ignoreCase = true)
+    }
 
     private val json = Json {
         isLenient = true
@@ -336,7 +345,7 @@ class AddonClient(rawBaseUrl: String) {
 
             val request = Request.Builder().url(url)
                 .header("Accept", "application/json")
-                .header("User-Agent", USER_AGENT)
+                .header("User-Agent", userAgent)
                 .build()
 
             val wait = client.newCall(request).execute().use { response ->
@@ -496,7 +505,8 @@ class AddonClient(rawBaseUrl: String) {
         private const val BACKOFF_BASE_MS = 500L
         private const val BACKOFF_CAP_MS = 8_000L
 
-        private val USER_AGENT = "Laya/v${com.music.laya.BuildConfig.VERSION_NAME}"
+        /** What an addon is asked with when its config names no agent of its own. */
+        val DEFAULT_USER_AGENT = "Laya/v${com.music.laya.BuildConfig.VERSION_NAME}"
 
         /**
          * What [probeSearch] asks for. Deliberately an ordinary word rather

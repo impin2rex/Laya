@@ -1377,4 +1377,5 @@
     <string name="song_info_unavailable">Não disponível</string>
     <string name="song_info_error">Não foi possível carregar algumas informações.</string>
     <string name="song_info_retry">Tentar novamente</string>
+    <string name="user_agent">Agente do usuário</string>
 </resources>

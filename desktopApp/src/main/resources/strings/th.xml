@@ -714,4 +714,6 @@
     <string name="listen_together_jam_unnamed">กำลังฟังด้วยกัน</string>
     <string name="listen_together_open">ฟังด้วยกัน</string>
     <string name="listen_together_open_count">กำลังฟังด้วยกัน · %1$d</string>
+    <string name="user_agent">ตัวแทนผู้ใช้</string>
+    <string name="app_icon_default">ค่าเริ่มต้น</string>
 </resources>

@@ -23,7 +23,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -340,6 +342,8 @@ fun ServerEditorAlert(
     removeLabel: String? = null,
     /** Offered only when there is something stored to remove. */
     onRemove: (() -> Unit)? = null,
+    /** Drawn under the fields — the addon editor's User-Agent row. */
+    extra: (@Composable () -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     AlertScaffold(hazeState = hazeState, onDismiss = { if (!testing) onDismiss() }) {
@@ -383,6 +387,10 @@ fun ServerEditorAlert(
                     ),
                 )
             }
+            extra?.let {
+                Spacer(Modifier.height(10.dp))
+                it()
+            }
         }
         AlertRule()
         // Above Save rather than beside it: an address is worth checking before
@@ -418,6 +426,51 @@ fun ServerEditorAlert(
             onClick = onDismiss,
             enabled = !testing,
         )
+    }
+}
+
+/**
+ * The User-Agent a source is asked with: shown as it stands — the custom one,
+ * or the default marked as such — and only made editable through the pen, so
+ * an agent nobody meant to change is not one stray tap from being changed.
+ * Clearing the field goes back to [default].
+ */
+@Composable
+private fun UserAgentRow(value: String, default: String, onChange: (String) -> Unit, enabled: Boolean) {
+    var editing by remember { mutableStateOf(false) }
+    val label = stringResource(R.string.user_agent)
+    if (editing) {
+        PillTextField(
+            value = value,
+            onValueChange = onChange,
+            placeholder = default,
+            enabled = enabled,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { editing = false }),
+        )
+        return
+    }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+            Text(
+                text = value.trim().ifBlank { "$default · ${stringResource(R.string.app_icon_default)}" },
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+            )
+        }
+        IconButton(onClick = { editing = true }, enabled = enabled) {
+            Icon(
+                Icons.Rounded.Edit,
+                contentDescription = label,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 
@@ -553,12 +606,29 @@ fun AddonEditorAlert(
      * on it still talking about addons.
      */
     removeLabel: String? = null,
+    /**
+     * The agent this addon is asked with, as typed — blank for [defaultUserAgent].
+     * Null leaves the row off, for the callers editing something that is not an addon.
+     */
+    userAgent: String? = null,
+    onUserAgentChange: (String) -> Unit = {},
+    defaultUserAgent: String = "",
     onDismiss: () -> Unit,
 ) {
     ServerEditorAlert(
         hazeState = hazeState,
         title = title,
         description = description,
+        extra = userAgent?.let { agent ->
+            {
+                UserAgentRow(
+                    value = agent,
+                    default = defaultUserAgent,
+                    onChange = onUserAgentChange,
+                    enabled = !testing,
+                )
+            }
+        },
         fields = listOf(
             EditorField(
                 value = urlValue,

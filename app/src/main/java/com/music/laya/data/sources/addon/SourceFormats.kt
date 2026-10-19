@@ -75,7 +75,8 @@ object SourceFormats {
      *     guessed, still works, and there is no honest reason to turn it away
      *     over a missing description of something that demonstrably functions.
      */
-    suspend fun identify(rawUrl: String): Result<DetectedFormat> = withContext(Dispatchers.IO) {
+    suspend fun identify(rawUrl: String, userAgent: String = ""): Result<DetectedFormat> = withContext(Dispatchers.IO) {
+        val agent = userAgent.trim().ifBlank { AddonClient.DEFAULT_USER_AGENT }
         val url = rawUrl.trim().trimEnd('/')
         if (url.toHttpUrlOrNull() == null) {
             return@withContext Result.success(
@@ -95,7 +96,7 @@ object SourceFormats {
         var firstUnsupported: DetectedFormat.Unsupported? = null
 
         for (attempt in attempts) {
-            val body = fetch(attempt).getOrElse { failure ->
+            val body = fetch(attempt, agent).getOrElse { failure ->
                 lastFailure = failure
                 continue
             }
@@ -107,7 +108,7 @@ object SourceFormats {
 
         // Nothing readable was published. Ask the endpoints instead — this is
         // the pass that lets an addon with no manifest be added at all.
-        val probed = AddonClient(base).probeSearch()
+        val probed = AddonClient(base, agent).probeSearch()
         if (probed.isSuccess) {
             TrackLog.d(TAG, "identify(${AddonClient.redact(base)}) — no manifest, but /search answered")
             return@withContext Result.success(
@@ -207,10 +208,10 @@ object SourceFormats {
     )
 
     /** One GET, as plain as it gets: this runs before anything is configured. */
-    private suspend fun fetch(url: String): Result<String> = runCatching {
+    private suspend fun fetch(url: String, userAgent: String): Result<String> = runCatching {
         val request = Request.Builder().url(url)
             .header("Accept", "application/json")
-            .header("User-Agent", "Laya/v${com.music.laya.BuildConfig.VERSION_NAME}")
+            .header("User-Agent", userAgent)
             .build()
         Http.client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {

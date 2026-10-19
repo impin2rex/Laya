@@ -734,4 +734,6 @@
     <string name="listen_together_open">Birlikte dinle</string>
     <string name="listen_together_open_count">Birlikte dinleme · %1$d</string>
     <string name="miscellaneous_footer">Etkinleştirildiğinde, uygulamayı son kullanılanlar ekranından kapatmak müzik çalmayı da durdurur.</string>
+    <string name="user_agent">Kullanıcı aracısı</string>
+    <string name="app_icon_default">Varsayılan</string>
 </resources>

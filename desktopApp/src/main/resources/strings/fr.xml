@@ -686,4 +686,6 @@
     <string name="listen_together_open">Écouter ensemble</string>
     <string name="listen_together_open_count">Écoute commune · %1$d</string>
     <string name="miscellaneous_footer">Une fois activé, fermer l\'application depuis les applications récentes arrête aussi la musique.</string>
+    <string name="user_agent">Agent utilisateur</string>
+    <string name="app_icon_default">Par défaut</string>
 </resources>
