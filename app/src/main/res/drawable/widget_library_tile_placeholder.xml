@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A liked-song tile before its cover arrives. Sized, so fitCenter keeps it square
+  in a cell that is wider than it is tall.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <size
+        android:width="@dimen/widget_library_tile"
+        android:height="@dimen/widget_library_tile" />
+    <corners android:radius="4dp" />
+    <solid android:color="#33FFFFFF" />
+</shape>

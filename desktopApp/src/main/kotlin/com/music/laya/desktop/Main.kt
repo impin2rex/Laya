@@ -124,12 +124,12 @@ private fun desktopMain() = application {
                 (composeWindow.contentPane as? javax.swing.JComponent)?.isOpaque = false
                 composeWindow.rootPane.isOpaque = false
             }
-            // AWT measures this in device pixels while Compose's window state is in dp. Keeping
-            // the scale in the conversion makes the usable minimum consistent on every display.
-            val transform = composeWindow.graphicsConfiguration.defaultTransform
+            // AWT window sizes are logical points, the same unit as Compose's dp — the display
+            // scale is already applied. Multiplying by it doubled both sizes on a Retina screen,
+            // which pushed the window past a 13-inch MacBook's display.
             composeWindow.minimumSize = Dimension(
-                (MIN_WINDOW_WIDTH_DP * transform.scaleX).roundToInt(),
-                (MIN_WINDOW_HEIGHT_DP * transform.scaleY).roundToInt(),
+                MIN_WINDOW_WIDTH_DP.roundToInt(),
+                MIN_WINDOW_HEIGHT_DP.roundToInt(),
             )
             // Setting AWT's minimum during the first composition can resize the native peer to
             // that minimum without updating Compose's state. Compose would then keep laying out a
@@ -137,8 +137,8 @@ private fun desktopMain() = application {
             // boundary off-screen until a maximize/restore cycle synchronised the two. Re-assert
             // the requested opening size on the native peer so both layers start in agreement.
             composeWindow.size = Dimension(
-                (openingSize.width.value * transform.scaleX).roundToInt(),
-                (openingSize.height.value * transform.scaleY).roundToInt(),
+                openingSize.width.value.roundToInt(),
+                openingSize.height.value.roundToInt(),
             )
             if (DesktopPlatform.isWindows && DesktopWindowsFrame.install("Laya")) {
                 DesktopWindowBackdrop.apply()
@@ -185,5 +185,7 @@ private fun desktopMain() = application {
     }
 }
 
-private const val MIN_WINDOW_WIDTH_DP = 900.0
-private const val MIN_WINDOW_HEIGHT_DP = 600.0
+// The now-playing screen's two-column layout starts at 560dp wide (LANDSCAPE_PLAYER_MIN_WIDTH in
+// NowPlayingScreen). Narrower and short, it falls back to the portrait player, which needs height.
+private const val MIN_WINDOW_WIDTH_DP = 560.0
+private const val MIN_WINDOW_HEIGHT_DP = 400.0

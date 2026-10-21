@@ -1832,6 +1832,14 @@ private fun LayaApp(
             // bounded queue before the controller connects, so this resumes
             // both a live session and one recovered after process death.
             LinkRequest.Resume -> if (session.mediaItemCount > 0) session.play()
+            // What a tap on the Search tab does, from the launcher.
+            LinkRequest.OpenSearch -> {
+                dismissPlayer()
+                navigator.clear()
+                selectedTab = TAB_SEARCH
+                viewModel.onQueryChange("")
+                searchFocusRequested = true
+            }
         }
         MusicLink.handled()
     }

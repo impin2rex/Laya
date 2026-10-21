@@ -364,6 +364,7 @@ private val LocalDesktopBottomInset = staticCompositionLocalOf { 0.dp }
 
 /** Android's own edge on these bars: `Color.White.copy(alpha = 0.10f)`. */
 private val DesktopBarEdge = Color(0x1AFFFFFF)
+private const val POSITION_SAVE_INTERVAL_MS = 5_000L
 internal val DesktopAccent = Color.White
 
 /** Deleting, signing out, and anything that failed — the one place a colour survives, as on Android. */
@@ -520,7 +521,14 @@ fun LayaDesktopApp() {
     var personalPlayingStash by remember { mutableStateOf(false) }
     val persistence = remember { DesktopPersistence() }
     var availableUpdate by remember { mutableStateOf<DesktopUpdateChecker.UpdateInfo?>(null) }
-    LaunchedEffect(Unit) { availableUpdate = DesktopUpdateChecker.check() }
+    // Downloaded and verified in the background, then offered as a restart; see DesktopUpdater.
+    // Anything it can't update in place falls back to the open-the-installer prompt.
+    var readyUpdate by remember { mutableStateOf<DesktopUpdater.Ready?>(null) }
+    LaunchedEffect(Unit) {
+        val update = DesktopUpdateChecker.check() ?: return@LaunchedEffect
+        val ready = if (DesktopUpdater.automatic.value) DesktopUpdater.download(update) else null
+        if (ready != null) readyUpdate = ready else availableUpdate = update
+    }
     availableUpdate?.let { update ->
         AlertDialog(
             onDismissRequest = { availableUpdate = null },
@@ -715,6 +723,9 @@ fun LayaDesktopApp() {
     var fullBleedArtwork by remember { mutableStateOf(persistence.boolean("full_bleed_artwork", false)) }
     var accounts by remember { mutableStateOf(DesktopAccounts.accounts()) }
     var activeAccountId by remember { mutableStateOf(DesktopAccounts.activeAccountId()) }
+    // False while a stored account's session is still being checked at launch, so Home does not
+    // offer to sign in someone who is about to be signed in.
+    var sessionSettled by remember { mutableStateOf(accounts.isEmpty()) }
     var activeProfileId by remember { mutableStateOf(DesktopAccounts.activeProfileId()) }
     var signInBusy by remember { mutableStateOf<String?>(null) }
     var signInError by remember { mutableStateOf<String?>(null) }
@@ -777,6 +788,8 @@ fun LayaDesktopApp() {
     // that depends on it.
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) { DesktopAccounts.activate() }
+        youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+        sessionSettled = true
         sessionRevision++
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
@@ -1698,6 +1711,35 @@ fun LayaDesktopApp() {
         playbackEngine.pause()
         partySync.onLocalIntent()
     }
+    // The queue comes back from the last run; so does the track it was on, loaded paused so the
+    // player shows it and play picks up from there.
+    LaunchedEffect(playbackEngine) {
+        if (selectedSong != null) return@LaunchedEffect
+        val song = liveQueue.current ?: return@LaunchedEffect
+        selectedSong = song
+        val (savedId, savedMs) = persistence.string("queue_position", "").split(':', limit = 2)
+            .let { it.getOrNull(0) to it.getOrNull(1)?.toLongOrNull() }
+        playbackEngine.load(
+            song,
+            playWhenReady = false,
+            startAtMs = if (savedId == song.videoId) savedMs ?: 0L else 0L,
+        )
+    }
+    // How far into the track, for the restore above: every few seconds while playing, and on pause.
+    LaunchedEffect(playbackEngine) {
+        var lastSaved = -1L
+        var wasPlaying = false
+        playbackEngine.state.collect { state ->
+            val song = state.song
+            val paused = wasPlaying && !state.isPlaying
+            wasPlaying = state.isPlaying
+            // Nothing while a track is still opening: its playhead reads 0 until the seek lands.
+            if (song == null || state.isLoading || state.positionMs <= 0L) return@collect
+            if (!paused && kotlin.math.abs(state.positionMs - lastSaved) < POSITION_SAVE_INTERVAL_MS) return@collect
+            lastSaved = state.positionMs
+            persistence.saveString("queue_position", "${song.videoId}:${state.positionMs}")
+        }
+    }
     val mprisController = remember(playbackEngine) {
         DesktopMprisController(
             onPlay = ::playFromUser,
@@ -2598,6 +2640,34 @@ fun LayaDesktopApp() {
                 playbackEngine.shutdown()
                 DesktopWindowsMedia.stop()
                 exitProcess(0)
+            },
+        )
+    }
+    readyUpdate?.let { ready ->
+        AlertDialog(
+            onDismissRequest = { readyUpdate = null },
+            title = { Text(DesktopStrings["d_update_ready", "Update ready"]) },
+            text = {
+                Text(
+                    "Laya ${ready.version} is downloaded — you have ${DesktopUpdateChecker.currentVersion}. " +
+                        "Restart to install it; it takes a few seconds." +
+                        (ready.notes?.takeIf { it.isNotBlank() }?.let { "\n\n${it.take(600)}" } ?: ""),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    // Same teardown as the tray's Quit, for the same reason.
+                    DesktopUpdater.installAndRestart(ready) {
+                        playbackEngine.shutdown()
+                        DesktopWindowsMedia.stop()
+                    }
+                    readyUpdate = null
+                }) { Text(DesktopStrings["d_restart_to_update", "Restart to update"]) }
+            },
+            dismissButton = {
+                TextButton(onClick = { readyUpdate = null }) {
+                    Text(DesktopStrings["d_later", "Later"])
+                }
             },
         )
     }
@@ -4148,7 +4218,7 @@ fun LayaDesktopApp() {
                             pullState = rememberPullToRefreshState(),
                             contentPadding = sharedPagePadding,
                             title = null,
-                            signedIn = youtubeSignedIn,
+                            signedIn = youtubeSignedIn || !sessionSettled,
                             onSignIn = { overlays.accounts = true },
                             onItemLongPress = { item -> if (item.videoId != null) openMenu(item.toSong()) },
                             onLoadMore = ::loadMoreHome,
@@ -5014,7 +5084,7 @@ private fun DesktopBottomChrome(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (compact && song != null) {
+        if (compact) {
             DesktopMiniPlayer(
                 song = song,
                 isPlaying = isPlaying,
@@ -5077,7 +5147,7 @@ private fun DesktopFloatingNavigation(
 
 @Composable
 private fun DesktopMiniPlayer(
-    song: Song,
+    song: Song?,
     isPlaying: Boolean,
     onExpand: () -> Unit,
     onPlayPause: () -> Unit,
@@ -5094,11 +5164,24 @@ private fun DesktopMiniPlayer(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DesktopArtwork(song.thumbnailUrl, Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)), px = ROW_ART_PX)
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-            Text(song.artist, color = DesktopSecondary, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (song == null) {
+            // The wide layout's bar shows an empty slot before anything plays; so does this one.
+            Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                Icon(
+                    LayaIcons.MusicNote,
+                    DesktopStrings["playback_channel_name", "Now playing"],
+                    tint = DesktopSecondary.copy(alpha = 0.65f),
+                    modifier = Modifier.size(21.dp),
+                )
+            }
+            Spacer(Modifier.weight(1f))
+        } else {
+            DesktopArtwork(song.thumbnailUrl, Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)), px = ROW_ART_PX)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+                Text(song.artist, color = DesktopSecondary, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
         IconButton(onClick = onPlayPause) {
             Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (isPlaying) "Pause" else "Play", tint = Color.White)
@@ -6473,6 +6556,16 @@ private fun DesktopSettingsScreen(
                             onCloseToTrayChange,
                         )
                     }
+                    val automaticUpdates by DesktopUpdater.automatic.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["d_automatic_updates", "Automatic updates"],
+                        DesktopStrings[
+                            "d_automatic_updates_subtitle",
+                            "Download new versions in the background and install them on restart",
+                        ],
+                        automaticUpdates,
+                        DesktopUpdater::setAutomatic,
+                    )
                     val hideVolumeBar by DesktopAppearanceSettings.hideVolumeBar.collectAsState()
                     SettingsToggle(
                         DesktopStrings["hide_volume_bar", "Hide volume bar"],
@@ -6691,7 +6784,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet, as Android has it. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("laya.version") ?: "1.8.2" }
+    val version = remember { System.getProperty("laya.version") ?: "1.8.3" }
     val linkStyles = TextLinkStyles(
         style = SpanStyle(color = DesktopAccent, textDecoration = TextDecoration.Underline),
     )
@@ -6704,10 +6797,6 @@ private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
             append("  ")
             withLink(LinkAnnotation.Url("https://github.com/impin2rex", linkStyles)) {
                 append("Developer")
-            }
-            append("  ")
-            withLink(LinkAnnotation.Url("https://discord.gg/pDdKfrdHY6", linkStyles)) {
-                append("Discord")
             }
             append("  ")
             withLink(LinkAnnotation.Clickable("licenses", linkStyles) { onLicenses() }) {

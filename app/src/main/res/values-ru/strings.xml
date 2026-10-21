@@ -149,6 +149,8 @@
     <string name="widget_preview_title">Название песни</string>
     <string name="widget_preview_artist">Исполнитель</string>
     <string name="widget_pill_label">Сейчас играет 4×1</string>
+    <string name="widget_library_label">Сейчас играет + Понравившиеся 4×2</string>
+    <string name="widget_library_description">Трек и элементы управления, а под ними понравившиеся песни.</string>
     <string name="widget_pill_description">Трек с лайком, перемешиванием и управлением воспроизведением в одну строку.</string>
     <string name="widget_preview_pill">Название песни - Исполнитель</string>
     <string name="download_quality">Качество загрузки</string>

@@ -9,6 +9,7 @@ import android.util.Log
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.ChannelClient
+import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
@@ -22,6 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
@@ -118,8 +120,8 @@ object WatchInstaller {
         }
     }
 
-    /** Asks one watch what it has and waits for the answer. */
-    private suspend fun ask(app: Context, nodeId: String) {
+    /** Asks one watch what it has and waits for the answer, which it also returns. */
+    private suspend fun ask(app: Context, nodeId: String): DataMap? {
         val askedAt = System.currentTimeMillis()
         runCatching {
             Tasks.await(
@@ -146,7 +148,7 @@ object WatchInstaller {
         }
         // Just put there by this phone: a first answer can take a moment while
         // the new install settles, and "not installed" would be a lie meanwhile.
-        if (answer == null && System.currentTimeMillis() - (installedAt[nodeId] ?: 0L) < SETTLE_MS) return
+        if (answer == null && System.currentTimeMillis() - (installedAt[nodeId] ?: 0L) < SETTLE_MS) return null
         val status = when {
             // Only an answer proves the app is there. Play services goes on
             // listing a watch's capabilities for a while after the app is
@@ -161,11 +163,49 @@ object WatchInstaller {
                 if (it.nodeId != nodeId) it else it.copy(status = status, versionName = answer?.getString(P.KEY_VERSION_NAME))
             }
         }
+        return answer
+    }
+
+    // ---- Keeping watches current after the phone updates ----
+
+    /**
+     * Sends this phone's watch build to every connected watch running an *older* Laya — the
+     * step after the phone app itself has been updated, so the watch follows without anyone
+     * opening Settings → Laya for Wear OS.
+     *
+     * Older by versionCode, not just different: a watch with a newer or side-loaded build is left
+     * alone. And once per watch per phone version: the first update through here still needs a tap
+     * on the watch (see the watch's SelfUpdate), and a wearer who ignores it shouldn't be asked
+     * again on every launch. Later updates install without one.
+     */
+    fun autoUpdate(context: Context) {
+        val app = context.applicationContext
+        if (!available(app)) return
+        scope.launch {
+            val mine = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).longVersionCode }
+                .getOrNull() ?: return@launch
+            val nodes = runCatching {
+                Tasks.await(Wearable.getNodeClient(app).connectedNodes, 10, TimeUnit.SECONDS)
+            }.getOrNull().orEmpty()
+            val tried = app.getSharedPreferences(AUTO_UPDATE_PREFS, Context.MODE_PRIVATE)
+            for (node in nodes) {
+                if (tried.getLong(node.id, -1L) >= mine) continue
+                val answer = ask(app, node.id) ?: continue
+                if (answer.getString(P.KEY_APK_SHA256) == bundledHash(app)) continue
+                if (answer.getLong(P.KEY_VERSION_CODE) >= mine) continue
+                tried.edit().putLong(node.id, mine).apply()
+                // One transfer at a time — sendUpdate turns a second one away.
+                update.first { it !is WatchUpdateState.Sending }
+                sendUpdate(app, node.id)
+                update.first { it !is WatchUpdateState.Sending }
+            }
+        }
     }
 
     /** When this phone last installed onto each watch, by node. */
     private val installedAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
     private const val SETTLE_MS = 60_000L
+    private const val AUTO_UPDATE_PREFS = "watch_auto_update"
 
     // ---- Updating a watch that has Laya ----
 

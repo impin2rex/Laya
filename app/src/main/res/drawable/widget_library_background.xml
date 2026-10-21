@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The 4×2 "Now playing + Liked" widget's stand-in body, shown until the blurred
+  cover MediaWidgetArt.pill bakes for it arrives. Same tint as the 4×1 capsule's,
+  at the launcher's widget radius instead of a full capsule.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="@dimen/widget_corner_radius" />
+    <solid android:color="#A6141619" />
+</shape>

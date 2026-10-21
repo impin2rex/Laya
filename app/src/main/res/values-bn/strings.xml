@@ -184,6 +184,8 @@
     <string name="widget_preview_title">গানের নাম</string>
     <string name="widget_preview_artist">শিল্পী</string>
     <string name="widget_pill_label">এখন চলছে 4×1</string>
+    <string name="widget_library_label">এখন চলছে + পছন্দের গান 4×2</string>
+    <string name="widget_library_description">গান আর প্লেব্যাক কন্ট্রোল, নিচে আপনার পছন্দের গানগুলো।</string>
     <string name="widget_pill_description">পছন্দ, শাফল আর প্লেব্যাক কন্ট্রোলসহ গান, এক সারিতে।</string>
     <string name="widget_preview_pill">গানের নাম - শিল্পী</string>
     <string name="download_quality">ডাউনলোড কোয়ালিটি</string>

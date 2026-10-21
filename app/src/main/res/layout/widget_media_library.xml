@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The 4×2 "Now playing + Liked" widget in a short cell (under
+  MediaWidgetLibrary.TALL_MIN_DP): the cover, track and transport in one row
+  across the top, and up to five Liked Music covers along the bottom. With no
+  liked songs the bottom row is gone and the top one fills the widget. A tall
+  cell gets widget_media_library_tall instead.
+
+  The body is a bitmap (the cover blurred to colour, baked at the widget's size
+  by MediaWidgetArt.pill); widget_library_background stands in until it lands.
+
+  The top row is the click target for "open the player", not the root, so a tap
+  between two liked tiles does nothing rather than opening the player by
+  accident. The tiles are weighted cells with a fitCenter square in each, which
+  spreads them evenly across any width without stretching a cover.
+  Spacers are empty FrameLayouts because a RemoteViews refuses a plain View.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_library_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_library_background"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <LinearLayout
+            android:id="@+id/widget_now_playing"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/widget_art"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/widget_artwork"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_library_tile_placeholder" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/widget_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/sf_pro_display_semibold"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/widget_artist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/sf_pro_display_regular"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/widget_previous"
+                android:layout_width="@dimen/widget_library_button"
+                android:layout_height="@dimen/widget_library_button"
+                android:background="@drawable/widget_transport_button"
+                android:contentDescription="@string/widget_previous"
+                android:padding="6dp"
+                android:src="@drawable/ic_widget_previous" />
+
+            <ImageView
+                android:id="@+id/widget_toggle"
+                android:layout_width="@dimen/widget_library_button"
+                android:layout_height="@dimen/widget_library_button"
+                android:background="@drawable/widget_transport_button"
+                android:contentDescription="@string/widget_play"
+                android:padding="4dp"
+                android:src="@drawable/ic_widget_play" />
+
+            <ImageView
+                android:id="@+id/widget_next"
+                android:layout_width="@dimen/widget_library_button"
+                android:layout_height="@dimen/widget_library_button"
+                android:background="@drawable/widget_transport_button"
+                android:contentDescription="@string/widget_next"
+                android:padding="6dp"
+                android:src="@drawable/ic_widget_next" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_liked_row"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/widget_library_tile"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/widget_liked_0"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_library_tile_placeholder" />
+
+            <ImageView
+                android:id="@+id/widget_liked_1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_library_tile_placeholder" />
+
+            <ImageView
+                android:id="@+id/widget_liked_2"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_library_tile_placeholder" />
+
+            <ImageView
+                android:id="@+id/widget_liked_3"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_library_tile_placeholder" />
+
+            <ImageView
+                android:id="@+id/widget_liked_4"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_library_tile_placeholder" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- The Laya mark, top right, as Spotify's widget carries its own. Opens the app. -->
+    <ImageView
+        android:id="@+id/widget_logo"
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:layout_gravity="top|right"
+        android:layout_marginTop="6dp"
+        android:layout_marginRight="6dp"
+        android:alpha="0.9"
+        android:contentDescription="@string/widget_open_laya"
+        android:src="@drawable/ic_notification_logo" />
+</FrameLayout>

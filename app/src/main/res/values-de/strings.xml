@@ -139,6 +139,8 @@
     <string name="widget_preview_title">Songtitel</string>
     <string name="widget_preview_artist">Künstler</string>
     <string name="widget_pill_label">Wird wiedergegeben 4×1</string>
+    <string name="widget_library_label">Wird wiedergegeben + Lieblingssongs 4×2</string>
+    <string name="widget_library_description">Titel und Wiedergabesteuerung, darunter deine Lieblingssongs.</string>
     <string name="widget_pill_description">Titel mit „Gefällt mir“, Zufallswiedergabe und Wiedergabesteuerung in einer Zeile.</string>
     <string name="widget_preview_pill">Songtitel - Künstler</string>
     <string name="download_quality">Download-Qualität</string>

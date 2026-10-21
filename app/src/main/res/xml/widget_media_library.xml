@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The 4×2 "Now playing + Liked" entry in the widget picker. See MediaWidgetLibrary.
+  Resizes horizontally only, like the other media widgets: the layout is two fixed
+  rows, and more height would only add empty space between them.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_library_description"
+    android:initialLayout="@layout/widget_media_library"
+    android:minHeight="110dp"
+    android:minResizeWidth="250dp"
+    android:minWidth="250dp"
+    android:previewImage="@drawable/widget_preview_wide"
+    android:resizeMode="horizontal"
+    android:targetCellHeight="2"
+    android:targetCellWidth="4"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

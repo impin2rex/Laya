@@ -26,7 +26,7 @@ val targetOs: String = (providers.gradleProperty("laya.target").orNull ?: when {
 val hostArch = System.getProperty("os.arch").lowercase()
 val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 
-// The installers stamp the app's own version: 1.8.2 stays 1.8.2. Windows metadata needs exactly
+// The installers stamp the app's own version: 1.8.3 stays 1.8.3. Windows metadata needs exactly
 // MAJOR.MINOR.BUILD, so a two-part version is padded (1.8 → 1.8.0) and a "-beta1" suffix is left
 // out of the numeric version.
 val nativePackageVersion = appVersion.substringBefore('-').split('.')
@@ -410,6 +410,8 @@ val windowsPortableAssemble by tasks.registering {
     val moduleIndex = desktopModuleIndexUrl
     val lastfmKey = lastfmApiKey
     val lastfmSharedSecret = lastfmSecret
+    val partyServer = listenTogetherServer
+    val signatureUrl = signatureApiUrl
     val mainClass = composeMainClass
     // Declared, not implied.
     inputs.file(appJar)
@@ -417,6 +419,8 @@ val windowsPortableAssemble by tasks.registering {
     inputs.property("version", version)
     inputs.property("moduleIndex", moduleIndex)
     inputs.property("lastfm", lastfmKey.isNotBlank())
+    inputs.property("partyServer", partyServer)
+    inputs.property("signatureUrl", signatureUrl)
     inputs.property("mainClass", mainClass)
     outputs.dir(stage)
     doLast {
@@ -449,6 +453,8 @@ val windowsPortableAssemble by tasks.registering {
                 if (lastfmKey.isNotBlank() && lastfmSharedSecret.isNotBlank()) {
                     append(" -Dlaya.lastfm.key=$lastfmKey -Dlaya.lastfm.secret=$lastfmSharedSecret")
                 }
+                if (partyServer.isNotBlank()) append(" -Dlaya.listentogether.server=$partyServer")
+                if (signatureUrl.isNotBlank()) append(" -Dlaya.signature.url=$signatureUrl")
                 appendLine(" -cp \"%HERE%lib\\*\" $mainClass %*")
                 appendLine("endlocal")
             },

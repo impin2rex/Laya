@@ -94,36 +94,39 @@ object AppUpdateChecker {
     }
 
     /**
-     * One release carries the phone app and the TV app, each as a universal
-     * APK plus per-ABI splits:
+     * One release carries the phone, TV and watch apps, named by
+     * .github/workflows/release.yml as
      *
-     *     Laya-v1.8.apk     Laya-v1.8_arm64-v8a.apk     ...
-     *     LayaTV-v1.8.apk   LayaTV-v1.8_arm64-v8a.apk   ...
+     *     Laya-1.8.3-android-universal.apk      Laya-1.8.3-android-arm64-v8a.apk     ...
+     *     Laya-1.8.3-android-tv-universal.apk   Laya-1.8.3-android-tv-arm64-v8a.apk  ...
+     *     Laya-1.8.3-wear-os.apk
      *
-     * so this app's APKs are the ones named with its own
-     * [BuildConfig.UPDATE_APK_PREFIX] — "Laya-" never matches a TV file,
-     * since the prefix ends at the hyphen. The universal build (no `_ABI`
-     * suffix) is taken first, as it installs anywhere; failing that, the split
-     * for this device's ABI. A release with neither leaves
-     * [UpdateInfo.apkUrl] null and the UI falls back to opening the releases
-     * page.
+     * so this app's APKs are the ones whose name continues past
+     * `-`[BuildConfig.UPDATE_APK_KIND]`-` with "universal" or one of this
+     * device's ABIs. The phone's kind ("android") also finds the TV files, but
+     * what follows it there is "tv-arm64-v8a", which is neither, so the two
+     * never cross. The universal build is taken first, as it installs
+     * anywhere; failing that, the split for this device's ABI. A release with
+     * neither leaves [UpdateInfo.apkUrl] null and the UI falls back to opening
+     * the releases page.
      */
     private fun apkAssetUrl(release: JsonObject): String? = runCatching {
+        val marker = "-${BuildConfig.UPDATE_APK_KIND}-"
+        // What follows the marker in each of this app's APKs — "universal" or an ABI — to its URL.
         val apks = release["assets"]?.jsonArray
             ?.mapNotNull { it as? JsonObject }
             ?.mapNotNull { asset ->
                 val name = asset["name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
                 val url = asset["browser_download_url"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-                val ours = name.startsWith(BuildConfig.UPDATE_APK_PREFIX, ignoreCase = true) &&
-                    name.endsWith(".apk", ignoreCase = true) &&
-                    asset["state"]?.jsonPrimitive?.contentOrNull == "uploaded"
-                if (ours) name.removeSuffix(".apk").removeSuffix(".APK") to url else null
+                if (!name.endsWith(".apk", ignoreCase = true)) return@mapNotNull null
+                if (asset["state"]?.jsonPrimitive?.contentOrNull != "uploaded") return@mapNotNull null
+                val stem = name.dropLast(".apk".length)
+                val at = stem.indexOf(marker, ignoreCase = true).takeIf { it >= 0 } ?: return@mapNotNull null
+                stem.substring(at + marker.length).lowercase() to url
             }
             .orEmpty()
-        apks.firstOrNull { (name, _) -> '_' !in name }?.second
-            ?: Build.SUPPORTED_ABIS.firstNotNullOfOrNull { abi ->
-                apks.firstOrNull { (name, _) -> name.endsWith("_$abi") }?.second
-            }
+            .toMap()
+        apks["universal"] ?: Build.SUPPORTED_ABIS.firstNotNullOfOrNull { abi -> apks[abi.lowercase()] }
     }.getOrNull()
 
     /**

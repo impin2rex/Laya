@@ -16,8 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Looks at the repo's "latest release" on GitHub once per launch and says whether it is newer
- * than the running build. The installer is not run from here: the dialog opens the asset in the
- * browser, so the user installs it the way they installed the first one.
+ * than the running build. Installs that can be replaced in place are then updated by
+ * [DesktopUpdater]; for the rest the dialog opens the installer in the browser.
  *
  * GitHub's "latest" skips pre-releases and drafts, so a `-beta` desktop build is only ever
  * nudged toward a published release.
@@ -30,12 +30,14 @@ internal object DesktopUpdateChecker {
         /** The installer for this platform, or null when the release has none. */
         val downloadUrl: String?,
         val notes: String?,
+        /** Every uploaded file in the release, by name — what [DesktopUpdater] picks from. */
+        val assets: Map<String, String> = emptyMap(),
     )
 
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/impin2rex/Laya/releases/latest"
 
-    val currentVersion: String = System.getProperty("laya.version") ?: "1.8.2"
+    val currentVersion: String = System.getProperty("laya.version") ?: "1.8.3"
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -62,6 +64,15 @@ internal object DesktopUpdateChecker {
             releaseUrl = url,
             downloadUrl = installerUrl(release),
             notes = release["body"]?.jsonPrimitive?.contentOrNull,
+            assets = release["assets"]?.jsonArray.orEmpty()
+                .mapNotNull { it as? JsonObject }
+                .filter { it["state"]?.jsonPrimitive?.contentOrNull == "uploaded" }
+                .mapNotNull { asset ->
+                    val name = asset["name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    val url = asset["browser_download_url"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    name to url
+                }
+                .toMap(),
         )
     }.getOrNull()
 

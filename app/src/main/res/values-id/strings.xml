@@ -134,6 +134,8 @@
     <string name="widget_preview_title">Judul lagu</string>
     <string name="widget_preview_artist">Artis</string>
     <string name="widget_pill_label">Sedang diputar 4×1</string>
+    <string name="widget_library_label">Sedang diputar + Lagu yang disukai 4×2</string>
+    <string name="widget_library_description">Lagu dan kontrol pemutaran, dengan lagu yang kamu sukai di bawahnya.</string>
     <string name="widget_pill_description">Lagu dengan Suka, Acak, dan kontrol pemutaran dalam satu baris.</string>
     <string name="widget_preview_pill">Judul lagu - Artis</string>
     <string name="download_quality">Kualitas unduhan</string>

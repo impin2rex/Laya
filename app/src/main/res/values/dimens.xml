@@ -37,4 +37,8 @@
     <dimen name="widget_pill_height">78dp</dimen>
     <dimen name="widget_pill_art">64dp</dimen>
     <dimen name="widget_button_pill">38dp</dimen>
+
+    <!-- The 4×2 "Now playing + Liked" widget: its cover, transport, and liked-song tiles. -->
+    <dimen name="widget_library_button">36dp</dimen>
+    <dimen name="widget_library_tile">40dp</dimen>
 </resources>
