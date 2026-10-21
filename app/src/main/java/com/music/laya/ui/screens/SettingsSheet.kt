@@ -1612,10 +1612,6 @@ fun SettingsScreen(
                 withLink(LinkAnnotation.Url("https://github.com/impin2rex", linkStyles)) {
                     append("Developer")
                 }
-                append("  ")
-                withLink(LinkAnnotation.Url("https://discord.gg/pDdKfrdHY6", linkStyles)) {
-                    append("Discord")
-                }
                 append("\n~YouTube Music & Listen Together Backend")
             },
             style = MaterialTheme.typography.labelSmall,
