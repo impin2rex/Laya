@@ -521,7 +521,14 @@ fun LayaDesktopApp() {
     var personalPlayingStash by remember { mutableStateOf(false) }
     val persistence = remember { DesktopPersistence() }
     var availableUpdate by remember { mutableStateOf<DesktopUpdateChecker.UpdateInfo?>(null) }
-    LaunchedEffect(Unit) { availableUpdate = DesktopUpdateChecker.check() }
+    // Downloaded and verified in the background, then offered as a restart; see DesktopUpdater.
+    // Anything it can't update in place falls back to the open-the-installer prompt.
+    var readyUpdate by remember { mutableStateOf<DesktopUpdater.Ready?>(null) }
+    LaunchedEffect(Unit) {
+        val update = DesktopUpdateChecker.check() ?: return@LaunchedEffect
+        val ready = if (DesktopUpdater.automatic.value) DesktopUpdater.download(update) else null
+        if (ready != null) readyUpdate = ready else availableUpdate = update
+    }
     availableUpdate?.let { update ->
         AlertDialog(
             onDismissRequest = { availableUpdate = null },
@@ -2633,6 +2640,34 @@ fun LayaDesktopApp() {
                 playbackEngine.shutdown()
                 DesktopWindowsMedia.stop()
                 exitProcess(0)
+            },
+        )
+    }
+    readyUpdate?.let { ready ->
+        AlertDialog(
+            onDismissRequest = { readyUpdate = null },
+            title = { Text(DesktopStrings["d_update_ready", "Update ready"]) },
+            text = {
+                Text(
+                    "Laya ${ready.version} is downloaded — you have ${DesktopUpdateChecker.currentVersion}. " +
+                        "Restart to install it; it takes a few seconds." +
+                        (ready.notes?.takeIf { it.isNotBlank() }?.let { "\n\n${it.take(600)}" } ?: ""),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    // Same teardown as the tray's Quit, for the same reason.
+                    DesktopUpdater.installAndRestart(ready) {
+                        playbackEngine.shutdown()
+                        DesktopWindowsMedia.stop()
+                    }
+                    readyUpdate = null
+                }) { Text(DesktopStrings["d_restart_to_update", "Restart to update"]) }
+            },
+            dismissButton = {
+                TextButton(onClick = { readyUpdate = null }) {
+                    Text(DesktopStrings["d_later", "Later"])
+                }
             },
         )
     }
@@ -6521,6 +6556,16 @@ private fun DesktopSettingsScreen(
                             onCloseToTrayChange,
                         )
                     }
+                    val automaticUpdates by DesktopUpdater.automatic.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["d_automatic_updates", "Automatic updates"],
+                        DesktopStrings[
+                            "d_automatic_updates_subtitle",
+                            "Download new versions in the background and install them on restart",
+                        ],
+                        automaticUpdates,
+                        DesktopUpdater::setAutomatic,
+                    )
                     val hideVolumeBar by DesktopAppearanceSettings.hideVolumeBar.collectAsState()
                     SettingsToggle(
                         DesktopStrings["hide_volume_bar", "Hide volume bar"],

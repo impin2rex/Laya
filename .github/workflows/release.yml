@@ -311,6 +311,13 @@ jobs:
 
       - run: ls -lh dist
 
+      # The desktop updater installs nothing whose hash is not listed here (DesktopUpdater).
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum -- * > SHA256SUMS
+          cat SHA256SUMS
+
       - name: Draft the release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
