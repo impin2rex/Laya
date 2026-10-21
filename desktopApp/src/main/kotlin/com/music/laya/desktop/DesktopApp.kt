@@ -364,6 +364,7 @@ private val LocalDesktopBottomInset = staticCompositionLocalOf { 0.dp }
 
 /** Android's own edge on these bars: `Color.White.copy(alpha = 0.10f)`. */
 private val DesktopBarEdge = Color(0x1AFFFFFF)
+private const val POSITION_SAVE_INTERVAL_MS = 5_000L
 internal val DesktopAccent = Color.White
 
 /** Deleting, signing out, and anything that failed — the one place a colour survives, as on Android. */
@@ -715,6 +716,9 @@ fun LayaDesktopApp() {
     var fullBleedArtwork by remember { mutableStateOf(persistence.boolean("full_bleed_artwork", false)) }
     var accounts by remember { mutableStateOf(DesktopAccounts.accounts()) }
     var activeAccountId by remember { mutableStateOf(DesktopAccounts.activeAccountId()) }
+    // False while a stored account's session is still being checked at launch, so Home does not
+    // offer to sign in someone who is about to be signed in.
+    var sessionSettled by remember { mutableStateOf(accounts.isEmpty()) }
     var activeProfileId by remember { mutableStateOf(DesktopAccounts.activeProfileId()) }
     var signInBusy by remember { mutableStateOf<String?>(null) }
     var signInError by remember { mutableStateOf<String?>(null) }
@@ -777,6 +781,8 @@ fun LayaDesktopApp() {
     // that depends on it.
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) { DesktopAccounts.activate() }
+        youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+        sessionSettled = true
         sessionRevision++
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
@@ -1697,6 +1703,35 @@ fun LayaDesktopApp() {
         }
         playbackEngine.pause()
         partySync.onLocalIntent()
+    }
+    // The queue comes back from the last run; so does the track it was on, loaded paused so the
+    // player shows it and play picks up from there.
+    LaunchedEffect(playbackEngine) {
+        if (selectedSong != null) return@LaunchedEffect
+        val song = liveQueue.current ?: return@LaunchedEffect
+        selectedSong = song
+        val (savedId, savedMs) = persistence.string("queue_position", "").split(':', limit = 2)
+            .let { it.getOrNull(0) to it.getOrNull(1)?.toLongOrNull() }
+        playbackEngine.load(
+            song,
+            playWhenReady = false,
+            startAtMs = if (savedId == song.videoId) savedMs ?: 0L else 0L,
+        )
+    }
+    // How far into the track, for the restore above: every few seconds while playing, and on pause.
+    LaunchedEffect(playbackEngine) {
+        var lastSaved = -1L
+        var wasPlaying = false
+        playbackEngine.state.collect { state ->
+            val song = state.song
+            val paused = wasPlaying && !state.isPlaying
+            wasPlaying = state.isPlaying
+            // Nothing while a track is still opening: its playhead reads 0 until the seek lands.
+            if (song == null || state.isLoading || state.positionMs <= 0L) return@collect
+            if (!paused && kotlin.math.abs(state.positionMs - lastSaved) < POSITION_SAVE_INTERVAL_MS) return@collect
+            lastSaved = state.positionMs
+            persistence.saveString("queue_position", "${song.videoId}:${state.positionMs}")
+        }
     }
     val mprisController = remember(playbackEngine) {
         DesktopMprisController(
@@ -4148,7 +4183,7 @@ fun LayaDesktopApp() {
                             pullState = rememberPullToRefreshState(),
                             contentPadding = sharedPagePadding,
                             title = null,
-                            signedIn = youtubeSignedIn,
+                            signedIn = youtubeSignedIn || !sessionSettled,
                             onSignIn = { overlays.accounts = true },
                             onItemLongPress = { item -> if (item.videoId != null) openMenu(item.toSong()) },
                             onLoadMore = ::loadMoreHome,
