@@ -1,6 +1,10 @@
 package com.music.laya
 
 import android.app.Application
+import android.content.Intent
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import coil3.ImageLoader
@@ -26,6 +30,7 @@ import com.music.laya.data.canvas.SpotifyToken
 import com.music.laya.data.spotify.SpotifyLibrary
 import com.music.laya.playback.AudioCache
 import com.music.laya.playback.LastPlayed
+import com.music.laya.playback.MusicLink
 import com.music.laya.playback.BoundedContextPersistence
 import com.music.laya.playback.OriginalVersion
 import com.music.laya.data.innertube.Innertube
@@ -73,6 +78,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // Full tag (zh-Hant / zh-Hans preserved); Innertube maps to hl/gl.
         Innertube.appLanguage = { AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() }
         migrateScriptOnlyAppLocale()
+        registerSearchShortcut()
         LyricsTranslation.cacheDir = cacheDir
         // PlaybackService shares this process, so seeding the cookie here means
         // stream resolution is authenticated from the first play onwards.
@@ -253,9 +259,27 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         )
     }
 
+    /**
+     * The launcher's long-press Search entry, as Spotify has. Dynamic rather than
+     * a static shortcuts.xml because the dev and prod flavours are different
+     * packages, and a static shortcut has to name its package outright.
+     * Re-published on every start, which also re-labels it after a language
+     * change; a launcher that rate-limits or refuses shortcuts just goes without.
+     */
+    private fun registerSearchShortcut() {
+        val shortcut = ShortcutInfoCompat.Builder(this, SHORTCUT_SEARCH)
+            .setShortLabel(getString(R.string.search))
+            .setIcon(IconCompat.createWithResource(this, R.drawable.ic_shortcut_search))
+            .setIntent(Intent(MusicLink.ACTION_OPEN_SEARCH, null, this, MainActivity::class.java))
+            .build()
+        runCatching { ShortcutManagerCompat.pushDynamicShortcut(this, shortcut) }
+    }
+
     companion object {
         lateinit var authStore: AuthStore
             private set
+
+        private const val SHORTCUT_SEARCH = "search"
 
         /**
          * One-time move from region-less script tags to regional ones.

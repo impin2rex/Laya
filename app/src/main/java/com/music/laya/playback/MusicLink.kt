@@ -28,6 +28,9 @@ sealed interface LinkRequest {
 
     /** "Play music", with nothing said about what. */
     data object Resume : LinkRequest
+
+    /** The launcher's Search shortcut: the Search tab, field focused, nothing typed. */
+    data object OpenSearch : LinkRequest
 }
 
 /**
@@ -56,6 +59,9 @@ object MusicLink {
      */
     private const val EXTRA_CONSUMED = "laya.linkConsumed"
 
+    /** The action on the launcher's Search shortcut — see LayaApplication. */
+    const val ACTION_OPEN_SEARCH = "com.music.laya.OPEN_SEARCH"
+
     private val _pending = MutableStateFlow<LinkRequest?>(null)
 
     /** The outstanding request, or null. Cleared by [handled]. */
@@ -76,6 +82,7 @@ object MusicLink {
                 val query = intent.getStringExtra(SearchManager.QUERY).orEmpty().trim()
                 if (query.isEmpty()) LinkRequest.Resume else LinkRequest.Search(query, play = true)
             }
+            ACTION_OPEN_SEARCH -> LinkRequest.OpenSearch
             else -> null
         } ?: return false
         intent.putExtra(EXTRA_CONSUMED, true)

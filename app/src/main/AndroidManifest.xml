@@ -517,6 +517,19 @@
                 android:resource="@xml/widget_media_pill" />
         </receiver>
 
+        <!-- The 4×2 "Now playing + Liked" widget. See MediaWidgetLibrary. -->
+        <receiver
+            android:name=".widget.MediaWidgetLibrary"
+            android:exported="false"
+            android:label="@string/widget_library_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_media_library" />
+        </receiver>
+
         <!-- The transport buttons. Reached only by this app's own PendingIntents. -->
         <receiver
             android:name=".widget.MediaWidgetActions"

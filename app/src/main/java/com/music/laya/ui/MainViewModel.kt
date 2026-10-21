@@ -96,6 +96,7 @@ import com.music.laya.ui.screens.CACHE_FOLDER_BROWSE_ID
 import com.music.laya.data.LocalGroup
 import com.music.laya.data.LocalGroups
 import com.music.laya.data.matchesSearch
+import com.music.laya.widget.LikedWidgetSongs
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -1428,6 +1429,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        // The library widget's liked row follows the account: its first few
+        // Liked Music tracks while signed in, nothing once signed out.
+        viewModelScope.launch {
+            combine(signedIn, library) { signedIn, library ->
+                if (!signedIn) emptyList() else (library as? UiState.Success)?.data?.likedSongs
+            }.collect { liked -> liked?.let { LikedWidgetSongs.save(getApplication(), it) } }
+        }
         startSearchPipeline()
         startSuggestPipeline()
         startTypeaheadMediaPipeline()

@@ -146,8 +146,19 @@ internal object MediaWidgetArt {
      * draw, so the layout's own placeholder disc shows instead. Shares the
      * failure cool-off and the cache with [render], under a key of its own.
      */
-    suspend fun circle(context: Context, artworkUrl: String?, sizePx: Int, key: String): Bitmap? {
-        peekCircle(key, sizePx)?.let { return it }
+    suspend fun circle(context: Context, artworkUrl: String?, sizePx: Int, key: String): Bitmap? =
+        tile(context, artworkUrl, sizePx, sizePx / 2f, key)
+
+    /** [circle]'s result if it has already been drawn. @see peek */
+    fun peekCircle(key: String, sizePx: Int): Bitmap? = peekTile(key, sizePx, sizePx / 2f)
+
+    /**
+     * The cover cut to a [sizePx] square with [radiusPx] corners — [circle] at
+     * half the size, the library widget's cover and liked-song tiles below
+     * that. Null when there is no picture, so the layout's placeholder shows.
+     */
+    suspend fun tile(context: Context, artworkUrl: String?, sizePx: Int, radiusPx: Float, key: String): Bitmap? {
+        peekTile(key, sizePx, radiusPx)?.let { return it }
         if (isCoolingOff(key)) return null
         val cover = loadArtwork(context, artworkUrl, sizePx)
         if (cover == null) {
@@ -156,17 +167,17 @@ internal object MediaWidgetArt {
         }
         val square = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         Canvas(square).fillCentreCropped(cover)
-        val round = square.withRoundedCorners(sizePx / 2f)
+        val round = square.withRoundedCorners(radiusPx)
         square.recycle()
-        composites.put(circleKey(key, sizePx), round)
+        composites.put(tileKey(key, sizePx, radiusPx), round)
         return round
     }
 
-    /** [circle]'s result if it has already been drawn. @see peek */
-    fun peekCircle(key: String, sizePx: Int): Bitmap? =
-        composites[circleKey(key, sizePx)]?.takeIf { !it.isRecycled }
+    /** [tile]'s result if it has already been drawn. @see peek */
+    fun peekTile(key: String, sizePx: Int, radiusPx: Float): Bitmap? =
+        composites[tileKey(key, sizePx, radiusPx)]?.takeIf { !it.isRecycled }
 
-    private fun circleKey(key: String, sizePx: Int) = "circle|$key|$sizePx"
+    private fun tileKey(key: String, sizePx: Int, radiusPx: Float) = "tile|$key|$sizePx|$radiusPx"
 
     /**
      * The 4×1 widget's body: the cover filling a [widthPx] × [heightPx] capsule,
@@ -181,8 +192,16 @@ internal object MediaWidgetArt {
      * this hard it has none, so sampling it up is invisible. Null key or a
      * failed cover gives the placeholder gradient, uncached.
      */
-    suspend fun pill(context: Context, artworkUrl: String?, widthPx: Int, heightPx: Int, key: String?): Bitmap {
-        key?.let { peekPill(it, widthPx, heightPx) }?.let { return it }
+    suspend fun pill(
+        context: Context,
+        artworkUrl: String?,
+        widthPx: Int,
+        heightPx: Int,
+        key: String?,
+        /** A full capsule unless asked otherwise; the library widget is a rounded rectangle. */
+        radiusPx: Float = heightPx / 2f,
+    ): Bitmap {
+        key?.let { peekPill(it, widthPx, heightPx, radiusPx) }?.let { return it }
         val cover = if (key == null || isCoolingOff(key)) null else loadArtwork(context, artworkUrl, ROW_ART_PX)
         val failed = cover == null && !artworkUrl.isNullOrBlank()
         if (failed && key != null) failures[key] = SystemClock.elapsedRealtime()
@@ -231,17 +250,18 @@ internal object MediaWidgetArt {
 
         // A little of the wallpaper through it too, so the capsule sits on
         // the home screen rather than being pasted over it.
-        val rounded = composed.withRoundedCorners(heightPx / 2f, PILL_ALPHA)
+        val rounded = composed.withRoundedCorners(radiusPx, PILL_ALPHA)
         composed.recycle()
-        if (!failed && key != null) composites.put(pillKey(key, widthPx, heightPx), rounded)
+        if (!failed && key != null) composites.put(pillKey(key, widthPx, heightPx, radiusPx), rounded)
         return rounded
     }
 
     /** [pill]'s result if it has already been drawn. @see peek */
-    fun peekPill(key: String, widthPx: Int, heightPx: Int): Bitmap? =
-        composites[pillKey(key, widthPx, heightPx)]?.takeIf { !it.isRecycled }
+    fun peekPill(key: String, widthPx: Int, heightPx: Int, radiusPx: Float = heightPx / 2f): Bitmap? =
+        composites[pillKey(key, widthPx, heightPx, radiusPx)]?.takeIf { !it.isRecycled }
 
-    private fun pillKey(key: String, widthPx: Int, heightPx: Int) = "pill|$key|$widthPx|$heightPx"
+    private fun pillKey(key: String, widthPx: Int, heightPx: Int, radiusPx: Float) =
+        "pill|$key|$widthPx|$heightPx|$radiusPx"
 
     /** Drops every remembered composite — the last widget has just been removed. */
     fun clear() {

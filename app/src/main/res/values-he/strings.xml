@@ -141,6 +141,8 @@
     <string name="widget_preview_title">שם השיר</string>
     <string name="widget_preview_artist">אמן</string>
     <string name="widget_pill_label">מתנגן כעת 4×1</string>
+    <string name="widget_library_label">מתנגן כעת + שירים שאהבת 4×2</string>
+    <string name="widget_library_description">פרטי הרצועה ופקדי ההפעלה, ומתחתם השירים שאהבת.</string>
     <string name="widget_pill_description">הרצועה עם לייק, ערבוב ופקדי הפעלה, בשורה אחת.</string>
     <string name="widget_preview_pill">שם השיר - אמן</string>
     <string name="download_quality">איכות הורדה</string>

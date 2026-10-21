@@ -140,6 +140,8 @@
     <string name="widget_preview_title">Título de la canción</string>
     <string name="widget_preview_artist">Artista</string>
     <string name="widget_pill_label">Reproduciendo 4×1</string>
+    <string name="widget_library_label">Reproduciendo + Me gusta 4×2</string>
+    <string name="widget_library_description">La pista y los controles de reproducción, con tus canciones favoritas debajo.</string>
     <string name="widget_pill_description">La pista con Me gusta, orden aleatorio y controles de reproducción en una sola fila.</string>
     <string name="widget_preview_pill">Título de la canción - Artista</string>
     <string name="download_quality">Calidad de descarga</string>

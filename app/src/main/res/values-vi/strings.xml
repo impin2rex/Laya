@@ -148,6 +148,8 @@
     <string name="widget_preview_title">Tên bài hát</string>
     <string name="widget_preview_artist">Nghệ sĩ</string>
     <string name="widget_pill_label">Đang phát 4×1</string>
+    <string name="widget_library_label">Đang phát + Bài hát đã thích 4×2</string>
+    <string name="widget_library_description">Bản nhạc và điều khiển phát, kèm các bài hát bạn đã thích bên dưới.</string>
     <string name="widget_pill_description">Bản nhạc kèm Thích, trộn bài và điều khiển phát trên một hàng.</string>
     <string name="widget_preview_pill">Tên bài hát - Nghệ sĩ</string>
     <string name="download_quality">Chất lượng tải xuống</string>
