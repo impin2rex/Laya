@@ -1494,6 +1494,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             AppUpdateChecker.clearCache(getApplication())
             AppUpdateChecker.check()
         }
+        // A phone that has just been updated carries a newer watch build; pass it on.
+        com.music.laya.wear.WatchInstaller.autoUpdate(getApplication())
     }
 
     /**

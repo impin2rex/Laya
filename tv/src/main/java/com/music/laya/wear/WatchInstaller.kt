@@ -24,6 +24,9 @@ object WatchInstaller {
     fun sendUpdate(context: Context, nodeId: String) = Unit
 
     @Suppress("UNUSED_PARAMETER")
+    fun autoUpdate(context: Context) = Unit
+
+    @Suppress("UNUSED_PARAMETER")
     fun startPairing(context: Context) = Unit
 
     fun stopPairing() = Unit
