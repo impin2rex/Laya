@@ -406,6 +406,8 @@ val windowsPortableAssemble by tasks.registering {
     val moduleIndex = desktopModuleIndexUrl
     val lastfmKey = lastfmApiKey
     val lastfmSharedSecret = lastfmSecret
+    val partyServer = listenTogetherServer
+    val signatureUrl = signatureApiUrl
     val mainClass = composeMainClass
     // Declared, not implied.
     inputs.file(appJar)
@@ -413,6 +415,8 @@ val windowsPortableAssemble by tasks.registering {
     inputs.property("version", version)
     inputs.property("moduleIndex", moduleIndex)
     inputs.property("lastfm", lastfmKey.isNotBlank())
+    inputs.property("partyServer", partyServer)
+    inputs.property("signatureUrl", signatureUrl)
     inputs.property("mainClass", mainClass)
     outputs.dir(stage)
     doLast {
@@ -445,6 +449,8 @@ val windowsPortableAssemble by tasks.registering {
                 if (lastfmKey.isNotBlank() && lastfmSharedSecret.isNotBlank()) {
                     append(" -Dlaya.lastfm.key=$lastfmKey -Dlaya.lastfm.secret=$lastfmSharedSecret")
                 }
+                if (partyServer.isNotBlank()) append(" -Dlaya.listentogether.server=$partyServer")
+                if (signatureUrl.isNotBlank()) append(" -Dlaya.signature.url=$signatureUrl")
                 appendLine(" -cp \"%HERE%lib\\*\" $mainClass %*")
                 appendLine("endlocal")
             },
