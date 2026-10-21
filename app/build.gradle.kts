@@ -100,7 +100,7 @@ android {
         // Which release assets are this app's: the phone and TV APKs ship in
         // the same GitHub release, told apart by file name. See
         // AppUpdateChecker.apkAssetUrl.
-        buildConfigField("String", "UPDATE_APK_PREFIX", "\"Laya-\"")
+        buildConfigField("String", "UPDATE_APK_KIND", "\"android\"")
     }
 
     splits {

@@ -112,10 +112,10 @@ android {
             "\"${signatureApiUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"",
         )
         // The TV APKs share a GitHub release with the phone ones and are told
-        // apart by name (LayaTV-v1.8.apk, LayaTV-v1.8_x86_64.apk), so
+        // apart by name (Laya-1.8.3-android-tv-universal.apk, …-android-tv-x86_64.apk), so
         // the updater installs the TV app here, never the phone app. See
         // AppUpdateChecker.apkAssetUrl.
-        buildConfigField("String", "UPDATE_APK_PREFIX", "\"LayaTV-\"")
+        buildConfigField("String", "UPDATE_APK_KIND", "\"android-tv\"")
     }
 
     splits {
