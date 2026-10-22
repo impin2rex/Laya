@@ -6,8 +6,11 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import com.music.laya.data.listentogether.JamInviteLink
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.playback.MusicLink
 import com.music.laya.playback.PlayerDeepLink
 import com.music.laya.playback.rememberMediaController
@@ -39,8 +42,9 @@ class TvActivity : ComponentActivity() {
         setContent {
             LayaTvTheme {
                 // The phone's Material theme too, so the components shared with
-                // it (lyrics, mood sleeves) are set in SF Pro on its type scale.
-                LayaTheme(darkTheme = true) {
+                // it (lyrics, mood sleeves) are set in the same face on its type scale.
+                val systemFont by AppSettings.systemFont.collectAsState()
+                LayaTheme(darkTheme = true, systemFont = systemFont) {
                     val mediaController = rememberMediaController()
                     val playerState = rememberPlayerState(mediaController)
 

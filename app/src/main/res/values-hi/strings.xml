@@ -212,6 +212,8 @@
     <string name="theme">थीम</string>
     <string name="reduce_animation">एनिमेशन कम करें</string>
     <string name="reduce_animation_subtitle">मुख्य प्लेयर के ग्रेडिएंट को बहने के बजाय स्थिर रखता है</string>
+    <string name="system_font">सिस्टम फ़ॉन्ट इस्तेमाल करें</string>
+    <string name="system_font_subtitle">SF Pro की जगह आपके डिवाइस के फ़ॉन्ट में टेक्स्ट दिखाता है</string>
     <string name="reduce_dynamic_blur">डायनामिक ब्लर कम करें</string>
     <string name="reduce_dynamic_blur_subtitle">पूरे ऐप में फ्रॉस्टेड ग्लास की जगह ठोस रंग लगाता है</string>
     <string name="full_screen_cover_art">फ़ुल-स्क्रीन कवर आर्ट</string>

@@ -222,6 +222,8 @@
     <string name="theme">Tema</string>
     <string name="reduce_animation">Reducir animaciones</string>
     <string name="reduce_animation_subtitle">Detiene el degradado del reproductor principal</string>
+    <string name="system_font">Usar fuente del sistema</string>
+    <string name="system_font_subtitle">Muestra el texto con la fuente de tu dispositivo en lugar de SF Pro</string>
     <string name="reduce_dynamic_blur">Reducir desenfoque dinámico</string>
     <string name="reduce_dynamic_blur_subtitle">Cambia el cristal esmerilado por fondos sólidos</string>
     <string name="liquid_glass">Liquid Glass</string>

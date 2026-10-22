@@ -210,6 +210,8 @@
     <string name="theme">Motyw</string>
     <string name="reduce_animation">Zmniejsz animację</string>
     <string name="reduce_animation_subtitle">Zatrzymuje gradient głównego odtwarzacza zamiast dryfowania</string>
+    <string name="system_font">Użyj czcionki systemowej</string>
+    <string name="system_font_subtitle">Wyświetla tekst czcionką urządzenia zamiast SF Pro</string>
     <string name="reduce_dynamic_blur">Zmniejsz rozmycie dynamiczne</string>
     <string name="reduce_dynamic_blur_subtitle">Zastępuje matowe szkło jednolitymi wypełnieniami w całej aplikacji</string>
     <string name="full_screen_cover_art">Pełnoekranowa okładka</string>

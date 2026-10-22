@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">Перевод недоступен</string>
     <string name="d_what_the_translate_button_translates_into">На какой язык кнопка перевода переводит текст песни</string>
     <string name="d_off">Выключено</string>
+    <string name="d_system_font">Системный шрифт</string>
+    <string name="d_system_font_subtitle">Показывает текст шрифтом компьютера вместо SF Pro</string>
 </resources>

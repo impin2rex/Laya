@@ -60,7 +60,7 @@ val SFProDisplay = FontFamily(
 )
 
 // Heavy, tight typography — the backbone of the Apple Music look.
-private val LayaTypography = Typography(
+private val LayaScale = Typography(
     displayLarge = TextStyle(fontWeight = FontWeight.W800, fontSize = 34.sp, letterSpacing = (-0.8).sp),
     headlineLarge = TextStyle(fontWeight = FontWeight.W800, fontSize = 30.sp, letterSpacing = (-0.7).sp),
     headlineMedium = TextStyle(fontWeight = FontWeight.W700, fontSize = 22.sp, letterSpacing = (-0.4).sp),
@@ -70,7 +70,12 @@ private val LayaTypography = Typography(
     bodyMedium = TextStyle(fontWeight = FontWeight.W400, fontSize = 14.sp),
     labelMedium = TextStyle(fontWeight = FontWeight.W600, fontSize = 12.sp),
     labelSmall = TextStyle(fontWeight = FontWeight.W600, fontSize = 11.sp),
-).withFamily(SFProDisplay)
+)
+private val LayaTypography = LayaScale.withFamily(SFProDisplay)
+
+// FontFamily.Default resolves to the platform's default typeface, which is the
+// one OEM font pickers (Samsung's FlipFont, etc.) replace.
+private val SystemTypography = LayaScale.withFamily(FontFamily.Default)
 
 /** Applies [family] to every style in the scale, so nothing is left on Roboto. */
 private fun Typography.withFamily(family: FontFamily) = Typography(
@@ -94,11 +99,12 @@ private fun Typography.withFamily(family: FontFamily) = Typography(
 @Composable
 fun LayaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    systemFont: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = LayaTypography,
+        typography = if (systemFont) SystemTypography else LayaTypography,
         content = content,
     )
 }

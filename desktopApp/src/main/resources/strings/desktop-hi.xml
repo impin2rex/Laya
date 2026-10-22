@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">अनुवाद उपलब्ध नहीं है</string>
     <string name="d_what_the_translate_button_translates_into">बोल का अनुवाद बटन किस भाषा में अनुवाद करता है</string>
     <string name="d_off">बंद</string>
+    <string name="d_system_font">सिस्टम फ़ॉन्ट इस्तेमाल करें</string>
+    <string name="d_system_font_subtitle">SF Pro की जगह आपके कंप्यूटर के फ़ॉन्ट में टेक्स्ट दिखाता है</string>
 </resources>

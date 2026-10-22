@@ -207,6 +207,8 @@
     <string name="theme">主题</string>
     <string name="reduce_animation">减少动画</string>
     <string name="reduce_animation_subtitle">让主播放器的渐变保持静止，而不是流动</string>
+    <string name="system_font">使用系统字体</string>
+    <string name="system_font_subtitle">以设备的字体显示文字，而非 SF Pro</string>
     <string name="reduce_dynamic_blur">减少动态模糊</string>
     <string name="reduce_dynamic_blur_subtitle">在整个应用中用纯色填充替代磨砂玻璃效果</string>
     <string name="full_screen_cover_art">全屏封面</string>

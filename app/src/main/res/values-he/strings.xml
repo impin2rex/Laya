@@ -213,6 +213,8 @@
     <string name="theme">ערכת נושא</string>
     <string name="reduce_animation">הפחתת אנימציה</string>
     <string name="reduce_animation_subtitle">מקפיא את הגרדיאנט של הנגן הראשי במקום לתת לו לנוע</string>
+    <string name="system_font">שימוש בגופן המערכת</string>
+    <string name="system_font_subtitle">מציג טקסט בגופן של המכשיר במקום SF Pro</string>
     <string name="reduce_dynamic_blur">הפחתת טשטוש דינמי</string>
     <string name="reduce_dynamic_blur_subtitle">מחליף אפקט זכוכית מטושטשת במילוי אחיד בכל האפליקציה</string>
     <string name="full_screen_cover_art">עטיפת אלבום במסך מלא</string>

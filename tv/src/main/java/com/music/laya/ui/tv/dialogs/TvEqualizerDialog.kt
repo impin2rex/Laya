@@ -72,7 +72,7 @@ import com.music.laya.ui.tv.theme.TvGlass
 import com.music.laya.ui.tv.theme.TvType
 import androidx.compose.foundation.layout.heightIn
 import com.music.laya.ui.tv.theme.AppleSpringPreset
-import com.music.laya.ui.tv.theme.TvSFProDisplay
+import com.music.laya.ui.tv.theme.LocalTvFontFamily
 import com.music.laya.ui.tv.theme.TvThemeColors
 import com.music.laya.ui.tv.theme.appleSpring
 import java.util.Locale
@@ -276,7 +276,7 @@ private fun TvBandFader(
             text = formattedGain,
             fontSize = 11.sp,
             fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Medium,
-            fontFamily = TvSFProDisplay,
+            fontFamily = LocalTvFontFamily.current,
             color = if (isFocused) Color.White else if (abs(gainDb) >= 0.5f) Color.White else Color.White.copy(alpha = 0.5f),
             textAlign = TextAlign.Center,
         )
@@ -358,7 +358,7 @@ private fun TvBandFader(
             text = freqLabel,
             fontSize = 11.sp,
             fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Normal,
-            fontFamily = TvSFProDisplay,
+            fontFamily = LocalTvFontFamily.current,
             color = if (isFocused) Color.White else Color.White.copy(alpha = 0.65f),
             textAlign = TextAlign.Center,
         )

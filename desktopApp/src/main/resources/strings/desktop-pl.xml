@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">Tłumaczenie niedostępne</string>
     <string name="d_what_the_translate_button_translates_into">Na jaki język przycisk tłumaczenia przekłada tekst</string>
     <string name="d_off">Wyłączone</string>
+    <string name="d_system_font">Użyj czcionki systemowej</string>
+    <string name="d_system_font_subtitle">Wyświetla tekst czcionką komputera zamiast SF Pro</string>
 </resources>

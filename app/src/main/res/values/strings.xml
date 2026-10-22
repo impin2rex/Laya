@@ -333,6 +333,8 @@
     <string name="app_icon_pixel_glass_clear_dark" translatable="false">Pixel Glass Clear Dark</string>
     <string name="theme">Theme</string>
     <string name="reduce_animation">Reduce animation</string>
+    <string name="system_font">Use system font</string>
+    <string name="system_font_subtitle">Shows text in your device\'s font instead of SF Pro</string>
     <string name="reduce_animation_subtitle">Freezes the main player\'s gradient instead of drifting</string>
     <string name="reduce_dynamic_blur">Reduce dynamic blur</string>
     <string name="reduce_dynamic_blur_subtitle">Swaps frosted glass for solid fills across the app</string>

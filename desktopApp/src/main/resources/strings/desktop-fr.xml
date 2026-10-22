@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">Traduction indisponible</string>
     <string name="d_what_the_translate_button_translates_into">La langue vers laquelle le bouton Traduire convertit les paroles</string>
     <string name="d_off">Désactivé</string>
+    <string name="d_system_font">Utiliser la police du système</string>
+    <string name="d_system_font_subtitle">Affiche le texte avec la police de votre ordinateur au lieu de SF Pro</string>
 </resources>

@@ -207,6 +207,8 @@
     <string name="theme">テーマ</string>
     <string name="reduce_animation">アニメーションを減らす</string>
     <string name="reduce_animation_subtitle">メインプレイヤーのグラデーションを動かさず固定します</string>
+    <string name="system_font">システムフォントを使用</string>
+    <string name="system_font_subtitle">SF Pro の代わりにデバイスのフォントで文字を表示します</string>
     <string name="reduce_dynamic_blur">動的なぼかしを減らす</string>
     <string name="reduce_dynamic_blur_subtitle">アプリ全体ですりガラス効果を単色の塗りつぶしに置き換えます</string>
     <string name="full_screen_cover_art">全画面カバーアート</string>

@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">התרגום אינו זמין</string>
     <string name="d_what_the_translate_button_translates_into">לאיזו שפה כפתור התרגום מתרגם את המילים</string>
     <string name="d_off">כבוי</string>
+    <string name="d_system_font">שימוש בגופן המערכת</string>
+    <string name="d_system_font_subtitle">מציג טקסט בגופן של המחשב במקום SF Pro</string>
 </resources>

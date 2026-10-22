@@ -222,6 +222,8 @@
     <string name="theme">Тема</string>
     <string name="reduce_animation">Уменьшить анимацию</string>
     <string name="reduce_animation_subtitle">Останавливает градиент главного плеера вместо плавного движения</string>
+    <string name="system_font">Системный шрифт</string>
+    <string name="system_font_subtitle">Показывает текст шрифтом устройства вместо SF Pro</string>
     <string name="reduce_dynamic_blur">Уменьшить динамическое размытие</string>
     <string name="reduce_dynamic_blur_subtitle">Заменяет матовое стекло сплошной заливкой во всём приложении</string>
     <string name="full_screen_cover_art">Обложка на весь экран</string>

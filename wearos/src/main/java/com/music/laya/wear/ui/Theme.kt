@@ -1,6 +1,8 @@
 package com.music.laya.wear.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -24,6 +26,9 @@ val SFPro = FontFamily(
     Font(R.font.sf_pro_display_bold, FontWeight.W700),
 )
 
+/** [SFPro], or the watch's own font when the phone's "Use system font" is on. */
+val LocalWearFont = staticCompositionLocalOf { SFPro }
+
 /** The phone's AccentRed: Love, and nothing much else. */
 val AccentRed = Color(0xFFFA2D48)
 
@@ -34,28 +39,31 @@ val Secondary = Color(0xFF8E8E93)
 val Cell = Color(0xFF1C1C1E)
 
 object WearType {
-    val title = TextStyle(fontFamily = SFPro, fontWeight = FontWeight.W600, fontSize = 15.sp, letterSpacing = (-0.2).sp)
-    val subtitle = TextStyle(fontFamily = SFPro, fontWeight = FontWeight.W400, fontSize = 13.sp, letterSpacing = (-0.1).sp)
-    val header = TextStyle(fontFamily = SFPro, fontWeight = FontWeight.W700, fontSize = 17.sp, letterSpacing = (-0.3).sp)
-    val row = TextStyle(fontFamily = SFPro, fontWeight = FontWeight.W500, fontSize = 14.sp, letterSpacing = (-0.15).sp)
-    val rowSub = TextStyle(fontFamily = SFPro, fontWeight = FontWeight.W400, fontSize = 12.sp)
-    val button = TextStyle(fontFamily = SFPro, fontWeight = FontWeight.W600, fontSize = 14.sp)
-    val caption = TextStyle(fontFamily = SFPro, fontWeight = FontWeight.W500, fontSize = 11.sp, letterSpacing = 0.2.sp)
+    val title @Composable get() = TextStyle(fontFamily = LocalWearFont.current, fontWeight = FontWeight.W600, fontSize = 15.sp, letterSpacing = (-0.2).sp)
+    val subtitle @Composable get() = TextStyle(fontFamily = LocalWearFont.current, fontWeight = FontWeight.W400, fontSize = 13.sp, letterSpacing = (-0.1).sp)
+    val header @Composable get() = TextStyle(fontFamily = LocalWearFont.current, fontWeight = FontWeight.W700, fontSize = 17.sp, letterSpacing = (-0.3).sp)
+    val row @Composable get() = TextStyle(fontFamily = LocalWearFont.current, fontWeight = FontWeight.W500, fontSize = 14.sp, letterSpacing = (-0.15).sp)
+    val rowSub @Composable get() = TextStyle(fontFamily = LocalWearFont.current, fontWeight = FontWeight.W400, fontSize = 12.sp)
+    val button @Composable get() = TextStyle(fontFamily = LocalWearFont.current, fontWeight = FontWeight.W600, fontSize = 14.sp)
+    val caption @Composable get() = TextStyle(fontFamily = LocalWearFont.current, fontWeight = FontWeight.W500, fontSize = 11.sp, letterSpacing = 0.2.sp)
 }
 
 @Composable
-fun LayaWearTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = ColorScheme(
-            primary = Color.White,
-            onPrimary = Color.Black,
-            background = Color.Black,
-            onBackground = Color.White,
-            onSurface = Color.White,
-            onSurfaceVariant = Secondary,
-            surfaceContainer = Cell,
-        ),
-        typography = Typography(defaultFontFamily = SFPro),
-        content = content,
-    )
+fun LayaWearTheme(systemFont: Boolean = false, content: @Composable () -> Unit) {
+    val font = if (systemFont) FontFamily.Default else SFPro
+    CompositionLocalProvider(LocalWearFont provides font) {
+        MaterialTheme(
+            colorScheme = ColorScheme(
+                primary = Color.White,
+                onPrimary = Color.Black,
+                background = Color.Black,
+                onBackground = Color.White,
+                onSurface = Color.White,
+                onSurfaceVariant = Secondary,
+                surfaceContainer = Cell,
+            ),
+            typography = Typography(defaultFontFamily = font),
+            content = content,
+        )
+    }
 }

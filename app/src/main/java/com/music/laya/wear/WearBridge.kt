@@ -501,6 +501,8 @@ object WearBridge {
             }
         }
         map.putBoolean(P.KEY_WATCH_SPEAKER, speaker?.active == true)
+        // ponytail: rides the now-playing push, so a toggle reaches the watch on the next player update.
+        map.putBoolean(P.KEY_SYSTEM_FONT, AppSettings.systemFont.value)
         val watchVolume = speaker?.watchVolume
         if (watchVolume != null) {
             map.putInt(P.KEY_VOLUME, watchVolume.first)

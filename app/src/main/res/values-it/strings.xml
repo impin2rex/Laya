@@ -252,6 +252,8 @@
     <string name="theme">Tema</string>
     <string name="reduce_animation">Riduci animazioni</string>
     <string name="reduce_animation_subtitle">Blocca la sfumatura del player principale invece di farla muovere</string>
+    <string name="system_font">Usa il font di sistema</string>
+    <string name="system_font_subtitle">Mostra il testo con il font del dispositivo invece di SF Pro</string>
     <string name="reduce_dynamic_blur">Riduci sfocatura dinamica</string>
     <string name="reduce_dynamic_blur_subtitle">Sostituisce il vetro smerigliato con riempimenti pieni in tutta l\'app</string>
     <string name="liquid_glass">Liquid Glass</string>

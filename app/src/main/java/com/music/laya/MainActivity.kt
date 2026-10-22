@@ -368,6 +368,7 @@ class MainActivity : AppCompatActivity() {
         MusicLink.consume(intent)
         setContent {
             val theme by AppSettings.themeMode.collectAsStateWithLifecycle()
+            val systemFont by AppSettings.systemFont.collectAsStateWithLifecycle()
             val highPerformance by AppSettings.highPerformanceMode.collectAsStateWithLifecycle()
             val liquidGlassEnabled by AppSettings.liquidGlass.collectAsStateWithLifecycle()
             val iosOverscrollFactory = rememberIosOverscrollFactory()
@@ -381,7 +382,7 @@ class MainActivity : AppCompatActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
-            LayaTheme(darkTheme = darkTheme) {
+            LayaTheme(darkTheme = darkTheme, systemFont = systemFont) {
                 // The glass surfaces sample this layer, and a layer records only
                 // what is drawn into it — which, for Laya, is a page that
                 // paints no background of its own. Everywhere a page is not

@@ -84,6 +84,10 @@ class PhoneLink(context: Context, private val scope: CoroutineScope) :
     private val _watchSpeaker = MutableStateFlow(false)
     val watchSpeaker: StateFlow<Boolean> = _watchSpeaker.asStateFlow()
 
+    /** The phone's "Use system font" setting; the watch's UI follows it. */
+    private val _systemFont = MutableStateFlow(false)
+    val systemFont: StateFlow<Boolean> = _systemFont.asStateFlow()
+
     @Volatile private var phoneNode: String? = null
     private var artId: String? = null
     private var artJob: Job? = null
@@ -325,6 +329,7 @@ class PhoneLink(context: Context, private val scope: CoroutineScope) :
     private fun applyNowPlaying(map: DataMap) {
         _heard.value = true
         _watchSpeaker.value = map.getBoolean(P.KEY_WATCH_SPEAKER)
+        _systemFont.value = map.getBoolean(P.KEY_SYSTEM_FONT)
         val now = System.currentTimeMillis()
         _nowPlaying.value = NowPlaying.from(map)?.let { merge(it, now) }
 
