@@ -92,6 +92,7 @@ fun TvSettingsScreen(
     val uiScale by TvSettings.tvUiScale.collectAsState()
     val refreshRate by TvRefreshRateController.preference.collectAsState()
     val reduceMotion by AppSettings.reduceAnimation.collectAsState()
+    val systemFont by AppSettings.systemFont.collectAsState()
     val reduceTransparency by AppSettings.reduceDynamicBlur.collectAsState()
 
     var blurb by remember { mutableStateOf(DefaultBlurb) }
@@ -320,6 +321,14 @@ fun TvSettingsScreen(
                     value = refreshRate.label.substringBefore(" ("),
                     onFocused = { blurb = "How often the screen redraws while you browse." },
                     onClick = { sheet = SettingsSheet.RefreshRate },
+                )
+            }
+            item {
+                TvListRow(
+                    title = "System Font",
+                    value = onOff(systemFont),
+                    onFocused = { blurb = "Shows text in your TV's font instead of SF Pro." },
+                    onClick = { AppSettings.setSystemFont(!systemFont) },
                 )
             }
             item {

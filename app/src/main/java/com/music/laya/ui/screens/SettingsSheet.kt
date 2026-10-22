@@ -66,6 +66,7 @@ import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.MusicOff
 import androidx.compose.material.icons.rounded.MotionPhotosOff
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Person
@@ -219,6 +220,7 @@ fun SettingsScreen(
     val reverb by AppSettings.reverb.collectAsStateWithLifecycle()
     val nerdStats by AppSettings.showNerdStats.collectAsStateWithLifecycle()
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val systemFont by AppSettings.systemFont.collectAsStateWithLifecycle()
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     val liquidGlass by AppSettings.liquidGlass.collectAsStateWithLifecycle()
     val liquidGlassSupported = isGlassSupported()
@@ -805,6 +807,25 @@ fun SettingsScreen(
                     selectedIndex = ThemeMode.entries.indexOf(theme),
                     onSelect = { AppSettings.setThemeMode(ThemeMode.entries[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
+            val systemFontTitle = stringResource(R.string.system_font)
+            row(systemFontTitle, "font", "typeface", "text") {
+                SettingsRow(
+                    icon = Icons.Rounded.TextFields,
+                    title = systemFontTitle,
+                    subtitle = stringResource(R.string.system_font_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = systemFont,
+                            onCheckedChange = AppSettings::setSystemFont,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setSystemFont(!systemFont) },
                 )
             }
             val reduceAnimationTitle = stringResource(R.string.reduce_animation)

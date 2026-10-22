@@ -321,6 +321,8 @@
     <string name="theme">থিম</string>
     <string name="reduce_animation">অ্যানিমেশন কমান</string>
     <string name="reduce_animation_subtitle">মেন প্লেয়ারের গ্রেডিয়েন্ট না সরে স্থির থাকে</string>
+    <string name="system_font">সিস্টেম ফন্ট ব্যবহার করুন</string>
+    <string name="system_font_subtitle">SF Pro-এর বদলে আপনার ডিভাইসের ফন্টে লেখা দেখায়</string>
     <string name="reduce_dynamic_blur">ডায়নামিক ব্লার কমান</string>
     <string name="reduce_dynamic_blur_subtitle">পুরো অ্যাপে ঝাপসা কাচের বদলে সলিড রং ব্যবহার করে</string>
     <string name="liquid_glass">Liquid Glass</string>

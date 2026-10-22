@@ -234,6 +234,8 @@
     <string name="theme">Tema</string>
     <string name="reduce_animation">Animasyonu azalt</string>
     <string name="reduce_animation_subtitle">Ana oynatıcının gradyanını kaymak yerine dondurur</string>
+    <string name="system_font">Sistem yazı tipini kullan</string>
+    <string name="system_font_subtitle">Metni SF Pro yerine cihazınızın yazı tipiyle gösterir</string>
     <string name="reduce_dynamic_blur">Dinamik bulanıklığı azalt</string>
     <string name="reduce_dynamic_blur_subtitle">Uygulama genelinde buzlu camı düz dolgularla değiştirir</string>
     <string name="liquid_glass">Liquid Glass</string>

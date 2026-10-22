@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">Tradução indisponível</string>
     <string name="d_what_the_translate_button_translates_into">Para qual idioma o botão de traduzir da letra traduz</string>
     <string name="d_off">Desligado</string>
+    <string name="d_system_font">Usar fonte do sistema</string>
+    <string name="d_system_font_subtitle">Mostra o texto com a fonte do seu computador em vez da SF Pro</string>
 </resources>

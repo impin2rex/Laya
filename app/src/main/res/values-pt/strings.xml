@@ -214,6 +214,8 @@
     <string name="theme">Tema</string>
     <string name="reduce_animation">Reduzir animação</string>
     <string name="reduce_animation_subtitle">Congela o gradiente do player principal em vez de mover</string>
+    <string name="system_font">Usar fonte do sistema</string>
+    <string name="system_font_subtitle">Mostra o texto com a fonte do seu dispositivo em vez da SF Pro</string>
     <string name="reduce_dynamic_blur">Reduzir desfoque dinâmico</string>
     <string name="reduce_dynamic_blur_subtitle">Troca o vidro fosco por preenchimentos sólidos em todo o app</string>
     <string name="full_screen_cover_art">Capa em tela cheia</string>

@@ -91,4 +91,6 @@
     <string name="d_translation_unavailable">Translation unavailable</string>
     <string name="d_what_the_translate_button_translates_into">What the translate button on the lyrics translates into</string>
     <string name="d_off">Off</string>
+    <string name="d_system_font">Use system font</string>
+    <string name="d_system_font_subtitle">Shows text in your computer\'s font instead of SF Pro</string>
 </resources>

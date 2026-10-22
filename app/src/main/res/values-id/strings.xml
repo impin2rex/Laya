@@ -207,6 +207,8 @@
     <string name="theme">Tema</string>
     <string name="reduce_animation">Kurangi animasi</string>
     <string name="reduce_animation_subtitle">Membekukan gradien pemutar utama alih-alih bergerak</string>
+    <string name="system_font">Gunakan font sistem</string>
+    <string name="system_font_subtitle">Menampilkan teks dengan font perangkat Anda, bukan SF Pro</string>
     <string name="reduce_dynamic_blur">Kurangi blur dinamis</string>
     <string name="reduce_dynamic_blur_subtitle">Mengganti kaca buram dengan warna solid di seluruh aplikasi</string>
     <string name="full_screen_cover_art">Sampul layar penuh</string>

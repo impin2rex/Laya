@@ -213,6 +213,8 @@
     <string name="theme">Thème</string>
     <string name="reduce_animation">Réduire les animations</string>
     <string name="reduce_animation_subtitle">Fige le dégradé du lecteur principal au lieu de le faire dériver</string>
+    <string name="system_font">Utiliser la police du système</string>
+    <string name="system_font_subtitle">Affiche le texte avec la police de votre appareil au lieu de SF Pro</string>
     <string name="reduce_dynamic_blur">Réduire le flou dynamique</string>
     <string name="reduce_dynamic_blur_subtitle">Remplace le verre dépoli par des couleurs unies dans toute l\'application</string>
     <string name="full_screen_cover_art">Pochette plein écran</string>

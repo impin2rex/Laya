@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">Çeviri kullanılamıyor</string>
     <string name="d_what_the_translate_button_translates_into">Şarkı sözlerindeki çevir düğmesinin çevirdiği dil</string>
     <string name="d_off">Kapalı</string>
+    <string name="d_system_font">Sistem yazı tipini kullan</string>
+    <string name="d_system_font_subtitle">Metni SF Pro yerine bilgisayarınızın yazı tipiyle gösterir</string>
 </resources>

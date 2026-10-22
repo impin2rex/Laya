@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">无法翻译</string>
     <string name="d_what_the_translate_button_translates_into">歌词翻译按钮翻译成的语言</string>
     <string name="d_off">关闭</string>
+    <string name="d_system_font">使用系统字体</string>
+    <string name="d_system_font_subtitle">以电脑的字体显示文字，而非 SF Pro</string>
 </resources>

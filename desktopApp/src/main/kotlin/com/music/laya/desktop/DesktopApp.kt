@@ -452,13 +452,16 @@ internal fun desktopColorScheme() = darkColorScheme(
 
 @Composable
 internal fun desktopTypography(): Typography {
-    val sfProDisplay = FontFamily(
+    val systemFont by DesktopAppearanceSettings.systemFont.collectAsState()
+    val bundled = FontFamily(
         composeFont(Res.font.sf_pro_display_regular, FontWeight.W400),
         composeFont(Res.font.sf_pro_display_medium, FontWeight.W500),
         composeFont(Res.font.sf_pro_display_semibold, FontWeight.W600),
         composeFont(Res.font.sf_pro_display_bold, FontWeight.W700),
         composeFont(Res.font.sf_pro_display_heavy, FontWeight.W800),
     )
+    // FontFamily.Default is whatever sans-serif the OS hands Skia.
+    val sfProDisplay = if (systemFont) FontFamily.Default else bundled
     val defaults = Typography()
     return defaults.copy(
         displayLarge = defaults.displayLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W800, fontSize = 34.sp, letterSpacing = (-0.8).sp),
@@ -6497,6 +6500,13 @@ private fun DesktopSettingsScreen(
                             DesktopAppearanceSettings::setAmbientBackdrop,
                         )
                     }
+                    val systemFont by DesktopAppearanceSettings.systemFont.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["d_system_font", "Use system font"],
+                        DesktopStrings["d_system_font_subtitle", "Shows text in your computer's font instead of SF Pro"],
+                        systemFont,
+                        DesktopAppearanceSettings::setSystemFont,
+                    )
                     SettingsToggle(
                         DesktopStrings["full_screen_cover_art", "Full-screen cover art"],
                         DesktopStrings["full_screen_cover_art_subtitle", "Runs the cover to the edges of the player instead of a square sleeve"],

@@ -15,6 +15,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -95,7 +97,8 @@ class WearActivity : ComponentActivity() {
             }
         }
         setContent {
-            LayaWearTheme {
+            val systemFont by model.link.systemFont.collectAsState()
+            LayaWearTheme(systemFont = systemFont) {
                 CompositionLocalProvider(LocalAmbient provides ambient.value) {
                     WearApp(model.link)
                 }

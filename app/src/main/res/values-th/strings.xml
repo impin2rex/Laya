@@ -228,6 +228,8 @@
     <string name="theme">ธีม</string>
     <string name="reduce_animation">ลดแอนิเมชัน</string>
     <string name="reduce_animation_subtitle">หยุดเกรเดียนต์ของเครื่องเล่นหลักแทนการเคลื่อนไหว</string>
+    <string name="system_font">ใช้ฟอนต์ของระบบ</string>
+    <string name="system_font_subtitle">แสดงข้อความด้วยฟอนต์ของอุปกรณ์แทน SF Pro</string>
     <string name="reduce_dynamic_blur">ลดเบลอแบบไดนามิก</string>
     <string name="reduce_dynamic_blur_subtitle">เปลี่ยนกระจกฝ้าเป็นพื้นทึบทั่วทั้งแอป</string>
     <string name="liquid_glass">Liquid Glass</string>

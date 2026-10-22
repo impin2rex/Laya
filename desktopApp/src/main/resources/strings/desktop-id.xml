@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">Terjemahan tidak tersedia</string>
     <string name="d_what_the_translate_button_translates_into">Bahasa tujuan tombol terjemahkan pada lirik</string>
     <string name="d_off">Mati</string>
+    <string name="d_system_font">Gunakan font sistem</string>
+    <string name="d_system_font_subtitle">Menampilkan teks dengan font komputer Anda, bukan SF Pro</string>
 </resources>

@@ -192,6 +192,9 @@ object WearProtocol {
     /** On [PATH_NOW_PLAYING] and [PATH_OUTPUTS]: the watch is the speaker. */
     const val KEY_WATCH_SPEAKER = "watch_speaker"
 
+    /** On [PATH_NOW_PLAYING]: the phone's "Use system font" setting, which the watch follows. */
+    const val KEY_SYSTEM_FONT = "system_font"
+
     /** DataMap list: [KEY_MEDIA_ID], [KEY_TITLE], [KEY_ARTIST], [KEY_URI]. */
     const val KEY_TRACKS = "tracks"
 

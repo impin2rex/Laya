@@ -238,6 +238,8 @@
     <string name="theme">Giao diện</string>
     <string name="reduce_animation">Giảm hiệu ứng chuyển động</string>
     <string name="reduce_animation_subtitle">Cố định dải màu của trình phát thay vì chuyển động</string>
+    <string name="system_font">Dùng phông chữ hệ thống</string>
+    <string name="system_font_subtitle">Hiển thị chữ bằng phông chữ của thiết bị thay cho SF Pro</string>
     <string name="reduce_dynamic_blur">Giảm độ mờ động</string>
     <string name="reduce_dynamic_blur_subtitle">Dùng màu nền đặc thay cho hiệu ứng kính mờ trong toàn bộ ứng dụng</string>
     <string name="liquid_glass">Kính lỏng (Liquid Glass)</string>

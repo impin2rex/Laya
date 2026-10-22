@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">Übersetzung nicht verfügbar</string>
     <string name="d_what_the_translate_button_translates_into">Wonach die Übersetzen-Schaltfläche im Liedtext übersetzt</string>
     <string name="d_off">Aus</string>
+    <string name="d_system_font">Systemschrift verwenden</string>
+    <string name="d_system_font_subtitle">Zeigt Text in der Schrift deines Computers statt in SF Pro</string>
 </resources>

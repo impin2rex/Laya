@@ -212,6 +212,8 @@
     <string name="theme">Design</string>
     <string name="reduce_animation">Animationen reduzieren</string>
     <string name="reduce_animation_subtitle">Friert den Farbverlauf des Hauptplayers ein, statt ihn treiben zu lassen</string>
+    <string name="system_font">Systemschrift verwenden</string>
+    <string name="system_font_subtitle">Zeigt Text in der Schrift deines Geräts statt in SF Pro</string>
     <string name="reduce_dynamic_blur">Dynamische Unschärfe reduzieren</string>
     <string name="reduce_dynamic_blur_subtitle">Ersetzt Milchglas-Effekte durch einfarbige Flächen in der ganzen App</string>
     <string name="full_screen_cover_art">Vollbild-Cover</string>

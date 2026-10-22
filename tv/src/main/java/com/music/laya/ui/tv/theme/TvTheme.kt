@@ -352,9 +352,9 @@ val TvMinecraft = FontFamily(
 // 10-foot TV typography scale
 // ─────────────────────────────────────────────────────────────────────────────
 
-fun createTvTypography(palette: TvColorPalette): Typography = Typography(
+fun createTvTypography(palette: TvColorPalette, family: FontFamily): Typography = Typography(
     displayLarge = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W800,
         fontSize = 37.sp,
         lineHeight = 44.sp,
@@ -362,7 +362,7 @@ fun createTvTypography(palette: TvColorPalette): Typography = Typography(
         color = palette.textPrimary,
     ),
     displayMedium = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W800,
         fontSize = 31.sp,
         lineHeight = 37.sp,
@@ -370,7 +370,7 @@ fun createTvTypography(palette: TvColorPalette): Typography = Typography(
         color = palette.textPrimary,
     ),
     displaySmall = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W700,
         fontSize = 24.sp,
         lineHeight = 31.sp,
@@ -378,84 +378,84 @@ fun createTvTypography(palette: TvColorPalette): Typography = Typography(
         color = palette.textPrimary,
     ),
     headlineLarge = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W700,
         fontSize = 20.sp,
         lineHeight = 27.sp,
         color = palette.textPrimary,
     ),
     headlineMedium = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W700,
         fontSize = 17.sp,
         lineHeight = 24.sp,
         color = palette.textPrimary,
     ),
     headlineSmall = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W600,
         fontSize = 15.sp,
         lineHeight = 20.sp,
         color = palette.textPrimary,
     ),
     titleLarge = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W600,
         fontSize = 15.sp,
         lineHeight = 20.sp,
         color = palette.textPrimary,
     ),
     titleMedium = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W600,
         fontSize = 14.sp,
         lineHeight = 19.sp,
         color = palette.textPrimary,
     ),
     titleSmall = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W500,
         fontSize = 12.sp,
         lineHeight = 17.sp,
         color = palette.textSecondary,
     ),
     bodyLarge = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W400,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         color = palette.textPrimary,
     ),
     bodyMedium = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W400,
         fontSize = 12.sp,
         lineHeight = 17.sp,
         color = palette.textSecondary,
     ),
     bodySmall = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W400,
         fontSize = 11.sp,
         lineHeight = 14.sp,
         color = palette.textMuted,
     ),
     labelLarge = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W600,
         fontSize = 13.sp,
         lineHeight = 17.sp,
         color = palette.textPrimary,
     ),
     labelMedium = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W600,
         fontSize = 11.sp,
         lineHeight = 15.sp,
         color = palette.textSecondary,
     ),
     labelSmall = TextStyle(
-        fontFamily = TvSFProDisplay,
+        fontFamily = family,
         fontWeight = FontWeight.W600,
         fontSize = 11.sp,
         lineHeight = 14.sp,
@@ -510,14 +510,14 @@ object TvGlass {
 
 /** The 10-foot type ramp, in the dp space of a 1080p panel (960 × 540 dp). */
 object TvType {
-    val LargeTitle = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W700, fontSize = 29.sp, lineHeight = 34.sp, letterSpacing = (-0.3).sp)
-    val Title = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W700, fontSize = 22.sp, lineHeight = 27.sp, letterSpacing = (-0.3).sp)
-    val Headline = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W600, fontSize = 16.sp, lineHeight = 20.sp)
-    val Body = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W500, fontSize = 14.sp, lineHeight = 18.sp)
-    val Callout = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W400, fontSize = 13.sp, lineHeight = 18.sp)
-    val CardTitle = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W500, fontSize = 12.sp, lineHeight = 15.sp)
-    val Caption = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W400, fontSize = 11.sp, lineHeight = 14.sp)
-    val Tab = TextStyle(fontFamily = TvSFProDisplay, fontWeight = FontWeight.W600, fontSize = 13.sp, lineHeight = 17.sp)
+    val LargeTitle @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W700, fontSize = 29.sp, lineHeight = 34.sp, letterSpacing = (-0.3).sp)
+    val Title @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W700, fontSize = 22.sp, lineHeight = 27.sp, letterSpacing = (-0.3).sp)
+    val Headline @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W600, fontSize = 16.sp, lineHeight = 20.sp)
+    val Body @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W500, fontSize = 14.sp, lineHeight = 18.sp)
+    val Callout @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W400, fontSize = 13.sp, lineHeight = 18.sp)
+    val CardTitle @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W500, fontSize = 12.sp, lineHeight = 15.sp)
+    val Caption @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W400, fontSize = 11.sp, lineHeight = 14.sp)
+    val Tab @Composable get() = TextStyle(fontFamily = LocalTvFontFamily.current, fontWeight = FontWeight.W600, fontSize = 13.sp, lineHeight = 17.sp)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -536,6 +536,8 @@ fun LayaTvTheme(
 ) {
     val tvThemeId by TvSettings.tvTheme.collectAsState()
     val tvUiScale by TvSettings.tvUiScale.collectAsState()
+    val systemFont by AppSettings.systemFont.collectAsState()
+    val fontFamily = if (systemFont) FontFamily.Default else TvSFProDisplay
 
     val palette = when (tvThemeId.lowercase()) {
         "pure_black", "oled", "pure_black_oled" -> TvOledPalette
@@ -559,8 +561,8 @@ fun LayaTvTheme(
         border = palette.borderSubtle,
     )
 
-    val typography = remember(palette) {
-        createTvTypography(palette)
+    val typography = remember(palette, fontFamily) {
+        createTvTypography(palette, fontFamily)
     }
 
     // Apply user DPI scale by overriding LocalDensity for the entire TV UI tree
@@ -571,7 +573,7 @@ fun LayaTvTheme(
 
     CompositionLocalProvider(
         LocalTvColors provides palette,
-        LocalTvFontFamily provides TvSFProDisplay,
+        LocalTvFontFamily provides fontFamily,
         LocalDensity provides scaledDensity,
     ) {
         MaterialTheme(

@@ -89,4 +89,6 @@
     <string name="d_translation_unavailable">অনুবাদ পাওয়া যাচ্ছে না</string>
     <string name="d_what_the_translate_button_translates_into">লিরিক্সের অনুবাদ বোতাম যে ভাষায় অনুবাদ করবে</string>
     <string name="d_off">বন্ধ</string>
+    <string name="d_system_font">সিস্টেম ফন্ট ব্যবহার করুন</string>
+    <string name="d_system_font_subtitle">SF Pro-এর বদলে আপনার কম্পিউটারের ফন্টে লেখা দেখায়</string>
 </resources>
