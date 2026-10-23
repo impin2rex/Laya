@@ -120,6 +120,11 @@
     <string name="shuffle_on">Перемешивание включено</string>
     <string name="stereo">Стерео</string>
     <string name="translate_lyrics">Перевести текст</string>
+    <string name="sing_along">Петь</string>
+    <string name="restore_vocals">Вернуть вокал</string>
+    <string name="karaoke_mono">Из этого трека нельзя убрать вокал: он моно</string>
+    <string name="karaoke_remote">Караоке работает, только когда музыка играет на этом устройстве</string>
+    <string name="karaoke_level">Удаление вокала</string>
     <string name="translating_lyrics_to">Перевод на %1$s…</string>
     <string name="up_next">Далее</string>
     <string name="upgrading_quality">Улучшение качества</string>

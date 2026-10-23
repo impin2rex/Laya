@@ -1827,6 +1827,9 @@ fun LayaDesktopApp() {
     LaunchedEffect(reverbEnabled, reverbSettings) {
         playbackEngine.setReverb(reverbEnabled, reverbSettings)
     }
+    val karaokeEnabled by com.music.laya.playback.Karaoke.enabled.collectAsState()
+    val karaokeWarm by com.music.laya.playback.Karaoke.warm.collectAsState()
+    LaunchedEffect(karaokeEnabled, karaokeWarm) { playbackEngine.setKaraoke(karaokeEnabled) }
     LaunchedEffect(spatialAudio, skipSilence, outputPrecision) {
         playbackEngine.setSpatialAudio(spatialAudio)
         playbackEngine.setSkipSilence(skipSilence)

@@ -49,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,12 +71,14 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import com.music.laya.data.model.LikeStatus
+import com.music.laya.playback.Karaoke
 import com.music.laya.data.model.Song
 import com.music.laya.data.SongInfo
 import com.music.laya.data.SongInfoRepository
 import com.music.laya.data.compactCount
 import com.music.laya.ui.LyricsProviderState
 import com.music.laya.ui.icons.LayaIcons
+import kotlin.math.roundToInt
 import java.util.Locale
 
 /** The verbs the song menu needs that the player does not otherwise know about. */
@@ -458,6 +461,22 @@ internal fun DesktopSongMenu(
                 }
             }
             onTranslate?.let {
+                // Karaoke beside the other ways of reading along; the state is
+                // the engine's own, so this row and the lyrics disc agree.
+                val karaokeOn by Karaoke.enabled.collectAsState()
+                val karaokeMono by Karaoke.unavailable.collectAsState()
+                val karaokeLevel by Karaoke.level.collectAsState()
+                DesktopMenuRow(
+                    icon = LayaIcons.KaraokeMic,
+                    label = DesktopStrings["sing_along", "Sing along"],
+                    value = when {
+                        karaokeMono -> DesktopStrings["karaoke_mono_short", "Mono track"]
+                        karaokeOn -> "${(karaokeLevel * 100).roundToInt()}%"
+                        else -> ""
+                    },
+                    selected = karaokeOn,
+                    onClick = { Karaoke.setEnabled(!karaokeOn) },
+                )
                 DesktopMenuRow(
                     icon = Icons.Rounded.Translate,
                     label = DesktopStrings["d_translate", "Translate"],

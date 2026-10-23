@@ -56,11 +56,23 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // The player is drawn by the shared UI module; this is what it reads
         // underneath — settings, the Canvas decoder, outputs, the party.
         AndroidStreamHooks.installEarly()
+        // Karaoke's vocal model ships in the assets; ONNX Runtime wants a file,
+        // so it is copied out the first time karaoke runs. Where builds that
+        // downloaded it kept their copy goes.
+        java.io.File(filesDir, "models").deleteRecursively()
+        com.music.laya.playback.karaoke.KaraokeModel.install {
+            unpackAsset(com.music.laya.playback.karaoke.KaraokeModel.ASSET)
+        }
+        // The song being sung, separated: one at a time, in the cache, cleared at launch.
+        com.music.laya.playback.karaoke.KaraokeStems.install(java.io.File(cacheDir, "karaoke"))
         PlayerPlatform.install(AndroidPlayerHost(this))
         com.music.laya.ui.AppUi.install(com.music.laya.ui.AndroidAppUiHost)
         // The shared data layer (lyrics, the YouTube Music client) logs to
         // logcat on debug builds only, as the app's own DebugLog always has.
         if (BuildConfig.DEBUG) {
+            com.music.laya.playback.smart.AnalysisLog.install { message, error ->
+                android.util.Log.w("LayaAnalysis", message, error)
+            }
             DebugLog.sink = DebugLog.Sink { level, tag, message, error ->
                 when (level) {
                     'D' -> android.util.Log.d(tag, message, error)
@@ -302,5 +314,20 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
                 androidx.core.os.LocaleListCompat.forLanguageTags(replacement),
             )
         }
+    }
+
+    /**
+     * [name] from the assets as a file, copied once. Written beside and then
+     * renamed, so a copy cut short by the process dying is never taken for the
+     * whole one.
+     */
+    private fun unpackAsset(name: String): String {
+        val file = java.io.File(filesDir, name)
+        val expected = runCatching { assets.openFd(name).use { it.length } }.getOrDefault(-1L)
+        if (file.exists() && (expected < 0 || file.length() == expected)) return file.path
+        val partial = java.io.File(filesDir, "$name.partial")
+        assets.open(name).use { input -> partial.outputStream().use { input.copyTo(it) } }
+        partial.renameTo(file)
+        return file.path
     }
 }

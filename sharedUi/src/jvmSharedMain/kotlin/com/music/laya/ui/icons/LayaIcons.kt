@@ -21,6 +21,39 @@ object LayaIcons {
     private const val STROKE = 2.2f
     private val stroke = SolidColor(Color.Black)
 
+    /**
+     * Karaoke: a hand mic held on the slant with sparkles off its shoulder, the
+     * sing-along glyph listeners know. Head filled, handle stroked, so it holds
+     * its shape at the 19dp the lyrics discs draw it.
+     */
+    val KaraokeMic: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "bc_karaoke_mic", defaultWidth = 24.dp, defaultHeight = 24.dp,
+            viewportWidth = 24f, viewportHeight = 24f,
+        ).apply {
+            path(fill = stroke) {
+                moveTo(19.6f, 8.6f)
+                arcToRelative(4.35f, 4.35f, 0f, true, true, -8.7f, 0f)
+                arcToRelative(4.35f, 4.35f, 0f, true, true, 8.7f, 0f)
+                close()
+            }
+            path(stroke = stroke, strokeLineWidth = 2.6f, strokeLineCap = StrokeCap.Round) {
+                moveTo(12.2f, 11.7f)
+                lineTo(5.3f, 18.6f)
+            }
+            path(fill = stroke) {
+                for ((x, y, r) in listOf(Triple(5.6f, 6.4f, 3.1f), Triple(9.6f, 2.5f, 1.6f), Triple(2.6f, 11.2f, 1.4f))) {
+                    moveTo(x, y - r)
+                    quadTo(x, y, x + r, y)
+                    quadTo(x, y, x, y + r)
+                    quadTo(x, y, x - r, y)
+                    quadTo(x, y, x, y - r)
+                    close()
+                }
+            }
+        }.build()
+    }
+
     /** Compact list and quotation-bubble shapes used by the player controls. */
     val Queue: ImageVector by lazy {
         ImageVector.Builder(

@@ -120,6 +120,11 @@
     <string name="shuffle_on">Bật trộn bài</string>
     <string name="stereo">Stereo</string>
     <string name="translate_lyrics">Translate lyrics</string>
+    <string name="sing_along">Hát theo</string>
+    <string name="restore_vocals">Khôi phục giọng hát</string>
+    <string name="karaoke_mono">Không thể bỏ giọng hát khỏi bài này: bài hát là mono</string>
+    <string name="karaoke_remote">Karaoke chỉ hoạt động khi nhạc phát trên thiết bị này</string>
+    <string name="karaoke_level">Loại bỏ giọng hát</string>
     <string name="translating_lyrics_to">Translating to %1$s…</string>
     <string name="up_next">Tiếp theo</string>
     <string name="upgrading_quality">Đang nâng cấp chất lượng</string>

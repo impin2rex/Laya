@@ -41,7 +41,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import android.widget.Toast
+import com.music.laya.playback.Karaoke
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -335,6 +338,14 @@ internal fun TvTransport(
 ) {
     val showStats by AppSettings.showNerdStats.collectAsState()
     val reverbOn by AppSettings.reverbEnabled.collectAsState()
+    val karaokeOn by Karaoke.enabled.collectAsState()
+    val karaokeMono by Karaoke.unavailable.collectAsState()
+    val context = LocalContext.current
+    LaunchedEffect(karaokeMono) {
+        if (karaokeMono) {
+            Toast.makeText(context, "This track is mono, so its vocals cannot be removed", Toast.LENGTH_SHORT).show()
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -372,6 +383,15 @@ internal fun TvTransport(
                     enabled = lyricsAvailable,
                     onClick = onToggleLyrics,
                 )
+                // Karaoke, beside the lyrics it is for: shown while they are.
+                if (lyricsOn) {
+                    TvTransportButton(
+                        icon = LayaIcons.KaraokeMic,
+                        contentDescription = if (karaokeOn) "Restore vocals" else "Sing along",
+                        active = karaokeOn && !karaokeMono,
+                        onClick = { Karaoke.setEnabled(!karaokeOn) },
+                    )
+                }
                 TvTransportButton(
                     icon = LayaIcons.Queue,
                     contentDescription = "Up Next",

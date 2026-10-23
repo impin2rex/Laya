@@ -120,6 +120,11 @@
     <string name="shuffle_on">Acak aktif</string>
     <string name="stereo">Stereo</string>
     <string name="translate_lyrics">Terjemahkan lirik</string>
+    <string name="sing_along">Ikut bernyanyi</string>
+    <string name="restore_vocals">Pulihkan vokal</string>
+    <string name="karaoke_mono">Vokal tidak dapat dihapus dari lagu ini: lagunya mono</string>
+    <string name="karaoke_remote">Karaoke hanya berfungsi saat musik diputar di perangkat ini</string>
+    <string name="karaoke_level">Penghapusan vokal</string>
     <string name="translating_lyrics_to">Menerjemahkan ke %1$s…</string>
     <string name="up_next">Berikutnya</string>
     <string name="upgrading_quality">Meningkatkan kualitas</string>

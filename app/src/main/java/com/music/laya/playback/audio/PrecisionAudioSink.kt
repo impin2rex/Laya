@@ -11,6 +11,7 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.ForwardingAudioSink
 import com.music.laya.BuildConfig
 import com.music.laya.playback.AudioOutputStatus
+import com.music.laya.playback.KaraokeProcessor
 import com.music.laya.playback.audio.usb.DirectAudioOutput
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -136,6 +137,9 @@ class PrecisionAudioSink(
      * between the two is how far ahead of the speaker the chain is running.
      */
     private var processedEndUs: Long = C.TIME_UNSET
+
+    /** What Media3 adds to a track's own timestamps; taken off again for [DspChain.blockMediaTimeUs]. */
+    private var outputStreamOffsetUs = 0L
 
     override fun configure(audioSinkConfig: AudioSink.AudioSinkConfig) {
         val format = audioSinkConfig.format
@@ -345,6 +349,12 @@ class PrecisionAudioSink(
             }
 
             // Process normalized Float32 samples through custom DSP chain
+            val blockTimeUs = advanceTimestamp(presentationTimeUs, framesEmittedForInput)
+            dspChain.blockMediaTimeUs = if (blockTimeUs == C.TIME_UNSET) {
+                KaraokeProcessor.TIME_UNKNOWN
+            } else {
+                blockTimeUs - outputStreamOffsetUs
+            }
             dspChain.process(audioBlock)
 
             // Encode processed samples to target PCM output buffer (Float32 or PCM16)
@@ -356,7 +366,6 @@ class PrecisionAudioSink(
             )
             outputByteBuffer.flip()
 
-            val blockTimeUs = advanceTimestamp(presentationTimeUs, framesEmittedForInput)
             if (blockTimeUs != C.TIME_UNSET && configuredSampleRate > 0) {
                 processedEndUs = blockTimeUs + Util.sampleCountToDurationUs(decodedFrames.toLong(), configuredSampleRate)
             }
@@ -404,6 +413,7 @@ class PrecisionAudioSink(
      */
     override fun setOutputStreamOffsetUs(outputStreamOffsetUs: Long) {
         if (streaming) dspChain.onStreamBoundary()
+        this.outputStreamOffsetUs = outputStreamOffsetUs
         super.setOutputStreamOffsetUs(outputStreamOffsetUs)
     }
 

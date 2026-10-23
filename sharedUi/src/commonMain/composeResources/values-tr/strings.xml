@@ -120,6 +120,11 @@
     <string name="shuffle_on">Karışık çalma açık</string>
     <string name="stereo">Stereo</string>
     <string name="translate_lyrics">Sözleri çevir</string>
+    <string name="sing_along">Birlikte söyle</string>
+    <string name="restore_vocals">Vokali geri getir</string>
+    <string name="karaoke_mono">Bu parçadan vokal kaldırılamıyor: parça mono</string>
+    <string name="karaoke_remote">Karaoke yalnızca müzik bu cihazda çalarken çalışır</string>
+    <string name="karaoke_level">Vokal kaldırma</string>
     <string name="translating_lyrics_to">%1$s diline çevriliyor…</string>
     <string name="up_next">Sıradaki</string>
     <string name="upgrading_quality">Kalite yükseltiliyor</string>

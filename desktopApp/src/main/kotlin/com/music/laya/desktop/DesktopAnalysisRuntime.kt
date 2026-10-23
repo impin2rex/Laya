@@ -35,6 +35,13 @@ internal object DesktopAnalysisRuntime {
                 },
             )
         }
+        // Karaoke's vocal model ships in the jar like Automix's; where builds that
+        // downloaded one kept it goes.
+        home.parent.resolve("models").toFile().deleteRecursively()
+        com.music.laya.playback.karaoke.KaraokeModel.install {
+            modelPath(com.music.laya.playback.karaoke.KaraokeModel.ASSET)
+        }
+        com.music.laya.playback.karaoke.KaraokeStems.install(home.parent.resolve("karaoke-cache").toFile())
         NativeAnalysisLibrary.install {
             // `mapLibraryName` gives `liblaya_analysis.so` on Linux and `laya_analysis.dll`
             // on Windows.

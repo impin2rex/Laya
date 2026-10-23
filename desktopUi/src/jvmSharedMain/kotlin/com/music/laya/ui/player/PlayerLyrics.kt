@@ -1,5 +1,22 @@
 package com.music.laya.ui.player
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.window.Popup
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -53,6 +70,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -123,6 +141,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.music.laya.playback.Karaoke
 import com.music.laya.playback.PlaybackPosition
 import com.music.laya.sharedui.resources.*
 import com.music.laya.data.LocaleTags
@@ -1592,6 +1611,231 @@ internal fun RomanizationToggleButton(
 }
 
 /**
+ * Karaoke: takes the vocal out of what is playing while the lyrics carry on —
+ * see [com.music.laya.playback.KaraokeProcessor]. A disc like
+ * [TranslationToggleButton], lit while it is on, wearing the sing-along mic.
+ *
+ * A tap switches it. Holding it grows the disc itself upward into a capsule —
+ * the level, how much of the vocal goes, 0–100% — and the same finger drags it
+ * there without lifting; the capsule stays a moment for another touch, then
+ * shrinks back into the disc. Holding while off switches on as well.
+ *
+ * Dimmed where it can't do its job: the music is coming out of another device
+ * (a tap says so), or this track is mono (said once, as it is found out). A
+ * spinning ring round the mic means the song's vocal is still being prepared;
+ * the song keeps its voice until it is.
+ */
+@Composable
+internal fun KaraokeToggleButton(enabled: Boolean) {
+    val on by Karaoke.enabled.collectAsStateWithLifecycle()
+    val mono by Karaoke.unavailable.collectAsStateWithLifecycle()
+    val level by Karaoke.level.collectAsStateWithLifecycle()
+    val neural by Karaoke.neural.collectAsStateWithLifecycle()
+    val cast by PlayerPlatform.host.castState.collectAsStateWithLifecycle()
+    val watch by PlayerPlatform.host.watchOutput.collectAsStateWithLifecycle()
+    val remote = cast.connectedName != null || watch.active
+    val monoMessage = stringResource(Res.string.karaoke_mono)
+    val remoteMessage = stringResource(Res.string.karaoke_remote)
+    val preparing = on && !neural && !remote
+    // Seeded with the state as found, so the disc fading back in over a mono
+    // track doesn't repeat what was already said.
+    var announced by remember { mutableStateOf(on && mono) }
+    LaunchedEffect(on && mono) {
+        if (on && mono && !announced) PlayerPlatform.host.showMessage(monoMessage)
+        announced = on && mono
+    }
+
+    var expanded by remember { mutableStateOf(false) }
+    // Bumped by every touch on the capsule, so it stays up while in use.
+    var touched by remember { mutableStateOf(0) }
+    LaunchedEffect(expanded, touched) {
+        if (!expanded) return@LaunchedEffect
+        delay(KARAOKE_SLIDER_IDLE_MS)
+        expanded = false
+    }
+    if (!on || !enabled) expanded = false
+    val grown by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        animationSpec = tween(if (expanded) 220 else 180),
+        label = "karaokeGrow",
+    )
+
+    val tint = when {
+        !enabled || remote || (on && mono) -> LocalPlayerTint.current.copy(alpha = 0.42f)
+        on -> LocalPlayerTint.current
+        else -> LocalPlayerTint.current.copy(alpha = 0.78f)
+    }
+    val discAlpha by animateFloatAsState(
+        targetValue = if (on && !remote) 0.34f else 0.18f,
+        label = "karaokeDisc",
+    )
+    val description = stringResource(if (on) Res.string.restore_vocals else Res.string.sing_along)
+    val levelDescription = stringResource(Res.string.karaoke_level)
+    val capsulePx = with(LocalDensity.current) { KARAOKE_CAPSULE_HEIGHT.toPx() }
+    val tap = {
+        if (remote) PlayerPlatform.host.showMessage(remoteMessage) else Karaoke.setEnabled(!on)
+    }
+    // The disc and its capsule share this box: a popup is placed against its
+    // parent's bounds, and the capsule has to grow out of the disc exactly —
+    // not out of whatever row the disc happens to sit in.
+    Box(Modifier.size(KARAOKE_DISC)) {
+        Box(
+            modifier = Modifier
+                .size(KARAOKE_DISC)
+                // Under the capsule while it is out: the capsule is this disc, grown.
+                .graphicsLayer { alpha = if (grown > 0f) 0f else 1f }
+                .clip(CircleShape)
+                .background(LocalPlayerTint.current.copy(alpha = discAlpha))
+                .semantics {
+                    contentDescription = description
+                    role = Role.Button
+                    onClick { tap(); true }
+                    onLongClick(levelDescription) {
+                        if (!remote) {
+                            if (!on) Karaoke.setEnabled(true)
+                            expanded = true
+                        }
+                        true
+                    }
+                }
+                .pointerInput(enabled, remote, on) {
+                    if (!enabled) return@pointerInput
+                    awaitEachGesture {
+                        val down = awaitFirstDown()
+                        var lifted = false
+                        // Finished before the hold time: lifted (a tap), or taken by a scroll (nothing).
+                        val finished = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                            lifted = waitForUpOrCancellation() != null
+                        } != null
+                        if (finished) {
+                            if (lifted) tap()
+                            return@awaitEachGesture
+                        }
+                        if (remote) {
+                            PlayerPlatform.host.showMessage(remoteMessage)
+                            return@awaitEachGesture
+                        }
+                        // Held: grow into the capsule, and let this finger set the level.
+                        if (!on) Karaoke.setEnabled(true)
+                        expanded = true
+                        touched++
+                        var last = down.position.y
+                        while (true) {
+                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+                            change.consume()
+                            val moved = last - change.position.y
+                            last = change.position.y
+                            if (moved != 0f) {
+                                Karaoke.setLevel(Karaoke.level.value + moved / capsulePx)
+                                touched++
+                            }
+                        }
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            if (preparing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(31.dp),
+                    color = tint,
+                    strokeWidth = 1.5.dp,
+                )
+            }
+            Icon(
+                imageVector = LayaIcons.KaraokeMic,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(19.dp),
+            )
+        }
+        if (grown > 0f) {
+            // Its foot on the disc's, so it reads as the disc stretching upward.
+            Popup(
+                alignment = Alignment.BottomCenter,
+                onDismissRequest = { expanded = false },
+            ) {
+                KaraokeLevelCapsule(
+                    level = level,
+                    grown = grown,
+                    tint = tint,
+                    onLevel = {
+                        Karaoke.setLevel(it)
+                        touched++
+                    },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The karaoke disc grown into its level capsule: [grown] 0 is the disc, 1 the
+ * full capsule. Filled from the foot by how much of the vocal goes; drag or tap
+ * along it. The mic stays where it sat on the disc; the share shows at the head
+ * once there is room for it.
+ */
+@Composable
+private fun KaraokeLevelCapsule(level: Float, grown: Float, tint: Color, onLevel: (Float) -> Unit) {
+    val description = stringResource(Res.string.karaoke_level)
+    val height = KARAOKE_DISC + (KARAOKE_CAPSULE_HEIGHT - KARAOKE_DISC) * grown
+    fun levelAt(y: Float, height: Int) = (1f - y / height).coerceIn(0f, 1f)
+    Box(
+        modifier = Modifier
+            .width(KARAOKE_DISC)
+            .height(height)
+            .clip(RoundedCornerShape(KARAOKE_DISC / 2))
+            .background(Color.Black.copy(alpha = 0.42f * grown))
+            .background(LocalPlayerTint.current.copy(alpha = 0.34f))
+            .pointerInput(Unit) {
+                detectTapGestures { onLevel(levelAt(it.y, size.height)) }
+            }
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { change, _ ->
+                    change.consume()
+                    onLevel(levelAt(change.position.y, size.height))
+                }
+            }
+            .semantics {
+                contentDescription = description
+                progressBarRangeInfo = ProgressBarRangeInfo(level, 0f..1f)
+                setProgress { onLevel(it); true }
+            },
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(level * grown)
+                .background(LocalPlayerTint.current.copy(alpha = 0.92f)),
+        )
+        Text(
+            text = "${(level * 100).roundToInt()}%",
+            style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
+            color = if (level > 0.88f) Color.Black.copy(alpha = 0.7f) else LocalPlayerTint.current,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 9.dp)
+                .graphicsLayer { alpha = ((grown - 0.6f) / 0.4f).coerceIn(0f, 1f) },
+        )
+        Box(Modifier.align(Alignment.BottomCenter).size(KARAOKE_DISC), contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = LayaIcons.KaraokeMic,
+                contentDescription = null,
+                tint = if (level * grown > 0.15f) Color.Black.copy(alpha = 0.7f) else tint,
+                modifier = Modifier.size(19.dp),
+            )
+        }
+    }
+}
+
+private val KARAOKE_DISC = 34.dp
+private val KARAOKE_CAPSULE_HEIGHT = 156.dp
+
+/** How long the level capsule stays out untouched. */
+private const val KARAOKE_SLIDER_IDLE_MS = 2_500L
+
+/**
  * A short text-material transition: the list and its playback clock stay in
  * place while a field of tiny glyph-like particles resolves into the new text.
  * Only the dedicated Canvas drawing moves, so changing language never causes a
@@ -1824,6 +2068,14 @@ internal fun LyricsPanel(
     modifier: Modifier = Modifier,
 ) {
     val panelPlaying = isPlaying && active
+    // Lyrics on screen: karaoke's mic is a tap away, so its neural vocal gets
+    // ready now — see [Karaoke.warm].
+    if (active) {
+        DisposableEffect(Unit) {
+            val release = Karaoke.lyricsShown()
+            onDispose { release() }
+        }
+    }
     val clock = rememberLyricClock(trackKey, playhead, panelPlaying)
     val subReveal = rememberSubLyricsReveal(subLines, trackKey)
 

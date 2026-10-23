@@ -120,6 +120,11 @@
     <string name="shuffle_on">シャッフル: オン</string>
     <string name="stereo">ステレオ</string>
     <string name="translate_lyrics">歌詞を翻訳</string>
+    <string name="sing_along">一緒に歌う</string>
+    <string name="restore_vocals">ボーカルを戻す</string>
+    <string name="karaoke_mono">この曲はモノラルのため、ボーカルを除去できません</string>
+    <string name="karaoke_remote">カラオケはこのデバイスで再生中のときのみ使えます</string>
+    <string name="karaoke_level">ボーカル除去</string>
     <string name="translating_lyrics_to">%1$sに翻訳中…</string>
     <string name="up_next">次の曲</string>
     <string name="upgrading_quality">音質をアップグレード中</string>

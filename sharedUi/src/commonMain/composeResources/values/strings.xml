@@ -123,6 +123,11 @@
     <string name="shuffle_on">Shuffle on</string>
     <string name="stereo">Stereo</string>
     <string name="translate_lyrics">Translate lyrics</string>
+    <string name="sing_along">Sing along</string>
+    <string name="restore_vocals">Restore vocals</string>
+    <string name="karaoke_mono">This track is mono, so its vocals cannot be removed</string>
+    <string name="karaoke_remote">Karaoke works only when the music plays on this device</string>
+    <string name="karaoke_level">Vocal removal</string>
     <string name="translating_lyrics_to">Translating to %1$s…</string>
     <string name="up_next">Up next</string>
     <string name="upgrading_quality">Upgrading quality</string>

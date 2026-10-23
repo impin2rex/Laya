@@ -59,6 +59,7 @@ kotlin {
         }
         jvmTest.dependencies {
             implementation("com.squareup.okhttp3:mockwebserver:5.3.2")
+            implementation("com.microsoft.onnxruntime:onnxruntime:1.20.0")
         }
     }
 }

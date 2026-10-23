@@ -120,6 +120,11 @@
     <string name="shuffle_on">शफ़ल चालू</string>
     <string name="stereo">स्टीरियो</string>
     <string name="translate_lyrics">लिरिक्स का अनुवाद करें</string>
+    <string name="sing_along">साथ गाएं</string>
+    <string name="restore_vocals">आवाज़ वापस लाएं</string>
+    <string name="karaoke_mono">इस ट्रैक से आवाज़ नहीं हटाई जा सकती: यह मोनो है</string>
+    <string name="karaoke_remote">कराओके तभी काम करता है जब संगीत इसी डिवाइस पर चल रहा हो</string>
+    <string name="karaoke_level">आवाज़ हटाना</string>
     <string name="translating_lyrics_to">%1$s में अनुवाद हो रहा है…</string>
     <string name="up_next">आगे बजेगा</string>
     <string name="upgrading_quality">क्वालिटी अपग्रेड हो रही है</string>
