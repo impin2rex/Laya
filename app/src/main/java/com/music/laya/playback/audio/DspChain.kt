@@ -3,6 +3,7 @@ package com.music.laya.playback.audio
 import android.util.Log
 import com.music.laya.BuildConfig
 import com.music.laya.playback.EqualizerProcessor
+import com.music.laya.playback.KaraokeProcessor
 import com.music.laya.playback.LoudnessProcessor
 import com.music.laya.playback.ReverbProcessor
 import com.music.laya.playback.SpatialAudioProcessor
@@ -11,8 +12,12 @@ import com.music.laya.playback.TransitionFilterProcessor
 /**
  * Composite DSP chain executing Laya's custom audio processors in their canonical sequence:
  *
- * AudioBlock(Float32) -> SpatialAudioProcessor -> EqualizerProcessor -> ReverbProcessor
- *   -> TransitionFilterProcessor -> LoudnessProcessor -> AudioBlock(Float32)
+ * AudioBlock(Float32) -> KaraokeProcessor -> SpatialAudioProcessor -> EqualizerProcessor
+ *   -> ReverbProcessor -> TransitionFilterProcessor -> LoudnessProcessor -> AudioBlock(Float32)
+ *
+ * Karaoke comes first because it reads the vocal off how alike the two
+ * channels are, and spatial widening is exactly a change to that; the reverb
+ * after it then fills the room with the backing, not the voice that was taken out.
  *
  * Reverb follows the equaliser so the room hears the listener's tone, and
  * comes before the transition filter so a handoff's bass swap or sweep takes
@@ -43,13 +48,21 @@ class DspChain(
     val transition: TransitionFilterProcessor = TransitionFilterProcessor(),
     val loudness: LoudnessProcessor = LoudnessProcessor(),
     val reverb: ReverbProcessor = ReverbProcessor(),
+    val karaoke: KaraokeProcessor = KaraokeProcessor(),
 ) : FloatAudioProcessor {
+
+    /**
+     * The next block's position in its track, in microseconds, as the sink
+     * knows it; lets karaoke line its neural stems up. Unknown by default.
+     */
+    var blockMediaTimeUs: Long = KaraokeProcessor.TIME_UNKNOWN
 
     private var currentSampleRate: Int = 0
     private var processCounter: Long = 0L
 
     override fun configure(sampleRate: Int, channelCount: Int) {
         this.currentSampleRate = sampleRate
+        karaoke.configure(sampleRate, channelCount)
         spatial.configure(sampleRate, channelCount)
         equalizer.configure(sampleRate, channelCount)
         reverb.configure(sampleRate, channelCount)
@@ -60,6 +73,7 @@ class DspChain(
     /** A new track has begun gaplessly on this sink; see [LoudnessProcessor.onStreamBoundary]. */
     fun onStreamBoundary() {
         loudness.onStreamBoundary()
+        karaoke.onStreamBoundary()
     }
 
     override fun process(block: AudioBlock) {
@@ -75,17 +89,19 @@ class DspChain(
                     val spatialOn = spatial.enabled
                     val eqOn = equalizer.isEnabled
                     val reverbOn = reverb.isActive
+                    val karaokeOn = if (karaoke.isUsingStems) "neural" else karaoke.isActive.toString()
                     val transitionOn = transition.isFiltering
                     Log.d(
                         TAG,
                         "process() #$count frames=$frames sr=$sr " +
-                            "spatial=$spatialOn eq=$eqOn reverb=$reverbOn transition=$transitionOn",
+                            "spatial=$spatialOn eq=$eqOn reverb=$reverbOn karaoke=$karaokeOn transition=$transitionOn",
                     )
                 } catch (_: Throwable) {
                 }
             }
         }
 
+        karaoke.process(block.samples, block.sampleCount, blockMediaTimeUs)
         spatial.process(block)
         equalizer.process(block)
         reverb.process(block.samples, block.sampleCount)
@@ -98,6 +114,7 @@ class DspChain(
 
     @Suppress("DEPRECATION")
     override fun flush() {
+        karaoke.reset()
         spatial.flush()
         equalizer.flush()
         reverb.reset()
@@ -107,6 +124,7 @@ class DspChain(
 
     override fun reset() {
         processCounter = 0L
+        karaoke.reset()
         spatial.reset()
         equalizer.reset()
         reverb.reset()

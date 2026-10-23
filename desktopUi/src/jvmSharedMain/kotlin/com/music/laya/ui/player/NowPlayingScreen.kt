@@ -38,6 +38,7 @@ import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.verticalDrag
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -3551,10 +3552,11 @@ fun NowPlayingScreen(
                                         onClick = lyricsTranslation.toggleRomanization,
                                     )
                                 }
-                                Box(
+                                Row(
                                     modifier = Modifier
                                         .align(Alignment.BottomEnd)
                                         .graphicsLayer { alpha = translateFade },
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     TranslationToggleButton(
                                         state = lyricsTranslation.translationState,
@@ -3564,6 +3566,7 @@ fun NowPlayingScreen(
                                         enabled = translateShown && !lyrics.isNullOrEmpty(),
                                         onClick = lyricsTranslation.toggleTranslation,
                                     )
+                                    KaraokeToggleButton(enabled = translateShown && !lyrics.isNullOrEmpty())
                                 }
                             }
                             // The bar arrives and leaves without a transition of its own:

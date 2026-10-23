@@ -81,6 +81,10 @@ internal fun DesktopAudioPipelineDialog(
                     if (pipeline.reverbEnabled) DesktopStrings["on", "On"] else DesktopStrings["off", "Off"],
                 )
                 PipelineRow(
+                    DesktopStrings["karaoke", "Karaoke"],
+                    if (pipeline.karaokeEnabled) DesktopStrings["on", "On"] else DesktopStrings["off", "Off"],
+                )
+                PipelineRow(
                     DesktopStrings["skip_silence", "Skip silence"],
                     if (pipeline.skipSilence) DesktopStrings["on", "On"] else DesktopStrings["off", "Off"],
                 )

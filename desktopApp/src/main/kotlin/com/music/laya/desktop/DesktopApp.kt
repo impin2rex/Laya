@@ -1827,6 +1827,9 @@ fun LayaDesktopApp() {
     LaunchedEffect(reverbEnabled, reverbSettings) {
         playbackEngine.setReverb(reverbEnabled, reverbSettings)
     }
+    val karaokeEnabled by com.music.laya.playback.Karaoke.enabled.collectAsState()
+    val karaokeWarm by com.music.laya.playback.Karaoke.warm.collectAsState()
+    LaunchedEffect(karaokeEnabled, karaokeWarm) { playbackEngine.setKaraoke(karaokeEnabled) }
     LaunchedEffect(spatialAudio, skipSilence, outputPrecision) {
         playbackEngine.setSpatialAudio(spatialAudio)
         playbackEngine.setSkipSilence(skipSilence)
@@ -6794,7 +6797,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet, as Android has it. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("laya.version") ?: "1.8.4" }
+    val version = remember { System.getProperty("laya.version") ?: "1.9.0" }
     val linkStyles = TextLinkStyles(
         style = SpanStyle(color = DesktopAccent, textDecoration = TextDecoration.Underline),
     )

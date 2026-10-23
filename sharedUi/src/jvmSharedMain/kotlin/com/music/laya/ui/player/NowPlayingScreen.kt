@@ -38,6 +38,7 @@ import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.verticalDrag
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -776,9 +777,17 @@ fun NowPlayingScreen(
     var showAudioPipeline by remember { mutableStateOf(false) }
     var showCast by remember { mutableStateOf(false) }
     var showAudioOutput by remember { mutableStateOf(false) }
+    // Bumped by every tap on the output button, so each tap puts up a fresh
+    // drawer. A drawer left open while out of sight — dragged away without
+    // being let go of, or left up as the player moved — kept the flag set, and
+    // setting it again did nothing: the button looked dead.
+    var audioOutputOpenings by remember { mutableStateOf(0) }
     var showLyricsProviders by remember { mutableStateOf(false) }
-    // Gated on the Bluetooth permission the first time — see [rememberOutputPicker].
-    val openAudioOutput = rememberOutputPicker { showAudioOutput = true }
+    // Asks for the Bluetooth permission the first time — see [rememberOutputPicker].
+    val openAudioOutput = rememberOutputPicker {
+        audioOutputOpenings++
+        showAudioOutput = true
+    }
     // Listening in a party whose host has taken the controls: the transport
     // keeps only play/pause, which from here moves this device alone.
     val controlsLocked = rememberControlsLocked()
@@ -1524,13 +1533,15 @@ fun NowPlayingScreen(
     // part of either shape of it.
     val playerOverlays: @Composable () -> Unit = {
         if (showAudioOutput) {
-            AudioOutputSheet(
-                hazeState = playerHaze,
-                accountName = accountName,
-                onDismiss = { showAudioOutput = false },
-                onOpenPipeline = { showAudioPipeline = true },
-                onOpenCast = { showCast = true },
-            )
+            key(audioOutputOpenings) {
+                AudioOutputSheet(
+                    hazeState = playerHaze,
+                    accountName = accountName,
+                    onDismiss = { showAudioOutput = false },
+                    onOpenPipeline = { showAudioPipeline = true },
+                    onOpenCast = { showCast = true },
+                )
+            }
         }
         if (showLyricsProviders) {
             LyricsProviderSheet(
@@ -3405,10 +3416,11 @@ fun NowPlayingScreen(
                                         onClick = lyricsTranslation.toggleRomanization,
                                     )
                                 }
-                                Box(
+                                Row(
                                     modifier = Modifier
                                         .align(Alignment.BottomEnd)
                                         .graphicsLayer { alpha = translateFade },
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     TranslationToggleButton(
                                         state = lyricsTranslation.translationState,
@@ -3418,6 +3430,7 @@ fun NowPlayingScreen(
                                         enabled = translateShown && !lyrics.isNullOrEmpty(),
                                         onClick = lyricsTranslation.toggleTranslation,
                                     )
+                                    KaraokeToggleButton(enabled = translateShown && !lyrics.isNullOrEmpty())
                                 }
                             }
                             // The bar arrives and leaves without a transition of its own:

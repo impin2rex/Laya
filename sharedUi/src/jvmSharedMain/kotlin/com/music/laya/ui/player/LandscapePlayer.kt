@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -546,7 +547,7 @@ internal fun LandscapeLyricsPane(
         ) {
             // Fixed slots either side whether or not the toggles are drawn, so
             // the status line stays centred as lyrics arrive.
-            Box(Modifier.size(34.dp)) { if (hasLyrics) romanizationToggle() }
+            Box(Modifier.width(SIDE_SLOT_WIDTH).height(34.dp)) { if (hasLyrics) romanizationToggle() }
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -558,8 +559,19 @@ internal fun LandscapeLyricsPane(
                     onStatusClick = onStatusClick,
                 )
             }
-            Box(Modifier.size(34.dp)) { if (hasLyrics) translationToggle() }
+            Row(
+                modifier = Modifier.width(SIDE_SLOT_WIDTH),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            ) {
+                if (hasLyrics) {
+                    translationToggle()
+                    KaraokeToggleButton(enabled = true)
+                }
+            }
         }
         }
     }
 }
+
+/** Both side slots of the lyrics bar: karaoke and translate on the right, matched on the left so the status stays centred. */
+private val SIDE_SLOT_WIDTH = 76.dp

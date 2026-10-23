@@ -120,6 +120,11 @@
     <string name="shuffle_on">Casuale attivo</string>
     <string name="stereo">Stereo</string>
     <string name="translate_lyrics">Traduci testo</string>
+    <string name="sing_along">Canta</string>
+    <string name="restore_vocals">Ripristina voce</string>
+    <string name="karaoke_mono">Impossibile rimuovere la voce da questo brano: è mono</string>
+    <string name="karaoke_remote">Il karaoke funziona solo quando la musica è riprodotta su questo dispositivo</string>
+    <string name="karaoke_level">Rimozione della voce</string>
     <string name="translating_lyrics_to">Traduzione in %1$s…</string>
     <string name="up_next">In arrivo</string>
     <string name="upgrading_quality">Aggiornamento qualità</string>

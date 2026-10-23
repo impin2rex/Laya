@@ -116,6 +116,8 @@ fun TvNowPlayingScreen(
     var lyricsHidden by rememberSaveable { mutableStateOf(false) }
     val hasLyrics = !lyrics.isNullOrEmpty()
     val showLyrics = hasLyrics && !lyricsHidden
+    // Romanize and translate: the phone's own, with its languages and notices.
+    val lyricVersions = com.music.laya.ui.player.rememberLyricsVersions(song.videoId, lyrics)
 
     var controlsVisible by remember { mutableStateOf(true) }
     var upNextOpen by remember { mutableStateOf(false) }
@@ -250,6 +252,7 @@ fun TvNowPlayingScreen(
             lyricsLoading = !lyricsChecked && lyrics == null && !lyricsHidden,
             controlsVisible = controlsVisible,
             onSeek = { mediaController?.seekTo(it) },
+            subLines = lyricVersions.subLines,
             modifier = Modifier.graphicsLayer { alpha = dim },
         )
 
@@ -269,6 +272,7 @@ fun TvNowPlayingScreen(
                 isLiked = isLiked,
                 lyricsAvailable = hasLyrics,
                 lyricsOn = showLyrics,
+                lyricVersions = lyricVersions,
                 upNextOpen = upNextOpen,
                 scrubberFocus = scrubberFocus,
                 onScrub = scrubBy,

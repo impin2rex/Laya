@@ -7,6 +7,9 @@ import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TrackAnalysisState
 import com.music.laya.data.settings.TransitionWindow
 import com.music.laya.playback.EqCurve
+import com.music.laya.playback.Karaoke
+import com.music.laya.playback.KaraokeProcessor
+import com.music.laya.playback.karaoke.KaraokeStems
 import com.music.laya.playback.ReverbProcessor
 import com.music.laya.playback.ReverbSettings
 import com.music.laya.playback.TransitionFilter
@@ -179,6 +182,23 @@ class DesktopPlaybackEngine(
         /** Brings this track to the output stream's rate, when the two differ; see [readSource]. */
         var converter: DesktopRateConverter? = null
 
+        /**
+         * Karaoke for this deck alone, on the decoder's own frames: before the rate converter,
+         * the blend and the stretch, so the neural vocal it subtracts lines up sample for sample.
+         */
+        val karaoke = KaraokeProcessor(Karaoke::reportUnavailable, Karaoke::reportNeural).apply {
+            configure(decoder.outputFormat.sampleRate, decoder.outputFormat.channels)
+        }
+
+        /** Where the decoder is in the track, in its frames: what [karaoke] lines its stems up by. */
+        var karaokeFrame = startUs * decoder.outputFormat.sampleRate / 1_000_000
+
+        /** The decoder has been moved to [us]: count from there, and drop what was in flight. */
+        fun seekKaraoke(us: Long) {
+            karaokeFrame = us * decoder.outputFormat.sampleRate / 1_000_000
+            karaoke.reset()
+        }
+
         /** Back to the decoder at the listener's speed, dropping any beatmatch stretch. */
         fun dropTempo() {
             // The converter's history is from before whatever moved the decoder.
@@ -305,7 +325,7 @@ class DesktopPlaybackEngine(
                     measuredFormat = decoder.measuredFormat,
                     name = "Laya-Decode ${song.title.take(24)}",
                 )
-                Track(song, ahead, stream, startAtMs * 1_000)
+                Track(song, ahead, stream, startAtMs * 1_000).also(::bindKaraoke)
             }.onFailure { decoder.close() }
         }
 
@@ -395,6 +415,7 @@ class DesktopPlaybackEngine(
                     if (kotlin.math.abs(latest.positionMs - positionMs) >= UPGRADE_RESEEK_THRESHOLD_MS) {
                         track.decoder.seek(latest.positionMs * 1_000)
                         track.startUs = latest.positionMs * 1_000
+                        track.seekKaraoke(track.startUs)
                     }
                     commands += Command.ReplaceCurrent(track, playWhenReady = latest.isPlaying)
                 },
@@ -732,6 +753,9 @@ class DesktopPlaybackEngine(
      * changed speed doesn't stretch the room with it.
      */
     private val reverb = ReverbProcessor()
+
+    @Volatile
+    private var karaokeEnabled = false
 
     /** The playing track's heard position, on the sink's played-frame count; see [play]. */
     private val playhead = DesktopPlayhead()
@@ -1071,6 +1095,7 @@ class DesktopPlaybackEngine(
     private fun readSource(track: Track): FloatArray? {
         val block = track.decoder.readSamples() ?: return null
         val count = track.decoder.sampleCount
+        karaokeDeck(track, block, count)
         val from = track.decoder.outputFormat.sampleRate
         val to = sink.format.sampleRate
         if (from <= 0 || to <= 0 || from == to) {
@@ -1498,6 +1523,7 @@ class DesktopPlaybackEngine(
         if (displaySwitched && upcoming != null) promoteUpcoming()
         val track = current ?: return
         val landed = track.decoder.seek(millis * 1_000)
+        track.seekKaraoke(millis * 1_000)
         // TEMP seek diagnostics.
         DesktopTrackLog.log("seek performed: ${millis}ms on '${track.song.title}' ${if (landed) "ok" else "FAILED"}")
         // The stretcher still holds audio from before the seek, which would play first; and a
@@ -1545,6 +1571,8 @@ class DesktopPlaybackEngine(
         (incomingSourceFrames * 1_000_000.0 / sink.format.sampleRate.coerceAtLeast(1)).toLong()
 
     private fun publishTrack(track: Track, isPlaying: Boolean, positionUs: Long = track.startUs) {
+        // Karaoke is for one song: the next starts with it off.
+        Karaoke.trackChanged(track.song.videoId)
         _state.value = DesktopPlaybackState(
             song = track.song,
             isPlaying = isPlaying,
@@ -1666,6 +1694,7 @@ class DesktopPlaybackEngine(
         if (plan.incomingCueTime > 0) {
             val cueUs = (plan.incomingCueTime * 1_000_000).toLong()
             incoming.decoder.seek(cueUs)
+            incoming.seekKaraoke(cueUs)
             // The track now begins here, and every position reported for it is measured from it.
             // Left at zero, the scrubber and the lyrics ran the whole cue behind the audio for the
             // rest of the track — which only a manual seek could put right.
@@ -1882,6 +1911,43 @@ class DesktopPlaybackEngine(
         reverb.setTarget(enabled, settings)
     }
 
+    /**
+     * Karaoke on or off; glides like [setReverb], so it is safe mid-song from any thread. Also
+     * called when the vocal model arrives, which is when the decks get their neural stems.
+     */
+    fun setKaraoke(enabled: Boolean) {
+        karaokeEnabled = enabled
+        if (enabled || Karaoke.warm.value) {
+            // The resampler the stems use is the analyser's native one, and the model and the
+            // separated songs' home are set up alongside it.
+            DesktopAnalysisRuntime.ensureStarted()
+        }
+        listOfNotNull(current, upcoming).forEach(::bindKaraoke)
+    }
+
+    /** Hands [track]'s deck the neural vocal of its stream, or nothing when there is none yet. */
+    private fun bindKaraoke(track: Track) {
+        val ready = karaokeEnabled || Karaoke.warm.value
+        track.karaoke.bind(
+            if (ready) KaraokeStems.forTrack("${track.song.videoId}|${track.stream.url}", track.song.videoId) {
+                DesktopKaraokeStream.open(track.stream)
+            } else {
+                null
+            },
+        )
+    }
+
+    /** Runs [track]'s deck karaoke over a freshly decoded block, at the decoder's position. */
+    private fun karaokeDeck(track: Track, block: FloatArray, count: Int) {
+        val format = track.decoder.outputFormat
+        val rate = format.sampleRate
+        if (rate <= 0) return
+        track.karaoke.setEnabled(karaokeEnabled)
+        track.karaoke.setLevel(Karaoke.level.value)
+        track.karaoke.process(block, count, track.karaokeFrame * 1_000_000 / rate)
+        track.karaokeFrame += count / format.channels.coerceAtLeast(1)
+    }
+
     /** Android's "Skip silence", on the same terms. */
     fun setSkipSilence(enabled: Boolean) {
         skipSilenceEnabled = enabled
@@ -1919,6 +1985,7 @@ class DesktopPlaybackEngine(
             bufferBytes = sink.bufferBytes,
             equalizerEnabled = equalizerEnabled,
             reverbEnabled = reverb.isEnabled,
+            karaokeEnabled = karaokeEnabled,
             skipSilence = skipSilenceEnabled,
         )
     }

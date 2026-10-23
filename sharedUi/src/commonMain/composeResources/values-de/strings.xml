@@ -120,6 +120,11 @@
     <string name="shuffle_on">Zufallswiedergabe an</string>
     <string name="stereo">Stereo</string>
     <string name="translate_lyrics">Songtext übersetzen</string>
+    <string name="sing_along">Mitsingen</string>
+    <string name="restore_vocals">Gesang wiederherstellen</string>
+    <string name="karaoke_mono">Bei diesem Titel lässt sich der Gesang nicht entfernen: Er ist mono</string>
+    <string name="karaoke_remote">Karaoke funktioniert nur, wenn die Musik auf diesem Gerät läuft</string>
+    <string name="karaoke_level">Gesangsentfernung</string>
     <string name="translating_lyrics_to">Wird ins %1$s übersetzt…</string>
     <string name="up_next">Als Nächstes</string>
     <string name="upgrading_quality">Qualität wird hochgestuft</string>

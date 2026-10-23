@@ -616,6 +616,13 @@ class PlaybackService : MediaLibraryService() {
      */
     private val reverbA = ReverbProcessor()
     private val reverbB = ReverbProcessor()
+
+    /** Karaoke, one per player: its transform is ~40 ms of per-sink history. */
+    private val karaokeA = KaraokeProcessor(Karaoke::reportUnavailable, Karaoke::reportNeural)
+    private val karaokeB = KaraokeProcessor(Karaoke::reportUnavailable, Karaoke::reportNeural)
+
+    /** Which karaoke stage each live player feeds, for binding its track's stems. */
+    private val karaokeOf = java.util.WeakHashMap<ExoPlayer, KaraokeProcessor>()
     private var loudnessRetryJob: Job? = null
 
     /** The platform audio session currently advertised to system audio tools. */
@@ -1765,6 +1772,7 @@ class PlaybackService : MediaLibraryService() {
             transitionFilterA,
             loudnessA,
             reverbA,
+            karaokeA,
             ownsSession = true,
         )
         val sparePlayer = buildPlayer(
@@ -1773,6 +1781,7 @@ class PlaybackService : MediaLibraryService() {
             transitionFilterB,
             loudnessB,
             reverbB,
+            karaokeB,
             ownsSession = false,
         )
         player = exoPlayer
@@ -3296,9 +3305,10 @@ class PlaybackService : MediaLibraryService() {
         filter: TransitionFilterProcessor,
         loudness: LoudnessProcessor,
         reverb: ReverbProcessor,
+        karaoke: KaraokeProcessor,
         ownsSession: Boolean,
     ): ExoPlayer = ExoPlayer.Builder(this)
-        .setRenderersFactory(silenceSkippingRenderers(spatial, equalizer, filter, loudness, reverb))
+        .setRenderersFactory(silenceSkippingRenderers(spatial, equalizer, filter, loudness, reverb, karaoke))
         .setMediaSourceFactory(requireNotNull(mediaSourceFactory))
         .setLoadControl(farBufferingLoadControl())
         .setAudioAttributes(AUDIO_ATTRIBUTES, /* handleAudioFocus = */ ownsSession)
@@ -3307,6 +3317,44 @@ class PlaybackService : MediaLibraryService() {
         // press before that steps to the previous one.
         .setMaxSeekToPreviousPositionMs(BACK_RESTARTS_AFTER_MS)
         .build()
+        .also { built ->
+            karaokeOf[built] = karaoke
+            built.addListener(object : Player.Listener {
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    bindKaraoke(karaoke, mediaItem)
+                }
+            })
+        }
+
+    /**
+     * Points [karaoke] at the neural vocal of [item] — the stems separate it on
+     * their own thread, from the same bytes this player reads — or at nothing,
+     * leaving the stage on its spectral path.
+     */
+    private fun bindKaraoke(karaoke: KaraokeProcessor, item: MediaItem?) {
+        val uri = item?.localConfiguration?.uri
+        if (uri == null || !(Karaoke.enabled.value || Karaoke.warm.value)) {
+            karaoke.bind(null)
+            return
+        }
+        val local = com.music.laya.playback.smart.LocalAudioSource.isLocal(uri)
+        val key = if (local) uri.toString() else AudioCache.cacheKeyOf(uri)
+        karaoke.bind(
+            com.music.laya.playback.karaoke.KaraokeStems.forTrack(key, item.mediaId) { openKaraokeStream(uri, local) },
+        )
+    }
+
+    /** A forward decode of the rendition the player itself is playing; null until it is on disk. */
+    private fun openKaraokeStream(uri: Uri, local: Boolean): com.music.laya.playback.karaoke.PcmStream? {
+        val source = if (local) {
+            com.music.laya.playback.smart.LocalAudioSource.open(contentResolver, uri)
+        } else {
+            val key = AudioCache.cacheKeyOf(uri)
+            AudioCache.renditionsOf(uri).firstOrNull { it.key == key }
+                ?.let { AudioCache.renditionDataSource(uri, it) }
+        } ?: return null
+        return com.music.laya.playback.smart.KaraokePcmStream.open(source)
+    }
 
     /**
      * Moves the session onto the player the crossfade has just started the
@@ -3469,6 +3517,8 @@ class PlaybackService : MediaLibraryService() {
         reason: Int,
         alreadyAudible: Boolean = false,
     ) {
+        // Karaoke is for one song: the next starts with it off.
+        Karaoke.trackChanged(mediaItem?.mediaId)
         val exoPlayer = player ?: return
         syncBoundedContextCursor(exoPlayer, mediaItem)
         if (boundedContextWindow != null && !ListenTogether.state.value.inParty) {
@@ -6317,6 +6367,7 @@ class PlaybackService : MediaLibraryService() {
         transition: TransitionFilterProcessor,
         loudness: LoudnessProcessor,
         reverb: ReverbProcessor,
+        karaoke: KaraokeProcessor,
     ) = object : DefaultRenderersFactory(this) {
         init {
             // Do not force PCM_FLOAT onto an OEM speaker mixer merely because
@@ -6427,7 +6478,7 @@ class PlaybackService : MediaLibraryService() {
             // them for the same reason: it belongs to the listener and
             // the whole session, while the transition filter belongs to
             // one handoff and has to have the last word on it.
-            val dspChain = DspChain(spatial, equalizer, transition, loudness, reverb)
+            val dspChain = DspChain(spatial, equalizer, transition, loudness, reverb, karaoke)
             return PrecisionAudioSink(
                 delegate = defaultSink,
                 dspChain = dspChain,
@@ -6678,6 +6729,7 @@ class PlaybackService : MediaLibraryService() {
             transitionFilterA,
             loudnessA,
             reverbA,
+            karaokeA,
             ownsSession = true,
         )
         val newSpare = buildPlayer(
@@ -6686,6 +6738,7 @@ class PlaybackService : MediaLibraryService() {
             transitionFilterB,
             loudnessB,
             reverbB,
+            karaokeB,
             ownsSession = false,
         )
         player = newActive
@@ -6828,6 +6881,26 @@ class PlaybackService : MediaLibraryService() {
             // audio block without touching playback.
             combine(AppSettings.reverbEnabled, AppSettings.reverb) { _, _ -> }
                 .collect { applyReverb() }
+        }
+        scope.launch {
+            Karaoke.enabled.collect { enabled ->
+                karaokeA.setEnabled(enabled)
+                karaokeB.setEnabled(enabled)
+            }
+        }
+        scope.launch {
+            Karaoke.level.collect { level ->
+                karaokeA.setLevel(level)
+                karaokeB.setLevel(level)
+            }
+        }
+        scope.launch {
+            // Switching on, or the lyrics coming up, binds whatever is playing now;
+            // after that each player rebinds as its track changes.
+            combine(Karaoke.enabled, Karaoke.warm) { enabled, warm -> enabled || warm }
+                .distinctUntilChanged().collect {
+                for ((built, karaoke) in karaokeOf.entries.toList()) bindKaraoke(karaoke, built.currentMediaItem)
+            }
         }
         scope.launch {
             AppSettings.loudnessNormalization.collect {
