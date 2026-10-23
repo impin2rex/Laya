@@ -35,7 +35,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Waves
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -87,6 +89,7 @@ import com.music.laya.data.NerdStats
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.canvas.CanvasRepository
 import com.music.laya.data.lyrics.LyricLine
+import com.music.laya.ui.player.LyricsVersions
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.playback.PlaybackPosition
@@ -165,6 +168,8 @@ internal fun TvNowPlayingStage(
     controlsVisible: Boolean,
     onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    /** A translation or romanization under each line — see [rememberLyricsVersions]. */
+    subLines: List<LyricLine>? = null,
 ) {
     // While the transport is up the lyrics fade out above it rather than run under it.
     val underControls by animateFloatAsState(if (controlsVisible) 1f else 0f, tween(320), label = "lyricsFade")
@@ -289,6 +294,7 @@ internal fun TvNowPlayingStage(
                         isPlaying = isPlaying,
                         onSeekToLine = onSeek,
                         centerFocus = true,
+                        subLines = subLines,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -325,6 +331,8 @@ internal fun TvTransport(
     isLiked: Boolean,
     lyricsAvailable: Boolean,
     lyricsOn: Boolean,
+    /** Romanize and translate, as on the phone's lyrics page. */
+    lyricVersions: LyricsVersions,
     upNextOpen: Boolean,
     scrubberFocus: FocusRequester,
     onScrub: (Long) -> Unit,
@@ -383,8 +391,23 @@ internal fun TvTransport(
                     enabled = lyricsAvailable,
                     onClick = onToggleLyrics,
                 )
-                // Karaoke, beside the lyrics it is for: shown while they are.
+                // The phone's lyric buttons, beside the lyrics they are for and
+                // only while those are up: romanize, translate, then karaoke.
                 if (lyricsOn) {
+                    TvTransportButton(
+                        icon = Icons.Rounded.Language,
+                        contentDescription = if (lyricVersions.showingRomanization) "Show original lyrics" else "Romanize lyrics",
+                        active = lyricVersions.showingRomanization || lyricVersions.romanizing,
+                        enabled = !lyricVersions.romanizationPointless,
+                        onClick = lyricVersions.toggleRomanization,
+                    )
+                    TvTransportButton(
+                        icon = Icons.Rounded.Translate,
+                        contentDescription = if (lyricVersions.showingTranslation) "Show original lyrics" else "Translate lyrics",
+                        active = lyricVersions.showingTranslation || lyricVersions.translating,
+                        enabled = !lyricVersions.translationPointless,
+                        onClick = lyricVersions.toggleTranslation,
+                    )
                     TvTransportButton(
                         icon = LayaIcons.KaraokeMic,
                         contentDescription = if (karaokeOn) "Restore vocals" else "Sing along",
