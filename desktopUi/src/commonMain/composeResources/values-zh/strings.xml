@@ -120,6 +120,11 @@
     <string name="shuffle_on">随机播放已开启</string>
     <string name="stereo">立体声</string>
     <string name="translate_lyrics">翻译歌词</string>
+    <string name="sing_along">跟唱</string>
+    <string name="restore_vocals">恢复人声</string>
+    <string name="karaoke_mono">无法去除此曲目的人声：它是单声道</string>
+    <string name="karaoke_remote">卡拉 OK 仅在本设备播放音乐时可用</string>
+    <string name="karaoke_level">人声消除</string>
     <string name="translating_lyrics_to">正在翻译为%1$s…</string>
     <string name="up_next">接下来播放</string>
     <string name="upgrading_quality">正在升级音质</string>

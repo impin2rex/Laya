@@ -120,6 +120,11 @@
     <string name="shuffle_on">เปิดสุ่มเล่น</string>
     <string name="stereo">สเตอริโอ</string>
     <string name="translate_lyrics">แปลเนื้อเพลง</string>
+    <string name="sing_along">ร้องตาม</string>
+    <string name="restore_vocals">คืนเสียงร้อง</string>
+    <string name="karaoke_mono">ไม่สามารถลบเสียงร้องจากเพลงนี้ได้ เพราะเป็นโมโน</string>
+    <string name="karaoke_remote">คาราโอเกะใช้ได้เฉพาะเมื่อเล่นเพลงบนอุปกรณ์นี้</string>
+    <string name="karaoke_level">การลบเสียงร้อง</string>
     <string name="translating_lyrics_to">กำลังแปลเป็น %1$s…</string>
     <string name="up_next">กำลังจะเล่นต่อไป</string>
     <string name="upgrading_quality">กำลังอัปเกรดคุณภาพ</string>

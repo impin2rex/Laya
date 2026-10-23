@@ -159,25 +159,22 @@ private val SETTLE_MS = longArrayOf(350L, 1_200L, 2_500L)
  * Opens the output picker, asking for the Bluetooth permission the first time.
  *
  * The permission is for names, not for switching: without it the framework
- * reports a paired headset generically, and a picker whose rows all read
- * "Bluetooth" is worse than no picker. So a refusal keeps the drawer shut
- * rather than opening a list that cannot say what anything is.
+ * reports a paired headset generically. The drawer opens whatever the answer —
+ * it holds the volume, Cast, the reverb and the audio pipeline too, none of
+ * which need the permission, and a refusal used to lock all of them behind a
+ * button that did nothing. Android answers a permanently-denied request at
+ * once and silently, so that was every tap, for good.
  *
  * Asked on the tap rather than at startup — nobody can judge a request for
  * nearby devices out of the blue, and everybody can judge one that arrives the
  * moment they ask where the music is playing.
- *
- * One consequence worth knowing: Android answers a permanently-denied request
- * immediately and silently, so for somebody who has denied it twice the
- * headphones glyph does nothing. That is this design, not a bug — the way back
- * is the app's own settings page in Android.
  */
 @Composable
 internal fun rememberAndroidOutputPicker(onOpen: () -> Unit): () -> Unit {
     val context = LocalContext.current
     val ask = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted -> if (granted) onOpen() }
+    ) { onOpen() }
     return {
         if (bluetoothNamesAllowed(context)) onOpen() else ask.launch(BLUETOOTH_CONNECT)
     }

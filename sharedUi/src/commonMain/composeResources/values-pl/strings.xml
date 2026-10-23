@@ -120,6 +120,11 @@
     <string name="shuffle_on">Losowanie włączone</string>
     <string name="stereo">Stereo</string>
     <string name="translate_lyrics">Przetłumacz tekst</string>
+    <string name="sing_along">Śpiewaj</string>
+    <string name="restore_vocals">Przywróć wokal</string>
+    <string name="karaoke_mono">Nie można usunąć wokalu z tego utworu: jest mono</string>
+    <string name="karaoke_remote">Karaoke działa tylko, gdy muzyka gra na tym urządzeniu</string>
+    <string name="karaoke_level">Usuwanie wokalu</string>
     <string name="translating_lyrics_to">Tłumaczenie na %1$s…</string>
     <string name="up_next">Następne</string>
     <string name="upgrading_quality">Uaktualnianie jakości</string>

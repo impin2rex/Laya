@@ -26,7 +26,7 @@ val targetOs: String = (providers.gradleProperty("laya.target").orNull ?: when {
 val hostArch = System.getProperty("os.arch").lowercase()
 val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 
-// The installers stamp the app's own version: 1.8.4 stays 1.8.4. Windows metadata needs exactly
+// The installers stamp the app's own version: 1.9.0 stays 1.9.0. Windows metadata needs exactly
 // MAJOR.MINOR.BUILD, so a two-part version is padded (1.8 → 1.8.0) and a "-beta1" suffix is left
 // out of the numeric version.
 val nativePackageVersion = appVersion.substringBefore('-').split('.')

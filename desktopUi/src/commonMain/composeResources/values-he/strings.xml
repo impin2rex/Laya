@@ -120,6 +120,11 @@
     <string name="shuffle_on">ערבוב מופעל</string>
     <string name="stereo">סטריאו</string>
     <string name="translate_lyrics">תרגם מילים</string>
+    <string name="sing_along">שירה</string>
+    <string name="restore_vocals">החזר שירה</string>
+    <string name="karaoke_mono">לא ניתן להסיר את השירה מהרצועה הזו: היא מונו</string>
+    <string name="karaoke_remote">קריוקי פועל רק כשהמוזיקה מתנגנת במכשיר הזה</string>
+    <string name="karaoke_level">הסרת שירה</string>
     <string name="translating_lyrics_to">מתרגם ל%1$s…</string>
     <string name="up_next">הבא בתור</string>
     <string name="upgrading_quality">משדרג איכות</string>

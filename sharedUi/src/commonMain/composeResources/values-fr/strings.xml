@@ -120,6 +120,11 @@
     <string name="shuffle_on">Lecture aléatoire activée</string>
     <string name="stereo">Stéréo</string>
     <string name="translate_lyrics">Traduire les paroles</string>
+    <string name="sing_along">Chanter</string>
+    <string name="restore_vocals">Rétablir la voix</string>
+    <string name="karaoke_mono">Impossible de retirer la voix de ce titre : il est en mono</string>
+    <string name="karaoke_remote">Le karaoké ne fonctionne que si la musique joue sur cet appareil</string>
+    <string name="karaoke_level">Suppression de la voix</string>
     <string name="translating_lyrics_to">Traduction en %1$s…</string>
     <string name="up_next">À suivre</string>
     <string name="upgrading_quality">Amélioration de la qualité</string>

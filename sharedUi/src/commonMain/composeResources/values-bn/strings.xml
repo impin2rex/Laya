@@ -95,6 +95,11 @@
     <string name="shuffle_on">শাফল চালু</string>
     <string name="stereo">স্টিরিও</string>
     <string name="translate_lyrics">লিরিক্স অনুবাদ করুন</string>
+    <string name="sing_along">সাথে গান করুন</string>
+    <string name="restore_vocals">কণ্ঠ ফিরিয়ে আনুন</string>
+    <string name="karaoke_mono">এই ট্র্যাক থেকে কণ্ঠ সরানো যাবে না: এটি মোনো</string>
+    <string name="karaoke_remote">কারাওকে শুধু এই ডিভাইসে গান বাজলেই কাজ করে</string>
+    <string name="karaoke_level">কণ্ঠ অপসারণ</string>
     <string name="translating_lyrics_to">%1$s-এ অনুবাদ হচ্ছে…</string>
     <string name="up_next">এর পরে</string>
     <string name="upgrading_quality">কোয়ালিটি বাড়ানো হচ্ছে</string>

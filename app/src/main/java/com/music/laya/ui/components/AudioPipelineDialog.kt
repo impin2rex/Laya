@@ -113,6 +113,7 @@ private fun bitExactVerdict(
     eqActive: Boolean,
     spatialActive: Boolean,
     reverbActive: Boolean,
+    karaokeActive: Boolean,
 ): String = when {
     // Not a fault to fix: there is no DSD output path (native DSD or DoP)
     // here, so the PCM conversion is a deviation every DSD track carries,
@@ -122,6 +123,7 @@ private fun bitExactVerdict(
     eqActive -> "No — equalizer"
     spatialActive -> "No — spatial audio"
     reverbActive -> "No — reverb"
+    karaokeActive -> "No — karaoke"
     outputExact -> "Yes${outputExactDetail?.let { " ($it)" }.orEmpty()}"
     else -> "No — ${outputExactDetail ?: "converted downstream"}"
 }
@@ -154,6 +156,7 @@ fun AudioPipelineDialog(
     val spatialAudio by AppSettings.spatialAudio.collectAsStateWithLifecycle()
     val reverbEnabled by AppSettings.reverbEnabled.collectAsStateWithLifecycle()
     val reverb by AppSettings.reverb.collectAsStateWithLifecycle()
+    val karaokeEnabled by com.music.laya.playback.Karaoke.enabled.collectAsStateWithLifecycle()
     val loudnessNormalization by AppSettings.loudnessNormalization.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -443,6 +446,7 @@ fun AudioPipelineDialog(
                         eqActive = eqEnabled,
                         spatialActive = spatialAudio,
                         reverbActive = reverbEnabled,
+                        karaokeActive = karaokeEnabled,
                     ),
                 )
             }

@@ -597,4 +597,45 @@ class FloatDspChainTest {
         assertTrue("no tail of the old position after a flush", silent.samples.all { it == 0f })
         assertTrue(chain.reverb.isActive)
     }
+
+    // ── KaraokeProcessor in the DspChain ────────────────────────────────────
+
+    @Test
+    fun `karaoke takes a centred voice out live and leaves the chain bit-exact once off`() {
+        val chain = DspChain()
+        chain.configure(sampleRate, 2)
+        chain.transition.open()
+        val frames = 1024
+        var at = 0
+        // A continuous centred 440 Hz, block after block.
+        fun voice(): AudioBlock {
+            val block = AudioBlock(channelCount = 2, capacityFrames = frames)
+            for (f in 0 until frames) {
+                val v = (0.3 * sin(2 * PI * 440.0 * (at + f) / sampleRate)).toFloat()
+                block.samples[f * 2] = v
+                block.samples[f * 2 + 1] = v
+            }
+            at += frames
+            block.reset(frames)
+            return block
+        }
+
+        chain.karaoke.setEnabled(true)
+        // Past the transform's warm-up and the crossfade, well short of the
+        // second of signal it takes to call a track mono.
+        repeat(8) { chain.process(voice()) }
+        val sung = voice()
+        chain.process(sung)
+        val level = sung.samples.maxOf { kotlin.math.abs(it) }
+        assertTrue("centred 440 Hz must be mostly gone, peak $level", level < 0.01f)
+        assertTrue(chain.karaoke.isActive)
+
+        chain.karaoke.setEnabled(false)
+        repeat(10) { chain.process(voice()) }
+        assertFalse(chain.karaoke.isActive)
+        val after = voice()
+        val reference = after.samples.copyOf()
+        chain.process(after)
+        assertTrue("chain must be bit-exact again once karaoke is off", reference.contentEquals(after.samples))
+    }
 }
