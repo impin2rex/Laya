@@ -1,7 +1,6 @@
 package com.music.laya.playback
 
 import com.music.laya.data.model.Song
-import java.util.Locale
 
 /**
  * Builds the station that plays on after a one-off song.
@@ -92,7 +91,7 @@ object QueueBuilder {
      * recording as far as a queue is concerned. Remix and cover markers are
      * deliberately left in — those really are different tracks.
      */
-    fun normalisedTitle(raw: String): String = raw.lowercase(Locale.ROOT)
+    fun normalisedTitle(raw: String): String = raw.lowercase()
         .substringBefore(" | ")
         .replace(NOISE, " ")
         .replace(PUNCTUATION, " ")
@@ -100,7 +99,7 @@ object QueueBuilder {
         .trim()
 
     /** The cast behind a credit, split out so billing order stops mattering. */
-    fun artistSet(raw: String): Set<String> = raw.lowercase(Locale.ROOT)
+    fun artistSet(raw: String): Set<String> = raw.lowercase()
         .replace(TOPIC, " ")
         .split(",", "&", "·", "•", ";", " feat", " ft.", " ft ", " x ", " with ")
         .map { it.replace(PUNCTUATION, " ").replace(SPACES, " ").trim() }

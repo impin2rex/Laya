@@ -1,7 +1,8 @@
 package com.music.laya.playback
 
 import com.music.laya.data.model.Song
-import java.util.Collections
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 /**
  * Identity of a row within a collection. A playlist may list the same video
@@ -120,7 +121,7 @@ data class ContinuationResult(
 class ContextRegistry(
     onGrowth: (ContextSnapshot) -> Unit = {},
 ) {
-    private val lock = Any()
+    private val lock = SynchronizedObject()
     private var active: MutableContext? = null
     private var nextVersion = 0L
     private var nextRequestId = 0L
@@ -447,7 +448,7 @@ class ContextRegistry(
             continuationToken = continuationToken,
             continuationState = continuationState,
             diagnostic = diagnostic,
-            seenContinuationTokens = Collections.unmodifiableList(seenContinuationTokens.toList()),
+            seenContinuationTokens = unmodifiableList(seenContinuationTokens.toList()),
         )
 
         fun matches(candidate: ContinuationRequest): Boolean =
@@ -471,13 +472,13 @@ class ContextRegistry(
                     "restored songs must not contain duplicate video ids"
                 }
             }
-            return Collections.unmodifiableList(songs.toList())
+            return unmodifiableList(songs.toList())
         }
 
         fun immutableSongs(songs: Collection<Song>): List<Song> {
             val byVideoId = LinkedHashMap<String, Song>(songs.size)
-            songs.forEach { byVideoId.putIfAbsent(it.contextEntryKey(), it) }
-            return Collections.unmodifiableList(byVideoId.values.toList())
+            songs.forEach { byVideoId.getOrPut(it.contextEntryKey()) { it } }
+            return unmodifiableList(byVideoId.values.toList())
         }
 
         fun newSongs(existing: List<Song>, candidates: List<Song>): List<Song> {
@@ -490,3 +491,6 @@ class ContextRegistry(
         }
     }
 }
+
+/** A copy callers can't mutate, even through a cast: `Collections.unmodifiableList` on the JVM. */
+internal expect fun <T> unmodifiableList(list: List<T>): List<T>

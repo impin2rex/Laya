@@ -12,31 +12,6 @@ import kotlin.math.cos
 import kotlin.math.max
 
 /**
- * An MDX-Net vocal model and the STFT it was trained on, from UVR's own model
- * table (MIT).
- */
-enum class MdxModel(
-    val nFft: Int,
-    val dimF: Int,
-    /** UVR's per-model gain on the vocal before it is subtracted from the mix. */
-    val compensate: Float,
-) {
-    /**
-     * UVR-MDX-NET 9482, the one karaoke ships: a third of the work of UVR's
-     * larger Voc_FT, which runs slower than real time on a phone's CPU.
-     */
-    MDX_9482(nFft = 6_144, dimF = 2_048, compensate = 1.035f);
-
-    /** Context the model needs either side of what is kept from a chunk. */
-    val trim: Int get() = nFft / 2
-}
-
-/** The vocal in one 44.1 kHz chunk of [MdxSeparator.CHUNK] frames. */
-fun interface ChunkSeparator {
-    fun separate(left: FloatArray, right: FloatArray, vocalLeft: FloatArray, vocalRight: FloatArray)
-}
-
-/**
  * One chunk of vocal separation with one of UVR's MDX-Net models (Kim /
  * Anjok07, MIT) — see [MdxModel] — the model [KaraokeModel] ships.
  *
@@ -55,7 +30,11 @@ fun interface ChunkSeparator {
  *
  * Not thread-safe; one instance per worker.
  */
-class MdxSeparator(modelPath: String, threads: Int, val model: MdxModel) : ChunkSeparator, Closeable {
+actual class MdxSeparator actual constructor(
+    modelPath: String,
+    threads: Int,
+    actual val model: MdxModel,
+) : ChunkSeparator, Closeable {
 
     private val N_FFT = model.nFft
     private val DIM_F = model.dimF
@@ -75,10 +54,10 @@ class MdxSeparator(modelPath: String, threads: Int, val model: MdxModel) : Chunk
     private var runOptions: OrtSession.RunOptions? = null
 
     /** Thrown out of [separate] when [abort] cut it short. */
-    class Aborted : Exception()
+    actual class Aborted actual constructor() : Exception()
 
     /** Cuts the inference under way short, from any thread; [separate] then throws [Aborted]. */
-    fun abort() {
+    actual fun abort() {
         runCatching { runOptions?.setTerminate(true) }
     }
 
@@ -212,15 +191,15 @@ class MdxSeparator(modelPath: String, threads: Int, val model: MdxModel) : Chunk
         }
     }
 
-    override fun close() {
+    actual override fun close() {
         session.close()
     }
 
-    companion object {
-        const val SAMPLE_RATE = 44_100
-        const val HOP = 1_024
-        const val DIM_T = 256
-        const val CHUNK = HOP * (DIM_T - 1)
+    actual companion object {
+        actual const val SAMPLE_RATE = 44_100
+        actual const val HOP = 1_024
+        actual const val DIM_T = 256
+        actual const val CHUNK = HOP * (DIM_T - 1)
 
         private const val ZEROED_BINS = 3
     }

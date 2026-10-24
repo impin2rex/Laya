@@ -3,7 +3,7 @@ package com.music.laya.playback
 import com.music.laya.data.model.PlaybackSourceType
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
-import java.util.UUID
+import kotlin.uuid.Uuid
 
 /**
  * Information about where a queue or track was started from in the UI.
@@ -55,7 +55,7 @@ object QueueTimeline {
      */
     fun Song.asQueueEntry(tier: QueueTier): Song = copy(
         queueTier = tier,
-        queueEntryId = queueEntryId ?: UUID.randomUUID().toString(),
+        queueEntryId = queueEntryId ?: Uuid.random().toString(),
     )
 
     private fun upcomingUserQueue(timeline: List<Song>, currentIndex: Int): List<Song> =

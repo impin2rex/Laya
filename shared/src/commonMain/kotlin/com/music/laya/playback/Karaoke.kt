@@ -1,5 +1,10 @@
 package com.music.laya.playback
 
+import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.decrementAndFetch
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -40,7 +45,7 @@ object Karaoke {
         com.music.laya.playback.karaoke.KaraokeStems.retainOnly(id)
     }
     private val _warm = MutableStateFlow(false)
-    private val showing = java.util.concurrent.atomic.AtomicInteger()
+    private val showing = AtomicInt(0)
 
     /**
      * Get the neural vocal ready even while karaoke is off — the lyrics are on
@@ -52,13 +57,13 @@ object Karaoke {
 
     /** The lyrics have come on screen; the returned call takes them off again. */
     fun lyricsShown(): () -> Unit {
-        if (showing.incrementAndGet() == 1) {
+        if (showing.incrementAndFetch() == 1) {
             _warm.value = true
             com.music.laya.playback.karaoke.KaraokeStems.wake()
         }
-        val released = java.util.concurrent.atomic.AtomicBoolean()
+        val released = AtomicBoolean(false)
         return {
-            if (released.compareAndSet(false, true) && showing.decrementAndGet() == 0) _warm.value = false
+            if (released.compareAndSet(false, true) && showing.decrementAndFetch() == 0) _warm.value = false
         }
     }
 

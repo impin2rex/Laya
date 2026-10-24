@@ -1,17 +1,17 @@
 package com.music.laya.playback.karaoke
 
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.nanoTime
 import com.music.laya.playback.Karaoke
 import com.music.laya.playback.VocalStems
 import com.music.laya.playback.smart.AnalysisLog
-import com.music.laya.playback.smart.MelSpectrogram
-import java.io.Closeable
-import java.io.File
-import java.io.RandomAccessFile
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.channels.FileChannel
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicIntegerArray
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import okio.FileHandle
+import okio.FileSystem
+import okio.Path
+import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicIntArray
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.max
@@ -25,7 +25,7 @@ import kotlin.math.sqrt
  * as many frames as the player's decoder produces. Supplied by each platform from
  * the bytes the player itself is reading.
  */
-interface PcmStream : Closeable {
+interface PcmStream : AutoCloseable {
     val sampleRate: Int
 
     /** Frames in the whole track as the container states it; -1 when it doesn't. */
@@ -84,19 +84,22 @@ interface PcmStream : Closeable {
  */
 object KaraokeStems {
 
-    private val live = ConcurrentHashMap<String, TrackStems>()
+    private val live = ConcurrentMap<String, TrackStems>()
 
     /** Stems let go of, for the worker to release between jobs: it may be mid-decode on one. */
-    private val retired = java.util.concurrent.ConcurrentLinkedQueue<TrackStems>()
-    private val lock = Object()
-    private var worker: Thread? = null
+    private val retired = ArrayDeque<TrackStems>()
+
+    /** Guards [retired], [started] and the check-then-add/remove on [live]. */
+    private val guard = SynchronizedObject()
+    private val wakeup = WakeSignal()
+    private var started = false
     private var separator: MdxSeparator? = null
     private var idleSince = 0L
     private var separatorFailedAt = 0L
 
     /** Where the songs' separated audio is cached; see [install]. */
     @Volatile
-    internal var directory: File? = null
+    internal var directory: Path? = null
         private set
 
     /** What the worker is separating now, for the aligner to call off. */
@@ -104,12 +107,12 @@ object KaraokeStems {
     private var running: Pair<TrackStems, Int>? = null
 
     /** How many threads inference may take; a few big cores, not the whole phone. */
-    var inferenceThreads: Int = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(2, 4)
+    var inferenceThreads: Int = (cpuCount() / 2).coerceIn(2, 4)
 
     /** Where to cache separated songs. Anything a previous run left there is cleared. */
-    fun install(directory: File) {
-        directory.mkdirs()
-        directory.listFiles()?.forEach { it.delete() }
+    fun install(directory: Path) {
+        FileSystem.SYSTEM.createDirectories(directory)
+        FileSystem.SYSTEM.listOrNull(directory)?.forEach { runCatching { FileSystem.SYSTEM.delete(it) } }
         this.directory = directory
     }
 
@@ -118,20 +121,20 @@ object KaraokeStems {
      * [open] when there is work to do.
      */
     fun forTrack(key: String, track: String, open: () -> PcmStream?): TrackStems {
-        val stems = live.getOrPut(key) { TrackStems(key, track, open) }
-        stems.lastSeen = System.nanoTime()
+        val stems = synchronized(guard) { live.getOrPut(key) { TrackStems(key, track, open) } }
+        stems.lastSeen = nanoTime()
         start()
         return stems
     }
 
     /** The song playing is now [track]: every other song's stems, and their files, go. From any thread. */
     fun retainOnly(track: String?) {
-        live.values.removeAll { stems ->
-            (stems.track != track).also { drop ->
-                if (drop) {
-                    stems.retire()
-                    retired += stems
-                }
+        synchronized(guard) {
+            for (stems in live.values) {
+                if (stems.track == track) continue
+                live.remove(stems.key)
+                stems.retire()
+                retired.addLast(stems)
             }
         }
         wake()
@@ -139,33 +142,27 @@ object KaraokeStems {
 
     /** Something changed — karaoke on, a model ready, a new track — that may give the worker work. */
     fun wake() {
-        synchronized(lock) { lock.notifyAll() }
+        wakeup.signal()
     }
 
     private fun start() {
-        synchronized(lock) {
-            if (worker != null) return
-            worker = Thread(::loop, "LayaKaraoke").apply {
-                isDaemon = true
-                priority = Thread.NORM_PRIORITY - 1
-                start()
-            }
-            Thread(::alignLoop, "LayaKaraokeAlign").apply {
-                isDaemon = true
-                start()
-            }
+        synchronized(guard) {
+            if (started) return
+            started = true
+            startKaraokeThread("LayaKaraoke", lowPriority = true, body = ::loop)
+            startKaraokeThread("LayaKaraokeAlign", lowPriority = false, body = ::alignLoop)
         }
     }
 
     private fun loop() {
         while (true) {
-            while (true) (retired.poll() ?: break).close()
+            while (true) (synchronized(guard) { retired.removeFirstOrNull() } ?: break).close()
             val job = runCatching { nextJob() }
                 .onFailure { AnalysisLog.warn("Karaoke scheduling failed", it) }
                 .getOrNull()
             if (job == null) {
                 idle()
-                synchronized(lock) { lock.wait(IDLE_WAIT_MS) }
+                wakeup.await(IDLE_WAIT_MS)
                 continue
             }
             idleSince = 0L
@@ -185,13 +182,13 @@ object KaraokeStems {
                 val (stems, index) = running ?: return@runCatching
                 if (!stems.wants(index)) separator?.abort()
             }.onFailure { AnalysisLog.warn("Karaoke alignment failed", it) }
-            Thread.sleep(ALIGN_POLL_MS)
+            sleepMillis(ALIGN_POLL_MS)
         }
     }
 
     /** Lets the model's memory go once karaoke has been off a while. */
     private fun idle() {
-        val now = System.nanoTime()
+        val now = nanoTime()
         if (idleSince == 0L) idleSince = now
         if (now - idleSince > RELEASE_AFTER_NANOS && separator != null) {
             separator?.close()
@@ -203,7 +200,7 @@ object KaraokeStems {
         val enabled = Karaoke.enabled.value
         if (!enabled && !Karaoke.warm.value) return null
         if (!KaraokeModel.installed) return null
-        val now = System.nanoTime()
+        val now = nanoTime()
         if (separatorFailedAt != 0L && now - separatorFailedAt < RELEASE_AFTER_NANOS) return null
         var best: (() -> Unit)? = null
         var bestRank = Long.MAX_VALUE
@@ -229,7 +226,7 @@ object KaraokeStems {
     private fun separator(): MdxSeparator {
         separator?.let { return it }
         return runCatching { MdxSeparator(KaraokeModel.path(), inferenceThreads, KaraokeModel.model) }
-            .onFailure { separatorFailedAt = System.nanoTime() }
+            .onFailure { separatorFailedAt = nanoTime() }
             .getOrThrow()
             .also { separator = it }
     }
@@ -251,8 +248,8 @@ class TrackStems internal constructor(
     val track: String,
     open: () -> PcmStream?,
     private val model: MdxModel = KaraokeModel.model,
-    private val directory: File? = KaraokeStems.directory,
-) : VocalStems, Closeable {
+    private val directory: Path? = KaraokeStems.directory,
+) : VocalStems, AutoCloseable {
 
     private val audio = TrackAudio(open)
 
@@ -261,7 +258,7 @@ class TrackStems internal constructor(
         private set
 
     @Volatile
-    internal var lastSeen = System.nanoTime()
+    internal var lastSeen = nanoTime()
 
     @Volatile
     internal var openFailedAt = 0L
@@ -281,7 +278,7 @@ class TrackStems internal constructor(
 
     /** Per segment, its island + 1; 0 while not separated. */
     @Volatile
-    private var done = AtomicIntegerArray(0)
+    private var done = AtomicIntArray(0)
     private var nextIsland = 0
     private val failedAt = HashMap<Int, Long>()
     private var peak = 0f
@@ -332,11 +329,11 @@ class TrackStems internal constructor(
     private var closed = false
 
     // Audio-thread scratch for reading slots back.
-    private var readBuffer: ByteBuffer = ByteBuffer.allocateDirect(0)
+    private var readBuffer = ByteArray(0)
 
     override fun observe(frame: Long) {
         playhead = frame
-        lastSeen = System.nanoTime()
+        lastSeen = nanoTime()
     }
 
     override fun realign() {
@@ -375,10 +372,10 @@ class TrackStems internal constructor(
         val start = frame + offset
         val end = start + frames
         val fade = KaraokeStems.CROSSFADE_FRAMES
-        val first = Math.floorDiv(start - fade, g).coerceAtLeast(0L)
-        val last = Math.floorDiv(end - 1 + fade, g).coerceAtMost(segmentCount - 1L)
+        val first = (start - fade).floorDiv(g).coerceAtLeast(0L)
+        val last = (end - 1 + fade).floorDiv(g).coerceAtMost(segmentCount - 1L)
         if (first > last) return false
-        for (k in first..last) if (done.get(k.toInt()) != island) return false
+        for (k in first..last) if (done.loadAt(k.toInt()) != island) return false
         into.fill(0f, 0, frames * 2)
         for (k in first..last) {
             val slotStart = k * g - fade
@@ -387,14 +384,12 @@ class TrackStems internal constructor(
             if (to <= from) continue
             val count = (to - from).toInt()
             val bytes = count * BYTES_PER_FRAME
-            if (readBuffer.capacity() < bytes) {
-                readBuffer = ByteBuffer.allocateDirect(bytes * 2).order(ByteOrder.LITTLE_ENDIAN)
-            }
+            if (readBuffer.size < bytes) readBuffer = ByteArray(bytes * 2)
             if (!store.read(k.toInt(), (from - slotStart).toInt(), count, readBuffer)) return false
             val target = ((from - start) * 2).toInt()
             for (i in 0 until count) {
-                into[target + 2 * i] += readBuffer.getShort(6 * i) / SCALE
-                into[target + 2 * i + 1] += readBuffer.getShort(6 * i + 2) / SCALE
+                into[target + 2 * i] += shortAt(readBuffer, 6 * i) / SCALE
+                into[target + 2 * i + 1] += shortAt(readBuffer, 6 * i + 2) / SCALE
             }
         }
         return true
@@ -405,7 +400,7 @@ class TrackStems internal constructor(
     internal fun open() {
         val directory = directory
         if (directory == null || !audio.open()) {
-            openFailedAt = System.nanoTime()
+            openFailedAt = nanoTime()
             return
         }
         val rate = audio.sampleRate
@@ -424,16 +419,16 @@ class TrackStems internal constructor(
         segmentCount = ((frames + g - 1) / g).toInt()
         span = g + 2 * KaraokeStems.CROSSFADE_FRAMES
         val opened = runCatching {
-            SegmentStore(File(directory, "${key.hashCode().toUInt()}-${System.nanoTime()}.stems"), span)
+            SegmentStore(directory / "${key.hashCode().toUInt()}-${nanoTime()}.stems", span)
         }.onFailure { AnalysisLog.warn("Karaoke cache unavailable", it) }.getOrNull()
         if (opened == null || closed) {
             opened?.close()
             audio.close()
-            openFailedAt = System.nanoTime()
+            openFailedAt = nanoTime()
             return
         }
         store = opened
-        done = AtomicIntegerArray(segmentCount)
+        done = AtomicIntArray(segmentCount)
         segmentFrames = g
         sampleRate = rate
         openFailedAt = 0L
@@ -451,7 +446,7 @@ class TrackStems internal constructor(
         val g = segmentFrames.toLong()
         val position = position()
         // From the segment whose fade-out the playhead may still be in.
-        val first = Math.floorDiv(position - KaraokeStems.CROSSFADE_FRAMES, g)
+        val first = (position - KaraokeStems.CROSSFADE_FRAMES).floorDiv(g)
             .coerceIn(0L, segmentCount - 1L).toInt()
         val last = (position + KaraokeStems.AHEAD_SECONDS * sampleRate.toLong()) / g
         return first..max(first.toLong(), min(segmentCount - 1L, last)).toInt()
@@ -461,7 +456,7 @@ class TrackStems internal constructor(
     internal fun wants(index: Int): Boolean {
         if (playhead < 0 || segmentFrames == 0) return true
         val window = window()
-        return index in window || window.all { done.get(it) != 0 }
+        return index in window || window.all { done.loadAt(it) != 0 }
     }
 
     /**
@@ -476,7 +471,7 @@ class TrackStems internal constructor(
         val g = segmentFrames.toLong()
         val position = position()
         fun usable(index: Int): Boolean {
-            if (done.get(index) != 0) return false
+            if (done.loadAt(index) != 0) return false
             val failed = failedAt[index] ?: return true
             return now - failed >= KaraokeStems.RETRY_NANOS
         }
@@ -490,7 +485,7 @@ class TrackStems internal constructor(
 
     internal fun separate(index: Int, separator: ChunkSeparator) {
         val store = store ?: return
-        val started = System.nanoTime()
+        val started = nanoTime()
         val rate = sampleRate
         val g = segmentFrames
         val lag = ISLAND_LAG
@@ -502,7 +497,7 @@ class TrackStems internal constructor(
         val preroll = KaraokeStems.SEEK_PREROLL_SECONDS * rate
         val sessionBefore = audio.session
         if (!audio.read(regionStart - lag + sessionShift, wideLeft, wideRight, preroll)) {
-            failedAt[index] = System.nanoTime()
+            failedAt[index] = nanoTime()
             return
         }
         if (audio.session != sessionBefore || audio.session != session) {
@@ -511,30 +506,30 @@ class TrackStems internal constructor(
             sessionIsland = -1
             sessionShift = 0L
             if (!audio.read(regionStart - lag, wideLeft, wideRight, preroll)) {
-                failedAt[index] = System.nanoTime()
+                failedAt[index] = nanoTime()
                 return
             }
             session = audio.session
         }
         var slide = 0
         if (sessionIsland < 0) {
-            val neighbour = listOf(index - 1, index + 1).firstOrNull { it in 0 until segmentCount && done.get(it) != 0 }
+            val neighbour = listOf(index - 1, index + 1).firstOrNull { it in 0 until segmentCount && done.loadAt(it) != 0 }
             if (neighbour == null) {
                 sessionIsland = nextIsland++
             } else {
                 slide = matchNeighbour(index, neighbour, wideLeft, wideRight, 0) ?: run {
-                    failedAt[index] = System.nanoTime()
+                    failedAt[index] = nanoTime()
                     return
                 }
                 sessionShift += slide
-                sessionIsland = done.get(neighbour) - 1
+                sessionIsland = done.loadAt(neighbour) - 1
             }
         }
         // A neighbour from another island: one look, and either they merge or one
         // of them goes to be separated again — never the one being listened to.
         for (neighbour in listOf(index - 1, index + 1)) {
             if (neighbour !in 0 until segmentCount) continue
-            val island = done.get(neighbour) - 1
+            val island = done.loadAt(neighbour) - 1
             if (island < 0 || island == sessionIsland) continue
             val drift = matchNeighbour(index, neighbour, wideLeft, wideRight, slide)
             when {
@@ -552,7 +547,7 @@ class TrackStems internal constructor(
 
         val left = wideLeft.copyOfRange(lag + slide, lag + slide + regionFrames)
         val right = wideRight.copyOfRange(lag + slide, lag + slide + regionFrames)
-        val decoded = System.nanoTime()
+        val decoded = nanoTime()
         val left44 = resample(left, rate, MdxSeparator.SAMPLE_RATE) ?: return
         val right44 = resample(right, rate, MdxSeparator.SAMPLE_RATE) ?: return
 
@@ -579,10 +574,10 @@ class TrackStems internal constructor(
             separator.separate(inLeft, inRight, vocalLeft, vocalRight)
         } catch (aborted: MdxSeparator.Aborted) {
             // Called off by a seek; not a failure, so free to be asked for again.
-            AnalysisLog.warn("karaoke $key segment $index called off after ${(System.nanoTime() - started) / 1_000_000} ms")
+            AnalysisLog.warn("karaoke $key segment $index called off after ${(nanoTime() - started) / 1_000_000} ms")
             return
         }
-        val inferred = System.nanoTime()
+        val inferred = nanoTime()
 
         val gain = scale * model.compensate
         val placedLeft = FloatArray(left44.size)
@@ -595,7 +590,7 @@ class TrackStems internal constructor(
         val backRight = resample(placedRight, MdxSeparator.SAMPLE_RATE, rate) ?: return
 
         val fade = KaraokeStems.CROSSFADE_FRAMES
-        val slot = ByteBuffer.allocate(span * BYTES_PER_FRAME).order(ByteOrder.LITTLE_ENDIAN)
+        val slot = ByteArray(span * BYTES_PER_FRAME)
         for (n in 0 until span) {
             val source = context - fade + n
             val weight = when {
@@ -603,17 +598,16 @@ class TrackStems internal constructor(
                 n >= g -> 1f - rampIn(n - g, fade)
                 else -> 1f
             }
-            slot.putShort(quantise(backLeft.getOrElse(source) { 0f } * weight))
-            slot.putShort(quantise(backRight.getOrElse(source) { 0f } * weight))
-            slot.putShort(quantise(0.5f * (left[source] + right[source])))
+            putShort(slot, n * BYTES_PER_FRAME, quantise(backLeft.getOrElse(source) { 0f } * weight))
+            putShort(slot, n * BYTES_PER_FRAME + 2, quantise(backRight.getOrElse(source) { 0f } * weight))
+            putShort(slot, n * BYTES_PER_FRAME + 4, quantise(0.5f * (left[source] + right[source])))
         }
-        slot.flip()
         if (closed || !store.write(index, slot)) return
-        done.set(index, sessionIsland + 1)
+        done.storeAt(index, sessionIsland + 1)
         failedAt.remove(index)
         AnalysisLog.warn(
             "karaoke $key segment $index: decode ${(decoded - started) / 1_000_000} ms, " +
-                "model ${(inferred - decoded) / 1_000_000} ms, total ${(System.nanoTime() - started) / 1_000_000} ms " +
+                "model ${(inferred - decoded) / 1_000_000} ms, total ${(nanoTime() - started) / 1_000_000} ms " +
                 "for ${g * 1000L / rate} ms of audio",
         )
     }
@@ -633,9 +627,9 @@ class TrackStems internal constructor(
         val to = min((neighbour + 1) * g, regionStart + g + 2 * context)
         val length = (to - from).toInt()
         if (length < MIN_OVERLAP) return null
-        val buffer = ByteBuffer.allocateDirect(length * BYTES_PER_FRAME).order(ByteOrder.LITTLE_ENDIAN)
+        val buffer = ByteArray(length * BYTES_PER_FRAME)
         if (!store.read(neighbour, (from - (neighbour * g - fade)).toInt(), length, buffer)) return null
-        val reference = FloatArray(length) { buffer.getShort(6 * it + 4) / SCALE }
+        val reference = FloatArray(length) { shortAt(buffer, 6 * it + 4) / SCALE }
         val mono = FloatArray(left.size) { 0.5f * (left[it] + right[it]) }
         val base = (from - regionStart).toInt() + ISLAND_LAG + slide
         val (shift, score) = slideOnto(reference, mono, base, ISLAND_LAG)
@@ -644,13 +638,13 @@ class TrackStems internal constructor(
     }
 
     private fun relabel(from: Int, to: Int) {
-        for (k in 0 until segmentCount) if (done.get(k) == from + 1) done.set(k, to + 1)
+        for (k in 0 until segmentCount) if (done.loadAt(k) == from + 1) done.storeAt(k, to + 1)
         if (alignedIsland == from) alignedIsland = to
     }
 
     private fun drop(island: Int) {
         AnalysisLog.warn("karaoke $key: island $island dropped to be separated again")
-        for (k in 0 until segmentCount) if (done.get(k) == island + 1) done.set(k, 0)
+        for (k in 0 until segmentCount) if (done.loadAt(k) == island + 1) done.storeAt(k, 0)
         if (alignedIsland == island) realign()
     }
 
@@ -681,13 +675,13 @@ class TrackStems internal constructor(
         val firstK = (max(0L, start) / g).toInt()
         val lastK = (end / g).toInt().coerceAtMost(segmentCount - 1)
         if (firstK > lastK) return
-        val island = done.get(firstK)
+        val island = done.loadAt(firstK)
         if (island == 0) return
-        for (k in firstK..lastK) if (done.get(k) != island) return
+        for (k in firstK..lastK) if (done.loadAt(k) != island) return
 
         val reference = FloatArray((end - start).toInt())
         val fade = KaraokeStems.CROSSFADE_FRAMES
-        val buffer = ByteBuffer.allocateDirect(span * BYTES_PER_FRAME).order(ByteOrder.LITTLE_ENDIAN)
+        val buffer = ByteArray(span * BYTES_PER_FRAME)
         for (k in firstK..lastK) {
             // The kept part only: the faded edges belong to the neighbours as well.
             val from = max(start, k * g)
@@ -695,7 +689,7 @@ class TrackStems internal constructor(
             if (to <= from) continue
             val count = (to - from).toInt()
             if (!store.read(k, (from - (k * g - fade)).toInt(), count, buffer)) return
-            for (i in 0 until count) reference[(from - start).toInt() + i] = buffer.getShort(6 * i + 4) / SCALE
+            for (i in 0 until count) reference[(from - start).toInt() + i] = shortAt(buffer, 6 * i + 4) / SCALE
         }
         val snapshot = captureBuffer.copyOf(length)
         // Handed back either way from here: a success needs no more, a failure a fresh one.
@@ -756,7 +750,7 @@ class TrackStems internal constructor(
     }
 
     private fun resample(samples: FloatArray, from: Int, to: Int): FloatArray? =
-        if (from == to) samples else MelSpectrogram.resample(samples, from.toDouble(), to.toDouble())
+        if (from == to) samples else resampleAudio(samples, from, to)
 
     /** Stops answering at once; [close] — on the worker — lets the decoder and the file go. */
     internal fun retire() {
@@ -804,6 +798,15 @@ class TrackStems internal constructor(
         /** Ranks the whole-song passes after anything near the playhead. */
         const val WHOLE_SONG_RANK = 1L shl 40
 
+        /** Little-endian 16-bit, as the cache slots have always been laid out. */
+        fun shortAt(bytes: ByteArray, at: Int): Short =
+            ((bytes[at + 1].toInt() shl 8) or (bytes[at].toInt() and 0xFF)).toShort()
+
+        fun putShort(bytes: ByteArray, at: Int, value: Short) {
+            bytes[at] = value.toByte()
+            bytes[at + 1] = (value.toInt() shr 8).toByte()
+        }
+
         fun quantise(value: Float): Short = (value * SCALE).roundToInt().coerceIn(-32_768, 32_767).toShort()
 
         fun rampIn(n: Int, fade: Int): Float {
@@ -820,34 +823,32 @@ class TrackStems internal constructor(
  * by the worker, read by the sink and the aligner. Positional reads and writes,
  * so the threads never share a file position.
  */
-private class SegmentStore(private val file: File, span: Int) : Closeable {
-    private val raf = RandomAccessFile(file, "rw")
-    private val channel: FileChannel = raf.channel
+private class SegmentStore(private val file: Path, span: Int) : AutoCloseable {
+    private val handle: FileHandle = FileSystem.SYSTEM.openReadWrite(file)
     private val slotBytes = span.toLong() * 6
 
-    fun write(index: Int, data: ByteBuffer): Boolean = runCatching {
-        var at = index * slotBytes
-        while (data.hasRemaining()) at += channel.write(data, at)
+    fun write(index: Int, data: ByteArray): Boolean = runCatching {
+        handle.write(index * slotBytes, data, 0, data.size)
         true
     }.getOrDefault(false)
 
-    /** Frames [from, from+count) of slot [index] into [into], from its start; absolute gets read it. */
-    fun read(index: Int, from: Int, count: Int, into: ByteBuffer): Boolean = runCatching {
-        into.clear()
-        into.limit(count * 6)
+    /** Frames [from, from+count) of slot [index] into the start of [into]. */
+    fun read(index: Int, from: Int, count: Int, into: ByteArray): Boolean = runCatching {
+        val length = count * 6
         var at = index * slotBytes + from.toLong() * 6
-        while (into.hasRemaining()) {
-            val read = channel.read(into, at)
+        var filled = 0
+        while (filled < length) {
+            val read = handle.read(at, into, filled, length - filled)
             if (read < 0) return@runCatching false
+            filled += read
             at += read
         }
         true
     }.getOrDefault(false)
 
     override fun close() {
-        runCatching { channel.close() }
-        runCatching { raf.close() }
-        file.delete()
+        runCatching { handle.close() }
+        runCatching { FileSystem.SYSTEM.delete(file) }
     }
 }
 
@@ -856,7 +857,7 @@ private class SegmentStore(private val file: File, span: Int) : Closeable {
  * the last read's start and decodes on from there. A read far behind or ahead of
  * that seeks the stream instead, which starts a new [session].
  */
-internal class TrackAudio(private val factory: () -> PcmStream?) : Closeable {
+internal class TrackAudio(private val factory: () -> PcmStream?) : AutoCloseable {
 
     private var stream: PcmStream? = null
     var sampleRate = 0

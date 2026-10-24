@@ -23,6 +23,7 @@
 
 package com.music.laya.playback.smart
 
+import okio.Path.Companion.toOkioPath
 import android.content.Context
 import android.media.MediaDataSource
 import android.net.Uri
@@ -156,7 +157,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
     private val restoreAttempted = ConcurrentHashMap.newKeySet<String>()
 
     /** Results that survive the process, so a track is measured once and stays measured. */
-    private val store = AnalysisStore { context.filesDir }
+    private val store = AnalysisStore { context.filesDir.toOkioPath() }
 
     /**
      * Cache keys of renditions that decoded short despite the cache calling them

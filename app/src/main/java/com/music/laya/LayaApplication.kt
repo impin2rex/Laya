@@ -1,5 +1,6 @@
 package com.music.laya
 
+import okio.Path.Companion.toOkioPath
 import android.app.Application
 import android.content.Intent
 import androidx.core.content.pm.ShortcutInfoCompat
@@ -65,7 +66,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
             unpackAsset(com.music.laya.playback.karaoke.KaraokeModel.ASSET)
         }
         // The song being sung, separated: one at a time, in the cache, cleared at launch.
-        com.music.laya.playback.karaoke.KaraokeStems.install(java.io.File(cacheDir, "karaoke"))
+        com.music.laya.playback.karaoke.KaraokeStems.install(java.io.File(cacheDir, "karaoke").toOkioPath())
         PlayerPlatform.install(AndroidPlayerHost(this))
         com.music.laya.ui.AppUi.install(com.music.laya.ui.AndroidAppUiHost)
         // The shared data layer (lyrics, the YouTube Music client) logs to

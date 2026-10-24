@@ -1,5 +1,7 @@
 package com.music.laya.playback
 
+import kotlin.concurrent.Volatile
+import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.tan
@@ -106,7 +108,7 @@ class TransitionFilter {
         hz.coerceIn(MIN_HZ, sampleRate * MAX_CUTOFF_FRACTION)
 
     private fun updateLowCoefficients() {
-        val g = tan(Math.PI * usableCutoff(currentLowPassHz) / sampleRate).toFloat()
+        val g = tan(PI * usableCutoff(currentLowPassHz) / sampleRate).toFloat()
         for (stage in 0 until STAGES) {
             val k = 1f / BUTTERWORTH_Q[stage]
             val a1 = 1f / (1f + g * (g + k))
@@ -117,7 +119,7 @@ class TransitionFilter {
     }
 
     private fun updateHighCoefficients() {
-        val g = tan(Math.PI * usableCutoff(currentHighPassHz) / sampleRate).toFloat()
+        val g = tan(PI * usableCutoff(currentHighPassHz) / sampleRate).toFloat()
         for (stage in 0 until STAGES) {
             val k = 1f / BUTTERWORTH_Q[stage]
             val a1 = 1f / (1f + g * (g + k))

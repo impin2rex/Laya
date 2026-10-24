@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import okio.Path.Companion.toOkioPath
 import com.music.laya.playback.smart.AnalysisLog
 import com.music.laya.playback.smart.NativeAnalysisLibrary
 import java.nio.file.Files
@@ -41,7 +42,7 @@ internal object DesktopAnalysisRuntime {
         com.music.laya.playback.karaoke.KaraokeModel.install {
             modelPath(com.music.laya.playback.karaoke.KaraokeModel.ASSET)
         }
-        com.music.laya.playback.karaoke.KaraokeStems.install(home.parent.resolve("karaoke-cache").toFile())
+        com.music.laya.playback.karaoke.KaraokeStems.install(home.parent.resolve("karaoke-cache").toOkioPath())
         NativeAnalysisLibrary.install {
             // `mapLibraryName` gives `liblaya_analysis.so` on Linux and `laya_analysis.dll`
             // on Windows.

@@ -1,12 +1,11 @@
 package com.music.laya.playback.smart
 
+import com.music.laya.platform.ConcurrentMap
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.File
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.concurrent.ConcurrentHashMap
+import okio.FileSystem
+import okio.Path
+import kotlin.math.floor
 
 /**
  * Analysis results kept on disk, so a track is measured once and stays measured.
@@ -52,7 +51,7 @@ class AnalysisStore(
      * problem and no such type, so both now pass a directory and the laziness
      * stays where it was.
      */
-    private val directoryOf: () -> java.io.File,
+    private val directoryOf: () -> Path,
 ) {
 
     /**
@@ -61,14 +60,15 @@ class AnalysisStore(
      * base context attached — asking for [Context.getFilesDir] there returns
      * null and takes the whole process down before it can start.
      */
-    private val directory by lazy { File(directoryOf(), DIRECTORY) }
+    private val directory by lazy { directoryOf() / DIRECTORY }
+    private val fs = FileSystem.SYSTEM
 
     /**
      * Track ids known to have no file, so a track analysed in neither this
      * session nor a previous one does not hit the filesystem on every tick.
      * Only ever grows within a session, and a write clears the entry.
      */
-    private val known = ConcurrentHashMap<String, Boolean>()
+    private val known = ConcurrentMap<String, Boolean>()
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -79,13 +79,13 @@ class AnalysisStore(
     fun load(trackId: String): TrackAnalysis? {
         if (trackId.isBlank()) return null
         if (known[trackId] == false) return null
-        val file = File(directory, fileNameFor(trackId))
-        if (!file.exists()) {
+        val file = directory / fileNameFor(trackId)
+        if (!fs.exists(file)) {
             known[trackId] = false
             return null
         }
         return runCatching {
-            val stored = json.decodeFromString(Stored.serializer(), file.readText())
+            val stored = json.decodeFromString(Stored.serializer(), fs.read(file) { readUtf8() })
             // An entry from an older build may hold numbers computed a different
             // way, and a wrong beat grid is worse than none — so it is dropped
             // and re-earned rather than migrated.
@@ -97,7 +97,7 @@ class AnalysisStore(
                 // costs a re-analysis to replace, so it goes rather than being
                 // returned as a partly-filled result.
                 AnalysisLog.warn("Discarding unreadable analysis for $trackId", it)
-                file.delete()
+                runCatching { fs.delete(file) }
                 known[trackId] = false
             }
             .getOrNull()
@@ -111,40 +111,22 @@ class AnalysisStore(
     fun save(trackId: String, analysis: TrackAnalysis) {
         if (trackId.isBlank() || !analysis.isUsable) return
         runCatching {
-            directory.mkdirs()
-            val file = File(directory, fileNameFor(trackId))
+            fs.createDirectories(directory)
+            val file = directory / fileNameFor(trackId)
             // Written aside and moved into place, so a kill mid-write leaves the old entry
             // rather than a truncated one.
-            val temporary = File(directory, file.name + ".tmp")
+            val temporary = directory / (file.name + ".tmp")
             try {
-                temporary.writeText(json.encodeToString(Stored.serializer(), Stored.of(analysis)))
-                moveInto(temporary, file)
+                fs.write(temporary) { writeUtf8(json.encodeToString(Stored.serializer(), Stored.of(analysis))) }
+                // Atomic, replacing an existing entry (okio's NIO filesystem: ATOMIC_MOVE + REPLACE_EXISTING).
+                fs.atomicMove(temporary, file)
             } finally {
                 // A no-op once the move has taken it.
-                temporary.delete()
+                runCatching { fs.delete(temporary) }
             }
             known[trackId] = true
         }.onFailure { AnalysisLog.warn("Could not store analysis for $trackId", it) }
         prune()
-    }
-
-    /**
-     * Atomic where the filesystem allows it, replacing where it does not.
-     *
-     * Not `File.renameTo`: on Windows that fails outright when the destination exists, so
-     * re-analysing a track would quietly leave the old entry in place.
-     */
-    private fun moveInto(temporary: File, file: File) {
-        try {
-            Files.move(
-                temporary.toPath(),
-                file.toPath(),
-                StandardCopyOption.ATOMIC_MOVE,
-                StandardCopyOption.REPLACE_EXISTING,
-            )
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(temporary.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        }
     }
 
     /**
@@ -155,11 +137,11 @@ class AnalysisStore(
      * analysis.
      */
     private fun prune() {
-        val files = directory.listFiles() ?: return
+        val files = fs.listOrNull(directory) ?: return
         if (files.size <= MAX_ENTRIES) return
-        files.sortedBy { it.lastModified() }
+        files.sortedBy { fs.metadataOrNull(it)?.lastModifiedAtMillis ?: 0L }
             .take(files.size - MAX_ENTRIES)
-            .forEach { it.delete() }
+            .forEach { runCatching { fs.delete(it) } }
     }
 
     /** Hashed rather than used raw: a track id is not guaranteed to be a legal filename. */
@@ -288,6 +270,6 @@ class AnalysisStore(
 
         /** Milliseconds is finer than anything downstream distinguishes. */
         fun round(value: Double): Double =
-            if (value.isFinite()) Math.round(value * 1000.0) / 1000.0 else 0.0
+            if (value.isFinite()) floor(value * 1000.0 + 0.5) / 1000.0 else 0.0
     }
 }
