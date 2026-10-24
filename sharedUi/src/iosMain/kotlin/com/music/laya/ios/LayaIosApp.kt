@@ -107,6 +107,7 @@ import androidx.compose.runtime.key
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.DetailPage
 import com.music.laya.data.model.MoodGenre
+import com.music.laya.data.model.withoutRepeatsOf
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.LibraryScreen
@@ -116,6 +117,7 @@ import com.music.laya.ui.screens.SettingsScreen
 import com.music.laya.ui.onboarding.OnboardingScreen
 import androidx.compose.animation.EnterTransition
 import androidx.compose.material.icons.rounded.Settings
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import platform.Foundation.NSProcessInfo
 import androidx.compose.material.icons.rounded.History
@@ -164,8 +166,60 @@ fun LayaIosApp(engine: AudioEngine) {
     // Home / Explore: same calls MainViewModel makes for the first page.
     var home by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
     var explore by remember { mutableStateOf<UiState<List<MoodGenreSection>>>(UiState.Loading) }
-    suspend fun loadHome() {
-        home = YtMusicRepository.home().fold({ UiState.Success(it.shelves) }, { UiState.Error(it.message ?: "Error") })
+    // Mirrors MainViewModel: core feed + supplements + signed-in Recents load in parallel and publish as they land.
+    val homeShelves = remember { mutableListOf<HomeShelf>() }
+    val homeSeen = remember { mutableSetOf<String>() }
+    var homeContinuation by remember { mutableStateOf<String?>(null) }
+    var homePaging by remember { mutableStateOf(false) }
+    var homePending by remember { mutableIntStateOf(0) }
+    var recentsLoading by remember { mutableStateOf(false) }
+    fun publishHome(shelves: List<HomeShelf>, prepend: Boolean = false) {
+        if (prepend) {
+            val titles = shelves.map { it.title.lowercase() }.toSet()
+            homeSeen += titles
+            homeShelves.removeAll { it.title.lowercase() in titles }
+            homeShelves.addAll(0, shelves)
+        } else {
+            val added = shelves.withoutRepeatsOf(homeShelves).filter { homeSeen.add(it.title.lowercase()) }
+            if (added.isEmpty()) return
+            homeShelves += added
+        }
+        home = UiState.Success(homeShelves.toList())
+    }
+    suspend fun loadHome() = coroutineScope {
+        homeShelves.clear(); homeSeen.clear(); homeContinuation = null; homePaging = false
+        recentsLoading = signedIn
+        homePending = 1 + YtMusicRepository.HOME_SUPPLEMENT_BROWSE_IDS.size
+        launch {
+            YtMusicRepository.home()
+                .onSuccess { homeContinuation = it.continuation; publishHome(it.shelves) }
+                .onFailure { if (home !is UiState.Success) home = UiState.Error(it.message ?: "Error") }
+            homePending--
+        }
+        if (signedIn) launch {
+            YtMusicRepository.homeRecentlyPlayed().onSuccess { shelf -> shelf?.let { publishHome(listOf(it), prepend = true) } }
+            recentsLoading = false
+        }
+        YtMusicRepository.HOME_SUPPLEMENT_BROWSE_IDS.forEach { id ->
+            launch {
+                YtMusicRepository.homeSupplement(id).onSuccess { publishHome(it) }
+                homePending--
+            }
+        }
+    }
+    fun loadMoreHome() {
+        val token = homeContinuation ?: return
+        if (homePaging) return
+        homePaging = true
+        scope.launch {
+            YtMusicRepository.moreHome(token).onSuccess { feed ->
+                val before = homeShelves.size
+                publishHome(feed.shelves)
+                // A page with nothing new means the feed looped back on itself; treat as exhausted.
+                homeContinuation = feed.continuation.takeIf { homeShelves.size > before }
+            }
+            homePaging = false
+        }
     }
     suspend fun loadExplore() {
         explore = YtMusicRepository.moodAndGenres().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Error") })
@@ -442,6 +496,9 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onSignIn = { showLogin = true },
                                 currentSong = song,
                                 isPlaying = player.isPlaying,
+                                onLoadMore = ::loadMoreHome,
+                                loadingMore = homePaging || homePending > 0,
+                                recentlyPlayedLoading = recentsLoading,
                             )
                             1 -> ExploreScreen(
                                 state = explore,
