@@ -106,6 +106,11 @@ kotlin {
             implementation("androidx.appcompat:appcompat:1.7.0")
             implementation("androidx.palette:palette-ktx:1.0.0")
         }
+        iosMain.dependencies {
+            // The 1.7.3 pin above is the Android anchor. On iOS a klib built against
+            // Compose 1.7 fails at runtime against ui 1.10, so use the release paired with $cmp.
+            api("org.jetbrains.compose.material3:material3:1.10.0-alpha05")
+        }
     }
 }
 
