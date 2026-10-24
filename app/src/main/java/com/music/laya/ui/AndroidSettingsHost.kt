@@ -3,6 +3,7 @@ package com.music.laya.ui
 import android.content.Context
 import android.content.Intent
 import android.media.AudioFormat
+import android.media.audiofx.AudioEffect
 import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
@@ -93,6 +94,24 @@ object AndroidSettingsHost : SettingsHost {
     override val audioOutput: StateFlow<AudioOutputInfo?> = AudioOutputStatus.current
         .map(::outputInfo)
         .stateIn(scope, SharingStarted.Eagerly, outputInfo(AudioOutputStatus.current.value))
+
+    override val dspAvailable: StateFlow<Boolean> = AudioOutputStatus.current
+        .map { it.dspAvailable }
+        .stateIn(scope, SharingStarted.Eagerly, AudioOutputStatus.current.value.dspAvailable)
+
+    /** Hands the device's own effect panel this app's audio session. */
+    override val openSystemEqualizer: () -> Unit = {
+        appContext?.let { context ->
+            val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
+                putExtra(AudioEffect.EXTRA_AUDIO_SESSION, AppSettings.audioSessionId.value)
+                putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
+                putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
+            }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(intent) }.onFailure {
+                Toast.makeText(context, context.getString(R.string.no_equalizer), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     private fun outputInfo(status: AudioOutputStatus.Snapshot) = AudioOutputInfo(
         summary = buildString {

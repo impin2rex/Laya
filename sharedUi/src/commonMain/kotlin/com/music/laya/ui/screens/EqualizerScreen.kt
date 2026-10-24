@@ -1,9 +1,5 @@
 package com.music.laya.ui.screens
 
-import android.content.Context
-import android.content.Intent
-import android.media.audiofx.AudioEffect
-import android.widget.Toast
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -55,21 +51,62 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.music.laya.R
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.EqualizerMode
-import com.music.laya.playback.AudioOutputStatus
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.eq_preset_acoustic
+import com.music.laya.sharedui.resources.eq_preset_bass_boost
+import com.music.laya.sharedui.resources.eq_preset_bass_cut
+import com.music.laya.sharedui.resources.eq_preset_classical
+import com.music.laya.sharedui.resources.eq_preset_custom
+import com.music.laya.sharedui.resources.eq_preset_electronic
+import com.music.laya.sharedui.resources.eq_preset_flat
+import com.music.laya.sharedui.resources.eq_preset_hip_hop
+import com.music.laya.sharedui.resources.eq_preset_jazz
+import com.music.laya.sharedui.resources.eq_preset_late_night
+import com.music.laya.sharedui.resources.eq_preset_loudness
+import com.music.laya.sharedui.resources.eq_preset_rock
+import com.music.laya.sharedui.resources.eq_preset_small_speakers
+import com.music.laya.sharedui.resources.eq_preset_spoken_word
+import com.music.laya.sharedui.resources.eq_preset_treble_boost
+import com.music.laya.sharedui.resources.eq_preset_treble_cut
+import com.music.laya.sharedui.resources.eq_preset_vocal
+import com.music.laya.sharedui.resources.equalizer
+import com.music.laya.sharedui.resources.equalizer_balance
+import com.music.laya.sharedui.resources.equalizer_balance_footer
+import com.music.laya.sharedui.resources.equalizer_balance_left
+import com.music.laya.sharedui.resources.equalizer_balance_right
+import com.music.laya.sharedui.resources.equalizer_bands
+import com.music.laya.sharedui.resources.equalizer_bands_footer
+import com.music.laya.sharedui.resources.equalizer_bitstream_footer
+import com.music.laya.sharedui.resources.equalizer_bitstream_subtitle
+import com.music.laya.sharedui.resources.equalizer_bitstream_title
+import com.music.laya.sharedui.resources.equalizer_broad
+import com.music.laya.sharedui.resources.equalizer_broad_footer
+import com.music.laya.sharedui.resources.equalizer_contour
+import com.music.laya.sharedui.resources.equalizer_dynamic
+import com.music.laya.sharedui.resources.equalizer_focused
+import com.music.laya.sharedui.resources.equalizer_focused_footer
+import com.music.laya.sharedui.resources.equalizer_footer
+import com.music.laya.sharedui.resources.equalizer_manual
+import com.music.laya.sharedui.resources.equalizer_preset
+import com.music.laya.sharedui.resources.equalizer_reset
+import com.music.laya.sharedui.resources.equalizer_tilt
+import com.music.laya.sharedui.resources.equalizer_tone
+import com.music.laya.sharedui.resources.selected
+import com.music.laya.sharedui.resources.system_equalizer
+import com.music.laya.sharedui.resources.system_equalizer_footer
+import com.music.laya.sharedui.resources.system_equalizer_subtitle
 import com.music.laya.playback.EqLayout
 import com.music.laya.playback.EqualizerPreset
+import com.music.laya.ui.components.oneDecimal
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -95,8 +132,6 @@ fun EqualizerScreen(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val sessionId by AppSettings.audioSessionId.collectAsStateWithLifecycle()
     val enabled by AppSettings.equalizerEnabled.collectAsStateWithLifecycle()
     val mode by AppSettings.equalizerMode.collectAsStateWithLifecycle()
     val toneX by AppSettings.equalizerToneX.collectAsStateWithLifecycle()
@@ -105,7 +140,8 @@ fun EqualizerScreen(
     val balance by AppSettings.equalizerBalance.collectAsStateWithLifecycle()
     val bands by AppSettings.equalizerBands.collectAsStateWithLifecycle()
     val preset by AppSettings.equalizerPreset.collectAsStateWithLifecycle()
-    val outputStatus by AudioOutputStatus.current.collectAsStateWithLifecycle()
+    val host = SettingsExtras.host
+    val dspAvailable by host.dspAvailable.collectAsStateWithLifecycle()
 
     val haptics = rememberHaptics()
     var pickingPreset by remember { mutableStateOf(false) }
@@ -117,12 +153,12 @@ fun EqualizerScreen(
             .padding(contentPadding),
     ) {
         SettingsGroup(
-            footer = stringResource(R.string.equalizer_footer),
+            footer = stringResource(Res.string.equalizer_footer),
             topSpacing = 8.dp,
         ) {
             SettingsRow(
                 icon = Icons.Rounded.Tune,
-                title = stringResource(R.string.equalizer),
+                title = stringResource(Res.string.equalizer),
                 trailing = {
                     Switch(
                         checked = enabled,
@@ -168,9 +204,9 @@ fun EqualizerScreen(
             when (mode) {
                 EqualizerMode.DYNAMIC -> {
                     SettingsGroup(
-                        header = stringResource(R.string.equalizer_tone),
+                        header = stringResource(Res.string.equalizer_tone),
                         footer = stringResource(
-                            if (focused) R.string.equalizer_focused_footer else R.string.equalizer_broad_footer,
+                            if (focused) Res.string.equalizer_focused_footer else Res.string.equalizer_broad_footer,
                         ),
                     ) {
                         TonePad(
@@ -182,14 +218,14 @@ fun EqualizerScreen(
                         ToneReadout(x = toneX, y = toneY)
                         RowDivider()
                         ChoiceRow(
-                            label = stringResource(R.string.equalizer_broad),
+                            label = stringResource(Res.string.equalizer_broad),
                             selected = !focused,
                             onClick = { AppSettings.setEqualizerFocused(false) },
                             enabled = enabled,
                         )
                         RowDivider()
                         ChoiceRow(
-                            label = stringResource(R.string.equalizer_focused),
+                            label = stringResource(Res.string.equalizer_focused),
                             selected = focused,
                             onClick = { AppSettings.setEqualizerFocused(true) },
                             enabled = enabled,
@@ -201,15 +237,15 @@ fun EqualizerScreen(
                     SettingsGroup {
                         SettingsRow(
                             icon = Icons.Rounded.GraphicEq,
-                            title = stringResource(R.string.equalizer_preset),
+                            title = stringResource(Res.string.equalizer_preset),
                             value = preset.localizedLabel(),
                             onClick = { pickingPreset = true },
                             enabled = enabled,
                         )
                     }
                     SettingsGroup(
-                        header = stringResource(R.string.equalizer_bands),
-                        footer = stringResource(R.string.equalizer_bands_footer),
+                        header = stringResource(Res.string.equalizer_bands),
+                        footer = stringResource(Res.string.equalizer_bands_footer),
                     ) {
                         BandSliders(
                             bands = bands,
@@ -218,7 +254,7 @@ fun EqualizerScreen(
                         )
                         RowDivider()
                         DestructiveRow(
-                            label = stringResource(R.string.equalizer_reset),
+                            label = stringResource(Res.string.equalizer_reset),
                             enabled = enabled,
                         ) {
                             haptics.play(Haptic.Select)
@@ -229,8 +265,8 @@ fun EqualizerScreen(
             }
 
             SettingsGroup(
-                header = stringResource(R.string.equalizer_balance),
-                footer = stringResource(R.string.equalizer_balance_footer),
+                header = stringResource(Res.string.equalizer_balance),
+                footer = stringResource(Res.string.equalizer_balance_footer),
             ) {
                 BalanceControl(
                     balance = balance,
@@ -251,12 +287,12 @@ fun EqualizerScreen(
             // Float output does not affect the equaliser at all; it only drops
             // Media3's *own* processors, which is a claim about silence
             // skipping and belongs on that setting, not this screen.
-            if (!outputStatus.dspAvailable) {
-                SettingsGroup(footer = stringResource(R.string.equalizer_bitstream_footer)) {
+            if (!dspAvailable) {
+                SettingsGroup(footer = stringResource(Res.string.equalizer_bitstream_footer)) {
                     SettingsRow(
                         icon = Icons.Rounded.Warning,
-                        title = stringResource(R.string.equalizer_bitstream_title),
-                        subtitle = stringResource(R.string.equalizer_bitstream_subtitle),
+                        title = stringResource(Res.string.equalizer_bitstream_title),
+                        subtitle = stringResource(Res.string.equalizer_bitstream_subtitle),
                     )
                 }
             }
@@ -266,13 +302,15 @@ fun EqualizerScreen(
         // Outside the dimmed block on purpose: the device's own panel works
         // whether or not ours is switched on, and greying out a route to
         // somebody else's equaliser would be claiming ground we do not hold.
-        SettingsGroup(footer = stringResource(R.string.system_equalizer_footer)) {
-            SettingsRow(
-                icon = Icons.Rounded.GraphicEq,
-                title = stringResource(R.string.system_equalizer),
-                subtitle = stringResource(R.string.system_equalizer_subtitle),
-                onClick = { openEqualizer(context, sessionId) },
-            )
+        host.openSystemEqualizer?.let { open ->
+            SettingsGroup(footer = stringResource(Res.string.system_equalizer_footer)) {
+                SettingsRow(
+                    icon = Icons.Rounded.GraphicEq,
+                    title = stringResource(Res.string.system_equalizer),
+                    subtitle = stringResource(Res.string.system_equalizer_subtitle),
+                    onClick = open,
+                )
+            }
         }
 
         Spacer(Modifier.height(32.dp))
@@ -448,7 +486,7 @@ private fun ToneReadout(x: Int, y: Int) {
     ) {
         Icon(
             imageVector = Icons.Rounded.Waves,
-            contentDescription = stringResource(R.string.equalizer_tilt),
+            contentDescription = stringResource(Res.string.equalizer_tilt),
             tint = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.size(20.dp),
         )
@@ -461,7 +499,7 @@ private fun ToneReadout(x: Int, y: Int) {
         Spacer(Modifier.width(22.dp))
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.ShowChart,
-            contentDescription = stringResource(R.string.equalizer_contour),
+            contentDescription = stringResource(Res.string.equalizer_contour),
             tint = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.size(20.dp),
         )
@@ -507,7 +545,7 @@ private fun ChoiceRow(
         if (selected) {
             Icon(
                 imageVector = Icons.Rounded.Check,
-                contentDescription = stringResource(R.string.selected),
+                contentDescription = stringResource(Res.string.selected),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp),
             )
@@ -697,14 +735,14 @@ private fun trimGain(value: Float): String =
     if (abs(value - value.roundToInt()) < 0.05f) {
         value.roundToInt().toString()
     } else {
-        String.format(Locale.getDefault(), "%.1f", value)
+        oneDecimal(value)
     }
 
 /** "60", "2.5k", "14k" — the labels a hardware equaliser prints. */
 private fun formatFrequency(hz: Float): String = when {
     hz < 1_000f -> hz.roundToInt().toString()
     hz % 1_000f == 0f -> "${(hz / 1_000f).roundToInt()}k"
-    else -> String.format(Locale.getDefault(), "%.1fk", hz / 1_000f)
+    else -> oneDecimal(hz / 1_000f) + "k"
 }
 
 // ---- Balance ---------------------------------------------------------------
@@ -731,19 +769,19 @@ private fun BalanceControl(
     Column(Modifier.padding(horizontal = ROW_INSET, vertical = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stringResource(R.string.equalizer_balance_left),
+                text = stringResource(Res.string.equalizer_balance_left),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = String.format(Locale.getDefault(), "%.2f", balance),
+                text = twoDecimals(balance),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = stringResource(R.string.equalizer_balance_right),
+                text = stringResource(Res.string.equalizer_balance_right),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -825,7 +863,7 @@ private fun PresetSheet(selected: EqualizerPreset, onSelect: (EqualizerPreset) -
     val haptics = rememberHaptics()
     Column(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
         Text(
-            text = stringResource(R.string.equalizer_preset),
+            text = stringResource(Res.string.equalizer_preset),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 22.dp, end = 22.dp, bottom = 14.dp),
@@ -870,7 +908,7 @@ private fun PresetSheet(selected: EqualizerPreset, onSelect: (EqualizerPreset) -
                     if (chosen) {
                         Icon(
                             Icons.Rounded.Check,
-                            contentDescription = stringResource(R.string.selected),
+                            contentDescription = stringResource(Res.string.selected),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp),
                         )
@@ -884,31 +922,31 @@ private fun PresetSheet(selected: EqualizerPreset, onSelect: (EqualizerPreset) -
 @Composable
 private fun EqualizerMode.localizedLabel(): String = stringResource(
     when (this) {
-        EqualizerMode.DYNAMIC -> R.string.equalizer_dynamic
-        EqualizerMode.MANUAL -> R.string.equalizer_manual
+        EqualizerMode.DYNAMIC -> Res.string.equalizer_dynamic
+        EqualizerMode.MANUAL -> Res.string.equalizer_manual
     },
 )
 
 @Composable
 private fun EqualizerPreset.localizedLabel(): String = stringResource(
     when (this) {
-        EqualizerPreset.FLAT -> R.string.eq_preset_flat
-        EqualizerPreset.ACOUSTIC -> R.string.eq_preset_acoustic
-        EqualizerPreset.BASS_BOOST -> R.string.eq_preset_bass_boost
-        EqualizerPreset.BASS_CUT -> R.string.eq_preset_bass_cut
-        EqualizerPreset.VOCAL -> R.string.eq_preset_vocal
-        EqualizerPreset.TREBLE_BOOST -> R.string.eq_preset_treble_boost
-        EqualizerPreset.TREBLE_CUT -> R.string.eq_preset_treble_cut
-        EqualizerPreset.LOUDNESS -> R.string.eq_preset_loudness
-        EqualizerPreset.SPOKEN_WORD -> R.string.eq_preset_spoken_word
-        EqualizerPreset.ELECTRONIC -> R.string.eq_preset_electronic
-        EqualizerPreset.ROCK -> R.string.eq_preset_rock
-        EqualizerPreset.HIP_HOP -> R.string.eq_preset_hip_hop
-        EqualizerPreset.JAZZ -> R.string.eq_preset_jazz
-        EqualizerPreset.CLASSICAL -> R.string.eq_preset_classical
-        EqualizerPreset.SMALL_SPEAKERS -> R.string.eq_preset_small_speakers
-        EqualizerPreset.LATE_NIGHT -> R.string.eq_preset_late_night
-        EqualizerPreset.CUSTOM -> R.string.eq_preset_custom
+        EqualizerPreset.FLAT -> Res.string.eq_preset_flat
+        EqualizerPreset.ACOUSTIC -> Res.string.eq_preset_acoustic
+        EqualizerPreset.BASS_BOOST -> Res.string.eq_preset_bass_boost
+        EqualizerPreset.BASS_CUT -> Res.string.eq_preset_bass_cut
+        EqualizerPreset.VOCAL -> Res.string.eq_preset_vocal
+        EqualizerPreset.TREBLE_BOOST -> Res.string.eq_preset_treble_boost
+        EqualizerPreset.TREBLE_CUT -> Res.string.eq_preset_treble_cut
+        EqualizerPreset.LOUDNESS -> Res.string.eq_preset_loudness
+        EqualizerPreset.SPOKEN_WORD -> Res.string.eq_preset_spoken_word
+        EqualizerPreset.ELECTRONIC -> Res.string.eq_preset_electronic
+        EqualizerPreset.ROCK -> Res.string.eq_preset_rock
+        EqualizerPreset.HIP_HOP -> Res.string.eq_preset_hip_hop
+        EqualizerPreset.JAZZ -> Res.string.eq_preset_jazz
+        EqualizerPreset.CLASSICAL -> Res.string.eq_preset_classical
+        EqualizerPreset.SMALL_SPEAKERS -> Res.string.eq_preset_small_speakers
+        EqualizerPreset.LATE_NIGHT -> Res.string.eq_preset_late_night
+        EqualizerPreset.CUSTOM -> Res.string.eq_preset_custom
     },
 )
 
@@ -926,19 +964,8 @@ private const val ZERO_DETENT_DB = 0.6f
 /** Same, for the balance trim's own centre. */
 private const val BALANCE_DETENT = 0.04f
 
-/**
- * Hands the device's own effect panel this app's audio session.
- *
- * Shared with [EqualizerScreen], which offers the same escape hatch a second
- * time next to the equaliser it might be an alternative to.
- */
-private fun openEqualizer(context: Context, sessionId: Int) {
-    val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
-        putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
-        putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
-        putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-    }
-    runCatching { context.startActivity(intent) }.onFailure {
-        Toast.makeText(context, context.getString(R.string.no_equalizer), Toast.LENGTH_SHORT).show()
-    }
+/** `%.2f` without the JVM formatter. */
+private fun twoDecimals(v: Float): String {
+    val hundredths = kotlin.math.round(kotlin.math.abs(v) * 100).toInt()
+    return (if (v < 0 && hundredths != 0) "-" else "") + "${hundredths / 100}." + (hundredths % 100).toString().padStart(2, '0')
 }

@@ -26,6 +26,10 @@ interface SettingsHost {
     val party: StateFlow<PartyInfo> get() = NO_PARTY
     /** null hides the output-precision and USB DAC rows. */
     val audioOutput: StateFlow<AudioOutputInfo?> get() = NO_OUTPUT
+    /** false shows the "equaliser can't touch a bitstream" notice. */
+    val dspAvailable: StateFlow<Boolean> get() = DSP_AVAILABLE
+    /** null hides the "system equaliser" row. */
+    val openSystemEqualizer: (() -> Unit)? get() = null
     val hasDownloads: Boolean get() = false // Phase 6
     val hasSongCache: Boolean get() = false
     val hasBackgroundService: Boolean get() = false
@@ -44,6 +48,7 @@ interface SettingsHost {
 }
 
 private val NO_PARTY = MutableStateFlow(PartyInfo(null, 0))
+private val DSP_AVAILABLE = MutableStateFlow(true)
 private val NO_OUTPUT = MutableStateFlow<AudioOutputInfo?>(null)
 
 object SettingsExtras {

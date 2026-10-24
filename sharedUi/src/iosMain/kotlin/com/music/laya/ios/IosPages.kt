@@ -46,6 +46,7 @@ internal sealed interface IosPage {
     class Mood(val item: MoodGenre, val shelves: UiState<List<HomeShelf>>) : IosPage
     data object Settings : IosPage
     data object Account : IosPage
+    data object Equalizer : IosPage
     class History(val songs: UiState<List<Song>>) : IosPage
 }
 

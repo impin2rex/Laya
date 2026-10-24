@@ -111,6 +111,7 @@ import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.LibraryScreen
 import com.music.laya.ui.screens.SearchScreen
+import com.music.laya.ui.screens.EqualizerScreen
 import com.music.laya.ui.screens.SettingsScreen
 import com.music.laya.ui.onboarding.OnboardingScreen
 import androidx.compose.animation.EnterTransition
@@ -352,7 +353,11 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onSignOut = { scope.launch { IosAuth.signOut() } },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                         // Opens the account page; Last.fm / Spotify / Discord live behind it on Android (5e).
+                                        onEqualizer = { stack = stack + IosPage.Equalizer },
                                         onAccountScrobbling = { if (signedIn) stack = stack + IosPage.Account else showLogin = true },
+                                    )
+                                    IosPage.Equalizer -> EqualizerScreen(
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
                                     IosPage.Account -> IosAccountPage(
                                         signedIn = signedIn,
