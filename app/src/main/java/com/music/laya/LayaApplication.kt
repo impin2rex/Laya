@@ -24,6 +24,7 @@ import com.music.laya.data.lyrics.LyricsTranslation
 import androidx.appcompat.app.AppCompatDelegate
 import com.music.laya.ui.player.AndroidPlayerHost
 import com.music.laya.ui.player.PlayerPlatform
+import com.music.laya.data.canvas.AndroidSpotifyHarvest
 import com.music.laya.data.canvas.CanvasCache
 import com.music.laya.data.smb.SmbCoverFetcher
 import com.music.laya.data.webdav.WebDavCoilAuth
@@ -180,7 +181,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // listener's own session cookie needs a Context, and nothing in the
         // suspend call chain that reaches it (a track's canvas lookup) has
         // one to hand — see SpotifyToken's doc for why.
-        SpotifyToken.init(this)
+        AndroidSpotifyHarvest.install(this)
         // A sideloaded update is just a new APK over the old one, so app data —
         // including whatever the old build left in the image cache — survives
         // it untouched. Wipe that on the first launch of a higher versionCode so

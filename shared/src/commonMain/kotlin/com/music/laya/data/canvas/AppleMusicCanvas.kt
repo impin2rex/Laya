@@ -1,17 +1,19 @@
 package com.music.laya.data.canvas
 
 import com.music.laya.data.DebugLog as Log
-import com.music.laya.data.Http
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.currentTimeMillis
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
-import java.util.Base64
-import java.util.Locale
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
  * Apple Music's motion artwork — the animated sleeves the web player shows on
@@ -30,6 +32,7 @@ import java.util.Locale
  *
  * The clips are HLS, which is why the app carries the Media3 HLS extension.
  */
+@OptIn(ExperimentalEncodingApi::class)
 object AppleMusicCanvas {
 
     private const val TAG = "AppleMusicCanvas"
@@ -40,11 +43,15 @@ object AppleMusicCanvas {
 
     /** Motion artwork is per storefront; use the device's if it looks sane. */
     val storefront: String by lazy {
-        Locale.getDefault().country.takeIf { it.length == 2 }?.lowercase(Locale.ROOT) ?: "us"
+        deviceCountry()?.lowercase() ?: "us"
     }
 
     fun search(title: String, artist: String, album: String?): CanvasArtwork? {
-        val bearer = token() ?: return null
+        val bearer = token()
+        if (bearer == null) {
+            Log.d(TAG, "no web player token; skipping")
+            return null
+        }
 
         // The catalog search is term-based, so fold everything we know into
         // the term — an artist name alone pulls in their whole discography and
@@ -57,21 +64,22 @@ object AppleMusicCanvas {
             }
         }
 
-        val url = "$AMP/$storefront/search".toHttpUrl().newBuilder()
-            .addQueryParameter("term", term)
-            .addQueryParameter("types", "songs")
-            .addQueryParameter("limit", "10")
-            .addQueryParameter("extend", "editorialVideo")
-            .addQueryParameter("include", "albums")
-            .build()
-            .toString()
+        val url = canvasUrl(
+            "$AMP/$storefront/search",
+            "term" to term, "types" to "songs", "limit" to "10",
+            "extend" to "editorialVideo", "include" to "albums",
+        )
 
         val body = get(url, bearer) ?: return null
         val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
         val hits = root["results"]?.jsonObject
             ?.get("songs")?.jsonObject
             ?.get("data")?.jsonArray
-            ?: return null
+        if (hits == null) {
+            Log.d(TAG, "search had no songs for '$title'")
+            return null
+        }
+        Log.d(TAG, "search returned ${hits.size} song hit(s) for '$title'")
 
         val ranked = hits.mapNotNull { hit ->
             val song = hit as? JsonObject ?: return@mapNotNull null
@@ -114,13 +122,10 @@ object AppleMusicCanvas {
         val bearer = token() ?: return null
         val term = if (album.contains(artist, ignoreCase = true)) album else "$artist $album"
 
-        val url = "$AMP/$storefront/search".toHttpUrl().newBuilder()
-            .addQueryParameter("term", term)
-            .addQueryParameter("types", "albums")
-            .addQueryParameter("limit", "10")
-            .addQueryParameter("extend", "editorialVideo")
-            .build()
-            .toString()
+        val url = canvasUrl(
+            "$AMP/$storefront/search",
+            "term" to term, "types" to "albums", "limit" to "10", "extend" to "editorialVideo",
+        )
 
         val body = get(url, bearer) ?: return null
         val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
@@ -238,7 +243,7 @@ object AppleMusicCanvas {
      * not to the track, so putting one behind a sleeve is always wrong.
      */
     private fun isCompilation(name: String): Boolean {
-        val lower = name.lowercase(Locale.ROOT)
+        val lower = name.lowercase()
         return COMPILATION_MARKERS.any { lower.contains(it) }
     }
 
@@ -272,10 +277,7 @@ object AppleMusicCanvas {
         songTitle: String?,
         songArtist: String?,
     ): CanvasArtwork? {
-        val url = "$AMP/$storefront/albums/$albumId".toHttpUrl().newBuilder()
-            .addQueryParameter("extend", "editorialVideo")
-            .build()
-            .toString()
+        val url = canvasUrl("$AMP/$storefront/albums/$albumId", "extend" to "editorialVideo")
 
         val body = get(url, bearer) ?: return null
         val album = runCatching {
@@ -286,7 +288,11 @@ object AppleMusicCanvas {
         val albumName = attributes["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
         if (isCompilation(albumName)) return null
 
-        val video = attributes["editorialVideo"]?.jsonObject ?: return null
+        val video = attributes["editorialVideo"]?.jsonObject
+        if (video == null) {
+            Log.d(TAG, "album '$albumName' ($albumId) has no editorialVideo")
+            return null
+        }
         val (primary, alternate) = motionUrls(video) ?: return null
 
         Log.d(TAG, "motion artwork on album '$albumName' ($albumId)")
@@ -322,6 +328,7 @@ object AppleMusicCanvas {
 
     // ---- Token ---------------------------------------------------------
 
+    private val guard = SynchronizedObject()
     private var cachedToken: String? = null
     private var tokenExpiresAtMs = 0L
     private var retryTokenAfterMs = 0L
@@ -344,11 +351,10 @@ object AppleMusicCanvas {
      * track: if Apple has changed the page shape, hammering it on every skip
      * fixes nothing and makes every canvas lookup pay for the round trip.
      */
-    @Synchronized
-    private fun token(): String? {
-        val now = System.currentTimeMillis()
-        cachedToken?.let { if (now < tokenExpiresAtMs - 60_000) return it }
-        if (now < retryTokenAfterMs) return null
+    private fun token(): String? = synchronized(guard) {
+        val now = currentTimeMillis()
+        cachedToken?.let { if (now < tokenExpiresAtMs - 60_000) return@synchronized it }
+        if (now < retryTokenAfterMs) return@synchronized null
 
         val html = canvasGet(WEB_PLAYER, mapOf("User-Agent" to CANVAS_UA))
         val scripts = html?.let {
@@ -375,13 +381,13 @@ object AppleMusicCanvas {
                 ?: candidates.first()
             cachedToken = jwt
             tokenExpiresAtMs = expiresAt
-            Log.d(TAG, "web player token good until ${java.util.Date(expiresAt)}")
-            return jwt
+            Log.d(TAG, "web player token ok, good until $expiresAt")
+            return@synchronized jwt
         }
 
         Log.w(TAG, "no usable web player token in ${scripts.size} bundle(s); backing off")
         retryTokenAfterMs = now + TOKEN_RETRY_MS
-        return null
+        null
     }
 
     private const val TOKEN_RETRY_MS = 30L * 60 * 1000
@@ -393,25 +399,24 @@ object AppleMusicCanvas {
      * is being locked out until the app restarts.
      */
     private fun get(url: String, bearer: String): String? {
-        val request = Request.Builder().url(url).apply {
-            authHeaders(bearer).forEach { (name, value) -> header(name, value) }
-        }.build()
         return runCatching {
-            Http.client.newCall(request).execute().use { response ->
-                when {
-                    response.isSuccessful -> response.body.string()
-                    response.code == 401 -> {
-                        Log.w(TAG, "token rejected by the catalog API; will re-scrape")
-                        synchronized(this) {
-                            rejected += bearer
-                            if (cachedToken == bearer) {
-                                cachedToken = null
-                                tokenExpiresAtMs = 0L
-                            }
+            val response = NetHttp.execute(HttpRequest(url, headers = authHeaders(bearer)))
+            when {
+                response.isSuccessful -> response.text()
+                response.code == 401 -> {
+                    Log.w(TAG, "token rejected by the catalog API; will re-scrape")
+                    synchronized(guard) {
+                        rejected += bearer
+                        if (cachedToken == bearer) {
+                            cachedToken = null
+                            tokenExpiresAtMs = 0L
                         }
-                        null
                     }
-                    else -> null
+                    null
+                }
+                else -> {
+                    Log.w(TAG, "catalog request failed, http ${response.code}")
+                    null
                 }
             }
         }.getOrNull()
@@ -420,17 +425,17 @@ object AppleMusicCanvas {
     /** The web player's token names itself in the header `kid` and payload `iss`. */
     private fun isWebPlayerToken(jwt: String): Boolean = runCatching {
         val parts = jwt.split(".")
-        val header = String(Base64.getUrlDecoder().decode(parts[0]), Charsets.UTF_8)
-        val payload = String(Base64.getUrlDecoder().decode(parts[1]), Charsets.UTF_8)
+        val header = b64(parts[0])
+        val payload = b64(parts[1])
         header.contains("WebPlayKid") || payload.contains("AMPWebPlay")
     }.getOrDefault(false)
 
+    private fun b64(part: String): String =
+        Base64.UrlSafe.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL).decode(part).decodeToString()
+
     /** A JWT's `exp` in millis, or null if this isn't one we can read. */
     private fun expiry(jwt: String): Long? = runCatching {
-        val payload = String(
-            Base64.getUrlDecoder().decode(jwt.split(".")[1]),
-            Charsets.UTF_8,
-        )
+        val payload = b64(jwt.split(".")[1])
         val seconds = Regex("\"exp\"\\s*:\\s*(\\d+)").find(payload)?.groupValues?.get(1)
         seconds?.toLong()?.times(1000)
     }.getOrDefault(null)

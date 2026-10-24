@@ -24,11 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitView
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.canvas.SpotifyToken
 import com.music.laya.data.spotify.SpotifyLibrary
-import com.music.laya.platform.HttpRequest
-import com.music.laya.platform.NetHttp
-import com.music.laya.platform.currentTimeMillis
-import com.music.laya.platform.ioDispatcher
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.close
 import com.music.laya.sharedui.resources.spotify_sign_in
@@ -36,17 +33,8 @@ import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
 import org.jetbrains.compose.resources.stringResource
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.NSDate
@@ -59,7 +47,6 @@ import platform.Foundation.NSHTTPCookieSecure
 import platform.Foundation.NSHTTPCookieValue
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
-import platform.Foundation.NSUUID
 import platform.Foundation.dateWithTimeIntervalSinceNow
 import platform.Foundation.distantPast
 import platform.UIKit.UIApplication
@@ -81,15 +68,13 @@ import platform.WebKit.WKWebsiteDataTypeSessionStorage
 import platform.darwin.NSObject
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 // Same as Android's SpotifyLoginScreen.
 private const val LOGIN_URL = "https://accounts.spotify.com/login?continue=https%3A%2F%2Fopen.spotify.com%2F"
 private val LOGIN_HOST_SUFFIXES = listOf("spotify.com", "scdn.co", "google.com", "gstatic.com", "facebook.com", "apple.com")
 
-/** The browser UA Spotify's token and canvas endpoints expect (Android's CANVAS_UA). */
-internal const val SPOTIFY_UA =
+/** The browser UA the web player is loaded with; the same as the shared canvas code's. */
+private const val SPOTIFY_UA =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
 private const val BRIDGE = "layaSpotifyToken"
@@ -119,72 +104,42 @@ private class TokenHandler(val onPayload: (String) -> Unit) : NSObject(), WKScri
  * Spotify session on iOS: the `sp_dc` cookie lives in the Keychain only, and the bearer / client tokens the web
  * player mints from it are held in memory. Mirrors Android's SpotifyToken (offscreen web-player harvest).
  */
-@OptIn(ExperimentalEncodingApi::class, kotlinx.cinterop.ExperimentalForeignApi::class)
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 internal object IosSpotify {
     private const val KEY = "spotify_sp_dc"
     private const val HARVEST_TIMEOUT_MS = 20_000L
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-    private val harvestMutex = Mutex()
 
-    private class Harvested(val token: String, val expiresAt: Long, val clientId: String?)
-    private class Session(val clientVersion: String, val deviceId: String)
-
-    private var accessToken: String? = null
-    private var accessExpiresAt = 0L
-    private var clientId: String? = null
-    private var clientToken: String? = null
-    private var clientExpiresAt = 0L
-    private var session: Session? = null
-
-    /** Before the first Spotify call: Keychain -> the shared setting flow (not its prefs), and the library's token source. */
+    /** Before the first Spotify call: Keychain -> the shared setting flow (not its prefs), and the shared token's harvester. */
     fun restore() {
         Keychain.get(KEY)?.let { AppSettings.spotifySpdcToken.value = it }
+        SpotifyToken.os = "ios"
+        SpotifyToken.osVersion = "18.0"
+        SpotifyToken.harvester = { cookie -> withTimeoutOrNull(HARVEST_TIMEOUT_MS) { harvest(cookie) } }
         SpotifyLibrary.auth = SpotifyLibrary.Auth {
-            accessToken()?.let { SpotifyLibrary.Tokens(it, clientToken()) }
+            SpotifyToken.accessToken()?.let { SpotifyLibrary.Tokens(it, SpotifyToken.clientToken()) }
         }
     }
 
     fun adopt(spDc: String) {
-        invalidate()
+        SpotifyToken.invalidate()
         Keychain.set(KEY, spDc)
         AppSettings.spotifySpdcToken.value = spDc
     }
 
     /** Forgets the cookie and signs the web view out of Spotify, or its jar would sign the next "Sign in" straight back in. */
     suspend fun signOut() {
-        invalidate()
+        SpotifyToken.invalidate()
         Keychain.set(KEY, null)
         AppSettings.spotifySpdcToken.value = ""
         IosAuth.deleteCookies { it.trimStart('.').endsWith("spotify.com") }
-    }
-
-    private fun invalidate() {
-        accessToken = null; accessExpiresAt = 0L; clientId = null; clientToken = null; clientExpiresAt = 0L
-    }
-
-    private fun nowMs() = currentTimeMillis()
-
-    /** The web player's bearer, cached until shortly before it expires; null when signed out or the harvest failed. */
-    suspend fun accessToken(): String? {
-        val cookie = AppSettings.spotifySpdcToken.value
-        if (cookie.isBlank()) return null
-        accessToken?.let { if (nowMs() < accessExpiresAt - 30_000) return it }
-        return harvestMutex.withLock {
-            accessToken?.let { if (nowMs() < accessExpiresAt - 30_000) return@withLock it }
-            val h = withTimeoutOrNull(HARVEST_TIMEOUT_MS) { harvest(cookie) } ?: return@withLock null
-            accessToken = h.token
-            accessExpiresAt = h.expiresAt
-            h.clientId?.let { clientId = it }
-            h.token
-        }
     }
 
     /**
      * Loads the real web player offscreen with the cookie applied and reads the token it mints for itself by
      * hooking fetch/XHR before its own bundle runs (see Android's SpotifyToken for why signing it ourselves fails).
      */
-    private suspend fun harvest(cookie: String): Harvested? = withContext(Dispatchers.Main) {
-        val done = CompletableDeferred<Harvested?>()
+    private suspend fun harvest(cookie: String): SpotifyToken.Harvested? = withContext(Dispatchers.Main) {
+        val done = CompletableDeferred<SpotifyToken.Harvested?>()
         val store = WKWebsiteDataStore.defaultDataStore()
         val sp = NSHTTPCookie.cookieWithProperties(
             mapOf(
@@ -200,9 +155,9 @@ internal object IosSpotify {
                 NSDate.distantPast,
             ) { c.resume(Unit) }
         }
-        val handler = TokenHandler { payload -> parseToken(payload)?.let { done.complete(it) } }
+        val handler = TokenHandler { payload -> SpotifyToken.parseHarvest(payload)?.let { done.complete(it) } }
         val controller = WKUserContentController().apply {
-            addUserScript(WKUserScript(HOOK_SCRIPT, WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentStart, false))
+            addUserScript(WKUserScript(SpotifyToken.hookScript("window.webkit.messageHandlers.$BRIDGE.postMessage"), WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentStart, false))
             addScriptMessageHandler(handler, BRIDGE)
         }
         val view = WKWebView(
@@ -220,101 +175,6 @@ internal object IosSpotify {
             view.removeFromSuperview()
         }
     }
-
-    private fun parseToken(payload: String): Harvested? = runCatching {
-        val root = json.parseToJsonElement(payload).jsonObject
-        val token = root["accessToken"]?.jsonPrimitive?.contentOrNull
-        // The anonymous token minted before the cookie takes effect can't read canvases; keep waiting for the real one.
-        if (token.isNullOrBlank() || root["isAnonymous"]?.jsonPrimitive?.contentOrNull == "true") return null
-        val expires = root["accessTokenExpirationTimestampMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
-            ?.takeIf { it > nowMs() } ?: (nowMs() + 3_600_000L)
-        Harvested(token, expires, root["clientId"]?.jsonPrimitive?.contentOrNull)
-    }.getOrNull()
-
-    /**
-     * The second header api-partner and spclient demand next to the bearer. Best-effort: null just means the
-     * caller sends the bearer alone. Needs [accessToken] to have succeeded once (the client id comes off it).
-     */
-    suspend fun clientToken(): String? = withContext(ioDispatcher) {
-        clientToken?.let { if (nowMs() < clientExpiresAt - 30_000) return@withContext it }
-        val id = clientId ?: return@withContext null
-        val s = session() ?: return@withContext null
-        val payload = buildJsonObject {
-            putJsonObject("client_data") {
-                put("client_version", s.clientVersion)
-                put("client_id", id)
-                putJsonObject("js_sdk_data") {
-                    put("device_brand", "unknown"); put("device_model", "unknown"); put("os", "ios")
-                    put("os_version", "18.0"); put("device_id", s.deviceId); put("device_type", "smartphone")
-                }
-            }
-        }
-        val body = runCatching {
-            NetHttp.execute(
-                HttpRequest(
-                    "https://clienttoken.spotify.com/v1/clienttoken", "POST",
-                    mapOf("Accept" to "application/json", "User-Agent" to SPOTIFY_UA),
-                    payload.toString().encodeToByteArray(),
-                    // Bare type, no charset: clienttoken 400s on the charset form.
-                    "application/json",
-                ),
-            ).takeIf { it.isSuccessful }?.text()
-        }.getOrNull() ?: return@withContext null
-        val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return@withContext null
-        if (root["response_type"]?.jsonPrimitive?.contentOrNull != "RESPONSE_GRANTED_TOKEN_RESPONSE") return@withContext null
-        val granted = root["granted_token"]?.jsonObject
-        val token = granted?.get("token")?.jsonPrimitive?.contentOrNull ?: return@withContext null
-        val ttl = granted["expires_after_seconds"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 3600L
-        clientToken = token
-        clientExpiresAt = nowMs() + ttl * 1000
-        token
-    }
-
-    /** Client version and device id, both off the plain web player page; fetched once per process. */
-    private fun session(): Session? {
-        session?.let { return it }
-        val response = runCatching {
-            NetHttp.execute(HttpRequest("https://open.spotify.com", headers = mapOf("User-Agent" to SPOTIFY_UA)))
-        }.getOrNull() ?: return null
-        val config = Regex("""<script id="appServerConfig" type="text/plain">([^<]+)</script>""")
-            .find(response.text())?.groupValues?.get(1) ?: return null
-        val version = runCatching {
-            json.parseToJsonElement(Base64.decode(config).decodeToString()).jsonObject["clientVersion"]?.jsonPrimitive?.contentOrNull
-        }.getOrNull() ?: return null
-        val spT = response.headers.entries.firstOrNull { it.key.equals("Set-Cookie", true) }?.value
-            ?.firstNotNullOfOrNull { Regex("""sp_t=([^;]+)""").find(it)?.groupValues?.get(1) }
-        return Session(version, spT ?: NSUUID().UUIDString).also { session = it }
-    }
-
-    private val HOOK_SCRIPT = """
-        (function () {
-          if (window.__layaTokenHook) return;
-          window.__layaTokenHook = true;
-          var report = function (body) {
-            try { window.webkit.messageHandlers.$BRIDGE.postMessage(String(body)); } catch (e) {}
-          };
-          var isToken = function (u) { try { return String(u).indexOf('/api/token') !== -1; } catch (e) { return false; } };
-          var origFetch = window.fetch;
-          if (origFetch) {
-            window.fetch = function (input, init) {
-              var url = (input && input.url) ? input.url : input;
-              var result = origFetch.apply(this, arguments);
-              if (isToken(url)) {
-                try { result.then(function (res) { res.clone().text().then(report).catch(function () {}); }).catch(function () {}); } catch (e) {}
-              }
-              return result;
-            };
-          }
-          var origOpen = XMLHttpRequest.prototype.open;
-          XMLHttpRequest.prototype.open = function (method, url) { this.__layaUrl = url; return origOpen.apply(this, arguments); };
-          var origSend = XMLHttpRequest.prototype.send;
-          XMLHttpRequest.prototype.send = function () {
-            var xhr = this;
-            try { xhr.addEventListener('load', function () { if (isToken(xhr.__layaUrl)) { try { report(xhr.responseText); } catch (e) {} } }); } catch (e) {}
-            return origSend.apply(this, arguments);
-          };
-        })();
-    """.trimIndent()
 }
 
 /** Full-screen Spotify sign-in: the real accounts page, closing itself once it lands on open.spotify.com with an `sp_dc` cookie. */

@@ -1,9 +1,8 @@
 package com.music.laya.data.canvas
 
 import com.music.laya.data.DebugLog as Log
-import com.music.laya.data.Http
-import com.google.protobuf.CodedInputStream
-import com.google.protobuf.CodedOutputStream
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -13,11 +12,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.ByteArrayOutputStream
 
 /**
  * Spotify's own Canvas — the feature these other providers are named after.
@@ -129,12 +123,10 @@ object SpotifyCanvas {
             }
         }.toString()
 
-        val url = PATHFINDER_URL.toHttpUrl().newBuilder()
-            .addQueryParameter("operationName", "searchTracks")
-            .addQueryParameter("variables", variables)
-            .addQueryParameter("extensions", extensions)
-            .build()
-            .toString()
+        val url = canvasUrl(
+            PATHFINDER_URL,
+            "operationName" to "searchTracks", "variables" to variables, "extensions" to extensions,
+        )
 
         val headers = mapOf(
             "Authorization" to "Bearer $token",
@@ -171,12 +163,7 @@ object SpotifyCanvas {
 
     private fun searchViaRest(title: String, artist: String, album: String?, token: String): TrackHit? {
         val query = listOfNotNull(title, artist, album).joinToString(" ")
-        val url = SEARCH_URL.toHttpUrl().newBuilder()
-            .addQueryParameter("q", query)
-            .addQueryParameter("type", "track")
-            .addQueryParameter("limit", "10")
-            .build()
-            .toString()
+        val url = canvasUrl(SEARCH_URL, "q" to query, "type" to "track", "limit" to "10")
 
         val (code, body) = canvasGetWithStatus(url, authHeaders(token))
         if (body == null) {
@@ -216,12 +203,7 @@ object SpotifyCanvas {
      */
     suspend fun searchAlbum(album: String, artist: String): CanvasArtwork? {
         val token = SpotifyToken.accessToken() ?: return null
-        val url = SEARCH_URL.toHttpUrl().newBuilder()
-            .addQueryParameter("q", "$album $artist")
-            .addQueryParameter("type", "album")
-            .addQueryParameter("limit", "10")
-            .build()
-            .toString()
+        val url = canvasUrl(SEARCH_URL, "q" to "$album $artist", "type" to "album", "limit" to "10")
 
         val body = canvasGet(url, authHeaders(token)) ?: return null
         val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
@@ -252,10 +234,7 @@ object SpotifyCanvas {
     }
 
     private fun firstTrackUri(albumId: String, token: String): String? {
-        val url = "$ALBUM_TRACKS_URL/$albumId/tracks".toHttpUrl().newBuilder()
-            .addQueryParameter("limit", "1")
-            .build()
-            .toString()
+        val url = canvasUrl("$ALBUM_TRACKS_URL/$albumId/tracks", "limit" to "1")
         val body = canvasGet(url, authHeaders(token)) ?: return null
         val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
         return root["items"]?.jsonArray?.firstOrNull()
@@ -316,18 +295,16 @@ object SpotifyCanvas {
 
     private fun fetchCanvasViaPathfinder(trackUri: String, token: String, isRetry: Boolean = false): SpotifyCanvasQuery.Answer {
         val hash = queryHashes.canvasHash(forceRefresh = isRetry)
-        val request = Request.Builder()
-            .url(SpotifyCanvasQuery.ENDPOINT)
-            .post(SpotifyCanvasQuery.requestBody(trackUri, hash).toRequestBody("application/json".toMediaType()))
-            .apply { authHeaders(token).forEach { (name, value) -> header(name, value) } }
-            .header("App-platform", "WebPlayer")
-            .header("Accept", "application/json")
-            .header("Accept-Language", "en")
-            .build()
+        val request = HttpRequest(
+            SpotifyCanvasQuery.ENDPOINT, "POST",
+            authHeaders(token) + mapOf(
+                "App-platform" to "WebPlayer", "Accept" to "application/json", "Accept-Language" to "en",
+            ),
+            SpotifyCanvasQuery.requestBody(trackUri, hash).encodeToByteArray(),
+            "application/json",
+        )
         val (code, body) = runCatching {
-            Http.client.newCall(request).execute().use { response ->
-                response.code to if (response.isSuccessful) response.body.string() else null
-            }
+            NetHttp.execute(request).let { it.code to if (it.isSuccessful) it.text() else null }
         }.getOrElse { return SpotifyCanvasQuery.Answer.Failed("request threw: ${it.message}") }
         if (body == null) return SpotifyCanvasQuery.Answer.Failed("http $code")
 
@@ -341,26 +318,25 @@ object SpotifyCanvas {
 
     // ---- canvaz-cache: protobuf request/response (fallback) ------------
 
-    private data class CanvasHit(val id: String?, val url: String, val trackUri: String?)
+    internal data class CanvasHit(val id: String?, val url: String, val trackUri: String?)
 
     private fun fetchCanvasViaCanvaz(trackUri: String, token: String): String? {
         val requestBody = encodeCanvasRequest(trackUri)
-            .toRequestBody("application/protobuf".toMediaType())
-        val request = Request.Builder()
-            .url(CANVAS_URL)
-            .post(requestBody)
-            .apply { authHeaders(token).forEach { (name, value) -> header(name, value) } }
-            .header("Accept", "application/protobuf")
-            .header("Accept-Language", "en")
-            .header("User-Agent", SPOTIFY_APP_UA)
-            .build()
+        val request = HttpRequest(
+            CANVAS_URL, "POST",
+            authHeaders(token) + mapOf(
+                "Accept" to "application/protobuf", "Accept-Language" to "en", "User-Agent" to SPOTIFY_APP_UA,
+            ),
+            requestBody,
+            "application/protobuf",
+        )
 
         val bytes = runCatching {
-            Http.client.newCall(request).execute().use { response ->
+            NetHttp.execute(request).let { response ->
                 if (!response.isSuccessful) {
                     Log.w(TAG, "canvaz-cache http ${response.code} for $trackUri")
                 }
-                if (response.isSuccessful) response.body.bytes() else null
+                if (response.isSuccessful) response.body else null
             }
         }.onFailure { Log.w(TAG, "canvaz-cache request threw: ${it.message}") }.getOrNull() ?: return null
 
@@ -374,7 +350,7 @@ object SpotifyCanvas {
         val structured = hits.firstOrNull { it.trackUri == trackUri }?.url ?: hits.firstOrNull()?.url
         if (structured != null) return structured
 
-        val fallback = CANVAS_URL_REGEX.find(String(bytes, Charsets.ISO_8859_1))?.value
+        val fallback = CANVAS_URL_REGEX.find(CharArray(bytes.size) { (bytes[it].toInt() and 0xFF).toChar() }.concatToString())?.value
         if (fallback == null) {
             Log.d(TAG, "canvaz-cache had nothing for $trackUri")
         } else {
@@ -384,53 +360,27 @@ object SpotifyCanvas {
     }
 
     /** `CanvasRequest { repeated Track tracks = 1; Track { string track_uri = 1; } }` */
-    private fun encodeCanvasRequest(trackUri: String): ByteArray {
-        val track = ByteArrayOutputStream().let { buffer ->
-            val out = CodedOutputStream.newInstance(buffer)
-            out.writeString(1, trackUri)
-            out.flush()
-            buffer.toByteArray()
-        }
-        val request = ByteArrayOutputStream()
-        val out = CodedOutputStream.newInstance(request)
-        out.writeByteArray(1, track)
-        out.flush()
-        return request.toByteArray()
-    }
+    internal fun encodeCanvasRequest(trackUri: String): ByteArray =
+        CanvasProto.field(1, CanvasProto.string(1, trackUri))
 
     /**
      * `CanvasResponse { repeated Canvas canvases = 1; }`, `Canvas { id = 1;
      * canvas_url = 2; ...; track_uri = 5; ... }` — only the fields this needs
      * are read, everything else is skipped rather than modelled.
      */
-    private fun decodeCanvasResponse(bytes: ByteArray): List<CanvasHit> = runCatching {
-        val hits = mutableListOf<CanvasHit>()
-        val input = CodedInputStream.newInstance(bytes)
-        while (!input.isAtEnd) {
-            val tag = input.readTag()
-            if (tag == 0) break
-            if (tag ushr 3 == 1) {
-                decodeCanvas(input.readByteArray())?.let(hits::add)
-            } else {
-                input.skipField(tag)
-            }
-        }
-        hits
+    internal fun decodeCanvasResponse(bytes: ByteArray): List<CanvasHit> = runCatching {
+        CanvasProto.fields(bytes).filter { it.first == 1 }.mapNotNull { decodeCanvas(it.second) }
     }.getOrElse { emptyList() }
 
     private fun decodeCanvas(bytes: ByteArray): CanvasHit? = runCatching {
         var id: String? = null
         var url: String? = null
         var trackUri: String? = null
-        val input = CodedInputStream.newInstance(bytes)
-        while (!input.isAtEnd) {
-            val tag = input.readTag()
-            if (tag == 0) break
-            when (tag ushr 3) {
-                1 -> id = input.readString()
-                2 -> url = input.readString()
-                5 -> trackUri = input.readString()
-                else -> input.skipField(tag)
+        for ((number, payload) in CanvasProto.fields(bytes)) {
+            when (number) {
+                1 -> id = payload.decodeToString()
+                2 -> url = payload.decodeToString()
+                5 -> trackUri = payload.decodeToString()
             }
         }
         url?.let { CanvasHit(id, it, trackUri) }

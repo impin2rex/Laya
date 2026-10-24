@@ -1,22 +1,15 @@
 package com.music.laya.data.canvas
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Bitmap
-import android.webkit.CookieManager
-import android.webkit.JavascriptInterface
-import android.webkit.WebStorage
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import com.music.laya.data.DebugLog as Log
-import com.music.laya.data.Http
 import com.music.laya.data.settings.AppSettings
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.currentTimeMillis
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.concurrent.Volatile
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -24,10 +17,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.Base64
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.random.Random
 
 /**
  * The bearer token behind Spotify's own web player, minted from the
@@ -35,21 +27,30 @@ import java.util.Base64
  * app credential — there is no public API for a track's Canvas, so this walks
  * the same door the web player itself uses to fetch one.
  *
- * Call [init] once at process start, same as [CanvasCache] and the other
- * app-scoped singletons — the WebView harvest below needs a [Context] and
- * none of the suspend call chain that reaches [accessToken] has one to hand.
+ * The offscreen-web-player harvest itself is the one platform-specific part:
+ * each host installs [harvester] (Android: a WebView, iOS: a WKWebView) and
+ * [os]/[osVersion] for the client token, once at startup. Everything else —
+ * caching, the client token, the session lookup — is shared.
  */
-internal object SpotifyToken {
+@OptIn(ExperimentalEncodingApi::class)
+object SpotifyToken {
+
+    /** What a harvest yields: the bearer, when it dies, and the client id the client token needs. */
+    class Harvested(val token: String, val expiresAt: Long, val clientId: String?)
+
+    /** Mints a logged-in web-player token for the `sp_dc` cookie, or null on failure/timeout. Never throws. */
+    @Volatile var harvester: (suspend (cookie: String) -> Harvested?)? = null
+    @Volatile var os = "unknown"
+    @Volatile var osVersion = ""
+
 
     private const val TAG = "SpotifyToken"
-    private const val BRIDGE_NAME = "LayaSpotifyTokenBridge"
-    private const val HARVEST_TIMEOUT_MS = 20_000L
     private const val DEFAULT_TOKEN_LIFETIME_MS = 3_600_000L
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     private val harvestMutex = Mutex()
 
-    @Volatile private var appContext: Context? = null
+    private val guard = SynchronizedObject()
 
     @Volatile private var cachedAccessToken: String? = null
     @Volatile private var accessTokenExpiresAtMs = 0L
@@ -60,11 +61,6 @@ internal object SpotifyToken {
     @Volatile private var clientTokenExpiresAtMs = 0L
 
     private data class SessionInfo(val clientVersion: String, val deviceId: String)
-    private data class HarvestedToken(val token: String, val expiresAt: Long, val clientId: String?)
-
-    fun init(context: Context) {
-        appContext = context.applicationContext
-    }
 
     fun invalidate() {
         cachedAccessToken = null
@@ -89,20 +85,21 @@ internal object SpotifyToken {
         val cookie = AppSettings.spotifySpdcToken.value
         if (cookie.isBlank()) return null
 
-        val now = System.currentTimeMillis()
+        val now = currentTimeMillis()
         cachedAccessToken?.let { if (now < accessTokenExpiresAtMs - 30_000) return it }
 
         return harvestMutex.withLock {
-            val stillNow = System.currentTimeMillis()
+            val stillNow = currentTimeMillis()
             cachedAccessToken?.let { if (stillNow < accessTokenExpiresAtMs - 30_000) return@withLock it }
 
-            val context = appContext
-            if (context == null) {
-                Log.w(TAG, "SpotifyToken.init was never called; no context for the harvest")
+            val harvest = harvester
+            if (harvest == null) {
+                Log.w(TAG, "no token harvester installed on this platform")
                 return@withLock null
             }
 
-            val harvested = withContext(Dispatchers.Main) { harvestViaWebView(context, cookie) }
+            Log.d(TAG, "harvesting web player token")
+            val harvested = harvest(cookie)
             if (harvested == null) {
                 Log.w(TAG, "token harvest failed or timed out")
                 return@withLock null
@@ -111,108 +108,46 @@ internal object SpotifyToken {
             cachedAccessToken = harvested.token
             accessTokenExpiresAtMs = harvested.expiresAt
             harvested.clientId?.let { cachedClientId = it }
-            Log.d(TAG, "harvested access token, good until ${java.util.Date(harvested.expiresAt)}")
+            Log.d(TAG, "harvested access token, good until ${harvested.expiresAt}")
             harvested.token
         }
     }
 
     /**
-     * Spotify retired the endpoint this used to hit directly with a signed
-     * request; its replacement (`/api/token`) checks a TOTP the web player
-     * computes from a secret buried in its own JS bundle. That part is
-     * reproducible — the secret is short-lived but published — and doing so
-     * does get a 200 back with a token. What it doesn't get back is a token
-     * anything downstream honours: api.spotify.com and spclient both turn a
-     * forged one away with a 429 that reads exactly like rate limiting, right
-     * up until it fires on the very first request of a session. So rather
-     * than sign the request ourselves, this loads open.spotify.com for real
-     * in an offscreen WebView with the cookie applied, and reads the token
-     * the page mints for itself by hooking fetch/XHR before its own bundle
-     * runs.
+     * Reads one `/api/token` response body the hooked page reported. Null for
+     * anything unusable — and for the anonymous token the player also mints
+     * before the cookie takes effect, which can't read canvases, so a harvester
+     * keeps waiting for the logged-in one.
      */
-    @SuppressLint("SetJavaScriptEnabled")
-    private suspend fun harvestViaWebView(context: Context, cookie: String): HarvestedToken? {
-        val deferred = CompletableDeferred<HarvestedToken?>()
-
-        val cookieManager = CookieManager.getInstance().apply {
-            setAcceptCookie(true)
-            setCookie("https://open.spotify.com/", "sp_dc=$cookie; Domain=.spotify.com; Path=/; Secure")
-            setCookie("https://accounts.spotify.com/", "sp_dc=$cookie; Domain=.spotify.com; Path=/; Secure")
-            flush()
-        }
-        // The player caches its token in web storage and skips a fresh
-        // /api/token request if a live one is already sitting there, leaving
-        // the hook with nothing to see — wipe storage so every harvest forces
-        // a real mint.
-        runCatching { WebStorage.getInstance().deleteAllData() }
-
-        var webView: WebView? = null
-        return try {
-            webView = WebView(context).apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.userAgentString = CANVAS_UA
-                cookieManager.setAcceptThirdPartyCookies(this, true)
-                addJavascriptInterface(TokenBridge(deferred), BRIDGE_NAME)
-
-                webViewClient = object : WebViewClient() {
-                    override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
-                        super.onPageStarted(view, url, favicon)
-                        view.evaluateJavascript(HOOK_SCRIPT, null)
-                    }
-
-                    override fun onPageFinished(view: WebView, url: String?) {
-                        super.onPageFinished(view, url)
-                        // Re-assert in case the player navigated client-side
-                        // after the onPageStarted injection ran.
-                        view.evaluateJavascript(HOOK_SCRIPT, null)
-                    }
-                }
-                loadUrl("https://open.spotify.com/")
-            }
-
-            withTimeoutOrNull(HARVEST_TIMEOUT_MS) { deferred.await() }
-        } catch (e: Exception) {
-            Log.w(TAG, "token harvest threw: ${e.message}")
-            null
-        } finally {
-            runCatching {
-                webView?.removeJavascriptInterface(BRIDGE_NAME)
-                webView?.stopLoading()
-                webView?.destroy()
-            }
-        }
+    fun parseHarvest(payload: String?): Harvested? {
+        if (payload.isNullOrBlank()) return null
+        return runCatching {
+            val root = json.parseToJsonElement(payload).jsonObject
+            val token = root["accessToken"]?.jsonPrimitive?.contentOrNull
+            val anonymous = root["isAnonymous"]?.jsonPrimitive?.contentOrNull
+                ?.toBooleanStrictOrNull() ?: false
+            if (token.isNullOrBlank() || anonymous) return null
+            val expiresAt = root["accessTokenExpirationTimestampMs"]?.jsonPrimitive?.contentOrNull
+                ?.toLongOrNull()?.takeIf { it > currentTimeMillis() }
+                ?: (currentTimeMillis() + DEFAULT_TOKEN_LIFETIME_MS)
+            Harvested(token, expiresAt, root["clientId"]?.jsonPrimitive?.contentOrNull)
+        }.getOrNull()
     }
 
-    /** Receives raw `/api/token` response bodies from the hooked page. */
-    private class TokenBridge(private val deferred: CompletableDeferred<HarvestedToken?>) {
-        @JavascriptInterface
-        fun onTokenPayload(payload: String?) {
-            if (payload.isNullOrBlank() || deferred.isCompleted) return
-            runCatching {
-                val root = json.parseToJsonElement(payload).jsonObject
-                val token = root["accessToken"]?.jsonPrimitive?.contentOrNull
-                val anonymous = root["isAnonymous"]?.jsonPrimitive?.contentOrNull
-                    ?.toBooleanStrictOrNull() ?: false
-                // The player also mints an anonymous token before the cookie
-                // takes effect; that one can't read canvases, so keep waiting
-                // for the logged-in one.
-                if (token.isNullOrBlank() || anonymous) return
-                val expiresAt = root["accessTokenExpirationTimestampMs"]?.jsonPrimitive?.contentOrNull
-                    ?.toLongOrNull()?.takeIf { it > System.currentTimeMillis() }
-                    ?: (System.currentTimeMillis() + DEFAULT_TOKEN_LIFETIME_MS)
-                val clientId = root["clientId"]?.jsonPrimitive?.contentOrNull
-                deferred.complete(HarvestedToken(token, expiresAt, clientId))
-            }
-        }
-    }
+    // The web player's token comes from a real page load, not a signed request: Spotify retired the old
+    // endpoint, and its replacement (`/api/token`) checks a TOTP whose forged tokens api.spotify.com and spclient
+    // turn away with a 429 that reads like rate limiting. The platform harvesters load open.spotify.com offscreen
+    // with the cookie applied and hook fetch/XHR before the player's own bundle runs, via [HOOK_SCRIPT].
+
+    /** Injected by the platform harvesters; reports raw `/api/token` response bodies to `$BRIDGE_NAME`-style bridges. */
+    fun hookScript(report: String): String = HOOK_SCRIPT.replace("__REPORT__", report)
 
     private val HOOK_SCRIPT = """
         (function () {
           if (window.__layaTokenHook) return;
           window.__layaTokenHook = true;
           var report = function (body) {
-            try { $BRIDGE_NAME.onTokenPayload(body); } catch (e) {}
+            try { __REPORT__(body); } catch (e) {}
           };
           var isToken = function (u) {
             try { return String(u).indexOf('/api/token') !== -1; } catch (e) { return false; }
@@ -260,17 +195,16 @@ internal object SpotifyToken {
      * endpoint does with that. Requires [accessToken] to have already
      * succeeded once, since the client id it needs comes off that response.
      */
-    @Synchronized
-    fun clientToken(): String? {
-        val now = System.currentTimeMillis()
-        cachedClientToken?.let { if (now < clientTokenExpiresAtMs - 30_000) return it }
+    fun clientToken(): String? = synchronized(guard) {
+        val now = currentTimeMillis()
+        cachedClientToken?.let { if (now < clientTokenExpiresAtMs - 30_000) return@synchronized it }
 
         val clientId = cachedClientId
         if (clientId == null) {
             Log.w(TAG, "no client id yet (access token not minted); skipping client token")
-            return null
+            return@synchronized null
         }
-        val session = session() ?: return null
+        val session = session() ?: return@synchronized null
 
         val payload = buildJsonObject {
             putJsonObject("client_data") {
@@ -279,8 +213,8 @@ internal object SpotifyToken {
                 putJsonObject("js_sdk_data") {
                     put("device_brand", "unknown")
                     put("device_model", "unknown")
-                    put("os", "android")
-                    put("os_version", android.os.Build.VERSION.RELEASE.orEmpty())
+                    put("os", os)
+                    put("os_version", osVersion)
                     put("device_id", session.deviceId)
                     put("device_type", "smartphone")
                 }
@@ -292,40 +226,40 @@ internal object SpotifyToken {
         // "application/json; charset=utf-8", and clienttoken 400s on that
         // exact header rather than the bare "application/json" the real web
         // player sends.
-        val request = Request.Builder()
-            .url("https://clienttoken.spotify.com/v1/clienttoken")
-            .post(payload.toString().toByteArray(Charsets.UTF_8).toRequestBody("application/json".toMediaType()))
-            .header("Accept", "application/json")
-            .header("User-Agent", CANVAS_UA)
-            .build()
+        val request = HttpRequest(
+            "https://clienttoken.spotify.com/v1/clienttoken", "POST",
+            mapOf("Accept" to "application/json", "User-Agent" to CANVAS_UA),
+            payload.toString().encodeToByteArray(),
+            "application/json",
+        )
 
         var lastCode = -1
         val body = runCatching {
-            Http.client.newCall(request).execute().use { response ->
+            NetHttp.execute(request).let { response ->
                 lastCode = response.code
-                if (response.isSuccessful) response.body.string() else null
+                if (response.isSuccessful) response.text() else null
             }
         }.onFailure { Log.w(TAG, "client-token request threw: ${it.message}") }.getOrNull()
         if (body == null) {
             Log.w(TAG, "client-token request failed, http $lastCode")
-            return null
+            return@synchronized null
         }
 
         val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull()
         if (root == null) {
             Log.w(TAG, "client-token response wasn't JSON")
-            return null
+            return@synchronized null
         }
         val responseType = root["response_type"]?.jsonPrimitive?.contentOrNull
         if (responseType != "RESPONSE_GRANTED_TOKEN_RESPONSE") {
             Log.w(TAG, "client-token request rejected: $responseType")
-            return null
+            return@synchronized null
         }
         val granted = root["granted_token"]?.jsonObject
         val token = granted?.get("token")?.jsonPrimitive?.contentOrNull
         if (token == null) {
             Log.w(TAG, "client-token response had no granted_token.token")
-            return null
+            return@synchronized null
         }
         val ttlSeconds = granted["expires_after_seconds"]?.jsonPrimitive?.contentOrNull
             ?.toLongOrNull() ?: 3600L
@@ -333,7 +267,7 @@ internal object SpotifyToken {
         cachedClientToken = token
         clientTokenExpiresAtMs = now + ttlSeconds * 1000
         Log.d(TAG, "minted client token, good for ${ttlSeconds}s")
-        return token
+        token
     }
 
     /**
@@ -346,18 +280,11 @@ internal object SpotifyToken {
     private fun session(): SessionInfo? {
         cachedSession?.let { return it }
 
-        val request = Request.Builder()
-            .url("https://open.spotify.com")
-            .header("User-Agent", CANVAS_UA)
-            .build()
         val (html, deviceId) = runCatching {
-            Http.client.newCall(request).execute().use { response ->
-                val body = response.body.string()
-                val spT = response.headers("Set-Cookie").firstNotNullOfOrNull { header ->
-                    Regex("""sp_t=([^;]+)""").find(header)?.groupValues?.get(1)
-                }
-                body to spT
-            }
+            val response = NetHttp.execute(HttpRequest("https://open.spotify.com", headers = mapOf("User-Agent" to CANVAS_UA)))
+            val spT = response.headers.entries.firstOrNull { it.key.equals("Set-Cookie", ignoreCase = true) }?.value
+                ?.firstNotNullOfOrNull { header -> Regex("""sp_t=([^;]+)""").find(header)?.groupValues?.get(1) }
+            response.text() to spT
         }.getOrNull() ?: (null to null)
         if (html == null) {
             Log.w(TAG, "couldn't load the web player page for session info")
@@ -371,7 +298,7 @@ internal object SpotifyToken {
             return null
         }
         val clientVersion = runCatching {
-            val configJson = String(Base64.getDecoder().decode(configB64), Charsets.UTF_8)
+            val configJson = Base64.decode(configB64).decodeToString()
             json.parseToJsonElement(configJson).jsonObject["clientVersion"]?.jsonPrimitive?.contentOrNull
         }.getOrNull()
         if (clientVersion == null) {
@@ -379,8 +306,13 @@ internal object SpotifyToken {
             return null
         }
 
-        val session = SessionInfo(clientVersion, deviceId ?: java.util.UUID.randomUUID().toString())
+        val session = SessionInfo(clientVersion, deviceId ?: randomDeviceId())
         cachedSession = session
         return session
     }
+
+    /** A random UUID-shaped id, for when the page hands out no `sp_t` cookie. */
+    private fun randomDeviceId(): String =
+        Random.nextBytes(16).joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
+            .let { "${it.take(8)}-${it.substring(8, 12)}-${it.substring(12, 16)}-${it.substring(16, 20)}-${it.drop(20)}" }
 }

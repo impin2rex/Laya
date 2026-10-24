@@ -3,7 +3,9 @@ package com.music.laya.data.canvas
 import com.music.laya.data.DebugLog as Log
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -51,9 +53,16 @@ object CanvasRepository {
      */
     private class Entry(val artwork: CanvasArtwork?, val withAlbum: Boolean)
 
-    private val cache = object : LinkedHashMap<String, Entry>(CACHE_SIZE, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>) =
-            size > CACHE_SIZE
+    // Insertion-ordered; [lookup] and [store] keep it least-recently-used.
+    private val cache = LinkedHashMap<String, Entry>()
+    private val guard = SynchronizedObject()
+
+    private fun lookup(key: String): Entry? = synchronized(guard) { cache.remove(key)?.also { cache[key] = it } }
+
+    private fun store(key: String, entry: Entry) = synchronized(guard) {
+        cache.remove(key)
+        cache[key] = entry
+        if (cache.size > CACHE_SIZE) cache.remove(cache.keys.first())
     }
 
     // Skipping through a queue fires a lookup per track. Serialising them
@@ -88,6 +97,7 @@ object CanvasRepository {
         val spotifyFirst = AppSettings.prioritizeSpotifyCanvas.value
         val key = cacheKey("song|${song.videoId}", spotifyFirst)
 
+        Log.d(TAG, "lookup '$title' by '$artist' (album '$album', spotifyFirst=$spotifyFirst)")
         return resolve(key, album != null) {
             if (spotifyFirst) {
                 firstHit(
@@ -119,7 +129,7 @@ object CanvasRepository {
             base = "song|${song.videoId}",
             spotifyFirst = AppSettings.prioritizeSpotifyCanvas.value,
         )
-        return synchronized(cache) { cache[key]?.artwork }
+        return lookup(key)?.artwork
     }
 
     /**
@@ -164,11 +174,10 @@ object CanvasRepository {
         withAlbum: Boolean,
         lookUp: suspend () -> CanvasArtwork?,
     ): CanvasArtwork? = lock.withLock {
-        synchronized(cache) {
-            cache[key]?.let { if (it.reusable(withAlbum)) return@withLock it.artwork }
-        }
-        val found = withContext(Dispatchers.IO) { lookUp() }
-        synchronized(cache) { cache[key] = Entry(found, withAlbum) }
+        lookup(key)?.let { if (it.reusable(withAlbum)) return@withLock it.artwork }
+        val found = withContext(ioDispatcher) { lookUp() }
+        store(key, Entry(found, withAlbum))
+        Log.d(TAG, "lookup settled: ${found?.let { "canvas via ${it.source}" } ?: "no canvas"} (withAlbum=$withAlbum)")
         found
     }
 
@@ -194,15 +203,20 @@ object CanvasRepository {
         vararg sources: suspend () -> CanvasArtwork?,
         accept: (CanvasArtwork) -> Boolean,
     ): CanvasArtwork? {
-        for (source in sources) {
+        for ((index, source) in sources.withIndex()) {
+            Log.d(TAG, "trying source #$index")
             val found = runCatching { source() }
                 .onFailure { Log.d(TAG, "source failed: ${it.message}") }
                 .getOrNull()
-                ?: continue
-            if (!accept(found)) {
-                Log.d(TAG, "rejected '${found.title}' by '${found.artist}'")
+            if (found == null) {
+                Log.d(TAG, "source #$index: no canvas")
                 continue
             }
+            if (!accept(found)) {
+                Log.d(TAG, "rejected '${found.title}' by '${found.artist}' (album '${found.album}')")
+                continue
+            }
+            Log.d(TAG, "source #$index: canvas url found")
             return found
         }
         return null

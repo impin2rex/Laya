@@ -1,6 +1,10 @@
 package com.music.laya.data.canvas
 
 import com.music.laya.data.DebugLog as Log
+import com.music.laya.platform.currentTimeMillis
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlin.concurrent.Volatile
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -97,17 +101,18 @@ object CommunityCanvas {
         )
     }
 
-    @Synchronized
-    private fun manifest(): List<Entry> {
-        val now = System.currentTimeMillis()
-        if (entries.isNotEmpty() && now - fetchedAtMs < TTL_MS) return entries
+    private val guard = SynchronizedObject()
+
+    private fun manifest(): List<Entry> = synchronized(guard) {
+        val now = currentTimeMillis()
+        if (entries.isNotEmpty() && now - fetchedAtMs < TTL_MS) return@synchronized entries
 
         val body = canvasGet(MANIFEST, mapOf("User-Agent" to CANVAS_UA))
         if (body == null) {
             // Serve whatever we already have rather than losing canvas
             // entirely for the next half hour because one fetch failed.
             fetchedAtMs = now
-            return entries
+            return@synchronized entries
         }
 
         val parsed = runCatching {
@@ -128,6 +133,6 @@ object CommunityCanvas {
             entries = parsed
         }
         fetchedAtMs = now
-        return entries
+        entries
     }
 }

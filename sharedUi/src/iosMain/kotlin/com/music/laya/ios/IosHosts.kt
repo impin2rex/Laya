@@ -3,6 +3,7 @@ package com.music.laya.ios
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.music.laya.data.canvas.CanvasArtwork
+import com.music.laya.data.canvas.CanvasRepository
 import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsTranslation
 import com.music.laya.data.model.Song
@@ -45,8 +46,8 @@ internal object IosAppUiHost : AppUiHost {
 internal object IosPlayerHost : PlayerHost {
     override val settings: PlayerSettingsSource = IosPlayerSettings
 
-    override fun cachedCanvas(song: Song): CanvasArtwork? = IosCanvas.cached(song)
-    override suspend fun canvasFor(song: Song): CanvasArtwork? = IosCanvas.canvasFor(song)
+    override fun cachedCanvas(song: Song): CanvasArtwork? = CanvasRepository.cached(song)
+    override suspend fun canvasFor(song: Song): CanvasArtwork? = CanvasRepository.canvasFor(song)
 
     @Composable
     override fun CanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) = IosCanvasVideo(spec, modifier)

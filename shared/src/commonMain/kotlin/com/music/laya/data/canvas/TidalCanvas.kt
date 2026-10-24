@@ -7,8 +7,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import java.util.Locale
 
 /**
  * Tidal's "video cover" — a square looping clip some albums ship instead of a
@@ -32,18 +30,14 @@ object TidalCanvas {
 
     /** Tidal's catalogue is regional, and so is which albums have a cover. */
     private val countryCode: String by lazy {
-        Locale.getDefault().country.takeIf { it.length == 2 }?.uppercase(Locale.ROOT) ?: "US"
+        deviceCountry() ?: "US"
     }
 
     fun search(title: String, artist: String, album: String?): CanvasArtwork? {
         val query = if (album.isNullOrBlank()) "$artist $title" else "$album $artist $title"
-        val url = SEARCH.toHttpUrl().newBuilder()
-            .addQueryParameter("query", query)
-            .addQueryParameter("limit", "10")
-            .addQueryParameter("types", "TRACKS")
-            .addQueryParameter("countryCode", countryCode)
-            .build()
-            .toString()
+        val url = canvasUrl(
+            SEARCH, "query" to query, "limit" to "10", "types" to "TRACKS", "countryCode" to countryCode,
+        )
 
         val body = canvasGet(url, mapOf("X-Tidal-Token" to EMBED_TOKEN, "User-Agent" to CANVAS_UA))
             ?: return null
@@ -95,13 +89,9 @@ object TidalCanvas {
      * finding a song that happens to sit on the right record.
      */
     fun searchAlbum(album: String, artist: String): CanvasArtwork? {
-        val url = SEARCH.toHttpUrl().newBuilder()
-            .addQueryParameter("query", "$album $artist")
-            .addQueryParameter("limit", "10")
-            .addQueryParameter("types", "ALBUMS")
-            .addQueryParameter("countryCode", countryCode)
-            .build()
-            .toString()
+        val url = canvasUrl(
+            SEARCH, "query" to "$album $artist", "limit" to "10", "types" to "ALBUMS", "countryCode" to countryCode,
+        )
 
         val body = canvasGet(url, mapOf("X-Tidal-Token" to EMBED_TOKEN, "User-Agent" to CANVAS_UA))
             ?: return null
