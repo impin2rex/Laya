@@ -40,6 +40,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import com.music.laya.data.model.Account
+import com.music.laya.data.model.SPOTIFY_MISSING_PREFIX
+import com.music.laya.data.model.SPOTIFY_PENDING_PREFIX
+import com.music.laya.data.spotify.SPOTIFY_PAGE_PREFIX
+import com.music.laya.data.spotify.SpotifyImporter
+import com.music.laya.data.spotify.SpotifyLibrary
+import com.music.laya.data.spotify.SpotifyTrack
+import com.music.laya.sharedui.resources.spotify_empty_tracks
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import org.jetbrains.compose.resources.getString
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.sharedui.resources.connected
@@ -80,6 +92,7 @@ internal sealed interface IosPage {
     class Mood(val item: MoodGenre, val shelves: UiState<List<HomeShelf>>) : IosPage
     data object Settings : IosPage
     data object Account : IosPage
+    data object Spotify : IosPage
     data object Equalizer : IosPage
     class History(val songs: UiState<List<Song>>) : IosPage
     class ShowAll(val shelf: HomeShelf) : IosPage
@@ -131,6 +144,45 @@ internal suspend fun loadDetail(base: DetailPage): DetailPage {
                 thumbnailUrl = fallback ?: header?.thumbnailUrl,
             )
         }, { base.copy(songs = UiState.Error(friendly(it))) })
+    }
+}
+
+/**
+ * A Spotify playlist as an ordinary playlist page (Android's MainViewModel.openSpotifyPage): rows go up as read, each
+ * pending its YouTube Music match, then are swapped in place. [update] applies a change to the page and returns false
+ * once the page is no longer open.
+ */
+internal suspend fun loadSpotifyPage(browseId: String, update: ((DetailPage) -> DetailPage) -> Boolean) = coroutineScope {
+    val playlistId = browseId.removePrefix(SPOTIFY_PAGE_PREFIX)
+    fun setSongs(songs: UiState<List<Song>>) = update { it.copy(songs = songs) }
+    launch { runCatching { SpotifyLibrary.cover(playlistId) }.getOrNull()?.let { cover -> update { it.copy(thumbnailUrl = cover) } } }
+    fun SpotifyTrack.pending() = Song(
+        videoId = SPOTIFY_PENDING_PREFIX + id,
+        title = title,
+        artist = artist,
+        thumbnailUrl = imageUrl,
+        durationText = durationMs.takeIf { it > 0 }?.let { "${it / 60000}:${(it / 1000 % 60).toString().padStart(2, '0')}" },
+        albumName = album,
+    )
+    val tracks = runCatching { SpotifyLibrary.tracks(playlistId) { soFar -> setSongs(UiState.Success(soFar.map { it.pending() })) } }
+        .getOrElse { setSongs(UiState.Error(friendly(it))); return@coroutineScope }
+    if (tracks.isEmpty()) {
+        setSongs(UiState.Error(getString(Res.string.spotify_empty_tracks)))
+        return@coroutineScope
+    }
+    val gate = Semaphore(6)
+    tracks.forEachIndexed { index, track ->
+        launch {
+            gate.withPermit {
+                val match = runCatching { SpotifyImporter.matchTrack(track) }.getOrNull()
+                val found = match?.copy(thumbnailUrl = match.thumbnailUrl ?: track.imageUrl)
+                    ?: track.pending().let { it.copy(videoId = SPOTIFY_MISSING_PREFIX + track.id) }
+                update { page ->
+                    val list = (page.songs as? UiState.Success<List<Song>>)?.data
+                    if (list != null && index < list.size) page.copy(songs = UiState.Success(list.toMutableList().also { it[index] = found })) else page
+                }
+            }
+        }
     }
 }
 

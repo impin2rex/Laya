@@ -19,6 +19,10 @@ import androidx.compose.material3.Button
 import org.jetbrains.compose.resources.painterResource
 import com.music.laya.sharedui.resources.spotify_logo
 import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.spotify
+import com.music.laya.sharedui.resources.spotify_connect_subtitle
+import com.music.laya.sharedui.resources.spotify_sign_in
+import com.music.laya.sharedui.resources.spotify_use_spdc_token
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,16 +40,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.music.laya.R
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.spotify.SpotifyLibrary
 import com.music.laya.data.spotify.SpotifyPlaylist
 import com.music.laya.data.spotify.SpotifyTrack
+
+/** The Library row that opens the connected Spotify account; handled by the app, not a browse page. */
+const val SPOTIFY_BROWSE_ID = "app:spotify"
 
 /**
  * The signed-in Spotify account's playlists. A tap opens one as an ordinary
@@ -55,7 +61,8 @@ import com.music.laya.data.spotify.SpotifyTrack
 fun SpotifyLibraryScreen(
     onOpenPlaylist: (SpotifyPlaylist) -> Unit,
     onOpenLogin: () -> Unit,
-    onOpenTokenSetup: () -> Unit,
+    /** Null hides the manual `sp_dc` entry (platforms with no token setup page). */
+    onOpenTokenSetup: (() -> Unit)?,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -95,7 +102,7 @@ fun SpotifyLibraryScreen(
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = stringResource(R.string.spotify),
+                    text = stringResource(Res.string.spotify),
                     style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
@@ -105,17 +112,19 @@ fun SpotifyLibraryScreen(
             item {
                 Column(Modifier.padding(horizontal = 20.dp)) {
                     Text(
-                        text = stringResource(R.string.spotify_connect_subtitle),
+                        text = stringResource(Res.string.spotify_connect_subtitle),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = onOpenLogin) {
-                        Text(stringResource(R.string.spotify_sign_in))
+                        Text(stringResource(Res.string.spotify_sign_in))
                     }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(onClick = onOpenTokenSetup) {
-                        Text(stringResource(R.string.spotify_use_spdc_token))
+                    if (onOpenTokenSetup != null) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = onOpenTokenSetup) {
+                            Text(stringResource(Res.string.spotify_use_spdc_token))
+                        }
                     }
                 }
             }
@@ -137,7 +146,7 @@ fun SpotifyLibraryScreen(
                 }
             }
             items(playlists, key = { it.id }) { item ->
-                LibraryRow(
+                SpotifyPlaylistRow(
                     title = item.name,
                     subtitle = item.owner.orEmpty(),
                     imageUrl = item.imageUrl,
@@ -149,7 +158,7 @@ fun SpotifyLibraryScreen(
 }
 
 @Composable
-private fun LibraryRow(
+private fun SpotifyPlaylistRow(
     title: String,
     subtitle: String,
     imageUrl: String?,

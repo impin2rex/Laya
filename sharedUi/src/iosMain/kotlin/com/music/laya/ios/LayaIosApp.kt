@@ -113,6 +113,16 @@ import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.LibraryGridPage
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.music.laya.ui.screens.LibraryScreen
+import com.music.laya.ui.screens.LibraryLink
+import com.music.laya.ui.screens.SPOTIFY_BROWSE_ID
+import com.music.laya.ui.screens.SpotifyLibraryScreen
+import com.music.laya.data.model.isUnresolvedSpotify
+import com.music.laya.data.spotify.SPOTIFY_PAGE_PREFIX
+import com.music.laya.sharedui.resources.spotify
+import com.music.laya.sharedui.resources.spotify_library_subtitle
+import com.music.laya.sharedui.resources.spotify_logo
+import androidx.compose.material.icons.rounded.Cloud
+import org.jetbrains.compose.resources.stringResource
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.ui.screens.EqualizerScreen
 import com.music.laya.ui.screens.SettingsScreen
@@ -161,7 +171,9 @@ fun LayaIosApp(engine: AudioEngine) {
     val signedIn by IosAuth.signedIn.collectAsState()
     val account by IosAuth.account.collectAsState()
     var showLogin by remember { mutableStateOf(false) }
+    val spotifyConnected = AppSettings.spotifySpdcToken.collectAsState().value.isNotBlank()
     var showSpotifyLogin by remember { mutableStateOf(false) }
+    var showSpotifyImport by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val message by IosPlayerHost.messages.collectAsState()
     LaunchedEffect(message) {
@@ -294,6 +306,16 @@ fun LayaIosApp(engine: AudioEngine) {
     fun openDetail(id: String, title: String, subtitle: String = "", thumb: String? = null, type: BrowseType = BrowseType.OTHER) {
         val base = loadingPage(id, title, subtitle, thumb, type)
         stack = stack + IosPage.Detail(base)
+        if (id.startsWith(SPOTIFY_PAGE_PREFIX)) {
+            scope.launch {
+                loadSpotifyPage(id) { change ->
+                    val open = stack.any { it is IosPage.Detail && it.page.browseId == id }
+                    if (open) stack = stack.map { if (it is IosPage.Detail && it.page.browseId == id) IosPage.Detail(change(it.page)) else it }
+                    open
+                }
+            }
+            return
+        }
         scope.launch {
             val loaded = loadDetail(base)
             stack = stack.map { if (it is IosPage.Detail && it.page === base) IosPage.Detail(loaded) else it }
@@ -422,7 +444,14 @@ fun LayaIosApp(engine: AudioEngine) {
                                             page = page,
                                             currentSong = song,
                                             isPlaying = player.isPlaying,
-                                            onSongClick = { songs, i -> player.play(songs, i) },
+                                            onSongClick = { songs, i ->
+                                                // A Spotify page lists songs not (or never) found on YouTube Music; play the rest in order.
+                                                val picked = songs.getOrNull(i)
+                                                if (picked?.isUnresolvedSpotify != true) {
+                                                    val playable = songs.filterNot { it.isUnresolvedSpotify }
+                                                    player.play(playable, playable.indexOf(picked).coerceAtLeast(0))
+                                                }
+                                            },
                                             onSongLongPress = { menuSong = it },
                                             onSongSwipe = ::swipe,
                                             onShuffle = { songs ->
@@ -463,6 +492,12 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onEqualizer = { stack = stack + IosPage.Equalizer },
                                         onAccountScrobbling = { stack = stack + IosPage.Account },
                                     )
+                                    IosPage.Spotify -> SpotifyLibraryScreen(
+                                        onOpenPlaylist = { openDetail(SPOTIFY_PAGE_PREFIX + it.id, it.name, it.owner ?: "Spotify", it.imageUrl, BrowseType.PLAYLIST) },
+                                        onOpenLogin = { showSpotifyLogin = true },
+                                        onOpenTokenSetup = null,
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
                                     IosPage.Equalizer -> EqualizerScreen(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
@@ -471,7 +506,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                         account = account,
                                         onSignIn = { showLogin = true },
                                         onSignOut = { scope.launch { IosAuth.signOut() } },
-                                        onSpotify = { showSpotifyLogin = true },
+                                        onSpotify = { if (spotifyConnected) stack = stack + IosPage.Spotify else showSpotifyLogin = true },
                                         onSpotifyDisconnect = { scope.launch { IosSpotify.signOut() } },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
@@ -539,7 +574,10 @@ fun LayaIosApp(engine: AudioEngine) {
                                 signedIn = signedIn,
                                 state = library,
                                 listState = libraryList,
-                                onShelfItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it) },
+                                onShelfItemClick = {
+                                    if (it.browseId == SPOTIFY_BROWSE_ID) stack = stack + IosPage.Spotify
+                                    else it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it)
+                                },
                                 onShelfItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onNewPlaylist = {},
                                 onShowAll = { stack = stack + IosPage.ShowAll(it) },
@@ -550,7 +588,21 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onRefresh = { scope.launch { libraryRefreshing = true; loadLibrary(); libraryRefreshing = false } },
                                 pullState = libraryPull,
                                 contentPadding = noPadding,
-                                links = emptyList(),
+                                onImportSpotifyPlaylist = { if (signedIn) showSpotifyImport = true else showLogin = true },
+                                links = listOfNotNull(
+                                    // Only while signed in to Spotify; it opens that account's playlists rather than a browse page.
+                                    LibraryLink(
+                                        item = ShelfItem(
+                                            title = stringResource(Res.string.spotify),
+                                            subtitle = stringResource(Res.string.spotify_library_subtitle),
+                                            thumbnailUrl = null,
+                                            videoId = null,
+                                            browseId = SPOTIFY_BROWSE_ID,
+                                        ),
+                                        icon = Icons.Rounded.Cloud,
+                                        logo = Res.drawable.spotify_logo,
+                                    ).takeIf { spotifyConnected },
+                                ),
                                 deviceItems = emptyList(),
                             )
                             else -> SearchScreen(
@@ -761,6 +813,13 @@ fun LayaIosApp(engine: AudioEngine) {
                     }
                     if (showLogin) IosLoginScreen(onClose = { showLogin = false })
                     if (showSpotifyLogin) IosSpotifyLoginScreen(onClose = { showSpotifyLogin = false })
+                    if (showSpotifyImport) IosSpotifyImportDialog(
+                        onImported = { id, name, count ->
+                            IosPlayerHost.showMessage(name)
+                            openDetail(id, name, "$count songs", null, BrowseType.PLAYLIST)
+                        },
+                        onDismiss = { showSpotifyImport = false },
+                    )
                 }
             }
         }
