@@ -51,3 +51,6 @@ AGENTS.md
 
 # Local agent task logs (iOS port decisions, etc.)
 .claude/tasks/
+
+# iOS (XcodeGen output)
+iosApp/*.xcodeproj
