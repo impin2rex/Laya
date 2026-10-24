@@ -111,6 +111,10 @@ import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.LibraryScreen
 import com.music.laya.ui.screens.SearchScreen
+import com.music.laya.ui.screens.SettingsScreen
+import com.music.laya.ui.onboarding.OnboardingScreen
+import androidx.compose.animation.EnterTransition
+import androidx.compose.material.icons.rounded.Settings
 import kotlinx.coroutines.launch
 import platform.Foundation.NSProcessInfo
 
@@ -133,6 +137,7 @@ fun LayaIosApp(engine: AudioEngine) {
     val repeat by AppSettings.repeatMode.collectAsState()
     val shuffle by AppSettings.shuffleEnabled.collectAsState()
     val autoplay by AppSettings.autoplay.collectAsState()
+    val onboardingComplete by AppSettings.onboardingComplete.collectAsState()
     val swipeNext by AppSettings.swipeToPlayNext.collectAsState()
     val playerDock = remember { PlayerDock() }
     val sheetMotion = remember { PlayerSheetMotion(scope, playerDock, { nowPlayingOpen }, { nowPlayingOpen = it }) }
@@ -279,6 +284,14 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onRetry = { stack = stack.dropLast(1); openMood(top.item) },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
+                                    IosPage.Settings -> SettingsScreen(
+                                        windowWidth = this@BoxWithConstraints.maxWidth,
+                                        signedIn = false, // Phase 5: sign-in
+                                        account = null,
+                                        onSignIn = {},
+                                        onSignOut = {},
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
                                     null -> Unit
                                 }
                             }
@@ -368,7 +381,13 @@ fun LayaIosApp(engine: AudioEngine) {
                             )
                         }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = barHeight))
-                            if (stack.isNotEmpty()) {
+                            if (stack.isEmpty()) {
+                                IconButton(
+                                    onClick = { stack = stack + IosPage.Settings },
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
+                                ) { Icon(Icons.Rounded.Settings, "Settings") }
+                            } else {
                                 IconButton(
                                     onClick = { stack = stack.dropLast(1) },
                                     modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
@@ -395,6 +414,20 @@ fun LayaIosApp(engine: AudioEngine) {
                             barHeight = with(density) { it.height.toDp() }
                         },
                     )
+
+                    AnimatedVisibility(
+                        visible = !onboardingComplete,
+                        enter = EnterTransition.None,
+                        exit = slideOutVertically { it },
+                    ) {
+                        OnboardingScreen(
+                            signedIn = false,
+                            initialName = "",
+                            onNameChosen = {}, // Phase 6: Listen Together nickname
+                            onSignIn = null, // Phase 5: sign-in
+                            onFinish = AppSettings::setOnboardingComplete,
+                        )
+                    }
 
                     menuSong?.let { m ->
                         IosSongMenu(

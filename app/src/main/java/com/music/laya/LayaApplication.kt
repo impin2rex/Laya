@@ -78,6 +78,8 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         PlayerPlatform.install(AndroidPlayerHost(this))
         com.music.laya.ui.AppUi.install(com.music.laya.ui.AndroidAppUiHost)
         com.music.laya.ui.screens.DetailExtras.host = com.music.laya.ui.AndroidDetailHost
+        com.music.laya.ui.AndroidSettingsHost.install(this)
+        com.music.laya.ui.screens.SettingsExtras.host = com.music.laya.ui.AndroidSettingsHost
         // The shared data layer (lyrics, the YouTube Music client) logs to
         // logcat on debug builds only, as the app's own DebugLog always has.
         if (BuildConfig.DEBUG) {

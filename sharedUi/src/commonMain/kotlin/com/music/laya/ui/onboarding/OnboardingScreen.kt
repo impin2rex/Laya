@@ -1,6 +1,6 @@
 package com.music.laya.ui.onboarding
 
-import androidx.activity.compose.BackHandler
+import com.music.laya.sharedui.resources.*
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -31,7 +30,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -60,8 +59,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -69,10 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.music.laya.R
-import com.music.laya.sharedui.resources.Res
-import com.music.laya.sharedui.resources.ic_google_g
-import com.music.laya.sharedui.resources.ic_logo
+import com.music.laya.ui.screens.PlatformBackHandler
 import org.jetbrains.compose.resources.painterResource
 import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.ui.player.MeshGradientBackground
@@ -98,8 +95,8 @@ fun OnboardingScreen(
     initialName: String,
     /** Saves the party name. Called on Next, before the second page. */
     onNameChosen: (String) -> Unit,
-    /** Opens the Google sign-in. The caller finishes onboarding once it lands. */
-    onSignIn: () -> Unit,
+    /** Opens the Google sign-in. The caller finishes onboarding once it lands. Null (iOS, Phase 5) drops the second page. */
+    onSignIn: (() -> Unit)?,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -107,7 +104,7 @@ fun OnboardingScreen(
     var name by rememberSaveable { mutableStateOf(initialName) }
     val focusManager = LocalFocusManager.current
 
-    BackHandler(enabled = page == PAGE_CONNECT) { page = PAGE_NAME }
+    PlatformBackHandler(enabled = page == PAGE_CONNECT) { page = PAGE_NAME }
     // "Sign in with Google" goes through the app's own sign-in WebView, raised
     // over this page; the account landing is what ends the welcome.
     LaunchedEffect(signedIn, page) {
@@ -174,12 +171,12 @@ fun OnboardingScreen(
                             if (chosen.isEmpty()) return@next
                             focusManager.clearFocus()
                             onNameChosen(chosen)
-                            if (signedIn) onFinish() else page = PAGE_CONNECT
+                            if (signedIn || onSignIn == null) onFinish() else page = PAGE_CONNECT
                         },
                     )
                     else -> ConnectPage(
                         onBack = { page = PAGE_NAME },
-                        onSignIn = onSignIn,
+                        onSignIn = onSignIn ?: {},
                         onSkip = onFinish,
                     )
                 }
@@ -202,7 +199,6 @@ private fun OnboardingPage(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColumnScope.NamePage(
     name: String,
@@ -211,7 +207,7 @@ private fun ColumnScope.NamePage(
 ) {
     // With the keyboard up there is room for the title or the logo, not both;
     // the title is the one that says where you are.
-    val keyboardUp = WindowInsets.isImeVisible
+    val keyboardUp = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     AnimatedVisibility(
         visible = !keyboardUp,
         enter = fadeIn() + expandVertically(),
@@ -227,12 +223,12 @@ private fun ColumnScope.NamePage(
         }
     }
     Spacer(Modifier.height(24.dp))
-    Title(stringResource(R.string.onboarding_title))
+    Title(stringResource(Res.string.onboarding_title))
 
     Spacer(Modifier.weight(1f))
 
     Text(
-        text = stringResource(R.string.onboarding_name_prompt),
+        text = stringResource(Res.string.onboarding_name_prompt),
         style = MaterialTheme.typography.titleMedium,
         fontSize = 17.sp,
         color = Color.White.copy(alpha = 0.78f),
@@ -242,14 +238,14 @@ private fun ColumnScope.NamePage(
     NameField(value = name, onValueChange = onNameChange, onDone = onNext)
     Spacer(Modifier.height(10.dp))
     Text(
-        text = stringResource(R.string.onboarding_name_footer),
+        text = stringResource(Res.string.onboarding_name_footer),
         style = MaterialTheme.typography.bodyMedium,
         color = Color.White.copy(alpha = 0.55f),
         modifier = Modifier.padding(horizontal = 4.dp),
     )
     Spacer(Modifier.height(28.dp))
     PillButton(
-        label = stringResource(R.string.onboarding_next),
+        label = stringResource(Res.string.onboarding_next),
         onClick = onNext,
         enabled = name.isNotBlank(),
         primary = true,
@@ -266,10 +262,10 @@ private fun ColumnScope.ConnectPage(
     Spacer(Modifier.height(16.dp))
     BackButton(onBack)
     Spacer(Modifier.height(20.dp))
-    Title(stringResource(R.string.onboarding_connect_title))
+    Title(stringResource(Res.string.onboarding_connect_title))
     Spacer(Modifier.height(14.dp))
     Text(
-        text = stringResource(R.string.onboarding_connect_body),
+        text = stringResource(Res.string.onboarding_connect_body),
         style = MaterialTheme.typography.bodyLarge,
         fontSize = 17.sp,
         lineHeight = 23.sp,
@@ -279,7 +275,7 @@ private fun ColumnScope.ConnectPage(
     Spacer(Modifier.weight(1f))
 
     PillButton(
-        label = stringResource(R.string.onboarding_sign_in_google),
+        label = stringResource(Res.string.onboarding_sign_in_google),
         onClick = onSignIn,
         primary = true,
         leading = {
@@ -292,7 +288,7 @@ private fun ColumnScope.ConnectPage(
     )
     Spacer(Modifier.height(12.dp))
     PillButton(
-        label = stringResource(R.string.onboarding_skip_sign_in),
+        label = stringResource(Res.string.onboarding_skip_sign_in),
         onClick = onSkip,
         primary = false,
     )
@@ -336,7 +332,7 @@ private fun NameField(value: String, onValueChange: (String) -> Unit, onDone: ()
     ) {
         if (value.isEmpty()) {
             Text(
-                text = stringResource(R.string.onboarding_name_hint),
+                text = stringResource(Res.string.onboarding_name_hint),
                 style = style,
                 color = Color.White.copy(alpha = 0.38f),
                 maxLines = 1,
@@ -424,7 +420,7 @@ private fun BackButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = LayaIcons.ChevronRight,
-            contentDescription = stringResource(R.string.onboarding_back),
+            contentDescription = stringResource(Res.string.onboarding_back),
             tint = Color.White,
             modifier = Modifier
                 .size(18.dp)

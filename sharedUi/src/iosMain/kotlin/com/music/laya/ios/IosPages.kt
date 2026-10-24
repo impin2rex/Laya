@@ -32,6 +32,7 @@ import platform.UIKit.UIApplication
 internal sealed interface IosPage {
     class Detail(val page: DetailPage) : IosPage
     class Mood(val item: MoodGenre, val shelves: UiState<List<HomeShelf>>) : IosPage
+    data object Settings : IosPage
 }
 
 /** YouTube browse ids are prefixed by kind (Android's MainViewModel.browseTypeOf, minus the device-local kinds). */

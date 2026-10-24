@@ -2840,7 +2840,8 @@ private fun LayaApp(
                                 onTranslationLanguage = { showTranslationLanguage = true },
                                 onSources = { navigator.push(AppRoute.Sources) },
                                 onListenTogether = { navigator.push(AppRoute.ListenTogether) },
-                                onWearOs = { navigator.push(AppRoute.WearOs) },
+                                onWearOs = { navigator.push(AppRoute.WearOs) }
+                                    .takeIf { com.music.laya.wear.WatchInstaller.available(LocalContext.current) },
                                 onSpotifyCanvasAuth = { showSpotifyCanvasAuth = true },
                                 onAppLanguage = { showAppLanguage = true },
                                 onEditSignatureApi = { editingSignatureApi = true },

@@ -19,8 +19,17 @@ import com.music.laya.ui.player.PartyUi
 import com.music.laya.ui.player.PlayerHost
 import com.music.laya.ui.player.PlayerSettingsSource
 import com.music.laya.ui.player.SystemVolume
+import com.music.laya.ui.screens.SettingsHost
 import dev.chrisbanes.haze.HazeState
+import platform.Foundation.NSBundle
 import kotlinx.coroutines.flow.MutableStateFlow
+
+/** Everything not overridden is hidden on iOS; Phase 5/6 fill in accounts, Listen Together, downloads. */
+internal object IosSettingsHost : SettingsHost {
+    @Composable
+    override fun versionName() =
+        NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
+}
 
 internal object IosAppUiHost : AppUiHost {
     override val swipeToPlayNext = AppSettings.swipeToPlayNext

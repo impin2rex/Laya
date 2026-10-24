@@ -1,5 +1,9 @@
 package com.music.laya.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.media.audiofx.AudioEffect
+import android.widget.Toast
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -921,3 +925,20 @@ private const val ZERO_DETENT_DB = 0.6f
 
 /** Same, for the balance trim's own centre. */
 private const val BALANCE_DETENT = 0.04f
+
+/**
+ * Hands the device's own effect panel this app's audio session.
+ *
+ * Shared with [EqualizerScreen], which offers the same escape hatch a second
+ * time next to the equaliser it might be an alternative to.
+ */
+private fun openEqualizer(context: Context, sessionId: Int) {
+    val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
+        putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
+        putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
+        putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
+    }
+    runCatching { context.startActivity(intent) }.onFailure {
+        Toast.makeText(context, context.getString(R.string.no_equalizer), Toast.LENGTH_SHORT).show()
+    }
+}

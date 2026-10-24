@@ -10,6 +10,7 @@ import com.music.laya.data.innertube.InnerTubeXResolver
 import com.music.laya.data.lyrics.LyricsTranslation
 import com.music.laya.ui.AppUi
 import com.music.laya.ui.player.PlayerPlatform
+import com.music.laya.ui.screens.SettingsExtras
 import okio.Path.Companion.toPath
 import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSCachesDirectory
@@ -45,6 +46,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     )
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
     AppUi.install(IosAppUiHost)
+    SettingsExtras.host = IosSettingsHost
     PlayerPlatform.install(IosPlayerHost)
     return ComposeUIViewController { LayaIosApp(engine) }
 }
