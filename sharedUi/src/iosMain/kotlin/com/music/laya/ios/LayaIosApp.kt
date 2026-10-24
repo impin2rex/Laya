@@ -259,12 +259,49 @@ fun LayaIosApp(engine: AudioEngine) {
     var lyricsSource by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
     var lyricsChecked by remember(song?.videoId) { mutableStateOf(false) }
     val durationKnown = player.durationMs > 0
+    // Per-provider picker state, mirroring MainViewModel: hits are kept so choosing one is instant.
+    var providerStates by remember(song?.videoId) { mutableStateOf(LyricsSource.entries.associateWith { LyricsProviderState.NOT_FETCHED }) }
+    val providerHits = remember(song?.videoId) { mutableMapOf<LyricsSource, LyricsRepository.Result>() }
+    var selectedProvider by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
+    fun showLyrics(r: LyricsRepository.Result) { lyrics = r.lines; lyricsSource = r.source; lyricsChecked = true }
+    fun fetchProvider(s: LyricsSource?) { // null = the automatic lookup across all enabled providers
+        val sg = song ?: return
+        val all = s == null
+        scope.launch {
+            val sources = if (all) AppSettings.lyricsSources.value else setOf(s!!)
+            val found = LyricsRepository.lyrics(
+                sg.videoId, sg.title, sg.artist, player.durationMs, sg.albumName, sources,
+                if (all) AppSettings.lyricsSourceOrder.value else listOf(s!!), all && AppSettings.prioritizeSyllableSync.value,
+                onSourceStarted = { providerStates = providerStates + (it to LyricsProviderState.FETCHING) },
+                onSourceResult = { p, r ->
+                    providerStates = providerStates + (p to if (r == null) LyricsProviderState.NOT_FOUND else LyricsProviderState.FOUND)
+                    if (r != null) { providerHits[p] = r; if (selectedProvider == p) showLyrics(r) }
+                },
+                onSourceCancelled = { p ->
+                    if (providerStates[p] == LyricsProviderState.FETCHING) providerStates = providerStates + (p to LyricsProviderState.NOT_FETCHED)
+                    // A tap during the priority race: honour it with a dedicated request.
+                    if (selectedProvider == p) fetchProvider(p)
+                },
+            )
+            if (all) {
+                val chosen = selectedProvider?.let(providerHits::get) ?: found
+                lyrics = chosen?.lines
+                lyricsSource = chosen?.source
+                lyricsChecked = true
+            }
+        }
+    }
     LaunchedEffect(song?.videoId, durationKnown) {
         if (song == null || !durationKnown) return@LaunchedEffect
-        val found = LyricsRepository.lyrics(song.videoId, song.title, song.artist, player.durationMs, song.albumName)
-        lyrics = found?.lines
-        lyricsSource = found?.source
-        lyricsChecked = true
+        fetchProvider(null)
+    }
+    fun selectProvider(s: LyricsSource) {
+        selectedProvider = s
+        when (providerStates[s]) {
+            LyricsProviderState.FOUND -> providerHits[s]?.let(::showLyrics)
+            LyricsProviderState.NOT_FETCHED, null -> fetchProvider(s)
+            else -> Unit // FETCHING applies on completion; NOT_FOUND is inert
+        }
     }
 
     // Test hook: `simctl launch` with SIMCTL_CHILD_LAYA_AUTOPLAY=<query> searches and plays the first hit.
@@ -631,8 +668,8 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onListenTogether = {},
                                         lyrics = lyrics,
                                         lyricsSource = lyricsSource,
-                                        lyricsProviderStates = LyricsSource.entries.associateWith { LyricsProviderState.NOT_FETCHED },
-                                        onSelectLyricsProvider = {},
+                                        lyricsProviderStates = providerStates,
+                                        onSelectLyricsProvider = ::selectProvider,
                                         lyricsUnavailable = lyricsChecked && lyrics == null,
                                         lyricsOffsetOpen = false,
                                         onDismissLyricsOffset = {},
