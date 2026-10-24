@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import com.music.laya.data.model.Song
 import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import platform.Foundation.NSProcessInfo
 
 // ponytail: throwaway until Phase 4 brings the real UI.
 
@@ -79,6 +81,24 @@ fun DebugPlayerScreen(engine: AudioEngine) {
         }
     }
 
+    suspend fun search() {
+        status = "Searching..."
+        YtMusicRepository.search(query, SearchFilter.SONGS)
+            .onSuccess { rows ->
+                songs = rows.mapNotNull { (it as? SearchResult.Track)?.song ?: (it as? SearchResult.TopTrack)?.song }
+                status = ""
+            }
+            .onFailure { status = ""; error = it.message ?: it.toString() }
+    }
+
+    // Test hook: `simctl launch` with SIMCTL_CHILD_LAYA_AUTOPLAY=<query> searches and plays the first hit.
+    LaunchedEffect(Unit) {
+        val q = NSProcessInfo.processInfo.environment["LAYA_AUTOPLAY"] as? String ?: return@LaunchedEffect
+        query = q
+        search()
+        start(0)
+    }
+
     // Swift holds the listener weakly: the composition's remembered slot is what keeps it alive.
     remember {
         object : AudioEngineListener {
@@ -102,17 +122,7 @@ fun DebugPlayerScreen(engine: AudioEngine) {
     Column(Modifier.fillMaxSize().safeContentPadding().padding(8.dp)) {
         Row {
             OutlinedTextField(query, { query = it }, Modifier.weight(1f), singleLine = true, label = { Text("Search songs") })
-            Button({
-                scope.launch {
-                    status = "Searching..."
-                    YtMusicRepository.search(query, SearchFilter.SONGS)
-                        .onSuccess { rows ->
-                            songs = rows.mapNotNull { (it as? SearchResult.Track)?.song ?: (it as? SearchResult.TopTrack)?.song }
-                            status = ""
-                        }
-                        .onFailure { status = ""; error = it.message ?: it.toString() }
-                }
-            }) { Text("Go") }
+            Button({ scope.launch { search() } }) { Text("Go") }
         }
         Text("${songs.getOrNull(index)?.title ?: "-"}  ${pos / 1000}s / ${dur / 1000}s  $status")
         if (error.isNotEmpty()) Text("Error: $error")

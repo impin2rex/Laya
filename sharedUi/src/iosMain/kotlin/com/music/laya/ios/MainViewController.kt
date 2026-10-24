@@ -11,14 +11,14 @@ import com.music.laya.data.innertube.InnerTubeXResolver
 import okio.Path.Companion.toPath
 import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSFileManager
-import platform.Foundation.NSLog
 import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIViewController
 
 /** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]. */
 fun MainViewController(engine: AudioEngine): UIViewController {
-    DebugLog.sink = DebugLog.Sink { level, tag, message, error -> NSLog("%@", "$tag/$level: $message ${error ?: ""}") }
-    TrackLog.echo = { level, tag, message, error -> NSLog("%@", "$tag/$level: $message ${error ?: ""}") }
+    // Not NSLog: Kotlin strings passed through its C varargs crash (EXC_BAD_ACCESS).
+    DebugLog.sink = DebugLog.Sink { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
+    TrackLog.echo = { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
     val dir = NSFileManager.defaultManager
         .URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }
     InnerTubeXResolver.init(
