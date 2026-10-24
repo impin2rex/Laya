@@ -3,20 +3,19 @@ package com.music.laya.data
 import com.music.laya.data.innertube.Innertube
 import com.music.laya.data.innertube.InnertubeParser
 import com.music.laya.data.model.Song
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import com.fleeksoft.ksoup.Ksoup
+import com.music.laya.platform.decimalSeparator
+import com.music.laya.platform.ioDispatcher
+import com.music.laya.platform.ktorClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
-import org.jsoup.Jsoup
-import java.time.LocalDate
 
 data class SongInfo(
     val album: String? = null,
@@ -45,18 +44,17 @@ fun compactCount(raw: String): String {
     val whole = n / unit
     if (whole >= 10) return "$whole$suffix"
     val tenth = n % unit * 10 / unit
-    val separator = java.text.DecimalFormatSymbols.getInstance().decimalSeparator
+    val separator = decimalSeparator()
     return if (tenth == 0L) "$whole$suffix" else "$whole$separator$tenth$suffix"
 }
 
 /** Loaded only when requested. Counts belong to this exact upload, never a search match. */
 object SongInfoRepository {
-    private val client = HttpClient(OkHttp) {
-        engine { preconfigured = Http.client }
+    private val client = ktorClient {
         install(HttpTimeout) { requestTimeoutMillis = 15_000 }
     }
 
-    suspend fun load(song: Song): SongInfo = withContext(Dispatchers.IO) {
+    suspend fun load(song: Song): SongInfo = withContext(ioDispatcher) {
         if (song.localUri != null || !Regex("[A-Za-z0-9_-]{11}").matches(song.videoId)) {
             return@withContext SongInfo(album = song.albumName)
         }
@@ -106,7 +104,7 @@ object SongInfoRepository {
 
 internal object SongInfoParser {
     fun parse(html: String, videoId: String): SongInfo {
-        val scripts = Jsoup.parse(html).select("script").map { it.data() }
+        val scripts = Ksoup.parse(html).select("script").map { it.data() }
         val player = scripts.firstNotNullOfOrNull { extract(it, "ytInitialPlayerResponse") }
             ?: error("Missing player metadata")
         val details = player.obj("videoDetails")
@@ -145,7 +143,13 @@ internal object SongInfoParser {
             Regex("Released on:\\s*(\\d{4}-\\d{2}-\\d{2})", RegexOption.IGNORE_CASE)
                 .matchEntire(line.trim())?.groupValues?.get(1)
         } ?: return null
-        return runCatching { LocalDate.parse(date).toString() }.getOrNull()
+        val (year, month, day) = date.split('-').map { it.toInt() }
+        val days = when (month) {
+            2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
+            4, 6, 9, 11 -> 30
+            else -> 31
+        }
+        return date.takeIf { month in 1..12 && day in 1..days }
     }
 
     /** Balanced JSON extraction tolerates braces inside titles and trailing script statements. */

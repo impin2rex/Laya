@@ -1,44 +1,24 @@
 package com.music.laya.data.innertube
 
 import com.music.laya.data.MonotonicClock
-import com.music.laya.data.TrackLog
-import com.music.laya.data.Http
 import com.music.laya.data.NerdStats
+import com.music.laya.data.TrackLog
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.ioDispatcher
+import io.ktor.http.Url
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.ConnectionPool
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.schabi.newpipe.extractor.MediaFormat
-import org.schabi.newpipe.extractor.NewPipe
-import org.schabi.newpipe.extractor.ServiceList
-import org.schabi.newpipe.extractor.downloader.Downloader
-import org.schabi.newpipe.extractor.downloader.Request
-import org.schabi.newpipe.extractor.downloader.Response
-import org.schabi.newpipe.extractor.exceptions.AccountTerminatedException
-import org.schabi.newpipe.extractor.exceptions.AgeRestrictedContentException
-import org.schabi.newpipe.extractor.exceptions.GeographicRestrictionException
-import org.schabi.newpipe.extractor.exceptions.PaidContentException
-import org.schabi.newpipe.extractor.exceptions.PrivateContentException
-import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
-import org.schabi.newpipe.extractor.exceptions.SoundCloudGoPlusContentException
-import org.schabi.newpipe.extractor.exceptions.UnsupportedContentInCountryException
-import org.schabi.newpipe.extractor.exceptions.YoutubeMusicPremiumContentException
-import org.schabi.newpipe.extractor.services.youtube.YoutubeJavaScriptPlayerManager
-import org.schabi.newpipe.extractor.stream.AudioStream
-import org.schabi.newpipe.extractor.stream.DeliveryMethod
-import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import okio.IOException
+import kotlin.concurrent.Volatile
 
 /**
  * Turns a videoId into a URL ExoPlayer can actually stream.
@@ -64,193 +44,7 @@ object StreamResolver {
 
     private const val TAG = "Laya"
 
-    /** Past this, an extractor fetch is worth flagging rather than just noting. */
-    private const val SLOW_FETCH_MS = 2000L
-
-    /** See [OkHttpDownloader.execute] — the one request the extractor is not allowed to make. */
-    private const val NEXT_ENDPOINT = "/youtubei/v1/next"
-
-    /** Well-formed, empty, and over the library's fifty-character floor. */
-    private const val EMPTY_NEXT_RESPONSE =
-        """{"responseContext":{},"contents":{},"currentVideoEndpoint":{},"trackingParams":""}"""
-
-    /** NewPipe needs a Downloader; reuse the app's single OkHttp client. */
-    private class OkHttpDownloader : Downloader() {
-        override fun execute(request: Request): Response {
-            // The `next` endpoint answers "what plays after this" — related
-            // videos and the autoplay queue. `fetchPage()` asks for it
-            // unconditionally while building a StreamExtractor, and this app
-            // never reads the answer: it is here for [audioStreams] and gets
-            // its own up-next from [Innertube.next] on a different client.
-            //
-            // Declining it is worth a special case because of what it costs.
-            // Measured across extractions, every other request in the chain
-            // lands in 110-670ms, while this one takes seven seconds or simply
-            // hangs — it was the single request behind
-            // `extractor fetch FAILED after 12004ms`, and since one hung call
-            // fails the whole attempt, an endpoint nothing here reads was
-            // deciding whether a track played at all.
-            //
-            // Answered with an empty-but-well-formed envelope rather than an
-            // error, so nothing downstream treats it as a failed fetch; NewPipe
-            // finds no related items, which is exactly as many as are wanted.
-            // It has to be this padded: the library rejects any JSON body under
-            // fifty characters outright with "JSON response is too short", so a
-            // bare `{}` fails the whole extraction rather than quietly
-            // returning nothing.
-            if (NEXT_ENDPOINT in request.url()) {
-                return Response(200, "OK", emptyMap(), EMPTY_NEXT_RESPONSE, request.url())
-            }
-            val builder = okhttp3.Request.Builder()
-                .method(request.httpMethod(), request.dataToSend()?.toRequestBody())
-                .url(request.url())
-
-            var hasUserAgent = false
-            request.headers().forEach { (name, values) ->
-                if (name.equals("User-Agent", ignoreCase = true) && values.isNotEmpty()) {
-                    hasUserAgent = true
-                }
-                when {
-                    values.size > 1 -> {
-                        builder.removeHeader(name)
-                        values.forEach { builder.addHeader(name, it) }
-                    }
-                    values.size == 1 -> builder.header(name, values[0])
-                }
-            }
-            if (!hasUserAgent) {
-                // Chrome, not Firefox: NewPipe's own internal fetches — the
-                // player JS included — go out under whatever this default is.
-                // PixelMusic-ref's equivalent downloader defaults to this same
-                // Chrome UA and does not hit the "Could not parse
-                // deobfuscation function" failure this app was getting on the
-                // identical video and NewPipeExtractor version; a Firefox UA
-                // here is the one input that differed.
-                builder.header(
-                    "User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                        "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
-                )
-            }
-
-            // Every byte NewPipe fetches passes through here, and until this
-            // line none of it was visible: an extraction that took thirty
-            // seconds reported thirty seconds, with nothing to say whether that
-            // was one shaped watch page, a player POST, or the player
-            // JavaScript. Naming the request and its size is what makes the
-            // difference between measuring the step and guessing at it.
-            val requestStart = MonotonicClock.nowMs()
-            val response = try {
-                extractorClient.newCall(builder.build()).execute()
-            } catch (e: Exception) {
-                // The one that matters most, and the one a log written only on
-                // the way out never sees: a request that times out or is torn
-                // down produces no line at all, so an extraction killed by a
-                // single hung call looks like an extraction that was slow for
-                // no reason. Named here, then rethrown unchanged.
-                TrackLog.w(
-                    TAG,
-                    "extractor fetch FAILED after ${MonotonicClock.nowMs() - requestStart}ms " +
-                        "${request.httpMethod()} ${request.url()}: ${e.javaClass.simpleName}: ${e.message}",
-                )
-                throw e
-            }
-            val took = MonotonicClock.nowMs() - requestStart
-            if (took > SLOW_FETCH_MS) {
-                TrackLog.w(TAG, "extractor fetch ${took}ms ${request.httpMethod()} ${request.url()}")
-            } else {
-                TrackLog.d(TAG, "extractor fetch ${took}ms ${request.httpMethod()} ${request.url()}")
-            }
-            if (response.code == 429) {
-                response.close()
-                throw ReCaptchaException("reCaptcha Challenge requested", request.url())
-            }
-            return Response(
-                response.code,
-                response.message,
-                response.headers.toMultimap(),
-                response.body.string(),
-                response.request.url.toString(),
-            )
-        }
-    }
-
-    private val init by lazy { NewPipe.init(OkHttpDownloader()) }
-
-    /**
-     * The extractor's own leash on [Http.client].
-     *
-     * Everything NewPipe fetches — the watch page above all — goes out through
-     * here, and [Http.client] sets no `callTimeout` at all. Its 30-second read
-     * timeout does not stand in for one: a read timeout is per read, so a
-     * response that yields a few bytes at a time resets it forever and the call
-     * never ends. That is not a hypothetical failure mode but the exact shaping
-     * this file's header describes Google applying to the watch page, and it
-     * was observed doing it — an extraction that simply never returned, twice
-     * in a row, leaving a track buffering until ExoPlayer gave up and retried
-     * into the same wall. Unbounded is the one thing this call must not be,
-     * because it is the failsafe: nothing runs after it.
-     *
-     * It gets its **own connection pool**, and that is the point of it rather
-     * than a detail. Sharing [Http.client]'s pool means the watch-page GET can
-     * be handed a connection to `www.youtube.com` left over from an Innertube
-     * `player` POST, and a pooled connection that the far end has quietly
-     * stopped answering does not fail — it hangs, silently, until something
-     * times it out. `retryOnConnectionFailure` cannot save it, because nothing
-     * is failing. That is exactly the shape the measurements have: a first
-     * attempt that burns the whole ceiling and a second, on a fresh connection,
-     * that succeeds in 2.2 seconds. Its own pool means extraction never
-     * inherits a socket some other part of the app finished with.
-     *
-     * Sharing the pool was never required, either. The address-family argument
-     * in [Http] is about a googlevideo media fetch matching the `player`
-     * request that minted its URL; this fetches HTML from `www.youtube.com`,
-     * and the googlevideo URL it comes back with is fetched later through
-     * [Http.client] regardless.
-     *
-     * The ceiling is sized against a healthy extraction — about two seconds —
-     * rather than against patience. Twelve is generous enough that a merely
-     * slow page still completes, and short enough that a hung one costs a few
-     * seconds before [EXTRACTION_ATTEMPTS] tries again on a new connection,
-     * instead of half a minute of silence.
-     */
-    private val extractorClient by lazy {
-        Http.client.newBuilder()
-            // Short, because a connection this app is *not* using is a
-            // connection going stale. The observed failure is a request that
-            // gets no response at all and dies on the ceiling exactly — twelve
-            // thousand and one milliseconds, over and over, on three different
-            // endpoints. That is not a slow server, it is a socket the far side
-            // (or a NAT on the way) has silently dropped while it sat idle
-            // between tracks, being handed to the next request as though it
-            // were good. Half a minute of keepalive is short enough that most
-            // are re-established rather than resurrected.
-            .connectionPool(ConnectionPool(4, 30, TimeUnit.SECONDS))
-            // And for the ones that go stale while held: HTTP/2 pings make the
-            // client notice a dead peer itself, in seconds, instead of waiting
-            // out a response that is never coming. These endpoints are all
-            // HTTP/2, so this is the mechanism actually available for detecting
-            // it rather than merely giving up on it.
-            .pingInterval(PING_INTERVAL_SECONDS, TimeUnit.SECONDS)
-            .callTimeout(EXTRACTOR_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .build()
-    }
-
-    private const val PING_INTERVAL_SECONDS = 5L
-
-    /**
-     * Sized so that giving up and trying again is cheaper than waiting.
-     *
-     * A healthy extractor request lands in 100-700ms and the retry that follows
-     * a hung one has, every time it has been watched, succeeded immediately —
-     * so the ceiling is not protecting a slow-but-viable request, it is deciding
-     * how long a dead connection costs. At twelve seconds one stall turned a
-     * four-second start into twenty-six; at five, the same stall costs about
-     * six seconds all in.
-     */
-    private const val EXTRACTOR_TIMEOUT_SECONDS = 5L
-
-    /**
+        /**
      * @return a directly streamable URL that has been proven to serve bytes,
      *   or throws with a reason worth showing.
      *
@@ -259,7 +53,7 @@ object StreamResolver {
      * outside the buffer, and each range the cache fills in.
      */
     suspend fun resolve(videoId: String): String {
-        init
+        StreamPlatform.init()
 
         recent[videoId]
             ?.takeIf { MonotonicClock.nowMs() - it.at < URL_TTL_MS }
@@ -281,7 +75,7 @@ object StreamResolver {
     }
 
     /** Per-track loudness, read once and kept for as long as the process runs. */
-    private val loudness = ConcurrentHashMap<String, Double>()
+    private val loudness = ConcurrentMap<String, Double>()
 
     /**
      * YouTube's own normalization figure for [videoId], or null when it has
@@ -331,7 +125,7 @@ object StreamResolver {
      * the storm cannot re-form, short enough that a listener who fixes the
      * cause does not have to restart the app.
      */
-    private val unplayable = ConcurrentHashMap<String, Verdict>()
+    private val unplayable = ConcurrentMap<String, Verdict>()
 
     private class Verdict(val reason: String, val at: Long)
 
@@ -388,14 +182,14 @@ object StreamResolver {
      * previously filed against whatever happened to be playing while the walk
      * ran, which for read-ahead is the track before this one.
      */    private suspend fun coalescedResolve(videoId: String): Stream {
-        inFlight[videoId]?.let { return it.await() }
+        synchronized(inFlightLock) { inFlight[videoId] }?.let { return it.await() }
         // Started lazily so that losing the race below costs nothing: the walk
         // that gets discarded has not run a line, so cancelling it fires no
         // requests and leaves no half-finished deferred behind.
         val walk = resolverScope.async(TrackLog.about(videoId), start = CoroutineStart.LAZY) {
             resolveUncached(videoId)
         }
-        val running = inFlight.putIfAbsent(videoId, walk)
+        val running = synchronized(inFlightLock) { inFlight[videoId] ?: run { inFlight[videoId] = walk; null } }
         if (running != null) {
             walk.cancel()
             return running.await()
@@ -414,14 +208,16 @@ object StreamResolver {
         // resolves for one track, 4472ms and 4620ms, 2.8s of them concurrent,
         // each paying for the other's round trips. The doc comment above
         // promised one walk per videoId and the finally guaranteed the opposite.
-        walk.invokeOnCompletion { inFlight.remove(videoId, walk) }
+        walk.invokeOnCompletion { synchronized(inFlightLock) { if (inFlight[videoId] === walk) inFlight.remove(videoId) } }
         walk.start()
         return walk.await()
     }
 
-    private val inFlight = ConcurrentHashMap<String, Deferred<Stream>>()
+    private val inFlightLock = SynchronizedObject()
 
-    private val resolverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val inFlight = HashMap<String, Deferred<Stream>>()
+
+    private val resolverScope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     private suspend fun resolveUncached(videoId: String): Stream {
         val resolveStart = MonotonicClock.nowMs()
@@ -433,24 +229,26 @@ object StreamResolver {
                 }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: LinkageError) {
-            // Every strategy above either runs third-party extraction code or
-            // drives YouTube's player JavaScript, so any of them can turn out to
-            // have been compiled against an API this OS version does not carry.
-            // That arrives as an Error, which the clause below does not catch and
-            // no caller of this function catches either — ExoPlayer's loader
-            // thread least of all, which is where it surfaced as a process kill
-            // rather than a failed track. Converted here, at the one point every
-            // strategy passes through, so the answer is the same wherever the
-            // linkage failure came from.
-            TrackLog.w(
-                TAG,
-                "resolve hit a linkage failure for $videoId after " +
-                    "${MonotonicClock.nowMs() - resolveStart}ms: ${e.javaClass.name}: ${e.message}",
-                e,
-            )
-            throw IOException("Stream resolution cannot run on this device: $e", e)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (StreamPlatform.isLinkageError(e)) {
+                // Every strategy above either runs third-party extraction code or
+                // drives YouTube's player JavaScript, so any of them can turn out to
+                // have been compiled against an API this OS version does not carry.
+                // That arrives as an Error, which the clause below does not catch and
+                // no caller of this function catches either — ExoPlayer's loader
+                // thread least of all, which is where it surfaced as a process kill
+                // rather than a failed track. Converted here, at the one point every
+                // strategy passes through, so the answer is the same wherever the
+                // linkage failure came from.
+                TrackLog.w(
+                    TAG,
+                    "resolve hit a linkage failure for $videoId after " +
+                        "${MonotonicClock.nowMs() - resolveStart}ms: ${e::class.qualifiedName}: ${e.message}",
+                    e,
+                )
+                throw IOException("Stream resolution cannot run on this device: $e", e)
+            }
+            if (e !is Exception) throw e
             // The one path out of here that said nothing at all. A resolve that
             // throws is handed to ExoPlayer as a load error, which retries it on
             // a backoff of its own — so the symptom is a track that sits in
@@ -462,7 +260,7 @@ object StreamResolver {
             TrackLog.w(
                 TAG,
                 "resolve failed for $videoId after ${MonotonicClock.nowMs() - resolveStart}ms: " +
-                    "${e.javaClass.name}: ${e.message}",
+                    "${e::class.qualifiedName}: ${e.message}",
                 e,
             )
             // Recorded before it is rethrown, so the retries stacked above this
@@ -501,7 +299,7 @@ object StreamResolver {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                TrackLog.w(TAG, "InnerTubeX failed for $videoId: ${e.javaClass.simpleName}: ${e.message}")
+                TrackLog.w(TAG, "InnerTubeX failed for $videoId: ${e::class.simpleName}: ${e.message}")
                 return null
             } ?: return null
             val verdict = timed("$videoId InnerTubeX ${found.profileId} probe") { probe(found.url) }
@@ -534,7 +332,7 @@ object StreamResolver {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            TrackLog.w(TAG, "asking for $videoId as an upload failed: ${e.javaClass.simpleName}: ${e.message}")
+            TrackLog.w(TAG, "asking for $videoId as an upload failed: ${e::class.simpleName}: ${e.message}")
             return null
         }
         if (found == null) {
@@ -683,7 +481,7 @@ object StreamResolver {
 
     private suspend fun downloadStream(videoId: String, maxKbps: Int, requireM4a: Boolean): Stream =
         withContext(TrackLog.about(videoId)) {
-            init
+            StreamPlatform.init()
 
             // Whether any client offered AAC at all, as distinct from whether one
             // could be turned into a working URL. Those are different failures and
@@ -750,23 +548,6 @@ object StreamResolver {
             ?.second
     }
 
-    // ---- Player JavaScript ----------------------------------------------------
-
-    /**
-     * Guards every call into [YoutubeJavaScriptPlayerManager].
-     *
-     * Its player-JS cache, including a *failed* parse's exception, lives in
-     * static fields with no synchronization, shared by the whole process, and
-     * this app resolves more than one track at once by design. A failure is
-     * passed straight out rather than answered with `clearAllCaches` and a
-     * retry: measured, that retry could only fail again and threw away the
-     * parsed player the NewPipe fallback depends on, taking it from 2.7s to
-     * 49.8s.
-     */
-    private val jsPlayerMutex = Mutex()
-
-    private suspend fun <T> jsPlayerManager(block: () -> T): T = jsPlayerMutex.withLock { block() }
-
     /**
      * YouTube's current player revision, as the number a client quotes to prove
      * it is running that player.
@@ -785,7 +566,7 @@ object StreamResolver {
     suspend fun signatureTimestamp(videoId: String): Int? {
         cachedSignatureTimestamp?.let { return it }
         return runCatching {
-            jsPlayerManager { YoutubeJavaScriptPlayerManager.getSignatureTimestamp(videoId) }
+            StreamPlatform.signatureTimestamp(videoId)
         }
             .onFailure { TrackLog.w(TAG, "no signature timestamp: ${it.message}") }
             .getOrNull()
@@ -831,7 +612,7 @@ object StreamResolver {
      * rather than a more favourable version of it.
      */
     private fun probe(url: String): Probe {
-        val length = url.toHttpUrlOrNull()?.queryParameter("clen")?.toLongOrNull()
+        val length = queryParam(url, "clen")?.toLongOrNull()
         val start = if (length != null && length > AUTH_BOUNDARY_BYTES + PROBE_READ_BYTES) AUTH_BOUNDARY_BYTES else 0L
         // A host with no range cap of its own reports Long.MAX_VALUE, which
         // must not be added to [start]: that overflowed into a negative end
@@ -843,16 +624,13 @@ object StreamResolver {
             length != null -> "bytes=$start-${length - 1}"
             else -> "bytes=$start-"
         }
-        val builder = okhttp3.Request.Builder().url(url)
-            .header("Range", range)
         val sentHeaders = mediaHeadersFor(url)
-        sentHeaders.forEach { (name, value) -> builder.header(name, value) }
+        // Same order as before: Range first, the media headers override it by name.
         return try {
-            prober.newCall(builder.build()).execute().use { response ->
-                val contentType = response.header("Content-Type")
+            StreamPlatform.probeFetch(url, mapOf("Range" to range) + sentHeaders, PROBE_READ_BYTES) { code, contentType, hasBody ->
                 val verdict = when {
-                    response.code in REFUSAL_CODES -> Probe.REFUSED
-                    response.code !in 200..299 && response.code != 416 -> Probe.UNREACHABLE
+                    code in REFUSAL_CODES -> Probe.REFUSED
+                    code !in 200..299 && code != 416 -> Probe.UNREACHABLE
                     // A refusal dressed as a success: an error page, or the
                     // consent/captcha interstitial, rather than audio.
                     contentType?.startsWith("audio/") != true -> Probe.REFUSED
@@ -860,13 +638,13 @@ object StreamResolver {
                     // exactly the shaping this whole path exists to sidestep.
                     // Insisting on the bytes is the point: a trickle that
                     // yields its first byte and stalls is a failure too.
-                    !response.body.source().request(PROBE_READ_BYTES) -> Probe.UNREACHABLE
+                    !hasBody() -> Probe.UNREACHABLE
                     else -> Probe.OK
                 }
                 if (verdict != Probe.OK) {
                     TrackLog.w(
                         TAG,
-                        "probe $verdict: HTTP ${response.code} type=$contentType " +
+                        "probe $verdict: HTTP $code type=$contentType " +
                             "range=$range ${describeMediaUrl(url)} " +
                             "sent=${sentHeaders.keys.sorted()}",
                     )
@@ -883,29 +661,17 @@ object StreamResolver {
 
     /** A stream URL reduced to what describes it and nothing that could be replayed. */
     private fun describeMediaUrl(url: String): String {
-        val parsed = url.toHttpUrlOrNull() ?: return "url=unparseable"
+        val parsed = parseUrl(url) ?: return "url=unparseable"
         return "host=${parsed.host} path=${parsed.encodedPath} " +
-            "c=${parsed.queryParameter("c")} itag=${parsed.queryParameter("itag")} " +
-            "mime=${parsed.queryParameter("mime")} clen=${parsed.queryParameter("clen")} " +
-            "pot=${parsed.queryParameter("pot") != null}"
+            "c=${parsed.parameters["c"]} itag=${parsed.parameters["itag"]} " +
+            "mime=${parsed.parameters["mime"]} clen=${parsed.parameters["clen"]} " +
+            "pot=${parsed.parameters["pot"] != null}"
     }
 
-    /**
-     * The probe's own client: the app's, but on a short leash.
-     *
-     * [Http.client]'s 30-second read timeout is right for a stream being
-     * consumed as it arrives and far too patient for a yes/no question —
-     * waiting it out is indistinguishable from the stall being tested for.
-     * Built from the shared client, so the connection pool and DNS are the
-     * same ones the real fetch will use.
-     */
-    private val prober by lazy {
-        Http.client.newBuilder()
-            .callTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .build()
-    }
+    private fun parseUrl(url: String): Url? = runCatching { Url(url) }.getOrNull()
+        ?.takeIf { it.protocol.name == "http" || it.protocol.name == "https" }
 
-    private const val PROBE_TIMEOUT_SECONDS = 6L
+    private fun queryParam(url: String, name: String): String? = parseUrl(url)?.parameters?.get(name)
 
     /** Where googlevideo stops authorising some clients' URLs (InnerTubeX: "CDN 403 after 1 MiB"). */
     private const val AUTH_BOUNDARY_BYTES = 1024L * 1024
@@ -929,7 +695,7 @@ object StreamResolver {
         // Only googlevideo's URLs say anything about the client that minted
         // them. A module's stream URL answering 404 is that server's business,
         // and must not bench a YouTube client.
-        if (url.toHttpUrlOrNull()?.host?.endsWith("googlevideo.com") != true) return
+        if (parseUrl(url)?.host?.endsWith("googlevideo.com") != true) return
         val videoId = InnerTubeXResolver.onRefused(url)
             // The map is a latency cache of a few dozen entries, so finding the
             // way back from a URL costs nothing worth measuring.
@@ -963,31 +729,35 @@ object StreamResolver {
      */
     private suspend fun newPipeStream(
         videoId: String,
-        select: (List<Pair<Int, AudioStream>>) -> AudioStream?,
+        select: (List<Pair<Int, NewPipeAudio>>) -> NewPipeAudio?,
     ): Stream {
+        // ponytail: no NewPipe on iOS; InnerTubeX is the only resolver there
+        if (!StreamPlatform.newPipeAvailable) error("Track unavailable: no audio streams")
         var failure: Exception? = null
         repeat(EXTRACTION_ATTEMPTS) { attempt ->
             if (attempt > 0) delay(EXTRACTION_RETRY_MS * attempt)
             try {
-                return extractStream(videoId, select)
+                return StreamPlatform.extractStream(videoId, select)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: LinkageError) {
-                // Not a failed extraction — a method or class the extractor was
-                // compiled against that this OS version does not have, which is
-                // the same answer every time and so is not worth the remaining
-                // attempts. It reaches here as an Error rather than an Exception,
-                // and an Error let past this point does not fail the track: it
-                // unwinds through ExoPlayer's loader thread, where nothing is
-                // catching it, and takes the process with it. That is what a
-                // NoSuchMethodError out of NewPipe's URL codec did on every
-                // Android below 13 — see the note in the vendored
-                // `org.schabi.newpipe.extractor.utils.Utils`. Reported as an
-                // Exception so the layers above treat it as the load failure it
-                // is, with the type name kept because the message alone ("No
-                // static method ...") reads like nothing.
-                throw IOException("Extractor cannot run on this device: $e", e)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                if (StreamPlatform.isLinkageError(e)) {
+                    // Not a failed extraction — a method or class the extractor was
+                    // compiled against that this OS version does not have, which is
+                    // the same answer every time and so is not worth the remaining
+                    // attempts. It reaches here as an Error rather than an Exception,
+                    // and an Error let past this point does not fail the track: it
+                    // unwinds through ExoPlayer's loader thread, where nothing is
+                    // catching it, and takes the process with it. That is what a
+                    // NoSuchMethodError out of NewPipe's URL codec did on every
+                    // Android below 13 — see the note in the vendored
+                    // `org.schabi.newpipe.extractor.utils.Utils`. Reported as an
+                    // Exception so the layers above treat it as the load failure it
+                    // is, with the type name kept because the message alone ("No
+                    // static method ...") reads like nothing.
+                    throw IOException("Extractor cannot run on this device: $e", e)
+                }
+                if (e !is Exception) throw e
                 // A verdict about the content, not about this minute. There was
                 // no classification here at all, so the most expensive retry in
                 // the app was spent on the one class of failure that cannot
@@ -1034,25 +804,11 @@ object StreamResolver {
      */
     private fun permanentReason(e: Throwable): String? = when (e) {
         is PermanentlyUnplayableException -> e.message ?: "This track cannot be played"
-        // The whole reason this function exists — see [newPipeStream].
-        is AgeRestrictedContentException ->
-            if (Innertube.cookie == null) {
-                "This track is age-restricted. Sign in to YouTube to play it."
-            } else {
-                "YouTube will not serve this age-restricted track to this app."
-            }
-        is GeographicRestrictionException -> "This track isn't available in your country"
-        is UnsupportedContentInCountryException -> "This track isn't available in your country"
-        is PaidContentException -> "This track is paid content"
-        is YoutubeMusicPremiumContentException -> "This track needs YouTube Music Premium"
-        is PrivateContentException -> "This track is private"
-        is AccountTerminatedException -> "The channel behind this track was terminated"
-        is SoundCloudGoPlusContentException -> "This track needs SoundCloud Go+"
         // ExoPlayer and the coroutine machinery both wrap freely, and the
         // classification has to survive being wrapped or it never fires: the
         // failure that reaches [resolveUncached] arrives as whatever the last
         // layer chose to throw it as.
-        else -> e.cause?.takeIf { it !== e }?.let(::permanentReason)
+        else -> StreamPlatform.permanentReason(e) ?: e.cause?.takeIf { it !== e }?.let(::permanentReason)
     }
 
     /** How many times the watch page is worth asking for before giving up. */
@@ -1060,91 +816,6 @@ object StreamResolver {
 
     /** Multiplied by the attempt number, so the wait grows if the first retry doesn't take. */
     private const val EXTRACTION_RETRY_MS = 1000L
-
-    /**
-     * One extraction at a time, across the whole app.
-     *
-     * Extraction is not the network-bound step it looks like. Fetching the
-     * watch page is the small part; the expensive part is running YouTube's
-     * player JavaScript through Rhino to transform each format's `n`
-     * parameter, which is CPU work on a phone against static state NewPipe
-     * shares process-wide. Run concurrently it does not share out, it
-     * collapses — measured on-device at 1.8s alone, 16.2s with two in flight
-     * (both finishing within 35ms of each other, which is the tell), and 30.3s
-     * with three. Read-ahead is what puts three or four in flight: the track
-     * being waited on plus [AudioCache][com.music.laya.playback.AudioCache]'s
-     * queue warm-up, every one of them an extraction now that no player client
-     * is being served.
-     *
-     * So they are queued rather than raced. Serialised, three cost about two
-     * seconds each in turn instead of thirty seconds each at once, and the one
-     * a listener is actually waiting on is behind at most one other — see
-     * `QUEUE_LOOKAHEAD`, kept at one for exactly this reason. The bound on how
-     * long a single holder can keep the gate is [EXTRACTOR_TIMEOUT_SECONDS].
-     */
-    private val extractionGate = Mutex()
-
-    private suspend fun extractStream(
-        videoId: String,
-        select: (List<Pair<Int, AudioStream>>) -> AudioStream?,
-    ): Stream = extractionGate.withLock {
-        withContext(Dispatchers.IO) {
-            val waited = MonotonicClock.nowMs()
-            val extractor = ServiceList.YouTube.getStreamExtractor(
-                "https://www.youtube.com/watch?v=$videoId",
-            )
-            extractor.fetchPage()
-            val candidates = extractor.audioStreams
-                // Progressive only — DASH/HLS entries carry a manifest, not a URL.
-                .filter {
-                    !it.content.isNullOrBlank() &&
-                        it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP
-                }
-            val stream = select(candidates.map { it.averageBitrate to it })
-                ?: error("Track unavailable: no audio streams")
-            TrackLog.d(
-                TAG,
-                "NewPipe picked ${stream.format?.name} @ ${stream.averageBitrate}kbps " +
-                    "(extraction held the gate ${MonotonicClock.nowMs() - waited}ms)",
-            )
-            // stream.content is already playable, not raw: YoutubeStreamExtractor
-            // resolves the signature cipher and the `n` parameter itself while
-            // building audioStreams, so it is handed on as-is.
-            Stream(
-                url = stream.content,
-                kbps = stream.averageBitrate,
-                mimeType = stream.mime,
-            )
-        }
-    }
-
-    /**
-     * The container, which is all NewPipe's mime type reports.
-     *
-     * `MediaFormat.WEBMA_OPUS` — what YouTube's Opus arrives as — carries the
-     * mime type `audio/webm`, identical to the Vorbis-in-WebM entry beside it.
-     * Accurate about the bytes, and useless for telling the codec apart, which
-     * is what [isM4a] is asked of the format for instead.
-     */
-    private val AudioStream.mime: String get() = format?.mimeType.orEmpty()
-
-    /**
-     * Whether these bytes are AAC in MP4, asked of the format rather than its
-     * name.
-     *
-     * The name would in fact do here — `MediaFormat.M4A` reports `audio/mp4`,
-     * the same thing the player endpoint calls it — but the enum is what
-     * actually carries the answer, and the sibling case is a standing warning
-     * against reading these mime types as codecs: the format that means Opus
-     * says `audio/webm`, so a download demanding Opus by name concluded the
-     * track hadn't any and fell through, while playback took the very same
-     * stream and played it as Opus.
-     */
-    private val AudioStream.isM4a: Boolean
-        get() = format == MediaFormat.M4A
-
-    private val AudioStream.isWebmOpus: Boolean
-        get() = format == MediaFormat.WEBMA_OPUS
 
     // ---- Cache --------------------------------------------------------------
 
@@ -1158,7 +829,7 @@ object StreamResolver {
      * is memoised, so asking costs nothing beyond the first time.
      */
     suspend fun contentLength(videoId: String): Long? =
-        resolve(videoId).toHttpUrlOrNull()?.queryParameter("clen")?.toLongOrNull()
+        queryParam(resolve(videoId), "clen")?.toLongOrNull()
 
     private class Resolved(val url: String, val at: Long)
 
@@ -1173,7 +844,7 @@ object StreamResolver {
      * enough to fail a play. Twenty minutes covers a track and the seeking
      * around it while staying well inside the window where the URL is good.
      */
-    private val recent = ConcurrentHashMap<String, Resolved>()
+    private val recent = ConcurrentMap<String, Resolved>()
 
     private const val URL_TTL_MS = 20 * 60 * 1000L
 

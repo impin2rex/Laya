@@ -25,6 +25,7 @@ import java.awt.Rectangle
 import java.awt.Toolkit
 import okio.Path.Companion.toOkioPath
 import kotlin.math.roundToInt
+import okio.Path.Companion.toOkioPath
 import org.jetbrains.compose.resources.painterResource
 
 fun main() {
@@ -55,7 +56,7 @@ fun main() {
         DesktopStreamClient.ceiling.get() ?: DesktopSourceRegistry.ceiling(null).maxKbps
     }
     InnerTubeXResolver.init(
-        filesDir = DesktopMediaCache.directory.toFile(),
+        filesDir = DesktopMediaCache.directory.toOkioPath(),
         store = DesktopInnerTubeXStore,
         poTokenProvider = PoTokenGenerator(
             createMinter = { DesktopPoTokenWebView.getNewPoTokenGenerator() },

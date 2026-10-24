@@ -1,7 +1,7 @@
 package com.music.laya.data.lyrics
 
 import com.music.laya.data.innertube.Innertube
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -12,7 +12,7 @@ import kotlinx.serialization.json.longOrNull
 
 /** Lyrics exposed by YouTube Music's Lyrics tab for the exact playing video. */
 object YouTubeMusicLyrics {
-    suspend fun lyrics(videoId: String): List<LyricLine>? = withContext(Dispatchers.IO) {
+    suspend fun lyrics(videoId: String): List<LyricLine>? = withContext(ioDispatcher) {
         if (!YOUTUBE_ID.matches(videoId)) return@withContext null
         val next = runCatching { Innertube.next(videoId) }.getOrNull() ?: return@withContext null
         val endpoint = next.objectsNamed("tabRenderer")
@@ -36,7 +36,7 @@ object YouTubeMusicLyrics {
 
 /** Timed YouTube transcript/captions for the exact playing video. */
 object YouTubeTranscriptLyrics {
-    suspend fun lyrics(videoId: String): List<LyricLine>? = withContext(Dispatchers.IO) {
+    suspend fun lyrics(videoId: String): List<LyricLine>? = withContext(ioDispatcher) {
         if (!YOUTUBE_ID.matches(videoId)) return@withContext null
         val response = runCatching { Innertube.transcript(videoId) }.getOrNull()
             ?: return@withContext null

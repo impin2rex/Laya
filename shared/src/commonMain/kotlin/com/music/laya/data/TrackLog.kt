@@ -2,12 +2,15 @@ package com.music.laya.data
 
 import com.music.laya.data.model.Song
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.asContextElement
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.aboutContext
+import com.music.laya.platform.currentAbout
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.localOffsetMillis
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -78,40 +81,37 @@ object TrackLog {
     // reads it (see the class doc), so a release build skips straight to
     // record(), which is what Copy Log actually depends on.
 
-    fun d(tag: String, message: String, about: String? = working.get()) {
+    fun d(tag: String, message: String, about: String? = currentAbout()) {
         echo?.invoke('D', tag, message, null)
         record('D', message, about)
     }
 
-    fun i(tag: String, message: String, about: String? = working.get()) {
+    fun i(tag: String, message: String, about: String? = currentAbout()) {
         echo?.invoke('I', tag, message, null)
         record('I', message, about)
     }
 
-    fun w(tag: String, message: String, about: String? = working.get()) {
+    fun w(tag: String, message: String, about: String? = currentAbout()) {
         echo?.invoke('W', tag, message, null)
         record('W', message, about)
     }
 
-    fun w(tag: String, message: String, error: Throwable, about: String? = working.get()) {
+    fun w(tag: String, message: String, error: Throwable, about: String? = currentAbout()) {
         echo?.invoke('W', tag, message, error)
         record('W', "$message\n${error.stackTraceToString()}", about)
     }
 
-    fun e(tag: String, message: String, about: String? = working.get()) {
+    fun e(tag: String, message: String, about: String? = currentAbout()) {
         echo?.invoke('E', tag, message, null)
         record('E', message, about)
     }
 
-    fun e(tag: String, message: String, error: Throwable, about: String? = working.get()) {
+    fun e(tag: String, message: String, error: Throwable, about: String? = currentAbout()) {
         echo?.invoke('E', tag, message, error)
         record('E', "$message\n${error.stackTraceToString()}", about)
     }
 
     // ── Whose line is it ────────────────────────────────────────────────────
-
-    /** The track whose work this thread is doing, if it is doing any. */
-    private val working = ThreadLocal<String?>()
 
     /**
      * A coroutine context that files everything logged inside it against [id].
@@ -130,13 +130,15 @@ object TrackLog {
      * `withContext(IO)` for a fetch, `Dispatchers.Default` for the JS engine —
      * and this follows it, including into every child coroutine.
      */
-    fun about(id: String?): CoroutineContext = working.asContextElement(id)
+    fun about(id: String?): CoroutineContext = aboutContext(id)
 
     private class Line(val at: Long, val level: Char, val text: String, val track: String?)
 
     private val lines = ArrayDeque<Line>()
 
     /** Total characters held, so the buffer is bounded by size rather than by count. */
+    private val lock = SynchronizedObject()
+
     private var held = 0
 
     /**
@@ -151,8 +153,8 @@ object TrackLog {
         } else {
             message
         }
-        synchronized(lines) {
-            lines.addLast(Line(System.currentTimeMillis(), level, text, about))
+        synchronized(lock) {
+            lines.addLast(Line(currentTimeMillis(), level, text, about))
             held += text.length
             while (held > MAX_HELD_CHARS && lines.isNotEmpty()) {
                 held -= lines.removeFirst().text.length
@@ -169,11 +171,11 @@ object TrackLog {
      * which track they are about: a track served whole from the disk cache is
      * resolved by nobody and would otherwise have no start at all.
      */
-    private val startedAt = ConcurrentHashMap<String, Long>()
+    private val startedAt = ConcurrentMap<String, Long>()
 
     fun onTrackStarted(videoId: String) {
         if (startedAt.size >= MAX_REMEMBERED) startedAt.clear()
-        startedAt[videoId] = System.currentTimeMillis()
+        startedAt[videoId] = currentTimeMillis()
     }
 
     /**
@@ -199,7 +201,7 @@ object TrackLog {
      * cache, or the track a cold start resumes on.
      */
     suspend fun forTrack(song: Song, stats: NerdStats.Snapshot?): String = withContext(Dispatchers.Default) {
-        val held = synchronized(lines) { lines.toList() }
+        val held = synchronized(lock) { lines.toList() }
         val from = listOfNotNull(
             held.firstOrNull { it.track == song.videoId }?.at,
             startedAt[song.videoId]?.minus(LEAD_IN_MS),
@@ -207,7 +209,7 @@ object TrackLog {
         val since = held.filter { from == null || it.at >= from }
         val window = since.filter { it.track == null || it.track == song.videoId }
         header(song, stats, from, window.size, since.size - window.size) + "\n" +
-            window.joinToString("\n") { "${CLOCK.format(Date(it.at))} ${it.level} ${it.text}" } +
+            window.joinToString("\n") { "${clock(it.at)} ${it.level} ${it.text}" } +
             "\n"
     }
 
@@ -234,8 +236,8 @@ object TrackLog {
         appendLine("playing: ${stats.describe()}")
         sourcesLine()?.let(::appendLine)
         appendLine(
-            "window: ${from?.let { CLOCK.format(Date(it)) } ?: "everything held"} → " +
-                "${CLOCK.format(Date())} ($count lines" +
+            "window: ${from?.let { clock(it) } ?: "everything held"} → " +
+                "${clock(currentTimeMillis())} ($count lines" +
                 (if (elsewhere > 0) ", $elsewhere for other tracks left out)" else ")"),
         )
         headerLines().forEach(::appendLine)
@@ -260,7 +262,11 @@ object TrackLog {
         return measured + promised + tier
     }
 
-    private val CLOCK = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+    private fun clock(epochMs: Long): String {
+        val t = (epochMs + localOffsetMillis(epochMs)).mod(86_400_000L)
+        fun Long.p(n: Int) = toString().padStart(n, '0')
+        return "${(t / 3_600_000).p(2)}:${(t / 60_000 % 60).p(2)}:${(t / 1000 % 60).p(2)}.${(t % 1000).p(3)}"
+    }
 
     /**
      * How far back of a track's selection to reach when nothing was ever filed

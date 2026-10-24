@@ -25,27 +25,26 @@ import com.music.laya.data.model.SongMenu
 import com.music.laya.data.model.UserPlaylist
 import com.music.laya.data.sources.TrackMatcher
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
-import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.ioDispatcher
 
 /** Suspend API over Innertube. Every call returns a Result so the UI can show a real error. */
 object YtMusicRepository {
 
     private const val TAG = "Laya"
-    private val moodGenreShelfCache = ConcurrentHashMap<String, List<HomeShelf>>()
+    private val moodGenreShelfCache = ConcurrentMap<String, List<HomeShelf>>()
     // Includes unchanged video fallbacks as well as successful matches. The
     // queue prefetcher asks before a track becomes current; remembering its
     // answer makes the eventual player switch use the exact rendition whose
     // bytes were warmed, without repeating a 10–30 second catalogue search.
-    private val audioVersionCache = ConcurrentHashMap<String, Song>()
+    private val audioVersionCache = ConcurrentMap<String, Song>()
     // Cache for video version lookups from audio tracks (null means no video found).
-    private val videoVersionCache = ConcurrentHashMap<String, Song?>()
+    private val videoVersionCache = ConcurrentMap<String, Song?>()
 
     fun cachedAudioVersion(videoId: String): Song? = audioVersionCache[videoId]
     fun cachedVideoVersion(videoId: String): Song? = videoVersionCache[videoId]
@@ -271,7 +270,7 @@ object YtMusicRepository {
         moodGenreShelfCache[key]?.let { return Result.success(it) }
         return call("mood-genre:$browseId") {
             InnertubeParser.parseHome(Innertube.browse(browseId, params))
-        }.also { result -> result.getOrNull()?.let { moodGenreShelfCache.putIfAbsent(key, it) } }
+        }.also { result -> result.getOrNull()?.let { moodGenreShelfCache.getOrPut(key) { it } } }
     }
 
     /** A category card borrows the first real cover from the playlists it opens. */
@@ -815,7 +814,7 @@ object YtMusicRepository {
             val parsed = InnertubeParser.parseLibraryItemPage(response)
             parsed.items.forEach { item ->
                 val key = item.browseId ?: item.videoId ?: "${item.title}\n${item.subtitle}"
-                out.putIfAbsent(key, item)
+                out.getOrPut(key) { item }
             }
             val token = parsed.continuation ?: break
             if (page++ >= MAX_PAGES) break
@@ -972,7 +971,7 @@ object YtMusicRepository {
             val shelf = InnertubeParser.parsePlaylistShelf(response) ?: break
             shelf.songs.forEach { song ->
                 val setVideoId = song.setVideoId ?: error("playlist entry without an id")
-                out.putIfAbsent(setVideoId, song)
+                out.getOrPut(setVideoId) { song }
             }
             val token = shelf.continuation ?: break
             // Same cap as [songsPaged] — a playlist past it can't be listed
@@ -1045,7 +1044,7 @@ object YtMusicRepository {
     }
 
     private suspend fun <T> call(label: String, block: suspend () -> T): Result<T> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             runCatching { block() }.recoverCatching { failure ->
                 // Context cookies can rotate while a process is alive. Refresh
                 // once and retry; never loop or silently sign the listener out.

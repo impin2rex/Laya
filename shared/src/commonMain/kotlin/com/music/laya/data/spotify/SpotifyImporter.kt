@@ -1,12 +1,16 @@
 package com.music.laya.data.spotify
 
-import com.music.laya.data.Http
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.model.SearchFilter
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.Song
+import com.music.laya.data.lyrics.param
 import com.music.laya.data.sources.TrackMatcher
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.ioDispatcher
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -19,9 +23,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
-import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.atomics.AtomicInt
 
 /** Single track metadata extracted from a Spotify playlist. */
 data class SpotifyImportTrack(
@@ -65,10 +67,10 @@ object SpotifyImporter {
             return id.takeIf { PLAYLIST_ID.matches(it) }
         }
 
-        val uri = runCatching { java.net.URI(trimmed) }.getOrNull() ?: return null
-        if (uri.scheme?.lowercase() !in setOf("http", "https")) return null
-        if (!isSpotifyHost(uri.host?.lowercase().orEmpty())) return null
-        val segments = uri.path.orEmpty().split('/').filter { it.isNotEmpty() }
+        val uri = runCatching { Url(trimmed) }.getOrNull() ?: return null
+        if (!Regex("^https?://", RegexOption.IGNORE_CASE).containsMatchIn(trimmed)) return null
+        if (!isSpotifyHost(uri.host.lowercase())) return null
+        val segments = uri.segments.filter { it.isNotEmpty() }
         val playlistIdx = segments.indexOf("playlist")
         if (playlistIdx == -1 || playlistIdx + 1 >= segments.size) return null
         return segments[playlistIdx + 1].takeIf { PLAYLIST_ID.matches(it) }
@@ -78,15 +80,10 @@ object SpotifyImporter {
      * Fetches public Spotify playlist details from Spotify's embed endpoint.
      */
     suspend fun fetchPlaylistTracks(playlistId: String): Pair<String, List<SpotifyImportTrack>> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val url = "https://open.spotify.com/embed/playlist/$playlistId"
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", USER_AGENT)
-                .build()
-
-            val html = Http.client.newCall(request).execute().use { response ->
-                val body = response.body.string().orEmpty()
+            val html = NetHttp.execute(HttpRequest(url, headers = mapOf("User-Agent" to USER_AGENT))).let { response ->
+                val body = response.text()
                 if (!response.isSuccessful || body.isBlank()) {
                     error("Failed to load Spotify playlist (HTTP ${response.code})")
                 }
@@ -194,21 +191,23 @@ object SpotifyImporter {
         while (true) {
             val variables = """{"uri":"spotify:playlist:$playlistId","offset":$offset,"limit":$PAGE_SIZE,"enableWatchFeedEntrypoint":false}"""
             val extensions = """{"persistedQuery":{"version":1,"sha256Hash":"$FETCH_PLAYLIST_HASH"}}"""
-            val url = PATHFINDER_URL.toHttpUrl().newBuilder()
-                .addQueryParameter("operationName", "fetchPlaylist")
-                .addQueryParameter("variables", variables)
-                .addQueryParameter("extensions", extensions)
-                .build()
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", USER_AGENT)
-                .header("Authorization", "Bearer $token")
-                .header("App-platform", "WebPlayer")
-                .header("Accept", "application/json")
-                .build()
-            val body = Http.client.newCall(request).execute().use { response ->
+            val url = URLBuilder(PATHFINDER_URL).apply {
+                param("operationName", "fetchPlaylist")
+                param("variables", variables)
+                param("extensions", extensions)
+            }.buildString()
+            val request = HttpRequest(
+                url,
+                headers = mapOf(
+                    "User-Agent" to USER_AGENT,
+                    "Authorization" to "Bearer $token",
+                    "App-platform" to "WebPlayer",
+                    "Accept" to "application/json",
+                ),
+            )
+            val body = NetHttp.execute(request).let { response ->
                 if (!response.isSuccessful) error("HTTP ${response.code}")
-                response.body.string().orEmpty()
+                response.text()
             }
             val content = json.parseToJsonElement(body).jsonObject["data"]?.jsonObject
                 ?.get("playlistV2")?.jsonObject?.get("content")?.jsonObject
@@ -242,7 +241,7 @@ object SpotifyImporter {
         onProgress: (completed: Int, total: Int) -> Unit,
     ): Pair<List<Song>, List<SpotifyImportTrack>> = coroutineScope {
         val total = tracks.size
-        val completedCount = AtomicInteger(0)
+        val completedCount = AtomicInt(0)
         val semaphore = Semaphore(4) // Bounded concurrency for search queries
 
         val cleanLang = language?.trim()?.takeIf {
@@ -257,7 +256,7 @@ object SpotifyImporter {
         )
 
         val deferredResults = tracks.map { track ->
-            async(Dispatchers.IO) {
+            async(ioDispatcher) {
                 semaphore.withPermit {
                     val query = if (cleanLang != null) {
                         "${track.title} ${track.artist} $cleanLang".trim()
@@ -291,7 +290,7 @@ object SpotifyImporter {
                         bestMatch
                     }
 
-                    val done = completedCount.incrementAndGet()
+                    val done = completedCount.addAndFetch(1)
                     onProgress(done, total)
 
                     if (matchedSong != null) {

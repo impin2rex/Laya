@@ -4,8 +4,9 @@ import com.music.laya.data.sources.SourceTrackKeys
 import com.music.laya.data.sources.StreamFormat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
+import com.music.laya.platform.ConcurrentMap
+import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicLong
 
 /**
  * Architectural provenance of audio pipeline telemetry statistics.
@@ -186,7 +187,7 @@ object NerdStats {
      */
     fun megahertzLabel(hz: Int): String? =
         if (hz < 1_000_000) null
-        else java.math.BigDecimal(hz).movePointLeft(6).stripTrailingZeros().toPlainString() + " MHz"
+        else (hz / 1_000_000).toString() + (hz % 1_000_000).toString().padStart(6, '0').trimEnd('0').let { if (it.isEmpty()) "" else ".$it" } + " MHz"
 
     fun isDolbyAtmosMime(mimeType: String?): Boolean =
         mimeType != null && (mimeType.endsWith("eac3-joc") || mimeType.endsWith("eac3"))
@@ -233,7 +234,7 @@ object NerdStats {
      * the start of building a [Snapshot] and handed back to [publish], so a
      * build that a track change overtook is dropped instead of landing.
      */
-    val currentGeneration: Long get() = generation.get()
+    val currentGeneration: Long get() = generation.load()
 
     /** The queue item [current] may describe, as of the last [onTrackTransition]. */
     @Volatile
@@ -298,13 +299,13 @@ object NerdStats {
      * resolves the *next* track through the same code, so one loose value would
      * end up describing the wrong song.
      */
-    private val picked = ConcurrentHashMap<String, Int>()
+    private val picked = ConcurrentMap<String, Int>()
 
     /** As [picked], for the richer format a non-YouTube source can state. */
-    private val declared = ConcurrentHashMap<String, StreamFormat>()
+    private val declared = ConcurrentMap<String, StreamFormat>()
 
     /** Authoritative source name that supplied the stream, keyed by media/track id. */
-    private val sources = ConcurrentHashMap<String, String>()
+    private val sources = ConcurrentMap<String, String>()
 
     fun onStreamPicked(videoId: String, kbps: Int, source: String? = null) {
         if (kbps > 0) {
@@ -417,7 +418,7 @@ object NerdStats {
      * reads straight after this call to decide whether it is Dolby Atmos.
      */
     fun onTrackTransition(mediaId: String? = null) {
-        generation.incrementAndGet()
+        generation.addAndFetch(1L)
         activeMediaId = mediaId
         current.value = null
     }
@@ -454,7 +455,7 @@ object NerdStats {
      *   rather than merely how it is labelled.
      */
     fun forgetLastSession() {
-        generation.incrementAndGet()
+        generation.addAndFetch(1L)
         activeMediaId = null
         current.value = null
         racingLossless.value = emptySet()

@@ -18,23 +18,23 @@ import com.metrolist.innertubex.extraction.strategy.PoTokenProviderKind
 import com.metrolist.innertubex.extraction.YtConfigParserImpl
 import com.metrolist.innertubex.extraction.generateClientPlaybackNonce
 import com.metrolist.innertubex.models.YouTubeLocale
-import com.music.laya.data.Http
 import com.music.laya.data.TrackLog
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.ioDispatcher
+import com.music.laya.platform.ktorClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import java.io.File
-import java.util.concurrent.ConcurrentHashMap
+import okio.FileSystem
+import okio.Path
+import kotlin.concurrent.Volatile
 
 /** YouTube stream extraction through InnerTubeX's live-benchmarked client catalog and cipher tiers. */
 object InnerTubeXResolver {
@@ -71,7 +71,8 @@ object InnerTubeXResolver {
 
     private var prefs: ConfigStore? = null
     private var poTokens: TokenProvider? = null
-    private var playerDir: File? = null
+    private var playerDir: Path? = null
+    private val fs get() = FileSystem.SYSTEM
     private var warmup: Job? = null
 
     /**
@@ -80,10 +81,10 @@ object InnerTubeXResolver {
      *   WebView one. Null where there is none, which leaves the clients that
      *   need a PoToken out of the catalog.
      */
-    fun init(filesDir: File, store: ConfigStore, poTokenProvider: TokenProvider?) {
+    fun init(filesDir: Path, store: ConfigStore, poTokenProvider: TokenProvider?) {
         prefs = store
         poTokens = poTokenProvider
-        playerDir = File(filesDir, "innertubex_players").apply { mkdirs() }
+        playerDir = (filesDir / "innertubex_players").also { fs.createDirectories(it) }
         scope.launch {
             cipherService.setPreprocessedPlayerCache(::readPlayer, ::writePlayer)
             warm(WARM_DELAY_MS)
@@ -118,21 +119,22 @@ object InnerTubeXResolver {
      * so only the first launch after YouTube rotates its player pays it.
      */
     private fun readPlayer(key: String): String? =
-        playerDir?.let { File(it, key) }?.takeIf { it.isFile }?.readText()
+        playerDir?.let { it / key }?.takeIf { fs.metadataOrNull(it)?.isRegularFile == true }?.let { fs.read(it) { readUtf8() } }
 
     private fun writePlayer(key: String, value: String?) {
         val dir = playerDir ?: return
-        val file = File(dir, key)
+        val file = dir / key
         if (value == null) {
-            file.delete()
+            fs.delete(file)
             return
         }
-        val tmp = File(dir, "$key.tmp")
-        tmp.writeText(value)
-        tmp.renameTo(file)
+        val tmp = dir / "$key.tmp"
+        fs.write(tmp) { writeUtf8(value) }
+        fs.atomicMove(tmp, file)
         // Players rotate every few days; only the newest are worth their megabytes.
-        dir.listFiles()?.filter { !it.name.endsWith(".tmp") }?.sortedByDescending { it.lastModified() }
-            ?.drop(KEPT_PLAYERS)?.forEach { it.delete() }
+        fs.list(dir).filter { !it.name.endsWith(".tmp") }
+            .sortedByDescending { fs.metadataOrNull(it)?.lastModifiedAtMillis ?: 0L }
+            .drop(KEPT_PLAYERS).forEach { fs.delete(it) }
     }
 
     /** The installed PoToken provider, or one that can mint nothing when there is not one. */
@@ -148,8 +150,7 @@ object InnerTubeXResolver {
         }
     }
 
-    private val http = HttpClient(OkHttp) {
-        engine { preconfigured = Http.client }
+    private val http = ktorClient {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true })
         }
@@ -197,13 +198,13 @@ object InnerTubeXResolver {
         logger = logger,
     )
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     /** What each minted URL was, so its fetch can be dressed and its refusal attributed. */
-    private val minted = ConcurrentHashMap<String, Extracted>()
+    private val minted = ConcurrentMap<String, Extracted>()
 
     /** Clients refused a track mid-playback, by videoId, and until when. */
-    private val excluded = ConcurrentHashMap<String, ConcurrentHashMap<String, Long>>()
+    private val excluded = ConcurrentMap<String, ConcurrentMap<String, Long>>()
 
     /**
      * InnerTubeX picks one format per ask and has no bitrate ceiling of its own:
@@ -276,7 +277,7 @@ object InnerTubeXResolver {
 
     fun exclude(videoId: String, profileId: String) {
         TrackLog.w(TAG, "InnerTubeX: $profileId refused $videoId; skipping it for this track", about = videoId)
-        excluded.getOrPut(videoId) { ConcurrentHashMap() }[profileId] = MonotonicClock.nowMs() + EXCLUDE_MS
+        excluded.getOrPut(videoId) { ConcurrentMap() }[profileId] = MonotonicClock.nowMs() + EXCLUDE_MS
     }
 
     fun onSessionChanged() {

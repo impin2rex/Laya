@@ -9,3 +9,4 @@ actual fun languageOf(tag: String): String = Locale.forLanguageTag(tag).language
 actual fun systemLanguageTag(): String = Locale.getDefault().toLanguageTag()
 actual fun displayLanguageName(code: String, inTag: String): String =
     Locale.forLanguageTag(code).getDisplayName(Locale.forLanguageTag(inTag))
+actual fun decimalSeparator(): Char = java.text.DecimalFormatSymbols.getInstance().decimalSeparator

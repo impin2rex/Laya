@@ -4,6 +4,8 @@ package com.music.laya.platform
 
 import platform.Foundation.NSLocale
 import platform.Foundation.NSLocaleIdentifier
+import platform.Foundation.currentLocale
+import platform.Foundation.decimalSeparator
 import platform.Foundation.decomposedStringWithCanonicalMapping
 import platform.Foundation.languageCode
 import platform.Foundation.precomposedStringWithCompatibilityMapping
@@ -21,3 +23,5 @@ actual fun systemLanguageTag(): String = (NSLocale.preferredLanguages.firstOrNul
 
 actual fun displayLanguageName(code: String, inTag: String): String =
     NSLocale(localeIdentifier = inTag).displayNameForKey(NSLocaleIdentifier, code) ?: code
+
+actual fun decimalSeparator(): Char = NSLocale.currentLocale.decimalSeparator.firstOrNull() ?: '.'
