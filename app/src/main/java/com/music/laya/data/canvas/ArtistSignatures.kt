@@ -12,26 +12,6 @@ import java.net.URLEncoder
 import java.util.Locale
 
 /**
- * A handwritten signature image for an artist, served by a user-configured
- * artist-signature API (see https://github.com/itsmeadarsh2008/artist-signature).
- *
- * Secondary to [AppleArtistArt.logoUrl]: Apple's title logo is typeset artwork
- * for the artist's name, while this is ink — a panoramic strip that reads best
- * small and centered rather than as a name replacement. Null when the provider
- * is unconfigured, the artist has no signature, or the name is ambiguous
- * (the API returns `matches[]` instead of guessing).
- *
- * [imageUrl] is the served mirror URL when present, else the upstream
- * `original_url`. [aspect] is width over height for sizing without decode.
- */
-data class ArtistSignature(
-    val imageUrl: String,
-    val aspect: Float,
-    /** Lowercased asset format (`svg`, `png`, …); "" when unknown. */
-    val format: String = "",
-)
-
-/**
  * Name-keyed lookup against a custom base URL, mirroring
  * [AppleArtistArtRepository]'s contract: in-memory LRU, never throws,
  * `null` for "nothing known" (never looked up and known-to-have-nothing

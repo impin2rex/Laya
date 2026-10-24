@@ -1,7 +1,9 @@
 package com.music.laya.ui.screens
 
-import android.os.Build
-import com.music.laya.R
+import com.music.laya.sharedui.resources.*
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
@@ -10,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import com.music.laya.ui.components.backdrop.isRenderEffectSupported
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -73,8 +76,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -107,36 +108,29 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
-import coil3.request.transformations
 import androidx.compose.runtime.mutableIntStateOf
 import kotlinx.coroutines.delay
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Album
-import com.music.laya.data.LocalGroups
 import com.music.laya.data.matchesSearch
 import com.music.laya.data.sortedForLibrary
 import com.music.laya.data.useTrackTags
 import com.music.laya.ui.components.CoverPlaceholder
 import com.music.laya.data.canvas.AppleArtistArt
 import com.music.laya.data.DebugLog as Log
-import com.music.laya.data.canvas.AppleArtistArtRepository
 import com.music.laya.data.canvas.ArtistSignature
-import com.music.laya.data.canvas.ArtistSignatureRepository
-import com.music.laya.data.canvas.SignatureInkTransformation
 import com.music.laya.data.canvas.keyColors
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import com.music.laya.data.canvas.CanvasArtwork
-import com.music.laya.data.canvas.CanvasRepository
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.DetailPage
 import com.music.laya.data.model.CARD_ART_PX
@@ -176,7 +170,6 @@ import com.music.laya.ui.player.CanvasArtworkPlayer
 import com.music.laya.ui.theme.ArtworkPalette
 import com.music.laya.ui.theme.rememberArtworkPalette
 import kotlin.math.roundToInt
-import java.util.Locale
 
 private const val MAX_ARTIST_SONGS = 20
 private const val SONGS_PER_COLUMN = 4
@@ -337,7 +330,7 @@ fun DetailScreen(
      * running order, come the folder's Songs / Artists / Albums tabs. See
      * [LocalFolder].
      */
-    folder: LocalFolder? = null,
+    folder: DetailFolder? = null,
     /**
      * Set while this playlist's songs are being rearranged: drawn in place of
      * the track list, over the same page colour, and handed the page's
@@ -369,13 +362,13 @@ fun DetailScreen(
     // Apple Music's hero photo and title logo for this artist, found by name.
     // Null until (and unless) it arrives; the YouTube header stands in meanwhile.
     var appleArt by remember(page.browseId) {
-        mutableStateOf(if (isArtist) AppleArtistArtRepository.cached(page.title) else null)
+        mutableStateOf(if (isArtist) DetailExtras.host.cachedArt(page.title) else null)
     }
     // Secondary provider: handwritten signature from the user's own
     // artist-signature API. Drawn only when Apple has no title logo.
     val signatureEnabled by AppSettings.signatureApiEnabled.collectAsStateWithLifecycle()
     val signatureBaseUrl by AppSettings.signatureApiUrl.collectAsStateWithLifecycle()
-    val signatureUpdates by ArtistSignatureRepository.updates.collectAsStateWithLifecycle()
+    val signatureUpdates by DetailExtras.host.signatureUpdates.collectAsStateWithLifecycle()
     var signature by remember(page.browseId) { mutableStateOf<ArtistSignature?>(null) }
     // Opened from a track, the title is the whole credit ("A, B & C") until the
     // page loads and swaps in the one artist's name. Searching a credit finds
@@ -383,11 +376,11 @@ fun DetailScreen(
     // other name starts the moment the page opens.
     val nameSettled = !page.title.looksLikeCredit() || page.songs !is UiState.Loading
     LaunchedEffect(page.browseId, page.title, nameSettled) {
-        if (isArtist && nameSettled) appleArt = AppleArtistArtRepository.artFor(page.title) ?: appleArt
+        if (isArtist && nameSettled) appleArt = DetailExtras.host.artFor(page.title) ?: appleArt
     }
     LaunchedEffect(page.browseId, page.title, nameSettled, signatureEnabled, signatureBaseUrl, signatureUpdates) {
         if (!isArtist || !nameSettled) return@LaunchedEffect
-        val base = ArtistSignatureRepository.effectiveBaseUrl(signatureEnabled, signatureBaseUrl)
+        val base = DetailExtras.host.signatureBase(signatureEnabled, signatureBaseUrl)
         if (base == null) {
             signature = null
             return@LaunchedEffect
@@ -399,8 +392,8 @@ fun DetailScreen(
         val backoff = listOf(0L, 5_000L, 15_000L, 30_000L)
         for (wait in backoff) {
             if (wait > 0) delay(wait)
-            signature = ArtistSignatureRepository.cached(page.title, base)
-                ?: ArtistSignatureRepository.signatureFor(page.title, base)
+            signature = DetailExtras.host.cachedSignature(page.title, base)
+                ?: DetailExtras.host.signatureFor(page.title, base)
                 ?: signature
             if (signature != null) return@LaunchedEffect
         }
@@ -425,7 +418,7 @@ fun DetailScreen(
     val closeSearch = { onSearchingChange(false) }
     // Back closes the search first — this handler is registered after the one
     // that pops the page, so it is the one that answers while it's enabled.
-    BackHandler(enabled = searching) { closeSearch() }
+    PlatformBackHandler(enabled = searching) { closeSearch() }
 
     // Each surviving row still knows where it sat in the full running order, so
     // an album's track numbers stay the album's rather than becoming positions
@@ -442,13 +435,11 @@ fun DetailScreen(
     // A device folder's tab and Downloads selection. The selection answers
     // Back before the search does: it is registered after it, so it is asked
     // first while it is on.
-    val folderState = folder?.state
-    val folderGroups = if (folder != null && folderState != null) {
-        rememberLocalFolderGroups(page.browseId, folder, folderState.tab, rawSongs, query)
-    } else {
-        emptyList()
-    }
-    BackHandler(enabled = folderState?.selecting == true) { folderState?.clear() }
+    val folderItems = folder?.rememberItems(
+        page.browseId, rawSongs, query, queue, palette, currentSong, isPlaying,
+        onSongClick, onSongLongPress, onSongSwipe,
+    )
+    PlatformBackHandler(enabled = folder?.selecting == true) { folder?.clearSelection() }
 
     // What marks a row as already downloaded, tinted from the sleeve like the
     // rest of the page. Null on any page that is itself a reading of this
@@ -476,7 +467,7 @@ fun DetailScreen(
         // As on the player: the credit fills in once the tracks load, so this
         // can run twice. Keep a clip that is already playing if the second
         // pass comes back empty.
-        canvas = CanvasRepository.canvasForAlbum(page.title, credit) ?: canvas
+        canvas = DetailExtras.host.canvasForAlbum(page.title, credit) ?: canvas
     }
     // An artist's clip comes with the same Apple lookup as its photograph.
     val artistVideo = appleArt?.videoUrl
@@ -640,7 +631,7 @@ fun DetailScreen(
                     Box(Modifier.padding(top = if (isArtist) 28.dp else 0.dp)) {
                     AboutSection(
                         title = stringResource(
-                            if (isArtist) R.string.about_artist else R.string.about_album,
+                            if (isArtist) Res.string.about_artist else Res.string.about_album,
                         ),
                         text = description?.takeIf { it.isNotBlank() },
                         palette = palette,
@@ -675,21 +666,8 @@ fun DetailScreen(
             when (val state = page.songs) {
                 is UiState.Loading -> detailSkeleton(isArtist)
                 is UiState.Error -> item { MessageState(state.message) }
-                is UiState.Success -> if (folder != null && folderState != null) {
-                    localFolderItems(
-                        folder = folder,
-                        state = folderState,
-                        songs = queue,
-                        groups = folderGroups,
-                        query = query,
-                        columns = gridColumns,
-                        palette = palette,
-                        currentSong = currentSong,
-                        isPlaying = isPlaying,
-                        onSongClick = onSongClick,
-                        onSongLongPress = onSongLongPress,
-                        onSongSwipe = onSongSwipe,
-                    )
+                is UiState.Success -> if (folderItems != null) {
+                    folderItems(gridColumns)
                 } else if (isArtist) {
                     // An artist's full song list would bury the album shelves, so
                     // it pages sideways four at a time and stops at twenty.
@@ -697,7 +675,7 @@ fun DetailScreen(
                         val top = state.data.take(MAX_ARTIST_SONGS)
                         val isCurrentRow = playingRowMatcher(top, currentSong)
                         SectionHeading(
-                            title = stringResource(R.string.top_songs),
+                            title = stringResource(Res.string.top_songs),
                             palette = palette,
                             horizontalPadding = ARTIST_CONTENT_GUTTER,
                         )
@@ -736,7 +714,7 @@ fun DetailScreen(
                     val isCurrentRow = playingRowMatcher(matches.map { it.value }, currentSong)
                     if (matches.isEmpty() && state.data.isNotEmpty()) {
                         item(key = "no-matches") {
-                            MessageState(stringResource(R.string.nothing_matches, query))
+                            MessageState(stringResource(Res.string.nothing_matches, query))
                         }
                     }
                     itemsIndexed(
@@ -784,7 +762,7 @@ fun DetailScreen(
             // into the list above — see [DetailPage.suggestedSongs].
             if (suggested.isNotEmpty()) {
                 item(key = "suggested-heading") {
-                    SectionHeading(stringResource(R.string.suggested), palette)
+                    SectionHeading(stringResource(Res.string.suggested), palette)
                 }
                 val isSuggestedCurrent = playingRowMatcher(suggested, currentSong)
                 itemsIndexed(
@@ -845,10 +823,8 @@ fun DetailScreen(
             if (isArtist) aboutItem()
         }
 
-                if (folder != null && folderState != null && folderState.selecting) {
-                    LocalFolderSelectionBar(
-                        folder = folder,
-                        state = folderState,
+                if (folder != null && folder.selecting) {
+                    folder.SelectionBar(
                         songs = songs,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
@@ -1014,7 +990,7 @@ private fun ReleaseHeader(
                     // own pair for that case: Play and Shuffle, side by side.
                     ActionPill(
                         icon = LayaIcons.Play,
-                        label = stringResource(R.string.play),
+                        label = stringResource(Res.string.play),
                         onClick = onPlay,
                         filled = true,
                         size = RELEASE_SIDE_BUTTON,
@@ -1022,7 +998,7 @@ private fun ReleaseHeader(
                     )
                     ActionPill(
                         icon = LayaIcons.Shuffle,
-                        label = stringResource(R.string.shuffle),
+                        label = stringResource(Res.string.shuffle),
                         onClick = onShuffle,
                         filled = false,
                         size = RELEASE_SIDE_BUTTON,
@@ -1033,7 +1009,7 @@ private fun ReleaseHeader(
                     onDownloadAll?.let {
                         CircleIconButton(
                             icon = Icons.Rounded.Download,
-                            contentDescription = stringResource(R.string.download_all),
+                            contentDescription = stringResource(Res.string.download_all),
                             onClick = it,
                             size = RELEASE_SIDE_BUTTON,
                         )
@@ -1042,14 +1018,14 @@ private fun ReleaseHeader(
                 }
                 CircleIconButton(
                     icon = LayaIcons.Shuffle,
-                    contentDescription = stringResource(R.string.shuffle),
+                    contentDescription = stringResource(Res.string.shuffle),
                     onClick = onShuffle,
                     haptic = Haptic.Resume,
                     size = RELEASE_SIDE_BUTTON,
                 )
                 ActionPill(
                     icon = LayaIcons.Play,
-                    label = stringResource(R.string.play),
+                    label = stringResource(Res.string.play),
                     onClick = onPlay,
                     filled = true,
                     size = RELEASE_SIDE_BUTTON,
@@ -1061,9 +1037,9 @@ private fun ReleaseHeader(
                         // "not yet / done", which is what the state is.
                         icon = if (library.saved) LayaIcons.Check else LayaIcons.Plus,
                         contentDescription = if (library.saved) {
-                            stringResource(R.string.remove_from_library)
+                            stringResource(Res.string.remove_from_library)
                         } else {
-                            stringResource(R.string.add_to_library)
+                            stringResource(Res.string.add_to_library)
                         },
                         onClick = { onToggleLibrary?.invoke() },
                         haptic = if (library.saved) Haptic.ToggleOff else Haptic.ToggleOn,
@@ -1074,7 +1050,7 @@ private fun ReleaseHeader(
                     // hole beside Play.
                     CircleIconButton(
                         icon = LayaIcons.Plus,
-                        contentDescription = stringResource(R.string.add_to_library),
+                        contentDescription = stringResource(Res.string.add_to_library),
                         onClick = {},
                         size = RELEASE_SIDE_BUTTON,
                         enabled = false,
@@ -1139,7 +1115,7 @@ private fun DetailSearchField(
         Box(Modifier.weight(1f)) {
             if (query.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.search_this_list),
+                    text = stringResource(Res.string.search_this_list),
                     style = MaterialTheme.typography.bodyLarge,
                     color = palette.onBackgroundVariant,
                     maxLines = 1,
@@ -1170,7 +1146,7 @@ private fun DetailSearchField(
             Icon(
                 imageVector = Icons.Rounded.Close,
                 contentDescription = stringResource(
-                    if (query.isEmpty()) R.string.close_search else R.string.clear_search,
+                    if (query.isEmpty()) Res.string.close_search else Res.string.clear_search,
                 ),
                 tint = palette.onBackgroundVariant,
                 modifier = Modifier.size(17.dp),
@@ -1179,7 +1155,7 @@ private fun DetailSearchField(
     }
 }
 
-internal fun List<Song>.sortedForDetail(sort: SongSort): List<Song> = when (sort) {
+fun List<Song>.sortedForDetail(sort: SongSort): List<Song> = when (sort) {
     SongSort.DEFAULT -> this
     SongSort.TITLE_ASC -> sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
     SongSort.TITLE_DESC -> sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title })
@@ -1209,7 +1185,7 @@ internal fun List<Song>.sortedForDetail(sort: SongSort): List<Song> = when (sort
  * full list — see the track numbers on an album, which are the release's own
  * and not positions in whatever the filter left.
  */
-internal fun List<Song>.matching(query: String): List<IndexedValue<Song>> {
+fun List<Song>.matching(query: String): List<IndexedValue<Song>> {
     val all = withIndex().toList()
     if (query.isBlank()) return all
     return all.filter { (_, song) -> song.matchesSearch(query) }
@@ -1275,7 +1251,7 @@ private fun ArtistHeader(
                     } else {
                         size(coil3.size.Size.ORIGINAL)
                     }
-                    if (isSignatureScan) transformations(SignatureInkTransformation)
+                    if (isSignatureScan) with(DetailExtras.host) { signatureInk() }
                 }.build()
             }
             // A dropped fetch gets two more tries before the name is left in place.
@@ -1308,7 +1284,7 @@ private fun ArtistHeader(
                         is AsyncImagePainter.State.Success -> logoShown = true
                         is AsyncImagePainter.State.Error -> {
                             val cause = state
-                                .result.throwable.let { "${it.javaClass.simpleName}: ${it.message}" }
+                                .result.throwable.let { "${it::class.simpleName}: ${it.message}" }
                             Log.d("ArtistHeader", "image load failed: $imageUrl attempt $attempt cause=$cause")
                             failed = true
                         }
@@ -1383,7 +1359,7 @@ private fun PageBackground(
     // Not under a canvas: a still blurred over the foot of a moving clip would
     // freeze the bottom of the video into the wrong picture.
     val softenFoot = canvas == null && !reduceDynamicBlur &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        isRenderEffectSupported()
     val art = heroUrl ?: page.thumbnailUrl.artworkAt(HEADER_ART_PX)
 
     Box(modifier.clipToBounds()) {
@@ -1511,7 +1487,7 @@ private fun ActionRow(
     ) {
         CircleIconButton(
             icon = LayaIcons.Shuffle,
-            contentDescription = stringResource(R.string.shuffle),
+            contentDescription = stringResource(Res.string.shuffle),
             onClick = onShuffle,
             haptic = Haptic.Resume,
             size = ARTIST_SIDE_BUTTON,
@@ -1528,7 +1504,7 @@ private fun ActionRow(
             CircleIconButton(
                 icon = if (subscription.subscribed) Icons.Rounded.Star else Icons.Rounded.StarBorder,
                 contentDescription = stringResource(
-                    if (subscription.subscribed) R.string.unsubscribe else R.string.subscribe,
+                    if (subscription.subscribed) Res.string.unsubscribe else Res.string.subscribe,
                 ),
                 onClick = { onToggleSubscription?.invoke() },
                 haptic = if (subscription.subscribed) Haptic.ToggleOff else Haptic.ToggleOn,
@@ -1537,7 +1513,7 @@ private fun ActionRow(
         } else {
             CircleIconButton(
                 icon = Icons.Rounded.StarBorder,
-                contentDescription = stringResource(R.string.subscribe),
+                contentDescription = stringResource(Res.string.subscribe),
                 onClick = {},
                 size = ARTIST_SIDE_BUTTON,
                 enabled = false,
@@ -1616,7 +1592,7 @@ private fun PlayCircle(
     containerColor: Color,
 ) {
     val haptics = rememberHaptics()
-    val description = stringResource(R.string.play)
+    val description = stringResource(Res.string.play)
     Box(
         modifier = Modifier
             .size(size)
@@ -1724,14 +1700,14 @@ private fun ArtistStatsRow(
         subscriberCountText?.let {
             StatChip(
                 icon = Icons.Rounded.Person,
-                text = stringResource(R.string.subscribers, it.substringBefore(' ')),
+                text = stringResource(Res.string.subscribers, it.substringBefore(' ')),
                 palette = palette,
             )
         }
         monthlyListenerCount?.let {
             StatChip(
                 icon = Icons.Rounded.GraphicEq,
-                text = stringResource(R.string.monthly_listeners, it.substringBefore(' ')),
+                text = stringResource(Res.string.monthly_listeners, it.substringBefore(' ')),
                 palette = palette,
             )
         }
@@ -1783,7 +1759,7 @@ private fun SignedByCaption(
     modifier: Modifier = Modifier,
     textAlign: TextAlign = TextAlign.Center,
 ) {
-    val signed = stringResource(R.string.signed_by, name)
+    val signed = stringResource(Res.string.signed_by, name)
     val nameAt = signed.indexOf(name)
     Text(
         text = buildAnnotatedString {
@@ -1821,7 +1797,7 @@ private fun AboutSignature(
                 size(SVG_DECODE_WIDTH, (SVG_DECODE_WIDTH / aspect).roundToInt())
             } else {
                 size(coil3.size.Size.ORIGINAL)
-                transformations(SignatureInkTransformation)
+                with(DetailExtras.host) { signatureInk() }
             }
         }.build()
     }
@@ -1886,7 +1862,7 @@ private fun AboutSection(
         )
         if (clipped || expanded) {
             Text(
-                text = stringResource(if (expanded) R.string.less else R.string.more),
+                text = stringResource(if (expanded) Res.string.less else Res.string.more),
                 style = MaterialTheme.typography.labelLarge,
                 color = palette.accent,
                 modifier = Modifier
@@ -1929,7 +1905,7 @@ private fun SectionHeading(
         )
         if (onShowAll != null) {
             Text(
-                text = stringResource(R.string.show_all),
+                text = stringResource(Res.string.show_all),
                 style = MaterialTheme.typography.titleSmall,
                 color = palette.accent,
                 modifier = Modifier
@@ -2061,7 +2037,7 @@ private fun SuggestedSongRow(
         ) {
             Icon(
                 Icons.Rounded.Add,
-                contentDescription = stringResource(R.string.add_to_playlist),
+                contentDescription = stringResource(Res.string.add_to_playlist),
                 tint = palette.accent,
                 modifier = Modifier.size(20.dp),
             )
@@ -2094,13 +2070,12 @@ private fun ShelfItem.releaseYear(): Int? =
     RELEASE_YEAR.find(subtitle)?.value?.toIntOrNull()
 
 /** "Recent Single" and "Recent EP" where the card says so, otherwise "Recent Album". */
-@androidx.annotation.StringRes
-private fun ShelfItem.recentLabel(): Int {
+private fun ShelfItem.recentLabel(): StringResource {
     val kind = subtitle.lowercase()
     return when {
-        kind.contains("single") -> R.string.recent_single
-        Regex("""\bep\b""").containsMatchIn(kind) -> R.string.recent_ep
-        else -> R.string.recent_album
+        kind.contains("single") -> Res.string.recent_single
+        Regex("""\bep\b""").containsMatchIn(kind) -> Res.string.recent_ep
+        else -> Res.string.recent_album
     }
 }
 
@@ -2187,7 +2162,7 @@ private fun TopReleaseCard(
                 Icon(
                     imageVector = if (saved) Icons.Rounded.Check else Icons.Rounded.Add,
                     contentDescription = stringResource(
-                        if (saved) R.string.remove_from_library else R.string.add_to_library,
+                        if (saved) Res.string.remove_from_library else Res.string.add_to_library,
                     ),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(22.dp),
@@ -2298,18 +2273,18 @@ private fun ArtistShelfGridPage(
 private fun DetailPage.headerLines(trackCount: Int, playtime: String? = null): Pair<String, String> {
     val parts = subtitle.split("•", "·").map { it.trim() }.filter { it.isNotEmpty() }
     val year = parts.lastOrNull { it.length == 4 && it.all(Char::isDigit) }
-    val kind = parts.firstOrNull { it.lowercase(Locale.ROOT) in KIND_WORDS }
+    val kind = parts.firstOrNull { it.lowercase() in KIND_WORDS }
     val credit = parts.filter { it != year && it != kind }.joinToString(", ")
     // Title case, "Playlist · 2022 · 10 Tracks · 38 min" — except the
     // playtime, whose "min" and "1h 25m" are units, not words.
     // An artist grouped out of a device folder is a plain track list, not an
     // artist page, but it is still billed as the artist it is.
-    val localKind = if (LocalGroups.isArtist(browseId)) stringResource(R.string.artist) else null
+    val localKind = if (DetailExtras.host.isLocalArtist(browseId)) stringResource(Res.string.artist) else null
     val meta = listOfNotNull(
         (kind ?: type.localizedLabel() ?: localKind)?.capitalizeWords(),
         year,
         trackCount.takeIf { it > 0 }?.let {
-            pluralStringResource(R.plurals.track_count_plural, it, it).capitalizeWords()
+            pluralStringResource(Res.plurals.track_count_plural, it, it).capitalizeWords()
         },
         playtime,
     ).joinToString(" · ")
@@ -2317,8 +2292,8 @@ private fun DetailPage.headerLines(trackCount: Int, playtime: String? = null): P
 }
 
 /** The glyph on a release page's placeholder sleeve: what kind of thing has no cover. */
-private fun DetailPage.placeholderIcon(): ImageVector = deviceFolderIcon(browseId) ?: when {
-    LocalGroups.isArtist(browseId) -> Icons.Rounded.Person
+private fun DetailPage.placeholderIcon(): ImageVector = DetailExtras.host.folderIcon(browseId) ?: when {
+    DetailExtras.host.isLocalArtist(browseId) -> Icons.Rounded.Person
     type == BrowseType.ALBUM -> Icons.Rounded.Album
     type == BrowseType.PLAYLIST -> Icons.AutoMirrored.Rounded.QueueMusic
     else -> LayaIcons.MusicNote
@@ -2327,7 +2302,7 @@ private fun DetailPage.placeholderIcon(): ImageVector = deviceFolderIcon(browseI
 /** "10 tracks" → "10 Tracks", "playlist" → "Playlist". */
 private fun String.capitalizeWords(): String =
     split(' ').joinToString(" ") { word ->
-        word.replaceFirstChar { it.titlecase(Locale.getDefault()) }
+        word.replaceFirstChar { it.titlecase() }
     }
 
 /** Subtitle words that name what a page *is* rather than who made it. */
@@ -2337,9 +2312,9 @@ private val KIND_WORDS = setOf(
 
 @Composable
 private fun BrowseType.localizedLabel(): String? = when (this) {
-        BrowseType.ALBUM -> stringResource(R.string.album)
-        BrowseType.PLAYLIST -> stringResource(R.string.playlist)
-        BrowseType.ARTIST -> stringResource(R.string.artist)
+        BrowseType.ALBUM -> stringResource(Res.string.album)
+        BrowseType.PLAYLIST -> stringResource(Res.string.playlist)
+        BrowseType.ARTIST -> stringResource(Res.string.artist)
         BrowseType.OTHER -> null
     }
 
@@ -2353,7 +2328,7 @@ private fun List<Song>.playtime(): String? {
     val minutes = sumOf { it.durationMillis() } / 60_000
     return when {
         minutes <= 0 -> null
-        minutes < 60 -> stringResource(R.string.minutes_short, minutes.toInt())
-        else -> stringResource(R.string.hours_minutes_short, (minutes / 60).toInt(), (minutes % 60).toInt())
+        minutes < 60 -> stringResource(Res.string.minutes_short, minutes.toInt())
+        else -> stringResource(Res.string.hours_minutes_short, (minutes / 60).toInt(), (minutes % 60).toInt())
     }
 }

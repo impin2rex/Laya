@@ -230,4 +230,33 @@
     <string name="reverb_width">Width</string>
     <string name="reverb_width_help">Stereo spread of the tail, from mono to full width.</string>
     <string name="reverb_reset">Reset to defaults</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="download_all">Download all</string>
+    <string name="search_this_list">Search this list</string>
+    <string name="add_to_library">Add to library</string>
+    <string name="recent_album">Recent Album</string>
+    <string name="close_search">Close search</string>
+    <string name="recent_ep">Recent EP</string>
+    <string name="minutes_short">%1$d min</string>
+    <string name="about_artist">About the artist</string>
+    <string name="album">album</string>
+    <plurals name="track_count_plural">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <string name="subscribers">%1$s subscribers</string>
+    <string name="artist">artist</string>
+    <string name="hours_minutes_short">%1$dh %2$dm</string>
+    <string name="top_songs">Top songs</string>
+    <string name="unsubscribe">Unsubscribe</string>
+    <string name="remove_from_library">Remove from library</string>
+    <string name="monthly_listeners">%1$s monthly listeners</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="less">Less</string>
+    <string name="nothing_matches">Nothing here matches “%1$s”</string>
+    <string name="suggested">Suggested</string>
+    <string name="signed_by">Signed by %1$s</string>
+    <string name="add_to_playlist">Add to playlist</string>
+    <string name="recent_single">Recent Single</string>
+    <string name="about_album">About the album</string>
 </resources>

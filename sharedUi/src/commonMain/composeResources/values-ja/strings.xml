@@ -223,4 +223,32 @@
     <string name="reverb_width">広がり</string>
     <string name="reverb_width_help">残響のステレオの広がり。モノラルから最大まで。</string>
     <string name="reverb_reset">デフォルトに戻す</string>
+    <string name="shuffle">シャッフル</string>
+    <string name="download_all">すべてダウンロード</string>
+    <string name="search_this_list">このリスト内を検索</string>
+    <string name="add_to_library">ライブラリに追加</string>
+    <string name="recent_album">最近のアルバム</string>
+    <string name="close_search">検索を閉じる</string>
+    <string name="recent_ep">最近の EP</string>
+    <string name="minutes_short">%1$d分</string>
+    <string name="about_artist">アーティストについて</string>
+    <string name="album">アルバム</string>
+    <plurals name="track_count_plural">
+        <item quantity="other">%1$d 曲</item>
+    </plurals>
+    <string name="subscribers">登録者数 %1$s人</string>
+    <string name="artist">アーティスト</string>
+    <string name="hours_minutes_short">%1$d時間%2$d分</string>
+    <string name="top_songs">よく聴いた曲</string>
+    <string name="unsubscribe">チャンネル登録を解除</string>
+    <string name="remove_from_library">ライブラリから削除</string>
+    <string name="monthly_listeners">月間リスナー数 %1$s人</string>
+    <string name="subscribe">チャンネル登録</string>
+    <string name="less">折りたたむ</string>
+    <string name="nothing_matches">「%1$s」に一致するものはありません</string>
+    <string name="suggested">おすすめ</string>
+    <string name="signed_by">%1$s のサイン</string>
+    <string name="add_to_playlist">プレイリストに追加</string>
+    <string name="recent_single">最近のシングル</string>
+    <string name="about_album">アルバムについて</string>
 </resources>

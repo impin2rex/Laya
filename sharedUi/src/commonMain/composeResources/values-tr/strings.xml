@@ -223,4 +223,33 @@
     <string name="reverb_width">Genişlik</string>
     <string name="reverb_width_help">Kuyruğun stereo genişliği, monodan tam genişliğe.</string>
     <string name="reverb_reset">Varsayılanlara sıfırla</string>
+    <string name="shuffle">Karışık</string>
+    <string name="download_all">Tümünü indir</string>
+    <string name="search_this_list">Bu listede ara</string>
+    <string name="add_to_library">Kitaplığa ekle</string>
+    <string name="recent_album">Son albüm</string>
+    <string name="close_search">Aramayı kapat</string>
+    <string name="recent_ep">Son EP</string>
+    <string name="minutes_short">%1$d dk</string>
+    <string name="about_artist">Sanatçı hakkında</string>
+    <string name="album">albüm</string>
+    <plurals name="track_count_plural">
+        <item quantity="one">%1$d parça</item>
+        <item quantity="other">%1$d parça</item>
+    </plurals>
+    <string name="subscribers">%1$s abone</string>
+    <string name="artist">sanatçı</string>
+    <string name="hours_minutes_short">%1$dsa %2$ddk</string>
+    <string name="top_songs">En çok dinlenen şarkılar</string>
+    <string name="unsubscribe">Abonelikten çık</string>
+    <string name="remove_from_library">Kitaplıktan kaldır</string>
+    <string name="monthly_listeners">%1$s aylık dinleyici</string>
+    <string name="subscribe">Abone ol</string>
+    <string name="less">Daha az</string>
+    <string name="nothing_matches">“%1$s” ile eşleşen bir şey yok</string>
+    <string name="suggested">Önerilen</string>
+    <string name="signed_by">%1$s tarafından imzalandı</string>
+    <string name="add_to_playlist">Çalma listesine ekle</string>
+    <string name="recent_single">Son single</string>
+    <string name="about_album">Albüm hakkında</string>
 </resources>

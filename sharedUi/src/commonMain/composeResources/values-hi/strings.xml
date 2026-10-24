@@ -223,4 +223,33 @@
     <string name="reverb_width">चौड़ाई</string>
     <string name="reverb_width_help">टेल का स्टीरियो फैलाव, मोनो से पूरी चौड़ाई तक।</string>
     <string name="reverb_reset">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="shuffle">शफ़ल</string>
+    <string name="download_all">सभी डाउनलोड करें</string>
+    <string name="search_this_list">इस लिस्ट में खोजें</string>
+    <string name="add_to_library">लाइब्रेरी में जोड़ें</string>
+    <string name="recent_album">हाल का एल्बम</string>
+    <string name="close_search">खोज बंद करें</string>
+    <string name="recent_ep">हाल की EP</string>
+    <string name="minutes_short">%1$d मि.</string>
+    <string name="about_artist">कलाकार के बारे में</string>
+    <string name="album">एल्बम</string>
+    <plurals name="track_count_plural">
+        <item quantity="one">%1$d ट्रैक</item>
+        <item quantity="other">%1$d ट्रैक</item>
+    </plurals>
+    <string name="subscribers">%1$s सब्सक्राइबर</string>
+    <string name="artist">कलाकार</string>
+    <string name="hours_minutes_short">%1$dh %2$dm</string>
+    <string name="top_songs">टॉप गाने</string>
+    <string name="unsubscribe">सदस्यता छोड़ें</string>
+    <string name="remove_from_library">लाइब्रेरी से हटाएं</string>
+    <string name="monthly_listeners">%1$s मासिक श्रोता</string>
+    <string name="subscribe">सदस्यता लें</string>
+    <string name="less">कम</string>
+    <string name="nothing_matches">यहां कुछ भी “%1$s” से मेल नहीं खाता</string>
+    <string name="suggested">सुझाए गए</string>
+    <string name="signed_by">%1$s द्वारा हस्ताक्षरित</string>
+    <string name="add_to_playlist">प्लेलिस्ट में जोड़ें</string>
+    <string name="recent_single">हाल का सिंगल</string>
+    <string name="about_album">एल्बम के बारे में</string>
 </resources>

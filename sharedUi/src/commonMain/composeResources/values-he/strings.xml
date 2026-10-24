@@ -223,4 +223,33 @@
     <string name="reverb_width">רוחב</string>
     <string name="reverb_width_help">פריסת הסטריאו של הזנב, ממונו ועד רוחב מלא.</string>
     <string name="reverb_reset">איפוס לברירת המחדל</string>
+    <string name="shuffle">ערבוב</string>
+    <string name="download_all">הורדת הכול</string>
+    <string name="search_this_list">חפש ברשימה זו</string>
+    <string name="add_to_library">הוספה לספרייה</string>
+    <string name="recent_album">אלבום אחרון</string>
+    <string name="close_search">סגור חיפוש</string>
+    <string name="recent_ep">EP אחרון</string>
+    <string name="minutes_short">%1$d דק\'</string>
+    <string name="about_artist">אודות האמן</string>
+    <string name="album">אלבום</string>
+    <plurals name="track_count_plural">
+        <item quantity="one">רצועה %1$d</item>
+        <item quantity="other">%1$d רצועות</item>
+    </plurals>
+    <string name="subscribers">%1$s מנויים</string>
+    <string name="artist">אמן</string>
+    <string name="hours_minutes_short">%1$dh %2$dm</string>
+    <string name="top_songs">השירים המובילים</string>
+    <string name="unsubscribe">בטל מנוי</string>
+    <string name="remove_from_library">הסרה מהספרייה</string>
+    <string name="monthly_listeners">%1$s מאזינים חודשיים</string>
+    <string name="subscribe">הירשם כמנוי</string>
+    <string name="less">פחות</string>
+    <string name="nothing_matches">שום דבר כאן לא תואם ל-“%1$s”</string>
+    <string name="suggested">מומלץ</string>
+    <string name="signed_by">נחתם על ידי %1$s</string>
+    <string name="add_to_playlist">הוספה לפלייליסט</string>
+    <string name="recent_single">סינגל אחרון</string>
+    <string name="about_album">אודות האלבום</string>
 </resources>

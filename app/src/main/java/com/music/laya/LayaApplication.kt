@@ -77,6 +77,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         com.music.laya.playback.karaoke.KaraokeStems.install(java.io.File(cacheDir, "karaoke").toOkioPath())
         PlayerPlatform.install(AndroidPlayerHost(this))
         com.music.laya.ui.AppUi.install(com.music.laya.ui.AndroidAppUiHost)
+        com.music.laya.ui.screens.DetailExtras.host = com.music.laya.ui.AndroidDetailHost
         // The shared data layer (lyrics, the YouTube Music client) logs to
         // logcat on debug builds only, as the app's own DebugLog always has.
         if (BuildConfig.DEBUG) {

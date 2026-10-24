@@ -223,4 +223,32 @@
     <string name="reverb_width">ความกว้าง</string>
     <string name="reverb_width_help">การกระจายสเตอริโอของหางเสียง ตั้งแต่โมโนจนกว้างเต็มที่</string>
     <string name="reverb_reset">รีเซ็ตเป็นค่าเริ่มต้น</string>
+    <string name="shuffle">สุ่มเล่น</string>
+    <string name="download_all">ดาวน์โหลดทั้งหมด</string>
+    <string name="search_this_list">ค้นหาในรายการนี้</string>
+    <string name="add_to_library">เพิ่มลงคลังเพลง</string>
+    <string name="recent_album">อัลบั้มล่าสุด</string>
+    <string name="close_search">ปิดการค้นหา</string>
+    <string name="recent_ep">อีพีล่าสุด</string>
+    <string name="minutes_short">%1$d นาที</string>
+    <string name="about_artist">เกี่ยวกับศิลปิน</string>
+    <string name="album">อัลบั้ม</string>
+    <plurals name="track_count_plural">
+        <item quantity="other">%1$d แทร็ก</item>
+    </plurals>
+    <string name="subscribers">ผู้ติดตาม %1$s คน</string>
+    <string name="artist">ศิลปิน</string>
+    <string name="hours_minutes_short">%1$dชม. %2$dนาที</string>
+    <string name="top_songs">เพลงยอดนิยม</string>
+    <string name="unsubscribe">Unsubscribe</string>
+    <string name="remove_from_library">นำออกจากคลังเพลง</string>
+    <string name="monthly_listeners">ผู้ฟังรายเดือน %1$s คน</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="less">น้อยลง</string>
+    <string name="nothing_matches">ไม่มีอะไรตรงกับ “%1$s”</string>
+    <string name="suggested">แนะนำ</string>
+    <string name="signed_by">ลงนามโดย %1$s</string>
+    <string name="add_to_playlist">เพิ่มลงเพลย์ลิสต์</string>
+    <string name="recent_single">ซิงเกิลล่าสุด</string>
+    <string name="about_album">เกี่ยวกับอัลบั้ม</string>
 </resources>

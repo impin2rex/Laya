@@ -202,4 +202,33 @@
     <string name="reverb_width">প্রস্থ</string>
     <string name="reverb_width_help">রেশের স্টেরিও বিস্তার, মোনো থেকে পুরো প্রস্থ পর্যন্ত।</string>
     <string name="reverb_reset">ডিফল্টে রিসেট করুন</string>
+    <string name="shuffle">শাফল</string>
+    <string name="download_all">সব ডাউনলোড করুন</string>
+    <string name="search_this_list">এই তালিকায় খুঁজুন</string>
+    <string name="add_to_library">লাইব্রেরিতে যোগ করুন</string>
+    <string name="recent_album">সাম্প্রতিক অ্যালবাম</string>
+    <string name="close_search">সার্চ বন্ধ করুন</string>
+    <string name="recent_ep">সাম্প্রতিক EP</string>
+    <string name="minutes_short">%1$d মিনিট</string>
+    <string name="about_artist">শিল্পী সম্পর্কে</string>
+    <string name="album">অ্যালবাম</string>
+    <plurals name="track_count_plural">
+        <item quantity="one">%1$dটি গান</item>
+        <item quantity="other">%1$dটি গান</item>
+    </plurals>
+    <string name="subscribers">%1$s সাবস্ক্রাইবার</string>
+    <string name="artist">শিল্পী</string>
+    <string name="hours_minutes_short">%1$dঘ %2$dমি</string>
+    <string name="top_songs">সেরা গান</string>
+    <string name="unsubscribe">আনসাবস্ক্রাইব করুন</string>
+    <string name="remove_from_library">লাইব্রেরি থেকে সরান</string>
+    <string name="monthly_listeners">%1$s মাসিক শ্রোতা</string>
+    <string name="subscribe">সাবস্ক্রাইব করুন</string>
+    <string name="less">কম দেখান</string>
+    <string name="nothing_matches">“%1$s”-এর সঙ্গে এখানে কিছু মেলেনি</string>
+    <string name="suggested">সাজেস্টেড</string>
+    <string name="signed_by">%1$s-এর সই</string>
+    <string name="add_to_playlist">প্লেলিস্টে যোগ করুন</string>
+    <string name="recent_single">সাম্প্রতিক সিঙ্গল</string>
+    <string name="about_album">অ্যালবাম সম্পর্কে</string>
 </resources>

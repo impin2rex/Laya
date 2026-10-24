@@ -30,7 +30,7 @@ internal object IosAppUiHost : AppUiHost {
     override val librarySort = AppSettings.librarySort
 
     @Composable
-    override fun downloadedIds(): Set<String> = emptySet() // TODO(4d): downloads
+    override fun downloadedIds(): Set<String> = emptySet() // Phase 6: downloads
 }
 
 internal object IosPlayerHost : PlayerHost {

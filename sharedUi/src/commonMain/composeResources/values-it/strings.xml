@@ -223,4 +223,33 @@
     <string name="reverb_width">Ampiezza</string>
     <string name="reverb_width_help">Apertura stereo della coda, da mono a piena ampiezza.</string>
     <string name="reverb_reset">Ripristina predefiniti</string>
+    <string name="shuffle">Casuale</string>
+    <string name="download_all">Scarica tutto</string>
+    <string name="search_this_list">Cerca in questo elenco</string>
+    <string name="add_to_library">Aggiungi alla libreria</string>
+    <string name="recent_album">Album recente</string>
+    <string name="close_search">Chiudi ricerca</string>
+    <string name="recent_ep">EP recente</string>
+    <string name="minutes_short">%1$d min</string>
+    <string name="about_artist">Informazioni sull\'artista</string>
+    <string name="album">album</string>
+    <plurals name="track_count_plural">
+        <item quantity="one">%1$d traccia</item>
+        <item quantity="other">%1$d tracce</item>
+    </plurals>
+    <string name="subscribers">%1$s iscritti</string>
+    <string name="artist">artista</string>
+    <string name="hours_minutes_short">%1$dh %2$dm</string>
+    <string name="top_songs">Brani più ascoltati</string>
+    <string name="unsubscribe">Annulla iscrizione</string>
+    <string name="remove_from_library">Rimuovi dalla libreria</string>
+    <string name="monthly_listeners">%1$s ascoltatori mensili</string>
+    <string name="subscribe">Iscriviti</string>
+    <string name="less">Meno</string>
+    <string name="nothing_matches">Niente corrisponde a “%1$s”</string>
+    <string name="suggested">Consigliati</string>
+    <string name="signed_by">Firmato da %1$s</string>
+    <string name="add_to_playlist">Aggiungi alla playlist</string>
+    <string name="recent_single">Singolo recente</string>
+    <string name="about_album">Informazioni sull\'album</string>
 </resources>

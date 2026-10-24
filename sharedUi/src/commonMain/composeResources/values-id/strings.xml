@@ -223,4 +223,32 @@
     <string name="reverb_width">Lebar</string>
     <string name="reverb_width_help">Sebaran stereo ekor gema, dari mono hingga lebar penuh.</string>
     <string name="reverb_reset">Atur ulang ke bawaan</string>
+    <string name="shuffle">Acak</string>
+    <string name="download_all">Unduh semua</string>
+    <string name="search_this_list">Cari di daftar ini</string>
+    <string name="add_to_library">Tambahkan ke perpustakaan</string>
+    <string name="recent_album">Album Terbaru</string>
+    <string name="close_search">Tutup pencarian</string>
+    <string name="recent_ep">EP Terbaru</string>
+    <string name="minutes_short">%1$d mnt</string>
+    <string name="about_artist">Tentang artis</string>
+    <string name="album">album</string>
+    <plurals name="track_count_plural">
+        <item quantity="other">%1$d lagu</item>
+    </plurals>
+    <string name="subscribers">%1$s pelanggan</string>
+    <string name="artist">artis</string>
+    <string name="hours_minutes_short">%1$dj %2$dm</string>
+    <string name="top_songs">Lagu teratas</string>
+    <string name="unsubscribe">Berhenti berlangganan</string>
+    <string name="remove_from_library">Hapus dari perpustakaan</string>
+    <string name="monthly_listeners">%1$s pendengar bulanan</string>
+    <string name="subscribe">Langganan</string>
+    <string name="less">Lebih sedikit</string>
+    <string name="nothing_matches">Tidak ada yang cocok dengan “%1$s”</string>
+    <string name="suggested">Disarankan</string>
+    <string name="signed_by">Ditandatangani oleh %1$s</string>
+    <string name="add_to_playlist">Tambahkan ke playlist</string>
+    <string name="recent_single">Single Terbaru</string>
+    <string name="about_album">Tentang album</string>
 </resources>

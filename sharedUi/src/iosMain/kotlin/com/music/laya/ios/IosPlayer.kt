@@ -3,10 +3,17 @@ package com.music.laya.ios
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.StreamResolver
+import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.platform.ioDispatcher
 import com.music.laya.playback.PlaybackPosition
+import com.music.laya.playback.QueueBuilder
+import com.music.laya.playback.QueueTimeline
+import com.music.laya.playback.QueueTimeline.asQueueEntry
+import com.music.laya.ui.player.RepeatModes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -14,6 +21,9 @@ import kotlinx.coroutines.withContext
 
 // 1 MiB, same as Android's STREAM_CHUNK_BYTES: googlevideo refuses/throttles larger ranges for some clients.
 private const val CHUNK_BYTES = 1024L * 1024
+
+/** Most AutoPlay tracks queued ahead at once, same as Android's MAX_QUEUED_AUTOPLAY. */
+private const val MAX_AUTOPLAY = 10
 
 /**
  * Queue + transport state driving the Swift [AudioEngine]. Swift holds the listener weakly, so
@@ -28,20 +38,40 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     val position = PlaybackPosition()
 
     val song: Song? get() = queue.getOrNull(index)
-    val hasNext get() = index + 1 < queue.size
+    val hasNext get() = manualNext() >= 0
     val hasPrevious get() = index > 0
 
     private var startJob: Job? = null
     private var nextJob: Job? = null
+    private var autoplayJob: Job? = null
+    private var preloaded = -1
+    /** Entry ids of the upcoming tracks as they were before Shuffle, so turning it off can restore them. */
+    private var preShuffle = emptyList<String?>()
 
     init { engine.setListener(this) }
 
     fun play(songs: List<Song>, startIndex: Int) {
-        queue = songs
-        start(startIndex)
+        val entries = songs.map { it.asQueueEntry(QueueTier.CONTEXT) }
+        if (AppSettings.shuffleEnabled.value) {
+            queue = QueueTimeline.shuffledStartingOrder(entries, startIndex)
+            start(0)
+        } else {
+            queue = entries
+            start(startIndex)
+        }
     }
 
-    fun next() { if (hasNext) start(index + 1) }
+    /** Where Next goes: the following track, wrapping to the top under Repeat all. */
+    private fun manualNext() = when {
+        index + 1 < queue.size -> index + 1
+        AppSettings.repeatMode.value == RepeatModes.ALL && queue.isNotEmpty() -> 0
+        else -> -1
+    }
+
+    /** Where playback goes by itself: the same track under Repeat one. */
+    private fun autoNext() = if (AppSettings.repeatMode.value == RepeatModes.ONE) index else manualNext()
+
+    fun next() { manualNext().let { if (it >= 0) start(it) } }
     fun previous() { if (hasPrevious) start(index - 1) else seekTo(0) }
     fun jumpTo(i: Int) { if (i in queue.indices) start(i) }
     fun togglePlayPause() { if (isPlaying) engine.pause() else engine.resume() }
@@ -50,6 +80,96 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         engine.seekTo(ms)
         position.seeks++
         position.report(ms)
+    }
+
+    fun playNext(song: Song) = enqueue(song, next = true)
+    fun addToQueue(song: Song) = enqueue(song, next = false)
+
+    private fun enqueue(song: Song, next: Boolean) {
+        if (queue.isEmpty()) return play(listOf(song), 0)
+        val at = QueueTimeline.findUserQueueInsertionIndex(queue, index, next)
+        queue = queue.toMutableList().apply { add(at, song.asQueueEntry(QueueTier.USER_QUEUE)) }
+        queueChanged()
+    }
+
+    fun removeAt(i: Int) {
+        if (i !in queue.indices || i == index) return
+        queue = queue.toMutableList().apply { removeAt(i) }
+        if (i < index) index--
+        queueChanged()
+    }
+
+    fun move(from: Int, to: Int) {
+        if (from !in queue.indices || to !in queue.indices || from == to) return
+        queue = queue.toMutableList().apply { add(to, removeAt(from)) }
+        index = when {
+            from == index -> to
+            from < index && to >= index -> index - 1
+            from > index && to <= index -> index + 1
+            else -> index
+        }
+        queueChanged()
+    }
+
+    /** Clear drops the listener's own queued tracks; the album / playlist and AutoPlay stay. */
+    fun clearUserQueue() {
+        val drop = QueueTimeline.upcomingUserQueueIndices(queue.map { it.queueTier }, index).toSet()
+        if (drop.isEmpty()) return
+        queue = queue.filterIndexed { i, _ -> i !in drop }
+        queueChanged()
+    }
+
+    /** Shuffle as an edit to the upcoming queue (same rules as Android's QueueShuffle): your queue stays pinned first. */
+    fun setShuffle(on: Boolean) {
+        AppSettings.setShuffleEnabled(on)
+        if (index !in queue.indices) return
+        val head = queue.take(index + 1)
+        val upcoming = queue.drop(index + 1)
+        val tiers = upcoming.map { it.queueTier }
+        val order = if (on) {
+            preShuffle = upcoming.map { it.queueEntryId }
+            QueueTimeline.shuffledUpcomingOrder(tiers)
+        } else {
+            val at = preShuffle.withIndex().associate { (i, id) -> id to i }
+            QueueTimeline.sectionedOrder(upcoming.indices.sortedBy { at[upcoming[it].queueEntryId] ?: Int.MAX_VALUE }, tiers)
+        }
+        queue = head + order.map { upcoming[it] }
+        queueChanged()
+    }
+
+    fun cycleRepeat() = AppSettings.setRepeatMode(
+        when (AppSettings.repeatMode.value) {
+            RepeatModes.OFF -> RepeatModes.ALL
+            RepeatModes.ALL -> RepeatModes.ONE
+            else -> RepeatModes.OFF
+        },
+    )
+
+    fun setAutoplay(on: Boolean) {
+        AppSettings.setAutoplay(on)
+        if (on) topUpAutoplay()
+    }
+
+    private fun queueChanged() {
+        announce()
+        preResolveNext()
+        topUpAutoplay()
+    }
+
+    /** AutoPlay: on the last track, append the radio for it (Android's loadAutoplayTracks, minus party and module sources). */
+    private fun topUpAutoplay() {
+        val seed = song ?: return
+        if (!AppSettings.autoplay.value || AppSettings.repeatMode.value == RepeatModes.ALL ||
+            index != queue.lastIndex || autoplayJob?.isActive == true
+        ) return
+        autoplayJob = scope.launch {
+            val related = YtMusicRepository.radio(seed.videoId).getOrNull() ?: return@launch
+            val extra = QueueBuilder.extend(queue, related, MAX_AUTOPLAY)
+            if (extra.isEmpty() || song?.videoId != seed.videoId) return@launch
+            queue = queue + extra.map { it.asQueueEntry(QueueTier.AUTOPLAY) }
+            announce()
+            preResolveNext()
+        }
     }
 
     fun seekFraction(f: Float) { if (durationMs > 0) seekTo((f * durationMs).toLong()) }
@@ -75,7 +195,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         startJob = scope.launch {
             runCatching { resolveInto(song, next = false) }
                 .onFailure { isLoading = false; println("IosPlayer: ${it.message ?: it}") }
-                .onSuccess { announce(); preResolveNext() }
+                .onSuccess { announce(); preResolveNext(); topUpAutoplay() }
         }
     }
 
@@ -87,7 +207,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     /** Resolves the following track now so the engine can start it gaplessly. */
     private fun preResolveNext() {
         nextJob?.cancel()
-        val upcoming = queue.getOrNull(index + 1) ?: return engine.clearNext()
+        preloaded = autoNext()
+        val upcoming = queue.getOrNull(preloaded) ?: return engine.clearNext()
         nextJob = scope.launch { runCatching { resolveInto(upcoming, next = true) } }
     }
 
@@ -98,13 +219,14 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         isLoading = isBuffering
     }
 
-    override fun onEnded() { if (hasNext) next() else isPlaying = false }
+    override fun onEnded() { autoNext().let { if (it >= 0) start(it) else isPlaying = false } }
 
     override fun onAdvancedToNext() {
-        index += 1
+        index = preloaded
         position.report(0)
         announce()
         preResolveNext()
+        topUpAutoplay()
     }
 
     override fun onError(message: String, httpStatus: Int) {

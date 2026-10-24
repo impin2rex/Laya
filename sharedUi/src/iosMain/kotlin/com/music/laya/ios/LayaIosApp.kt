@@ -98,8 +98,16 @@ import com.music.laya.ui.player.PlayerSheetShape
 import com.music.laya.ui.theme.LayaTheme
 import com.music.laya.ui.utils.guardSheetFromContentTouches
 import com.music.laya.ui.player.NowPlayingScreen
-import com.music.laya.ui.player.RepeatModes
+import com.music.laya.ui.screens.DetailScreen
 import com.music.laya.ui.screens.ExploreScreen
+import com.music.laya.ui.screens.MoodGenrePlaylistsScreen
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.runtime.key
+import com.music.laya.data.model.BrowseType
+import com.music.laya.data.model.DetailPage
+import com.music.laya.data.model.MoodGenre
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.LibraryScreen
 import com.music.laya.ui.screens.SearchScreen
@@ -119,6 +127,13 @@ fun LayaIosApp(engine: AudioEngine) {
     val player = remember { IosPlayer(engine, scope) }
     var tab by remember { mutableIntStateOf(0) }
     var nowPlayingOpen by remember { mutableStateOf(false) }
+    // Pushed pages (one global stack; a tab tap clears it) and the long-press menu.
+    var stack by remember { mutableStateOf(emptyList<IosPage>()) }
+    var menuSong by remember { mutableStateOf<Song?>(null) }
+    val repeat by AppSettings.repeatMode.collectAsState()
+    val shuffle by AppSettings.shuffleEnabled.collectAsState()
+    val autoplay by AppSettings.autoplay.collectAsState()
+    val swipeNext by AppSettings.swipeToPlayNext.collectAsState()
     val playerDock = remember { PlayerDock() }
     val sheetMotion = remember { PlayerSheetMotion(scope, playerDock, { nowPlayingOpen }, { nowPlayingOpen = it }) }
     sheetMotion.windowInfo = LocalWindowInfo.current
@@ -139,6 +154,27 @@ fun LayaIosApp(engine: AudioEngine) {
         explore = YtMusicRepository.moodAndGenres().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Error") })
     }
     LaunchedEffect(Unit) { loadHome(); loadExplore() }
+
+    fun openDetail(id: String, title: String, subtitle: String = "", thumb: String? = null, type: BrowseType = BrowseType.OTHER) {
+        val base = loadingPage(id, title, subtitle, thumb, type)
+        stack = stack + IosPage.Detail(base)
+        scope.launch {
+            val loaded = loadDetail(base)
+            stack = stack.map { if (it is IosPage.Detail && it.page === base) IosPage.Detail(loaded) else it }
+        }
+    }
+    fun openMood(item: MoodGenre) {
+        val loading = IosPage.Mood(item, UiState.Loading)
+        stack = stack + loading
+        scope.launch {
+            val shelves = loadMood(item)
+            stack = stack.map { if (it === loading) IosPage.Mood(item, shelves) else it }
+        }
+    }
+    fun openShelfItem(item: ShelfItem) {
+        item.browseId?.let { openDetail(it, item.title, item.subtitle, item.thumbnailUrl) }
+    }
+    fun swipe(song: Song) = if (swipeNext) player.playNext(song) else player.addToQueue(song)
 
     // Search
     var query by remember { mutableStateOf("") }
@@ -202,7 +238,50 @@ fun LayaIosApp(engine: AudioEngine) {
                     val noPadding = PaddingValues(bottom = barHeight)
                     Box(Modifier.fillMaxSize().layerBackdrop(appBackdrop).nestedScroll(navBarScroll)) {
                         Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
-                            when (tab) {
+                            val top = stack.lastOrNull()
+                            when (if (top == null) tab else -1) {
+                            -1 -> {
+                                when (top) {
+                                    is IosPage.Detail -> key(top) {
+                                        var activeShelf by remember { mutableStateOf<HomeShelf?>(null) }
+                                        val page = top.page
+                                        DetailScreen(
+                                            page = page,
+                                            currentSong = song,
+                                            isPlaying = player.isPlaying,
+                                            onSongClick = { songs, i -> player.play(songs, i) },
+                                            onSongLongPress = { menuSong = it },
+                                            onSongSwipe = ::swipe,
+                                            onShuffle = { songs ->
+                                                if (songs.isNotEmpty()) {
+                                                    AppSettings.setShuffleEnabled(true)
+                                                    player.play(songs, songs.indices.random())
+                                                }
+                                            },
+                                            onSectionItemClick = { item ->
+                                                item.browseId?.let { openDetail(it, item.title, item.subtitle, item.thumbnailUrl, BrowseType.ALBUM) }
+                                            },
+                                            onArtistClick = { id, name -> openDetail(id, name, "Artist", null, BrowseType.ARTIST) },
+                                            onAddSuggested = {}, // needs sign-in
+                                            contentPadding = noPadding,
+                                            activeShelf = activeShelf,
+                                            onActiveShelfChange = { activeShelf = it },
+                                        )
+                                    }
+                                    is IosPage.Mood -> MoodGenrePlaylistsScreen(
+                                        title = top.item.title,
+                                        state = top.shelves,
+                                        listState = rememberLazyListState(),
+                                        onItemClick = { item ->
+                                            item.toSong()?.let { player.play(listOf(it), 0) } // AutoPlay carries on as the radio
+                                                ?: openShelfItem(item)
+                                        },
+                                        onRetry = { stack = stack.dropLast(1); openMood(top.item) },
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
+                                    null -> Unit
+                                }
+                            }
                             0 -> HomeScreen(
                                 state = home,
                                 listState = homeList,
@@ -212,25 +291,26 @@ fun LayaIosApp(engine: AudioEngine) {
                                     val tracks = shelf?.items?.songs().orEmpty()
                                     val tapped = item.toSong()
                                     when {
-                                        tapped == null -> Unit // TODO(4d): detail pages
+                                        tapped == null -> openShelfItem(item)
                                         else -> player.play(tracks.ifEmpty { listOf(tapped) },
                                             tracks.indexOfFirst { it.videoId == tapped.videoId }.coerceAtLeast(0))
                                     }
                                 },
+                                onItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onRetry = { scope.launch { home = UiState.Loading; loadHome() } },
                                 refreshing = false,
                                 onRefresh = { scope.launch { loadHome() } },
                                 pullState = homePull,
                                 contentPadding = noPadding,
                                 title = "Listen now",
-                                signedIn = false, // TODO(4d): sign-in
+                                signedIn = false, // Phase 5: sign-in
                                 currentSong = song,
                                 isPlaying = player.isPlaying,
                             )
                             1 -> ExploreScreen(
                                 state = explore,
                                 listState = exploreList,
-                                onCategoryClick = {}, // TODO(4d): mood/genre pages
+                                onCategoryClick = ::openMood,
                                 onRetry = { scope.launch { explore = UiState.Loading; loadExplore() } },
                                 refreshing = false,
                                 onRefresh = { scope.launch { loadExplore() } },
@@ -238,11 +318,11 @@ fun LayaIosApp(engine: AudioEngine) {
                                 contentPadding = noPadding,
                             )
                             2 -> LibraryScreen(
-                                signedIn = false, // TODO(4d): sign-in, then YtMusicRepository.library()
+                                signedIn = false, // Phase 5: sign-in, then YtMusicRepository.library()
                                 state = UiState.Loading,
                                 listState = libraryList,
                                 onShelfItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } },
-                                onShelfItemLongPress = {},
+                                onShelfItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onNewPlaylist = {},
                                 onShowAll = {},
                                 replay = {},
@@ -270,11 +350,11 @@ fun LayaIosApp(engine: AudioEngine) {
                                 focusRequested = false,
                                 onFocusHandled = {},
                                 onSongClick = { songs, i -> player.play(songs, i) },
-                                onSongLongPress = {},
-                                onSongSwipe = {},
+                                onSongLongPress = { menuSong = it },
+                                onSongSwipe = ::swipe,
                                 onTopResultPlay = { player.play(listOf(it), 0) },
                                 onTopResultPlaylist = {},
-                                onBrowseClick = {}, // TODO(4d): detail pages
+                                onBrowseClick = { openDetail(it.browseId, it.title, it.subtitle, it.thumbnailUrl, it.type) },
                                 history = emptyList(),
                                 suggestions = emptyList(),
                                 typeaheadResults = emptyList(),
@@ -288,12 +368,19 @@ fun LayaIosApp(engine: AudioEngine) {
                             )
                         }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = barHeight))
+                            if (stack.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { stack = stack.dropLast(1) },
+                                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
+                                ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+                            }
                         }
                     }
                     GlassNavBar(
                         tabs = tabs,
                         selectedIndex = tab,
-                        onTabSelected = { tab = it },
+                        onTabSelected = { tab = it; stack = emptyList() },
                         scrollConnection = navBarScroll,
                         song = song,
                         isPlaying = player.isPlaying,
@@ -308,6 +395,17 @@ fun LayaIosApp(engine: AudioEngine) {
                             barHeight = with(density) { it.height.toDp() }
                         },
                     )
+
+                    menuSong?.let { m ->
+                        IosSongMenu(
+                            song = m,
+                            onDismiss = { menuSong = null },
+                            onPlayNext = { player.playNext(m) },
+                            onAddToQueue = { player.addToQueue(m) },
+                            onOpenAlbum = { openDetail(it, m.albumName.orEmpty(), m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
+                            onOpenArtist = { openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
+                        )
+                    }
 
                     if (nowPlayingOpen && song != null) {
                         val sheetState = remember {
@@ -374,29 +472,35 @@ fun LayaIosApp(engine: AudioEngine) {
                                         queueIndex = player.index,
                                         hasPrevious = player.hasPrevious,
                                         hasNext = player.hasNext,
-                                        repeatMode = RepeatModes.OFF,
-                                        shuffleEnabled = false,
-                                        autoplayEnabled = false,
+                                        repeatMode = repeat,
+                                        shuffleEnabled = shuffle,
+                                        autoplayEnabled = autoplay,
                                         signedIn = false,
                                         accountName = null,
                                         likeStatus = LikeStatus.INDIFFERENT,
-                                        onToggleLike = {}, // TODO(4d): needs sign-in
+                                        onToggleLike = {}, // needs sign-in (Phase 5)
                                         onPlayPause = player::togglePlayPause,
                                         onNext = player::next,
                                         onPrevious = player::previous,
                                         onBlockedControl = {},
                                         onSeek = player::seekTo,
                                         onSeekFraction = player::seekFraction,
-                                        onToggleShuffle = {},
-                                        onCycleRepeat = {},
-                                        onToggleAutoplay = {},
+                                        onToggleShuffle = { player.setShuffle(!shuffle) },
+                                        onCycleRepeat = player::cycleRepeat,
+                                        onToggleAutoplay = { player.setAutoplay(!autoplay) },
                                         onJumpTo = player::jumpTo,
-                                        onRemoveFromQueue = {},
-                                        onMoveInQueue = { _, _ -> },
-                                        onClearQueue = {},
-                                        onOpenMenu = {},
-                                        onOpenAlbum = {}, // TODO(4d): detail pages
-                                        onOpenArtist = { _, _ -> },
+                                        onRemoveFromQueue = player::removeAt,
+                                        onMoveInQueue = player::move,
+                                        onClearQueue = player::clearUserQueue,
+                                        onOpenMenu = { menuSong = song },
+                                        onOpenAlbum = { id ->
+                                            sheetMotion.close()
+                                            openDetail(id, song.albumName.orEmpty(), song.artist, song.thumbnailUrl, BrowseType.ALBUM)
+                                        },
+                                        onOpenArtist = { id, name ->
+                                            sheetMotion.close()
+                                            (id ?: song.artistId)?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
+                                        },
                                         onOpenPlaybackSource = {},
                                         onListenTogether = {},
                                         lyrics = lyrics,

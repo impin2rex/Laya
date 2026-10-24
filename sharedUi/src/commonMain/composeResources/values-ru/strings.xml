@@ -223,4 +223,35 @@
     <string name="reverb_width">Ширина</string>
     <string name="reverb_width_help">Стереоширина хвоста, от моно до полной.</string>
     <string name="reverb_reset">Сбросить по умолчанию</string>
+    <string name="shuffle">Перемешать</string>
+    <string name="download_all">Загрузить всё</string>
+    <string name="search_this_list">Искать в этом списке</string>
+    <string name="add_to_library">Добавить в библиотеку</string>
+    <string name="recent_album">Недавний альбом</string>
+    <string name="close_search">Закрыть поиск</string>
+    <string name="recent_ep">Недавний EP</string>
+    <string name="minutes_short">%1$d мин</string>
+    <string name="about_artist">Об исполнителе</string>
+    <string name="album">альбом</string>
+    <plurals name="track_count_plural">
+        <item quantity="one">%1$d трек</item>
+        <item quantity="few">%1$d трека</item>
+        <item quantity="many">%1$d треков</item>
+        <item quantity="other">%1$d треков</item>
+    </plurals>
+    <string name="subscribers">%1$s подписчиков</string>
+    <string name="artist">исполнитель</string>
+    <string name="hours_minutes_short">%1$dч %2$dм</string>
+    <string name="top_songs">Топ песен</string>
+    <string name="unsubscribe">Отписаться</string>
+    <string name="remove_from_library">Убрать из библиотеки</string>
+    <string name="monthly_listeners">%1$s слушателей в месяц</string>
+    <string name="subscribe">Подписаться</string>
+    <string name="less">Меньше</string>
+    <string name="nothing_matches">Здесь ничего не соответствует запросу «%1$s»</string>
+    <string name="suggested">Рекомендации</string>
+    <string name="signed_by">Подпись: %1$s</string>
+    <string name="add_to_playlist">Добавить в плейлист</string>
+    <string name="recent_single">Недавний сингл</string>
+    <string name="about_album">Об альбоме</string>
 </resources>

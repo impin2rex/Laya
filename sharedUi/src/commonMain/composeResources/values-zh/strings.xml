@@ -223,4 +223,32 @@
     <string name="reverb_width">宽度</string>
     <string name="reverb_width_help">尾音的立体声宽度，从单声道到全宽。</string>
     <string name="reverb_reset">恢复默认设置</string>
+    <string name="shuffle">随机播放</string>
+    <string name="download_all">全部下载</string>
+    <string name="search_this_list">搜索此列表</string>
+    <string name="add_to_library">添加到资料库</string>
+    <string name="recent_album">最近的专辑</string>
+    <string name="close_search">关闭搜索</string>
+    <string name="recent_ep">最近的 EP</string>
+    <string name="minutes_short">%1$d 分钟</string>
+    <string name="about_artist">关于这位艺人</string>
+    <string name="album">专辑</string>
+    <plurals name="track_count_plural">
+        <item quantity="other">%1$d 首曲目</item>
+    </plurals>
+    <string name="subscribers">%1$s 位订阅者</string>
+    <string name="artist">艺人</string>
+    <string name="hours_minutes_short">%1$d时%2$d分</string>
+    <string name="top_songs">热门歌曲</string>
+    <string name="unsubscribe">取消订阅</string>
+    <string name="remove_from_library">从资料库中移除</string>
+    <string name="monthly_listeners">%1$s 位月度听众</string>
+    <string name="subscribe">订阅</string>
+    <string name="less">收起</string>
+    <string name="nothing_matches">这里没有与“%1$s”匹配的内容</string>
+    <string name="suggested">推荐内容</string>
+    <string name="signed_by">%1$s 的签名</string>
+    <string name="add_to_playlist">添加到播放列表</string>
+    <string name="recent_single">最近的单曲</string>
+    <string name="about_album">关于这张专辑</string>
 </resources>

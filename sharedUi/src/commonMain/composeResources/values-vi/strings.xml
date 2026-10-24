@@ -223,4 +223,32 @@
     <string name="reverb_width">Độ rộng</string>
     <string name="reverb_width_help">Độ rộng stereo của đuôi vang, từ mono đến rộng tối đa.</string>
     <string name="reverb_reset">Đặt lại mặc định</string>
+    <string name="shuffle">Trộn bài</string>
+    <string name="download_all">Tải xuống tất cả</string>
+    <string name="search_this_list">Tìm kiếm danh sách này</string>
+    <string name="add_to_library">Thêm vào thư viện</string>
+    <string name="recent_album">Album gần đây</string>
+    <string name="close_search">Đóng tìm kiếm</string>
+    <string name="recent_ep">EP gần đây</string>
+    <string name="minutes_short">%1$d phút</string>
+    <string name="about_artist">Về nghệ sĩ</string>
+    <string name="album">album</string>
+    <plurals name="track_count_plural">
+        <item quantity="other">%1$d bản nhạc</item>
+    </plurals>
+    <string name="subscribers">%1$s người đăng ký</string>
+    <string name="artist">nghệ sĩ</string>
+    <string name="hours_minutes_short">%1$d giờ %2$d phút</string>
+    <string name="top_songs">Bài hát hàng đầu</string>
+    <string name="unsubscribe">Hủy đăng ký</string>
+    <string name="remove_from_library">Xóa khỏi thư viện</string>
+    <string name="monthly_listeners">%1$s người nghe hàng tháng</string>
+    <string name="subscribe">Đăng ký</string>
+    <string name="less">Thu gọn</string>
+    <string name="nothing_matches">Không có nội dung nào khớp với “%1$s”</string>
+    <string name="suggested">Gợi ý</string>
+    <string name="signed_by">Được ký bởi %1$s</string>
+    <string name="add_to_playlist">Thêm vào danh sách phát</string>
+    <string name="recent_single">Đơn gần đây</string>
+    <string name="about_album">Về album</string>
 </resources>
