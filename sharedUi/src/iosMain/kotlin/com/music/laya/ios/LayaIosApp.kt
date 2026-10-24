@@ -119,6 +119,8 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.material.icons.rounded.Settings
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import platform.Foundation.NSProcessInfo
 import androidx.compose.material.icons.rounded.History
 import com.music.laya.data.LikeState
@@ -221,10 +223,21 @@ fun LayaIosApp(engine: AudioEngine) {
             homePaging = false
         }
     }
-    suspend fun loadExplore() {
+    suspend fun loadExplore() = coroutineScope {
         explore = YtMusicRepository.moodAndGenres().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Error") })
+        // Category buttons carry no art; resolve it 4 at a time from the shelves they open (as MainViewModel does).
+        val limiter = Semaphore(4)
+        (explore as? UiState.Success)?.data?.flatMap { it.items }?.forEach { item ->
+            launch {
+                val art = limiter.withPermit { YtMusicRepository.moodGenreArtwork(item.browseId, item.params).getOrNull() } ?: return@launch
+                val current = (explore as? UiState.Success)?.data ?: return@launch
+                explore = UiState.Success(current.map { sec ->
+                    sec.copy(items = sec.items.map { if (it.browseId == item.browseId && it.params == item.params) it.copy(thumbnailUrl = art) else it })
+                })
+            }
+        }
     }
-    LaunchedEffect(Unit) { loadHome(); loadExplore() }
+    LaunchedEffect(Unit) { launch { loadExplore() }; loadHome() }
 
     // Library: same calls MainViewModel.fetchLibrary makes (liked songs beyond page one are synced into LikeState).
     var library by remember { mutableStateOf<UiState<LibraryPage>>(UiState.Loading) }
