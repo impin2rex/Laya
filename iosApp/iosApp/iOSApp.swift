@@ -3,6 +3,9 @@ import LayaKit
 
 @main
 struct iOSApp: App {
+    /// One engine for the app's lifetime; Kotlin drives it.
+    static let audioEngine = AVAudioEngineImpl()
+
     var body: some Scene {
         WindowGroup {
             ComposeView().ignoresSafeArea()
@@ -12,7 +15,7 @@ struct iOSApp: App {
 
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        MainViewControllerKt.MainViewController()
+        MainViewControllerKt.MainViewController(engine: iOSApp.audioEngine)
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
