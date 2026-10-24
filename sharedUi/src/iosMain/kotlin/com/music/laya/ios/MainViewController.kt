@@ -1,6 +1,12 @@
 package com.music.laya.ios
 
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.window.ComposeUIViewController
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.ui.theme.SFProDisplay
+import kotlinx.coroutines.runBlocking
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.network.ktor3.KtorNetworkFetcherFactory
@@ -54,5 +60,11 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     AppUi.install(IosAppUiHost)
     SettingsExtras.host = IosSettingsHost
     PlayerPlatform.install(IosPlayerHost)
+    // Same bundled SF Pro Display Android installs in LayaApplication; read up front so the theme sees it on first composition.
+    SFProDisplay = FontFamily(
+        mapOf(400 to "regular", 500 to "medium", 600 to "semibold", 700 to "bold", 800 to "heavy").map { (w, n) ->
+            Font("sf_pro_display_$n", runBlocking { Res.readBytes("font/sf_pro_display_$n.otf") }, FontWeight(w))
+        },
+    )
     return ComposeUIViewController { LayaIosApp(engine) }
 }

@@ -107,8 +107,11 @@ import androidx.compose.runtime.key
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.DetailPage
 import com.music.laya.data.model.MoodGenre
+import com.music.laya.data.model.withoutRepeatsOf
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.screens.HomeScreen
+import com.music.laya.ui.screens.LibraryGridPage
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.music.laya.ui.screens.LibraryScreen
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.ui.screens.EqualizerScreen
@@ -116,7 +119,10 @@ import com.music.laya.ui.screens.SettingsScreen
 import com.music.laya.ui.onboarding.OnboardingScreen
 import androidx.compose.animation.EnterTransition
 import androidx.compose.material.icons.rounded.Settings
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import platform.Foundation.NSProcessInfo
 import androidx.compose.material.icons.rounded.History
 import com.music.laya.data.LikeState
@@ -164,13 +170,76 @@ fun LayaIosApp(engine: AudioEngine) {
     // Home / Explore: same calls MainViewModel makes for the first page.
     var home by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
     var explore by remember { mutableStateOf<UiState<List<MoodGenreSection>>>(UiState.Loading) }
-    suspend fun loadHome() {
-        home = YtMusicRepository.home().fold({ UiState.Success(it.shelves) }, { UiState.Error(it.message ?: "Error") })
+    // Mirrors MainViewModel: core feed + supplements + signed-in Recents load in parallel and publish as they land.
+    val homeShelves = remember { mutableListOf<HomeShelf>() }
+    val homeSeen = remember { mutableSetOf<String>() }
+    var homeContinuation by remember { mutableStateOf<String?>(null) }
+    var homePaging by remember { mutableStateOf(false) }
+    var homePending by remember { mutableIntStateOf(0) }
+    var recentsLoading by remember { mutableStateOf(false) }
+    fun publishHome(shelves: List<HomeShelf>, prepend: Boolean = false) {
+        if (prepend) {
+            val titles = shelves.map { it.title.lowercase() }.toSet()
+            homeSeen += titles
+            homeShelves.removeAll { it.title.lowercase() in titles }
+            homeShelves.addAll(0, shelves)
+        } else {
+            val added = shelves.withoutRepeatsOf(homeShelves).filter { homeSeen.add(it.title.lowercase()) }
+            if (added.isEmpty()) return
+            homeShelves += added
+        }
+        home = UiState.Success(homeShelves.toList())
     }
-    suspend fun loadExplore() {
+    suspend fun loadHome() = coroutineScope {
+        homeShelves.clear(); homeSeen.clear(); homeContinuation = null; homePaging = false
+        recentsLoading = signedIn
+        homePending = 1 + YtMusicRepository.HOME_SUPPLEMENT_BROWSE_IDS.size
+        launch {
+            YtMusicRepository.home()
+                .onSuccess { homeContinuation = it.continuation; publishHome(it.shelves) }
+                .onFailure { if (home !is UiState.Success) home = UiState.Error(it.message ?: "Error") }
+            homePending--
+        }
+        if (signedIn) launch {
+            YtMusicRepository.homeRecentlyPlayed().onSuccess { shelf -> shelf?.let { publishHome(listOf(it), prepend = true) } }
+            recentsLoading = false
+        }
+        YtMusicRepository.HOME_SUPPLEMENT_BROWSE_IDS.forEach { id ->
+            launch {
+                YtMusicRepository.homeSupplement(id).onSuccess { publishHome(it) }
+                homePending--
+            }
+        }
+    }
+    fun loadMoreHome() {
+        val token = homeContinuation ?: return
+        if (homePaging) return
+        homePaging = true
+        scope.launch {
+            YtMusicRepository.moreHome(token).onSuccess { feed ->
+                val before = homeShelves.size
+                publishHome(feed.shelves)
+                // A page with nothing new means the feed looped back on itself; treat as exhausted.
+                homeContinuation = feed.continuation.takeIf { homeShelves.size > before }
+            }
+            homePaging = false
+        }
+    }
+    suspend fun loadExplore() = coroutineScope {
         explore = YtMusicRepository.moodAndGenres().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Error") })
+        // Category buttons carry no art; resolve it 4 at a time from the shelves they open (as MainViewModel does).
+        val limiter = Semaphore(4)
+        (explore as? UiState.Success)?.data?.flatMap { it.items }?.forEach { item ->
+            launch {
+                val art = limiter.withPermit { YtMusicRepository.moodGenreArtwork(item.browseId, item.params).getOrNull() } ?: return@launch
+                val current = (explore as? UiState.Success)?.data ?: return@launch
+                explore = UiState.Success(current.map { sec ->
+                    sec.copy(items = sec.items.map { if (it.browseId == item.browseId && it.params == item.params) it.copy(thumbnailUrl = art) else it })
+                })
+            }
+        }
     }
-    LaunchedEffect(Unit) { loadHome(); loadExplore() }
+    LaunchedEffect(Unit) { launch { loadExplore() }; loadHome() }
 
     // Library: same calls MainViewModel.fetchLibrary makes (liked songs beyond page one are synced into LikeState).
     var library by remember { mutableStateOf<UiState<LibraryPage>>(UiState.Loading) }
@@ -259,12 +328,49 @@ fun LayaIosApp(engine: AudioEngine) {
     var lyricsSource by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
     var lyricsChecked by remember(song?.videoId) { mutableStateOf(false) }
     val durationKnown = player.durationMs > 0
+    // Per-provider picker state, mirroring MainViewModel: hits are kept so choosing one is instant.
+    var providerStates by remember(song?.videoId) { mutableStateOf(LyricsSource.entries.associateWith { LyricsProviderState.NOT_FETCHED }) }
+    val providerHits = remember(song?.videoId) { mutableMapOf<LyricsSource, LyricsRepository.Result>() }
+    var selectedProvider by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
+    fun showLyrics(r: LyricsRepository.Result) { lyrics = r.lines; lyricsSource = r.source; lyricsChecked = true }
+    fun fetchProvider(s: LyricsSource?) { // null = the automatic lookup across all enabled providers
+        val sg = song ?: return
+        val all = s == null
+        scope.launch {
+            val sources = if (all) AppSettings.lyricsSources.value else setOf(s!!)
+            val found = LyricsRepository.lyrics(
+                sg.videoId, sg.title, sg.artist, player.durationMs, sg.albumName, sources,
+                if (all) AppSettings.lyricsSourceOrder.value else listOf(s!!), all && AppSettings.prioritizeSyllableSync.value,
+                onSourceStarted = { providerStates = providerStates + (it to LyricsProviderState.FETCHING) },
+                onSourceResult = { p, r ->
+                    providerStates = providerStates + (p to if (r == null) LyricsProviderState.NOT_FOUND else LyricsProviderState.FOUND)
+                    if (r != null) { providerHits[p] = r; if (selectedProvider == p) showLyrics(r) }
+                },
+                onSourceCancelled = { p ->
+                    if (providerStates[p] == LyricsProviderState.FETCHING) providerStates = providerStates + (p to LyricsProviderState.NOT_FETCHED)
+                    // A tap during the priority race: honour it with a dedicated request.
+                    if (selectedProvider == p) fetchProvider(p)
+                },
+            )
+            if (all) {
+                val chosen = selectedProvider?.let(providerHits::get) ?: found
+                lyrics = chosen?.lines
+                lyricsSource = chosen?.source
+                lyricsChecked = true
+            }
+        }
+    }
     LaunchedEffect(song?.videoId, durationKnown) {
         if (song == null || !durationKnown) return@LaunchedEffect
-        val found = LyricsRepository.lyrics(song.videoId, song.title, song.artist, player.durationMs, song.albumName)
-        lyrics = found?.lines
-        lyricsSource = found?.source
-        lyricsChecked = true
+        fetchProvider(null)
+    }
+    fun selectProvider(s: LyricsSource) {
+        selectedProvider = s
+        when (providerStates[s]) {
+            LyricsProviderState.FOUND -> providerHits[s]?.let(::showLyrics)
+            LyricsProviderState.NOT_FETCHED, null -> fetchProvider(s)
+            else -> Unit // FETCHING applies on completion; NOT_FOUND is inert
+        }
     }
 
     // Test hook: `simctl launch` with SIMCTL_CHILD_LAYA_AUTOPLAY=<query> searches and plays the first hit.
@@ -377,6 +483,13 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onRetry = { stack = stack.dropLast(1); openHistory() },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
+                                    is IosPage.ShowAll -> LibraryGridPage(
+                                        shelf = top.shelf,
+                                        gridState = rememberLazyGridState(),
+                                        onItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it) },
+                                        onItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
                                     null -> Unit
                                 }
                             }
@@ -405,6 +518,9 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onSignIn = { showLogin = true },
                                 currentSong = song,
                                 isPlaying = player.isPlaying,
+                                onLoadMore = ::loadMoreHome,
+                                loadingMore = homePaging || homePending > 0,
+                                recentlyPlayedLoading = recentsLoading,
                             )
                             1 -> ExploreScreen(
                                 state = explore,
@@ -423,7 +539,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onShelfItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it) },
                                 onShelfItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onNewPlaylist = {},
-                                onShowAll = {},
+                                onShowAll = { stack = stack + IosPage.ShowAll(it) },
                                 replay = {},
                                 onSignIn = { showLogin = true },
                                 onRetry = { scope.launch { library = UiState.Loading; loadLibrary() } },
@@ -468,16 +584,12 @@ fun LayaIosApp(engine: AudioEngine) {
                         }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = barHeight))
                             if (stack.isEmpty()) {
-                                if (tab == 2 && signedIn) IconButton(
-                                    onClick = { openHistory() },
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 56.dp)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
-                                ) { Icon(Icons.Rounded.History, "History") }
-                                IconButton(
-                                    onClick = { stack = stack + IosPage.Settings },
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
-                                ) { Icon(Icons.Rounded.Settings, "Settings") }
+                                IosTopPill(
+                                    account = account,
+                                    onHistory = if (tab == 2 && signedIn) ({ openHistory() }) else null,
+                                    onAccount = { stack = stack + IosPage.Settings },
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                )
                             } else {
                                 IconButton(
                                     onClick = { stack = stack.dropLast(1) },
@@ -631,8 +743,8 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onListenTogether = {},
                                         lyrics = lyrics,
                                         lyricsSource = lyricsSource,
-                                        lyricsProviderStates = LyricsSource.entries.associateWith { LyricsProviderState.NOT_FETCHED },
-                                        onSelectLyricsProvider = {},
+                                        lyricsProviderStates = providerStates,
+                                        onSelectLyricsProvider = ::selectProvider,
                                         lyricsUnavailable = lyricsChecked && lyrics == null,
                                         lyricsOffsetOpen = false,
                                         onDismissLyricsOffset = {},
