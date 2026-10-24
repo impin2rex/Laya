@@ -161,6 +161,7 @@ fun LayaIosApp(engine: AudioEngine) {
     val signedIn by IosAuth.signedIn.collectAsState()
     val account by IosAuth.account.collectAsState()
     var showLogin by remember { mutableStateOf(false) }
+    var showSpotifyLogin by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val message by IosPlayerHost.messages.collectAsState()
     LaunchedEffect(message) {
@@ -460,7 +461,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                         // Opens the account page; Last.fm / Spotify / Discord live behind it on Android (5e).
                                         onEqualizer = { stack = stack + IosPage.Equalizer },
-                                        onAccountScrobbling = { if (signedIn) stack = stack + IosPage.Account else showLogin = true },
+                                        onAccountScrobbling = { stack = stack + IosPage.Account },
                                     )
                                     IosPage.Equalizer -> EqualizerScreen(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
@@ -470,6 +471,8 @@ fun LayaIosApp(engine: AudioEngine) {
                                         account = account,
                                         onSignIn = { showLogin = true },
                                         onSignOut = { scope.launch { IosAuth.signOut() } },
+                                        onSpotify = { showSpotifyLogin = true },
+                                        onSpotifyDisconnect = { scope.launch { IosSpotify.signOut() } },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
                                     is IosPage.History -> HistoryScreen(
@@ -757,6 +760,7 @@ fun LayaIosApp(engine: AudioEngine) {
                         }
                     }
                     if (showLogin) IosLoginScreen(onClose = { showLogin = false })
+                    if (showSpotifyLogin) IosSpotifyLoginScreen(onClose = { showSpotifyLogin = false })
                 }
             }
         }

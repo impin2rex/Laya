@@ -56,6 +56,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     KaraokeModel.install { NSBundle.mainBundle.pathForResource("UVR_MDXNET_9482", "onnx")!! }
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
+    IosSpotify.restore()
     IosAuth.restore() // Keychain session -> Innertube, before the first request
     AppUi.install(IosAppUiHost)
     SettingsExtras.host = IosSettingsHost

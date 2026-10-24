@@ -214,8 +214,11 @@ internal object IosAuth {
     }.takeIf { it.isNotEmpty() }?.joinToString("; ") { "${it.name}=${it.value}" }
 
     /** Google's cookies only; never visits the logout endpoint, so other sessions stay valid. */
-    suspend fun clearGoogleCookies() {
-        allCookies().filter { c -> listOf("youtube.com", "google.com").any { c.domain.trimStart('.').endsWith(it) } }.forEach { c ->
+    suspend fun clearGoogleCookies() = deleteCookies { d -> listOf("youtube.com", "google.com").any { d.trimStart('.').endsWith(it) } }
+
+    /** Deletes the web view's cookies whose domain matches [byDomain]. */
+    suspend fun deleteCookies(byDomain: (String) -> Boolean) {
+        allCookies().filter { byDomain(it.domain) }.forEach { c ->
             withContext(Dispatchers.Main) { suspendCoroutine<Unit> { k -> store.deleteCookie(c) { k.resume(Unit) } } }
         }
     }

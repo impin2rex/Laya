@@ -41,11 +41,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import com.music.laya.data.model.Account
 import com.music.laya.sharedui.resources.Res
+import com.music.laya.data.settings.AppSettings
+import com.music.laya.sharedui.resources.connected
+import com.music.laya.sharedui.resources.prioritize_spotify_canvas
+import com.music.laya.sharedui.resources.prioritize_spotify_canvas_subtitle
 import com.music.laya.sharedui.resources.sign_out
+import com.music.laya.sharedui.resources.spotify
+import com.music.laya.sharedui.resources.spotify_canvas_auto_hide
+import com.music.laya.sharedui.resources.spotify_canvas_auto_hide_subtitle
+import com.music.laya.sharedui.resources.spotify_connect_subtitle
+import com.music.laya.sharedui.resources.spotify_disconnect
+import com.music.laya.sharedui.resources.spotify_logo
+import com.music.laya.sharedui.resources.tap_to_connect
 import com.music.laya.ui.screens.AccountCard
 import com.music.laya.ui.screens.DestructiveRow
 import com.music.laya.ui.screens.SettingsGroup
+import com.music.laya.ui.screens.SettingsRow
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.DetailPage
 import com.music.laya.data.model.HomeShelf
@@ -166,13 +185,46 @@ private fun shareText(text: String) {
     top.presentViewController(UIActivityViewController(listOf(text), null), true, null)
 }
 
-/** Who is signed in, with the way out. ponytail: no channel switcher (single account). */
+/** Who is signed in, with the way out, and the Spotify connection. ponytail: no channel switcher (single account). */
 @Composable
-internal fun IosAccountPage(signedIn: Boolean, account: Account?, onSignIn: () -> Unit, onSignOut: () -> Unit, contentPadding: PaddingValues) {
-    Column(Modifier.padding(contentPadding)) {
+internal fun IosAccountPage(
+    signedIn: Boolean,
+    account: Account?,
+    onSignIn: () -> Unit,
+    onSignOut: () -> Unit,
+    onSpotify: () -> Unit,
+    onSpotifyDisconnect: () -> Unit,
+    contentPadding: PaddingValues,
+) {
+    val spotifyConnected = AppSettings.spotifySpdcToken.collectAsState().value.isNotBlank()
+    val autoHide by AppSettings.spotifyCanvasAutoHide.collectAsState()
+    val prioritize by AppSettings.prioritizeSpotifyCanvas.collectAsState()
+    @Composable
+    fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) = SettingsRow(
+        title = title,
+        subtitle = subtitle,
+        trailing = { Switch(checked = checked, onCheckedChange = onChange) },
+        onClick = { onChange(!checked) },
+    )
+    Column(Modifier.verticalScroll(rememberScrollState()).padding(contentPadding)) {
         SettingsGroup(topSpacing = 0.dp) {
             AccountCard(signedIn = signedIn, account = account, onSignIn = onSignIn, grouped = true)
             if (signedIn) DestructiveRow(label = stringResource(Res.string.sign_out), onClick = onSignOut)
+        }
+        SettingsGroup(header = stringResource(Res.string.spotify), footer = stringResource(Res.string.spotify_connect_subtitle)) {
+            SettingsRow(
+                iconPainter = painterResource(Res.drawable.spotify_logo),
+                title = stringResource(Res.string.spotify),
+                subtitle = stringResource(if (spotifyConnected) Res.string.connected else Res.string.tap_to_connect),
+                onClick = onSpotify,
+            )
+            if (spotifyConnected) {
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+                Toggle(stringResource(Res.string.spotify_canvas_auto_hide), stringResource(Res.string.spotify_canvas_auto_hide_subtitle), autoHide, AppSettings::setSpotifyCanvasAutoHide)
+                Toggle(stringResource(Res.string.prioritize_spotify_canvas), stringResource(Res.string.prioritize_spotify_canvas_subtitle), prioritize, AppSettings::setPrioritizeSpotifyCanvas)
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+                DestructiveRow(label = stringResource(Res.string.spotify_disconnect), onClick = onSpotifyDisconnect)
+            }
         }
     }
 }

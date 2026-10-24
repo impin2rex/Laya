@@ -63,7 +63,7 @@ private const val LOGIN_URL =
         "&continue=https%3A%2F%2Fmusic.youtube.com%2F"
 
 // Google rejects embedded browsers; Mobile Safari's agent is what makes its login page usable (proven in BitChord-iOS).
-private const val SAFARI_AGENT =
+internal const val SAFARI_AGENT =
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 " +
         "(KHTML, like Gecko) Version/18.7 Mobile/15E148 Safari/604.1"
 
