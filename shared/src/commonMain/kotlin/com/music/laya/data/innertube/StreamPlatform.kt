@@ -7,6 +7,9 @@ internal class NewPipeAudio(val isM4a: Boolean, val isWebmOpus: Boolean)
 internal expect object StreamPlatform {
     fun init()
     val newPipeAvailable: Boolean
+
+    /** Whether the player can only decode AAC-in-MP4 (AVFoundation has no WebM/Opus). */
+    val playbackRequiresM4a: Boolean
     fun isLinkageError(e: Throwable): Boolean
     suspend fun signatureTimestamp(videoId: String): Int?
 

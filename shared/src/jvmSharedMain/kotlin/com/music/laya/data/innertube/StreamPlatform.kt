@@ -152,6 +152,8 @@ internal actual object StreamPlatform {
 
     actual val newPipeAvailable = true
 
+    actual val playbackRequiresM4a = false
+
     actual fun isLinkageError(e: Throwable) = e is LinkageError
 
     /**

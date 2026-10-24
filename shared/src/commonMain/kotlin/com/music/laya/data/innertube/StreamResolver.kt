@@ -222,7 +222,9 @@ object StreamResolver {
     private suspend fun resolveUncached(videoId: String): Stream {
         val resolveStart = MonotonicClock.nowMs()
         val stream = try {
-            timed("$videoId InnerTubeX") { innerTubeXStreamAllowingUploads(videoId) }
+            timed("$videoId InnerTubeX") {
+                innerTubeXStreamAllowingUploads(videoId, requireM4a = StreamPlatform.playbackRequiresM4a)
+            }
                 ?: run {
                     TrackLog.w(TAG, "InnerTubeX found no usable stream for $videoId; falling back to extraction")
                     timed("$videoId newPipeStream") { newPipeStream(videoId, ::pickForQuality) }

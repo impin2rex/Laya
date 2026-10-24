@@ -9,6 +9,9 @@ internal actual object StreamPlatform {
 
     actual val newPipeAvailable = false
 
+    // ponytail: AAC only until Phase 8 adds an Opus/WebM decoder.
+    actual val playbackRequiresM4a = true
+
     actual fun isLinkageError(e: Throwable) = false
 
     actual suspend fun signatureTimestamp(videoId: String): Int? = null
