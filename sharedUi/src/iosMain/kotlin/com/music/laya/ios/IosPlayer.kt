@@ -10,6 +10,9 @@ import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.platform.ioDispatcher
 import com.music.laya.playback.Karaoke
+import com.music.laya.playback.karaoke.IosKaraoke
+import com.music.laya.playback.karaoke.IosPcmStream
+import com.music.laya.playback.karaoke.KaraokeStems
 import com.music.laya.playback.PlaybackPosition
 import com.music.laya.playback.EqLayout
 import com.music.laya.data.settings.EqualizerMode
@@ -32,6 +35,8 @@ private const val CHUNK_BYTES = 1024L * 1024
 /** Most AutoPlay tracks queued ahead at once, same as Android's MAX_QUEUED_AUTOPLAY. */
 private const val MAX_AUTOPLAY = 10
 
+private class KaraokeSource(val url: String, val headers: Map<String, String>, val mime: String, val length: Long)
+
 /**
  * Queue + transport state driving the Swift [AudioEngine]. Swift holds the listener weakly, so
  * whoever composes this must `remember` it.
@@ -52,6 +57,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private var nextJob: Job? = null
     private var autoplayJob: Job? = null
     private var preloaded = -1
+    /** What [resolveInto] last handed the engine for each track, so Karaoke can decode the same bytes. */
+    private val streams = mutableMapOf<String, KaraokeSource>()
     /** Entry ids of the upcoming tracks as they were before Shuffle, so turning it off can restore them. */
     private var preShuffle = emptyList<String?>()
 
@@ -60,6 +67,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
         scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
         scope.launch { combine(Karaoke.enabled, Karaoke.level) { on, l -> on to l }.collect { (on, l) -> IosDsp.setKaraoke(on, l) } }
+        scope.launch { combine(Karaoke.enabled, Karaoke.warm) { on, warm -> on || warm }.distinctUntilChanged().collect { bindKaraoke() } }
         scope.launch {
             combine(AppSettings.reverbEnabled, Karaoke.enabled, AppSettings.skipSilence) { r, k, s -> (r || k) to s }
                 .distinctUntilChanged().collect { (dsp, silence) -> engine.setEffects(dsp, silence) }
@@ -214,6 +222,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         // googlevideo URLs carry the format as ?mime=audio%2Fmp4
         val mime = url.substringAfter("mime=", "audio%2Fmp4").substringBefore('&').replace("%2F", "/")
         val length = StreamResolver.contentLength(song.videoId) ?: -1L
+        streams[song.videoId] = KaraokeSource(url, headers, mime, length)
         if (next) engine.setNext(url, headers, mime, length, CHUNK_BYTES)
         else engine.play(url, headers, mime, length, CHUNK_BYTES)
     }
@@ -235,8 +244,22 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     private fun announce() {
         Karaoke.trackChanged(song?.videoId) // karaoke is per song, as on Android
+        bindKaraoke()
         song?.let { engine.setNowPlaying(it.title, it.artist, it.albumName, it.thumbnailUrl) }
         engine.setQueueCapabilities(hasNext, hasPrevious)
+    }
+
+    /** Hands the tap the neural vocal of the track playing (Android's bindKaraoke), or nothing to stay on classic. */
+    private fun bindKaraoke() {
+        val id = song?.videoId
+        val source = id?.let { streams[it] }
+        val native = IosKaraoke.native
+        IosDsp.bindStems(
+            if (source == null || native == null || !(Karaoke.enabled.value || Karaoke.warm.value)) null
+            else KaraokeStems.forTrack(id, id) {
+                native.openPcm(source.url, source.headers, source.mime, source.length, CHUNK_BYTES)?.let(::IosPcmStream)
+            },
+        )
     }
 
     /** Resolves the following track now so the engine can start it gaplessly. */

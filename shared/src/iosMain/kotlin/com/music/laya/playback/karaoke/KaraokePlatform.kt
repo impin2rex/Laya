@@ -34,5 +34,5 @@ internal actual fun sleepMillis(millis: Long) = NSThread.sleepForTimeInterval(mi
 
 internal actual fun cpuCount(): Int = NSProcessInfo.processInfo.activeProcessorCount.toInt()
 
-// ponytail: the native analyzer isn't built for iOS yet, so no resampling and karaoke segments fail like a missing model
+// ponytail: no resampler on iOS; the Swift decode already delivers 44.1 kHz, which is all karaoke asks of it.
 internal actual fun resampleAudio(samples: FloatArray, from: Int, to: Int): FloatArray? = null

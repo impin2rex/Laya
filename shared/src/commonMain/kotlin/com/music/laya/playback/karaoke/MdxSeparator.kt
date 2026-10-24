@@ -44,7 +44,7 @@ fun interface ChunkSeparator {
  *
  * Not thread-safe; one instance per worker.
  *
- * The ONNX Runtime half is JVM-only; iOS constructs nothing yet.
+ * The ONNX Runtime half is JVM; iOS hands it to Swift (KaraokeNative).
  */
 expect class MdxSeparator(modelPath: String, threads: Int, model: MdxModel) : ChunkSeparator {
     val model: MdxModel

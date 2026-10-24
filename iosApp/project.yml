@@ -7,12 +7,22 @@ settings:
   base:
     MARKETING_VERSION: "0.0.1"
     CURRENT_PROJECT_VERSION: "1"
+packages:
+  onnxruntime:
+    url: https://github.com/microsoft/onnxruntime-swift-package-manager
+    exactVersion: 1.19.2
 targets:
   iosApp:
     type: application
     platform: iOS
     sources:
       - iosApp
+      # Neural karaoke's model, the same file Android bundles.
+      - path: ../app/src/main/assets/UVR_MDXNET_9482.onnx
+        buildPhase: resources
+    dependencies:
+      - package: onnxruntime
+        product: onnxruntime
     settings:
       base:
         # Checked-in plist; XcodeGen's `info:` key would overwrite it.

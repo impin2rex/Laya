@@ -6,6 +6,10 @@ struct iOSApp: App {
     /// One engine for the app's lifetime; Kotlin drives it.
     static let audioEngine = AVAudioEngineImpl()
 
+    init() {
+        IosKaraoke.shared.native = KaraokeNativeImpl()
+    }
+
     var body: some Scene {
         WindowGroup {
             ComposeView().ignoresSafeArea()

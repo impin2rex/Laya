@@ -53,6 +53,7 @@ kotlin {
     listOf(iosArm64(), iosSimulatorArm64()).forEach {
         it.binaries.framework {
             baseName = "LayaKit"
+            export(project(":shared")) // Swift implements :shared's KaraokeNative
             isStatic = true
         }
     }

@@ -11,7 +11,10 @@ import com.music.laya.data.lyrics.LyricsTranslation
 import com.music.laya.ui.AppUi
 import com.music.laya.ui.player.PlayerPlatform
 import com.music.laya.ui.screens.SettingsExtras
+import com.music.laya.playback.karaoke.KaraokeModel
+import com.music.laya.playback.karaoke.KaraokeStems
 import okio.Path.Companion.toPath
+import platform.Foundation.NSBundle
 import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
@@ -44,6 +47,8 @@ fun MainViewController(engine: AudioEngine): UIViewController {
         },
         poTokenProvider = null,
     )
+    KaraokeModel.install { NSBundle.mainBundle.pathForResource("UVR_MDXNET_9482", "onnx")!! }
+    KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
     IosAuth.restore() // Keychain session -> Innertube, before the first request
     AppUi.install(IosAppUiHost)

@@ -3,6 +3,7 @@ package com.music.laya.ios
 import com.music.laya.playback.Karaoke
 import com.music.laya.playback.KaraokeProcessor
 import com.music.laya.playback.ReverbProcessor
+import com.music.laya.playback.VocalStems
 import com.music.laya.playback.ReverbSettings
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -13,8 +14,7 @@ import kotlinx.cinterop.set
 /**
  * Karaoke then reverb (Android's DspChain order, minus the stages iOS lacks) for the Swift
  * audio tap (iosApp/iosApp/EqualizerTap.swift). [process] runs on the realtime audio thread:
- * no allocation, no locks. Classic centre-cancel karaoke only; no stems are ever bound, so
- * the neural path stays off.
+ * no allocation, no locks. Karaoke is classic centre-cancel until [bindStems] hands it the track's neural vocal.
  */
 @OptIn(ExperimentalForeignApi::class)
 object IosDsp {
@@ -33,6 +33,9 @@ object IosDsp {
     internal fun setReverb(enabled: Boolean, settings: ReverbSettings) = reverb.setTarget(enabled, settings)
     internal fun setKaraoke(enabled: Boolean, level: Float) { karaoke.setEnabled(enabled); karaoke.setLevel(level) }
 
+    /** The neural vocal of the track playing (IosPlayer), or null for none. */
+    internal fun bindStems(stems: VocalStems?) = karaoke.bind(stems)
+
     /** Not realtime. Taps of queued items prepare while another plays, so only a format change reconfigures. */
     fun prepare(sampleRate: Int, channelCount: Int, maxFrames: Int) {
         if (sampleRate != rate || channelCount != channels) {
@@ -47,13 +50,13 @@ object IosDsp {
     fun reset() { resetPending = true }
 
     /** [data]: [frames] interleaved frames of the configured channel count, processed in place. */
-    fun process(data: CPointer<FloatVar>, frames: Int) {
+    fun process(data: CPointer<FloatVar>, frames: Int, mediaTimeUs: Long) {
         val n = frames * channels
         val s = samples
         if (n == 0 || n > s.size) return
         if (resetPending) { resetPending = false; karaoke.reset(); reverb.reset() }
         for (i in 0 until n) s[i] = data[i]
-        karaoke.process(s, n)
+        karaoke.process(s, n, mediaTimeUs)
         reverb.process(s, n)
         for (i in 0 until n) data[i] = s[i]
     }

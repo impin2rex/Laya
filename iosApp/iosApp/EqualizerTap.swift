@@ -96,11 +96,11 @@ final class EqualizerTap {
         }
     }
 
-    func process(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int) {
+    func process(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int, mediaTimeUs: Int64) {
         guard isFloat, frames > 0 else { return }
         if EqualizerTuning.skipSilence { listen(buffers, frames: frames) }
         // Karaoke's centre-cancel needs the untouched stereo image, so it runs before the EQ's balance (as on Android).
-        if IosDsp.shared.active { runDsp(buffers, frames: frames) }
+        if IosDsp.shared.active { runDsp(buffers, frames: frames, mediaTimeUs: mediaTimeUs) }
         equalize(buffers, frames: frames)
     }
 
@@ -122,10 +122,10 @@ final class EqualizerTap {
     }
 
     /// Karaoke and reverb live in Kotlin (IosDsp) on interleaved samples.
-    private func runDsp(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int) {
+    private func runDsp(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int, mediaTimeUs: Int64) {
         let dsp = IosDsp.shared
         if isInterleaved {
-            if let data = buffers.first?.mData?.assumingMemoryBound(to: Float.self) { dsp.process(data: data, frames: Int32(frames)) }
+            if let data = buffers.first?.mData?.assumingMemoryBound(to: Float.self) { dsp.process(data: data, frames: Int32(frames), mediaTimeUs: mediaTimeUs) }
             return
         }
         guard let scratch, buffers.count >= channels else { return }
@@ -133,7 +133,7 @@ final class EqualizerTap {
             guard let src = buffers[c].mData?.assumingMemoryBound(to: Float.self) else { return }
             for f in 0..<frames { scratch[f * channels + c] = src[f] }
         }
-        dsp.process(data: scratch, frames: Int32(frames))
+        dsp.process(data: scratch, frames: Int32(frames), mediaTimeUs: mediaTimeUs)
         for c in 0..<channels {
             let dst = buffers[c].mData!.assumingMemoryBound(to: Float.self)
             for f in 0..<frames { dst[f] = scratch[f * channels + c] }
@@ -248,10 +248,13 @@ final class EqualizerTap {
             },
             unprepare: nil,
             process: { tap, frames, _, bufferList, framesOut, flagsOut in
-                guard MTAudioProcessingTapGetSourceAudio(tap, frames, bufferList, flagsOut, nil, framesOut) == noErr else { return }
+                var range = CMTimeRange()
+                guard MTAudioProcessingTapGetSourceAudio(tap, frames, bufferList, flagsOut, &range, framesOut) == noErr else { return }
+                // Where this block sits in the track, which lines Karaoke's neural vocal up with it.
+                let us = range.start.isNumeric ? Int64(range.start.seconds * 1_000_000) : Int64.min
                 Unmanaged<EqualizerTap>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
                     .takeUnretainedValue()
-                    .process(UnsafeMutableAudioBufferListPointer(bufferList), frames: Int(framesOut.pointee))
+                    .process(UnsafeMutableAudioBufferListPointer(bufferList), frames: Int(framesOut.pointee), mediaTimeUs: us)
             }
         )
         guard let out = adopt(create(MTAudioProcessingTapCreate, &callbacks)) else {
