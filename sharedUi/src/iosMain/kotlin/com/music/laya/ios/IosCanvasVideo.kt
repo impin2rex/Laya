@@ -9,86 +9,124 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.UIKitInteropProperties
-import androidx.compose.ui.viewinterop.UIKitView
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import com.music.laya.ui.player.CanvasContentMode
 import com.music.laya.ui.player.CanvasVideoSpec
-import kotlinx.cinterop.useContents
 import kotlinx.coroutines.delay
-import platform.AVFoundation.AVLayerVideoGravityResize
 import platform.AVFoundation.AVPlayerItem
-import platform.AVFoundation.AVPlayerLayer
 import platform.AVFoundation.AVPlayerLooper
 import platform.AVFoundation.AVQueuePlayer
 import platform.AVFoundation.currentItem
 import platform.AVFoundation.muted
 import platform.AVFoundation.preventsDisplaySleepDuringVideoPlayback
-import platform.AVFoundation.presentationSize
 import platform.AVFoundation.pause
 import platform.AVFoundation.play
-import platform.CoreGraphics.CGRectMake
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.usePinned
+import org.jetbrains.skia.ColorAlphaType
+import org.jetbrains.skia.ColorType
+import org.jetbrains.skia.Image
+import org.jetbrains.skia.ImageInfo
+import platform.AVFoundation.AVPlayerItemVideoOutput
+import platform.AVFoundation.addOutput
+import platform.AVFoundation.removeOutput
+import platform.CoreVideo.CVBufferRelease
+import platform.CoreVideo.CVPixelBufferGetBaseAddress
+import platform.CoreVideo.CVPixelBufferGetBytesPerRow
+import platform.CoreVideo.CVPixelBufferGetHeight
+import platform.CoreVideo.CVPixelBufferGetWidth
+import platform.CoreVideo.CVPixelBufferLockBaseAddress
+import platform.CoreVideo.CVPixelBufferUnlockBaseAddress
+import platform.CoreVideo.kCVPixelFormatType_32BGRA
+import platform.CoreGraphics.CGSizeMake
+import platform.AVFoundation.preferredMaximumResolution
+import platform.Foundation.NSNumber
 import platform.Foundation.NSURL
-import platform.QuartzCore.CATransaction
-import platform.UIKit.UIColor
-import platform.UIKit.UIView
+import platform.QuartzCore.CACurrentMediaTime
+import platform.posix.memcpy
 
-/** Reports its own layout passes: Compose sets this view's frame, and the video layer has to follow. */
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-private class Container : UIView(CGRectMake(0.0, 0.0, 0.0, 0.0)) {
-    var onLayout: (() -> Unit)? = null
-    override fun layoutSubviews() {
-        super.layoutSubviews()
-        onLayout?.invoke()
-    }
-}
-
-/** One clip: a muted, gapless-looping AVQueuePlayer drawn by an AVPlayerLayer inside a clipping container. */
+/**
+ * One clip: a muted, gapless-looping AVQueuePlayer whose frames are pulled through an AVPlayerItemVideoOutput.
+ * Drawn by Compose (no UIKitView): an interop view sits behind the Metal layer and punches a hole that
+ * lags animations and shows the page behind it until the first frame, so the video is just a Compose image.
+ */
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 private class CanvasPlayer(url: String) {
-    val container = Container().apply { clipsToBounds = true; backgroundColor = UIColor.clearColor; userInteractionEnabled = false }
     private val player = AVQueuePlayer().apply { muted = true; preventsDisplaySleepDuringVideoPlayback = false }
-    private val looper = AVPlayerLooper.playerLooperWithPlayer(player, AVPlayerItem.playerItemWithURL(NSURL.URLWithString(url)!!))
-    private val layer = AVPlayerLayer.playerLayerWithPlayer(player).apply { videoGravity = AVLayerVideoGravityResize; hidden = true }
-
-    init { container.layer.addSublayer(layer) }
+    private val looper = AVPlayerLooper.playerLooperWithPlayer(player, AVPlayerItem.playerItemWithURL(NSURL.URLWithString(url)!!).apply { preferredMaximumResolution = CGSizeMake(1280.0, 1280.0) })
+    private var item: AVPlayerItem? = null
+    private var output: AVPlayerItemVideoOutput? = null
+    private var image: Image? = null
+    private var bytes = ByteArray(0)
 
     fun play(on: Boolean) = if (on) player.play() else player.pause()
 
-    /** Width / height of the clip, 0 until the item has decoded its size. */
-    fun aspect(): Float = player.currentItem?.presentationSize?.useContents { if (width > 0.0 && height > 0.0) (width / height).toFloat() else 0f } ?: 0f
-
-    fun readyForDisplay() = layer.readyForDisplay
-
-    /** Android's applyContentTransform: crop to fill, or fit a portrait clip (pinned to the top when asked). */
-    fun layout(aspect: Float, mode: CanvasContentMode, alignTop: Boolean) {
-        val w = container.bounds.useContents { size.width }
-        val h = container.bounds.useContents { size.height }
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        if (aspect <= 0f || w <= 0.0 || h <= 0.0) {
-            layer.hidden = true
-        } else {
-            val viewAspect = w / h
-            val fit = mode == CanvasContentMode.FIT_PORTRAIT && aspect < 1f
-            val widthLimited = if (fit) aspect > viewAspect else aspect <= viewAspect
-            val lw = if (widthLimited) w else h * aspect
-            val lh = if (widthLimited) w / aspect else h
-            val y = if (fit && alignTop) 0.0 else (h - lh) / 2
-            layer.frame = CGRectMake((w - lw) / 2, y, lw, lh)
-            layer.hidden = false
+    /** AVPlayerLooper swaps items each loop; an output belongs to one item, so re-attach on change. */
+    private fun outputFor(cur: AVPlayerItem): AVPlayerItemVideoOutput {
+        // K/N hands out a fresh wrapper per call, so compare with isEqual, not identity.
+        if (item?.isEqual(cur) != true || output == null) {
+            output?.let { item?.removeOutput(it) }
+            val o = AVPlayerItemVideoOutput(pixelBufferAttributes = mapOf<Any?, Any?>("PixelFormatType" to NSNumber(unsignedInt = kCVPixelFormatType_32BGRA)))
+            cur.addOutput(o)
+            item = cur
+            output = o
         }
-        CATransaction.commit()
+        return output!!
+    }
+
+    /** The newest decoded frame, or null when nothing new arrived since the last call. */
+    fun nextFrame(): ImageBitmap? {
+        val cur = player.currentItem ?: return null
+        val o = outputFor(cur)
+        val t = o.itemTimeForHostTime(CACurrentMediaTime())
+        if (!o.hasNewPixelBufferForItemTime(t)) return null
+        val buf = o.copyPixelBufferForItemTime(t, null) ?: return null
+        try {
+            CVPixelBufferLockBaseAddress(buf, 1uL)
+            val w = CVPixelBufferGetWidth(buf).toInt()
+            val h = CVPixelBufferGetHeight(buf).toInt()
+            val rb = CVPixelBufferGetBytesPerRow(buf).toInt()
+            if (bytes.size != rb * h) bytes = ByteArray(rb * h)
+            bytes.usePinned { memcpy(it.addressOf(0), CVPixelBufferGetBaseAddress(buf), (rb * h).convert()) }
+            CVPixelBufferUnlockBaseAddress(buf, 1uL)
+            image?.close()
+            val img = Image.makeRaster(ImageInfo(w, h, ColorType.BGRA_8888, ColorAlphaType.PREMUL), bytes, rb)
+            image = img
+            return img.toComposeImageBitmap()
+        } finally {
+            CVBufferRelease(buf)
+        }
     }
 
     fun release() {
         looper.disableLooping()
         player.pause()
-        layer.player = null
-        layer.removeFromSuperlayer()
+        output?.let { item?.removeOutput(it) }
+        player.removeAllItems()
+        image?.close()
     }
+}
+
+/** Android's applyContentTransform: crop to fill, or fit a portrait clip (pinned to the top when asked). */
+private fun placement(frame: IntSize, view: androidx.compose.ui.geometry.Size, mode: CanvasContentMode, alignTop: Boolean): Pair<IntOffset, IntSize> {
+    val aspect = frame.width.toFloat() / frame.height
+    val viewAspect = view.width / view.height
+    val fit = mode == CanvasContentMode.FIT_PORTRAIT && aspect < 1f
+    val widthLimited = if (fit) aspect > viewAspect else aspect <= viewAspect
+    val lw = if (widthLimited) view.width else view.height * aspect
+    val lh = if (widthLimited) view.width / aspect else view.height
+    val y = if (fit && alignTop) 0f else (view.height - lh) / 2
+    return IntOffset(((view.width - lw) / 2).toInt(), y.toInt()) to IntSize(lw.toInt(), lh.toInt())
 }
 
 /** PlayerHost.CanvasVideo on iOS: the Spotify Canvas loop behind the artwork. Frame capture / bottom fade are not implemented. */
@@ -97,8 +135,10 @@ private class CanvasPlayer(url: String) {
 internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     val current by rememberUpdatedState(spec)
     val clip = remember(spec.canvas.url) { CanvasPlayer(spec.canvas.url) }
-    var rendered by remember(clip) { mutableStateOf(false) }
-    var aspect by remember(clip) { mutableStateOf(0f) }
+    var frame by remember(clip) { mutableStateOf<ImageBitmap?>(null) }
+    // Rendered only once a real frame exists, so the parent keeps the artwork opaque until then.
+    val rendered = frame != null
+    val aspect = frame?.let { it.width.toFloat() / it.height } ?: 0f
 
     DisposableEffect(clip) {
         onDispose {
@@ -109,30 +149,23 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
             current.onAspectRatioChanged(0f)
         }
     }
-    LaunchedEffect(clip) {
-        while (true) {
-            val a = clip.aspect()
-            if (a != aspect) { aspect = a; rendered = false; current.onAspectRatioChanged(a) }
-            val ready = a > 0f && clip.readyForDisplay()
-            if (ready != rendered) rendered = ready
-            delay(150)
+    LaunchedEffect(clip, spec.pausedForTransition) {
+        clip.play(!spec.pausedForTransition)
+        // Poll once per display frame, only while playing: a paused clip has nothing new to show.
+        while (!spec.pausedForTransition) {
+            androidx.compose.runtime.withFrameNanos { }
+            clip.nextFrame()?.let { frame = it }
         }
     }
+    LaunchedEffect(aspect) { current.onAspectRatioChanged(aspect) }
     LaunchedEffect(rendered) { current.onRenderedChanged(rendered) }
-    LaunchedEffect(clip, spec.pausedForTransition) { clip.play(!spec.pausedForTransition) }
 
     val alpha by animateFloatAsState(if (rendered) 1f else 0f, tween(320), label = "canvasAlpha")
     LaunchedEffect(clip) { snapshotFlow { alpha * current.presentationAlpha() }.collect { current.onCoverChanged(it) } }
 
-    clip.container.onLayout = { clip.layout(aspect, current.contentMode, current.alignPortraitTop) }
-    UIKitView(
-        factory = { clip.container },
-        modifier = modifier,
-        update = { view ->
-            // Set on the view itself: a Compose alpha layer does not reach a native view.
-            view.alpha = if (current.contentMode == CanvasContentMode.FIT_PORTRAIT && aspect <= 0f) 0.0 else (alpha * current.presentationAlpha()).toDouble()
-            clip.layout(aspect, current.contentMode, current.alignPortraitTop)
-        },
-        properties = UIKitInteropProperties(isInteractive = false, isNativeAccessibilityEnabled = false),
-    )
+    Canvas(modifier.graphicsLayer { this.alpha = if (current.contentMode == CanvasContentMode.FIT_PORTRAIT && aspect <= 0f) 0f else alpha * current.presentationAlpha() }) {
+        val f = frame ?: return@Canvas
+        val (off, size) = placement(IntSize(f.width, f.height), this.size, current.contentMode, current.alignPortraitTop)
+        clipRect { drawImage(f, srcOffset = IntOffset.Zero, srcSize = IntSize(f.width, f.height), dstOffset = off, dstSize = size) }
+    }
 }
