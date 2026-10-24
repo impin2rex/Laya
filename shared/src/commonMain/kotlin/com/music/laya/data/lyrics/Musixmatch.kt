@@ -1,25 +1,23 @@
 package com.music.laya.data.lyrics
 
-import com.music.laya.data.Http
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.hmacSha256
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
-import java.text.SimpleDateFormat
-import java.util.Base64
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
+import io.ktor.http.encodeURLParameter
+import io.ktor.http.takeFrom
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.io.encoding.Base64
 import kotlin.math.abs
+import kotlin.uuid.Uuid
 
 /** Rich word timing, with line-synced fallback, from Musixmatch's web API. */
 object Musixmatch {
@@ -37,20 +35,13 @@ object Musixmatch {
     private val tokenMutex = Mutex()
     private val cachedSecret = AtomicReference<String?>(null)
     private val cachedToken = AtomicReference<String?>(null)
-    private val processGuid = UUID.randomUUID().toString()
-
-    private val client by lazy {
-        Http.client.newBuilder()
-            .callTimeout(8, TimeUnit.SECONDS)
-            .connectTimeout(4, TimeUnit.SECONDS)
-            .build()
-    }
+    private val processGuid = Uuid.random().toString()
 
     suspend fun lyrics(
         title: String,
         artist: String,
         durationMs: Long,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
+    ): List<LyricLine>? = withContext(ioDispatcher) {
         val seconds = (durationMs / 1000).toInt()
         val track = bestTrack(title, artist, seconds) ?: return@withContext null
 
@@ -76,14 +67,14 @@ object Musixmatch {
 
     private fun score(track: Track, title: String, artist: String, seconds: Int): Double {
         var score = 0.0
-        val name = track.trackName.trim().lowercase(Locale.ROOT)
-        val targetTitle = title.trim().lowercase(Locale.ROOT)
+        val name = track.trackName.trim().lowercase()
+        val targetTitle = title.trim().lowercase()
         score += when {
             name == targetTitle -> 80.0
             name.contains(targetTitle) || targetTitle.contains(name) -> 40.0
             else -> 0.0
         }
-        if (track.artistName.trim().lowercase(Locale.ROOT).contains(artist.trim().lowercase(Locale.ROOT))) {
+        if (track.artistName.trim().lowercase().contains(artist.trim().lowercase())) {
             score += 40.0
         }
         track.trackLength?.let { length ->
@@ -100,17 +91,17 @@ object Musixmatch {
 
     private suspend fun searchTrack(title: String, artist: String): List<Track>? {
         val response = signedGet { token ->
-            "$BASE/track.search".toHttpUrl().newBuilder()
-                .addQueryParameter("app_id", APP_ID)
-                .addQueryParameter("format", "json")
-                .addQueryParameter("q_track", title)
-                .addQueryParameter("q_artist", artist)
-                .addQueryParameter("f_has_lyrics", "1")
-                .addQueryParameter("s_track_rating", "desc")
-                .addQueryParameter("quorum_factor", "1")
-                .addQueryParameter("page_size", "10")
-                .addQueryParameter("page", "1")
-                .addQueryParameter("usertoken", token)
+            URLBuilder("$BASE/track.search")
+                .apply { param("app_id", APP_ID) }
+                .apply { param("format", "json") }
+                .apply { param("q_track", title) }
+                .apply { param("q_artist", artist) }
+                .apply { param("f_has_lyrics", "1") }
+                .apply { param("s_track_rating", "desc") }
+                .apply { param("quorum_factor", "1") }
+                .apply { param("page_size", "10") }
+                .apply { param("page", "1") }
+                .apply { param("usertoken", token) }
                 .build()
         } ?: return null
         val body = runCatching {
@@ -121,12 +112,12 @@ object Musixmatch {
 
     private suspend fun fetchSubtitle(trackId: Long): String? {
         val response = signedGet { token ->
-            "$BASE/track.subtitle.get".toHttpUrl().newBuilder()
-                .addQueryParameter("app_id", APP_ID)
-                .addQueryParameter("format", "json")
-                .addQueryParameter("track_id", trackId.toString())
-                .addQueryParameter("subtitle_format", "mxm")
-                .addQueryParameter("usertoken", token)
+            URLBuilder("$BASE/track.subtitle.get")
+                .apply { param("app_id", APP_ID) }
+                .apply { param("format", "json") }
+                .apply { param("track_id", trackId.toString()) }
+                .apply { param("subtitle_format", "mxm") }
+                .apply { param("usertoken", token) }
                 .build()
         } ?: return null
         return runCatching {
@@ -136,11 +127,11 @@ object Musixmatch {
 
     private suspend fun fetchRichSync(trackId: Long): String? {
         val response = signedGet { token ->
-            "$BASE/track.richsync.get".toHttpUrl().newBuilder()
-                .addQueryParameter("app_id", APP_ID)
-                .addQueryParameter("format", "json")
-                .addQueryParameter("track_id", trackId.toString())
-                .addQueryParameter("usertoken", token)
+            URLBuilder("$BASE/track.richsync.get")
+                .apply { param("app_id", APP_ID) }
+                .apply { param("format", "json") }
+                .apply { param("track_id", trackId.toString()) }
+                .apply { param("usertoken", token) }
                 .build()
         } ?: return null
         return runCatching {
@@ -202,23 +193,25 @@ object Musixmatch {
                 val seconds = (totalMs / 1000) % 60
                 val millis = totalMs % 1000
                 appendLine(
-                    "[" + "%02d:%02d.%03d".format(Locale.US, minutes, seconds, millis) + "]" + line.text,
+                    "[" + "${minutes.pad(2)}:${seconds.pad(2)}.${millis.pad(3)}" + "]" + line.text,
                 )
             }
         }.trim()
     }
 
+    private fun Long.pad(width: Int) = toString().padStart(width, '0')
+
     private fun secondsToMs(seconds: Double): Long = (seconds * 1_000.0).toLong()
 
     /** Signs and issues [buildUrl]; an auth failure refreshes both moving credentials once. */
-    private suspend fun signedGet(buildUrl: (token: String) -> okhttp3.HttpUrl): String? {
+    private suspend fun signedGet(buildUrl: (token: String) -> Url): String? {
         val secret = getSecret()
         val token = getToken(secret) ?: return null
         val first = apiGet(sign(buildUrl(token).toString(), secret))
         if (first != null && !looksUnauthorized(first)) return first
 
-        cachedToken.set(null)
-        cachedSecret.set(null)
+        cachedToken.store(null)
+        cachedSecret.store(null)
         val freshSecret = getSecret()
         val freshToken = getToken(freshSecret) ?: return null
         return apiGet(sign(buildUrl(freshToken).toString(), freshSecret))
@@ -229,15 +222,15 @@ object Musixmatch {
         runCatching { lyricsJson.decodeFromString<Envelope<kotlinx.serialization.json.JsonElement>>(body) }
             .getOrNull()?.message?.header?.statusCode?.let { it == 401 || it == 402 } ?: false
 
-    private suspend fun getToken(secret: String): String? = cachedToken.get() ?: tokenMutex.withLock {
-        cachedToken.get() ?: fetchToken(secret)?.also(cachedToken::set)
+    private suspend fun getToken(secret: String): String? = cachedToken.load() ?: tokenMutex.withLock {
+        cachedToken.load() ?: fetchToken(secret)?.also(cachedToken::store)
     }
 
     private fun fetchToken(secret: String): String? {
-        val url = "$BASE/token.get".toHttpUrl().newBuilder()
-            .addQueryParameter("app_id", APP_ID)
-            .addQueryParameter("guid", processGuid)
-            .addQueryParameter("format", "json")
+        val url = URLBuilder("$BASE/token.get")
+            .apply { param("app_id", APP_ID) }
+            .apply { param("guid", processGuid) }
+            .apply { param("format", "json") }
             .build()
         val body = apiGet(sign(url.toString(), secret)) ?: return null
         return runCatching {
@@ -246,33 +239,41 @@ object Musixmatch {
     }
 
     /** Reads the rotating signing key from the JavaScript linked by the current web client. */
-    private fun getSecret(): String = cachedSecret.get() ?: runCatching {
+    private fun getSecret(): String = cachedSecret.load() ?: runCatching {
         val page = browserGet(SEARCH_PAGE, "text/html,application/xhtml+xml")
             ?: error("search page unavailable")
         val script = APP_SCRIPT.find(page)?.groupValues?.get(1)
             ?: error("application script not found")
-        val scriptUrl = SEARCH_PAGE.toHttpUrl().resolve(script)?.toString()
-            ?: error("invalid application script URL")
+        val scriptUrl = URLBuilder(SEARCH_PAGE).takeFrom(script).buildString()
         val javascript = browserGet(scriptUrl, "*/*") ?: error("application script unavailable")
         val encoded = ENCODED_SECRET.find(javascript)?.groupValues?.get(1)
             ?: error("signing key not found")
-        String(Base64.getDecoder().decode(encoded.reversed()), Charsets.UTF_8)
+        Base64.Default.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL).decode(encoded.reversed()).decodeToString()
             .takeIf { it.isNotBlank() }
             ?: error("empty signing key")
-    }.getOrElse { FALLBACK_SIGNING_SECRET }.also(cachedSecret::set)
+    }.getOrElse { FALLBACK_SIGNING_SECRET }.also(cachedSecret::store)
 
     /** Signs `<url><UTC yyyyMMdd>` with HMAC-SHA256, matching the current web client. */
     private fun sign(url: String, secret: String): String {
         val normalized = url.replace("%20", "+").replace(" ", "+")
-        val date = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }.format(Date())
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(secret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
-        val raw = mac.doFinal("$normalized$date".toByteArray(Charsets.UTF_8))
-        val signature = Base64.getEncoder().encodeToString(raw)
-        return "$normalized&signature=${java.net.URLEncoder.encode(signature, "UTF-8")}" +
+        val raw = hmacSha256(secret.encodeToByteArray(), "$normalized${utcDate()}".encodeToByteArray())
+        val signature = Base64.Default.encode(raw)
+        return "$normalized&signature=${signature.encodeURLParameter()}" +
             "&signature_protocol=sha256"
+    }
+
+    /** Today's UTC date as `yyyyMMdd` (days-to-civil, Howard Hinnant). */
+    private fun utcDate(): String {
+        val z = currentTimeMillis().floorDiv(86_400_000L) + 719_468
+        val era = z.floorDiv(146_097L)
+        val doe = z - era * 146_097
+        val yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365
+        val doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+        val mp = (5 * doy + 2) / 153
+        val day = doy - (153 * mp + 2) / 5 + 1
+        val month = if (mp < 10) mp + 3 else mp - 9
+        val year = yoe + era * 400 + if (month <= 2) 1 else 0
+        return "$year${month.pad(2)}${day.pad(2)}"
     }
 
     private fun apiGet(url: String): String? = request(url, "application/json, text/plain, */*")
@@ -281,15 +282,16 @@ object Musixmatch {
         request(url, accept, cookie = "mxm_bab=AB")
 
     private fun request(url: String, accept: String, cookie: String? = null): String? = runCatching {
-        val request = Request.Builder().url(url)
-            .header("User-Agent", BROWSER_AGENT)
-            .header("Accept", accept)
-            .header("Accept-Language", "en-US,en;q=0.9")
-            .apply { if (cookie != null) header("Cookie", cookie) }
-            .build()
-        client.newCall(request).execute().use { response ->
-            if (response.isSuccessful) response.body.string() else null
-        }
+        val headers = mutableMapOf(
+            "User-Agent" to BROWSER_AGENT,
+            "Accept" to accept,
+            "Accept-Language" to "en-US,en;q=0.9",
+        )
+        if (cookie != null) headers["Cookie"] = cookie
+        val response = NetHttp.execute(
+            HttpRequest(url, headers = headers, callTimeoutMs = 8_000, connectTimeoutMs = 4_000),
+        )
+        if (response.isSuccessful) response.text() else null
     }.getOrNull()
 
     @Serializable

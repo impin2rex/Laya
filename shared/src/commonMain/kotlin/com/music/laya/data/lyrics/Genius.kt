@@ -1,7 +1,10 @@
 package com.music.laya.data.lyrics
 
-import com.music.laya.data.Http
-import kotlinx.coroutines.Dispatchers
+import com.fleeksoft.ksoup.Ksoup
+import com.fleeksoft.ksoup.nodes.TextNode
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -10,13 +13,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
-import org.jsoup.Jsoup
-import org.jsoup.nodes.TextNode
-import java.net.URLEncoder
-import java.util.Locale
-import java.util.concurrent.TimeUnit
+import io.ktor.http.encodeURLParameter
 
 /**
  * Web scraper for Genius.com lyrics.
@@ -54,14 +51,7 @@ object Genius {
 
     private val json by lazy { Json { ignoreUnknownKeys = true; isLenient = true } }
 
-    private val httpClient by lazy {
-        Http.client.newBuilder()
-            .callTimeout(8, TimeUnit.SECONDS)
-            .connectTimeout(4, TimeUnit.SECONDS)
-            .build()
-    }
-
-    suspend fun lyrics(title: String, artist: String): List<LyricLine>? = withContext(Dispatchers.IO) {
+    suspend fun lyrics(title: String, artist: String): List<LyricLine>? = withContext(ioDispatcher) {
         runCatching {
             scrapeLyrics(title, artist)
         }.getOrNull()
@@ -143,7 +133,7 @@ object Genius {
     }
 
     private fun searchSongUrl(query: String, targetTitle: String, targetArtist: String): String? {
-        val url = "https://genius.com/api/search/multi?q=${URLEncoder.encode(query, "UTF-8")}"
+        val url = "https://genius.com/api/search/multi?q=${query.encodeURLParameter(spaceToPlus = true)}"
         val responseBody = httpGet(url) ?: return null
 
         return runCatching {
@@ -169,12 +159,12 @@ object Genius {
         targetArtist: String,
     ): JsonObject? {
         if (candidates.isEmpty()) return null
-        val normTitle = targetTitle.lowercase(Locale.ROOT)
-        val normArtist = targetArtist.lowercase(Locale.ROOT)
+        val normTitle = targetTitle.lowercase()
+        val normArtist = targetArtist.lowercase()
 
         val scored = candidates.mapNotNull { item ->
-            val title = item["title"]?.jsonPrimitive?.contentOrNull?.lowercase(Locale.ROOT) ?: ""
-            val artist = item["artist_names"]?.jsonPrimitive?.contentOrNull?.lowercase(Locale.ROOT) ?: ""
+            val title = item["title"]?.jsonPrimitive?.contentOrNull?.lowercase() ?: ""
+            val artist = item["artist_names"]?.jsonPrimitive?.contentOrNull?.lowercase() ?: ""
             var score = 0
 
             val titleMatches = normTitle.isNotBlank() && (title == normTitle || title.contains(normTitle) || normTitle.contains(title))
@@ -214,7 +204,7 @@ object Genius {
     }
 
     private fun parseHtmlUnsafe(html: String): List<LyricLine>? {
-        val doc = Jsoup.parse(html)
+        val doc = Ksoup.parse(html)
 
         // Modern Genius uses data-lyrics-container="true", older pages use div.lyrics
         var containers = doc.select("div[data-lyrics-container=true]")
@@ -325,15 +315,19 @@ object Genius {
     )
 
     private fun httpGet(url: String): String? = runCatching {
-        val request = Request.Builder()
-            .url(url)
-            .header("User-Agent", USER_AGENT)
-            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8")
-            .header("Accept-Language", "en-US,en;q=0.9")
-            .build()
-        httpClient.newCall(request).execute().use { response ->
-            if (response.isSuccessful) response.body.string() else null
-        }
+        val response = NetHttp.execute(
+            HttpRequest(
+                url,
+                headers = mapOf(
+                    "User-Agent" to USER_AGENT,
+                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8",
+                    "Accept-Language" to "en-US,en;q=0.9",
+                ),
+                callTimeoutMs = 8_000,
+                connectTimeoutMs = 4_000,
+            ),
+        )
+        if (response.isSuccessful) response.text() else null
     }.getOrNull()
 
     private fun fetchHtml(url: String): String? = httpGet(url)

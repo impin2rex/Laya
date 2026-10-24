@@ -1,10 +1,10 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import io.ktor.http.URLBuilder
 
 /**
  * Apple Music TTML again, from a third host — and the only one here that will
@@ -54,19 +54,19 @@ object BiniLyrics {
         durationMs: Long,
         album: String? = null,
         isrc: String? = null,
-    ): Hit? = withContext(Dispatchers.IO) {
-        val url = BASE.toHttpUrl().newBuilder()
+    ): Hit? = withContext(ioDispatcher) {
+        val url = URLBuilder(BASE)
             .apply {
                 if (!isrc.isNullOrBlank()) {
                     // Nothing else is worth sending: the recording is named, and
                     // a title alongside it could only ever disagree with it.
-                    addQueryParameter("isrc", isrc)
+                    param("isrc", isrc)
                 } else {
-                    addQueryParameter("track", title)
-                    addQueryParameter("artist", artist)
-                    if (!album.isNullOrBlank()) addQueryParameter("album", album)
+                    param("track", title)
+                    param("artist", artist)
+                    if (!album.isNullOrBlank()) param("album", album)
                     val seconds = durationMs / 1000
-                    if (seconds > 0) addQueryParameter("duration", seconds.toString())
+                    if (seconds > 0) param("duration", seconds.toString())
                 }
             }
             .build()
@@ -87,7 +87,7 @@ object BiniLyrics {
     suspend fun lyricsFor(
         hit: Hit,
         get: suspend (String) -> String? = { lyricsGet(it) },
-    ): Match? = withContext(Dispatchers.IO) {
+    ): Match? = withContext(ioDispatcher) {
         val document = hit.lyricsUrl?.takeIf { it.isNotBlank() } ?: return@withContext null
         val ttml = get(document) ?: return@withContext null
         val lines = TtmlLyrics.parse(ttml).takeIf { it.isNotEmpty() } ?: return@withContext null

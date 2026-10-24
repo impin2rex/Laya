@@ -1,6 +1,6 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -11,9 +11,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.longOrNull
-import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import java.util.concurrent.atomic.AtomicReference
+import io.ktor.http.Url
+import io.ktor.http.URLBuilder
+import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.math.abs
 
 /** Public Apple lyrics plus optional authenticated Spotify and Musixmatch routes. */
@@ -39,12 +40,12 @@ object PaxSenix {
         artist: String,
         durationMs: Long,
         album: String? = null,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
+    ): List<LyricLine>? = withContext(ioDispatcher) {
         val id = searchPublicAppleTrackId(title, artist, durationMs)
             ?: return@withContext null
         val url = publicUrl("apple-music/lyrics")
-            .addQueryParameter("id", id)
-            .addQueryParameter("ttml", "true")
+            .apply { param("id", id) }
+            .apply { param("ttml", "true") }
             .build()
         lyricsGet(url.toString())
             ?.let(::parseResponse)
@@ -54,10 +55,10 @@ object PaxSenix {
         title: String,
         artist: String,
         durationMs: Long,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
+    ): List<LyricLine>? = withContext(ioDispatcher) {
         val id = searchTrackId("spotify/search", title, artist, durationMs)
         id?.let {
-            apiBody(apiUrl("lyrics/spotify").addQueryParameter("id", it).build())
+            apiBody(apiUrl("lyrics/spotify").apply { param("id", it) }.build())
                 ?.let(::parseResponse)
         } ?: genericAuthenticatedLyrics(title, artist, durationMs)
     }
@@ -66,11 +67,11 @@ object PaxSenix {
         title: String,
         artist: String,
         durationMs: Long,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
-        val query: HttpUrl.Builder.() -> Unit = {
-            addQueryParameter("t", title)
-            addQueryParameter("a", artist)
-            addQueryParameter("d", (durationMs / 1000).toString())
+    ): List<LyricLine>? = withContext(ioDispatcher) {
+        val query: URLBuilder.() -> Unit = {
+            param("t", title)
+            param("a", artist)
+            param("d", (durationMs / 1000).toString())
         }
         apiBody(apiUrl("lyrics/musixmatch").apply(query).build())
             ?.let(::parseResponse)
@@ -83,11 +84,11 @@ object PaxSenix {
         durationMs: Long,
     ): String? {
         val token = appleToken() ?: return null
-        val url = APPLE_SEARCH.toHttpUrl().newBuilder()
-            .addQueryParameter("term", "$title $artist")
-            .addQueryParameter("types", "songs")
-            .addQueryParameter("limit", "10")
-            .addQueryParameter("l", "en-US")
+        val url = URLBuilder(APPLE_SEARCH)
+            .apply { param("term", "$title $artist") }
+            .apply { param("types", "songs") }
+            .apply { param("limit", "10") }
+            .apply { param("l", "en-US") }
             .build()
         val root = lyricsGetAuthorized(url.toString(), token)
             ?.let { runCatching { lyricsJson.parseToJsonElement(it) }.getOrNull() }
@@ -95,8 +96,8 @@ object PaxSenix {
         return bestCandidate(root, title, artist, durationMs)?.id
     }
 
-    private suspend fun appleToken(): String? = cachedAppleToken.get() ?: tokenMutex.withLock {
-        cachedAppleToken.get() ?: scrapeAppleToken()?.also(cachedAppleToken::set)
+    private suspend fun appleToken(): String? = cachedAppleToken.load() ?: tokenMutex.withLock {
+        cachedAppleToken.load() ?: scrapeAppleToken()?.also(cachedAppleToken::store)
     }
 
     private fun scrapeAppleToken(): String? {
@@ -112,8 +113,8 @@ object PaxSenix {
         artist: String,
         durationMs: Long,
     ): String? {
-        val query: HttpUrl.Builder.() -> Unit = {
-            addQueryParameter("q", "$title $artist")
+        val query: URLBuilder.() -> Unit = {
+            param("q", "$title $artist")
         }
         val root = apiBody(apiUrl(path).apply(query).build())
             ?.let { runCatching { lyricsJson.parseToJsonElement(it) }.getOrNull() }
@@ -127,7 +128,7 @@ object PaxSenix {
         durationMs: Long,
     ): List<LyricLine>? {
         val url = apiUrl("lyrics/lrcget")
-            .addQueryParameter("q", "$title $artist")
+            .apply { param("q", "$title $artist") }
             .build()
         return apiBody(url)?.let { parseLrcGet(it, title, artist, durationMs) }
     }
@@ -326,11 +327,11 @@ object PaxSenix {
         else -> 0
     }
 
-    private fun apiUrl(path: String) = "$API/$path".toHttpUrl().newBuilder()
+    private fun apiUrl(path: String) = URLBuilder("$API/$path")
 
-    private fun publicUrl(path: String) = "$PUBLIC_PROXY/$path".toHttpUrl().newBuilder()
+    private fun publicUrl(path: String) = URLBuilder("$PUBLIC_PROXY/$path")
 
-    private fun apiBody(url: HttpUrl): String? = apiKey.takeIf(String::isNotBlank)?.let { key ->
+    private fun apiBody(url: Url): String? = apiKey.takeIf(String::isNotBlank)?.let { key ->
         lyricsGetBearer(url.toString(), key)
     }
 

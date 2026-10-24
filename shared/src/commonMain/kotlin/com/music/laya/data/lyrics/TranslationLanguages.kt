@@ -1,6 +1,6 @@
 package com.music.laya.data.lyrics
 
-import java.util.Locale
+import com.music.laya.platform.displayLanguageName
 
 /**
  * One language the translate button can translate lyrics *into*.
@@ -160,10 +160,10 @@ val TRANSLATION_LANGUAGES = listOf(
     TranslationLanguage("zu", "Zulu"),
 )
 
-private val byCode = TRANSLATION_LANGUAGES.associateBy { it.code.lowercase(Locale.ROOT) }
+private val byCode = TRANSLATION_LANGUAGES.associateBy { it.code.lowercase() }
 
 /**
- * What to call [code] on screen, written in [inLocale].
+ * What to call [code] on screen, written in the language tagged [inTag].
  *
  * Asks the platform first so the name arrives in the reader's own language —
  * "Japanese" to an English reader, "japonés" to a Spanish one — and falls back
@@ -171,8 +171,8 @@ private val byCode = TRANSLATION_LANGUAGES.associateBy { it.code.lowercase(Local
  * that is not in the table at all comes back as itself rather than blank, which
  * is wrong but legible; an empty label in a picker is neither.
  */
-fun translationLanguageName(code: String, inLocale: Locale): String {
-    val entry = byCode[code.lowercase(Locale.ROOT)]
+fun translationLanguageName(code: String, inTag: String): String {
+    val entry = byCode[code.lowercase()]
     // A subtag is the whole point of the codes that carry one, and the platform
     // renders it as territory: zh-CN comes back "Chinese (China)", which names
     // the country rather than the script and leaves zh-TW looking like the same
@@ -180,10 +180,10 @@ fun translationLanguageName(code: String, inLocale: Locale): String {
     val platform = if ('-' in code) {
         ""
     } else {
-        Locale.forLanguageTag(code).getDisplayName(inLocale)
+        displayLanguageName(code, inTag)
     }
     // getDisplayName echoes the tag back when it knows nothing about it.
     val known = platform.isNotBlank() && !platform.equals(code, ignoreCase = true)
     val name = if (known) platform else entry?.fallbackName ?: code
-    return name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(inLocale) else it.toString() }
+    return name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }

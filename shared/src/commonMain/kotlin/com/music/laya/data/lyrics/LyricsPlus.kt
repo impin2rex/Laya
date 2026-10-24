@@ -1,6 +1,6 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
@@ -13,8 +13,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import java.util.concurrent.atomic.AtomicReference
+import io.ktor.http.URLBuilder
+import kotlin.concurrent.atomics.AtomicReference
 
 /**
  * Syllable-timed lyrics from LyricsPlus, the open backend behind the YouLy+
@@ -48,12 +48,12 @@ object LyricsPlus {
         album: String? = null,
         isrc: String? = null,
     ): List<LyricLine>? = coroutineScope {
-        val hosts = lastGood.get()
+        val hosts = lastGood.load()
             ?.let { listOf(it) + MIRRORS.filterNot { mirror -> mirror == it } }
             ?: MIRRORS
 
         val pending = hosts.map { host ->
-            host to async(Dispatchers.IO) { fetch(host, title, artist, durationMs, album, isrc) }
+            host to async(ioDispatcher) { fetch(host, title, artist, durationMs, album, isrc) }
         }.toMutableList()
 
         // Take the first mirror to answer with something usable rather than
@@ -66,7 +66,7 @@ object LyricsPlus {
                 }
                 pending.removeAll { it.first == host }
                 if (!lines.isNullOrEmpty()) {
-                    lastGood.set(host)
+                    lastGood.store(host)
                     return@coroutineScope lines
                 }
             }
@@ -83,18 +83,18 @@ object LyricsPlus {
         durationMs: Long,
         album: String?,
         isrc: String?,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
-        val url = "$host/v2/lyrics/get".toHttpUrl().newBuilder()
-            .addQueryParameter("title", title)
-            .addQueryParameter("artist", artist)
+    ): List<LyricLine>? = withContext(ioDispatcher) {
+        val url = URLBuilder("$host/v2/lyrics/get")
+            .apply { param("title", title) }
+            .apply { param("artist", artist) }
             .apply {
                 val seconds = durationMs / 1000
-                if (seconds > 0) addQueryParameter("duration", seconds.toString())
-                if (!album.isNullOrBlank()) addQueryParameter("album", album)
+                if (seconds > 0) param("duration", seconds.toString())
+                if (!album.isNullOrBlank()) param("album", album)
                 // Sent alongside the name rather than instead of it: unlike
                 // [BiniLyrics] this backend aggregates several catalogues, and
                 // the ones with no ISRC index still need something to match on.
-                if (!isrc.isNullOrBlank()) addQueryParameter("isrc", isrc)
+                if (!isrc.isNullOrBlank()) param("isrc", isrc)
             }
             .build()
 

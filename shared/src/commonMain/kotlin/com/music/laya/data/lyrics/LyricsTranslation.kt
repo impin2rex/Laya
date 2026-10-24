@@ -1,37 +1,34 @@
 package com.music.laya.data.lyrics
 
-import com.music.laya.data.Http
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.Locale
-import java.util.concurrent.TimeUnit
-import java.util.zip.GZIPInputStream
-import java.util.zip.GZIPOutputStream
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import com.music.laya.platform.HttpException
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.languageOf
+import com.music.laya.platform.sha256
+import io.ktor.http.formUrlEncode
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.FormBody
-import okhttp3.Request
-import okhttp3.Response
-import java.io.IOException
+import okio.FileSystem
+import okio.GzipSink
+import okio.GzipSource
+import okio.Path
+import okio.buffer
+import okio.use
+import kotlin.concurrent.Volatile
 
 /**
  * Lightweight, on-demand lyric translation.
@@ -81,14 +78,18 @@ object LyricsTranslation {
     private val json = Json { ignoreUnknownKeys = true }
     private val diskMutex = Mutex()
     private val memory = object {
-        private val entries = object : LinkedHashMap<String, CachedTranslation>(16, 0.75f, true) {
-            override fun removeEldestEntry(eldest: Map.Entry<String, CachedTranslation>) = size > 12
+        private val lock = SynchronizedObject()
+        private val entries = LinkedHashMap<String, CachedTranslation>()
+
+        // Least-recently-used: a hit moves the entry to the end.
+        fun get(key: String): CachedTranslation? = synchronized(lock) {
+            entries.remove(key)?.also { entries[key] = it }
         }
 
-        @Synchronized fun get(key: String): CachedTranslation? = entries[key]
-
-        @Synchronized fun put(key: String, value: CachedTranslation) {
+        fun put(key: String, value: CachedTranslation) = synchronized(lock) {
+            entries.remove(key)
             entries[key] = value
+            if (entries.size > 12) entries.remove(entries.keys.first())
         }
     }
 
@@ -97,13 +98,7 @@ object LyricsTranslation {
      * directory, the desktop's media cache. Null keeps them in memory only.
      */
     @Volatile
-    var cacheDir: File? = null
-    private val client by lazy {
-        Http.client.newBuilder()
-            .callTimeout(12, TimeUnit.SECONDS)
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .build()
-    }
+    var cacheDir: Path? = null
 
     @Serializable
     private data class CachedTranslation(
@@ -341,26 +336,16 @@ object LyricsTranslation {
         target: String,
         sourceLanguage: String = "auto",
     ): BatchAnswer? {
-        val body = FormBody.Builder()
-            .add("client", "dict-chrome-ex")
-            .add("sl", sourceLanguage)
-            .add("tl", target)
-            .add("dt", "t")
-            .add("q", batch.payload)
-            .build()
-        val request = Request.Builder()
-            .url(ENDPOINT)
-            .header("User-Agent", "Laya/1.7.1")
-            .header("Accept", "application/json")
-            .post(body)
-            .build()
-        val response = try {
-            client.newCall(request).awaitBody()
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: IOException) {
-            return null
-        }
+        val response = postForm(
+            ENDPOINT,
+            listOf(
+                "client" to "dict-chrome-ex",
+                "sl" to sourceLanguage,
+                "tl" to target,
+                "dt" to "t",
+                "q" to batch.payload,
+            ),
+        ) ?: return null
         return runCatching {
             val root = json.parseToJsonElement(response).jsonArray
             val translatedBody = root[0].jsonArray.joinToString(separator = "") { segment ->
@@ -374,26 +359,16 @@ object LyricsTranslation {
     }
 
     private suspend fun requestRomanizationBatch(batch: Batch, target: String): BatchAnswer? {
-        val body = FormBody.Builder()
-            .add("client", "dict-chrome-ex")
-            .add("sl", "auto")
-            .add("tl", target)
-            .add("dt", "rm")
-            .add("q", batch.payload)
-            .build()
-        val request = Request.Builder()
-            .url(ENDPOINT)
-            .header("User-Agent", "Laya/1.7.1")
-            .header("Accept", "application/json")
-            .post(body)
-            .build()
-        val response = try {
-            client.newCall(request).awaitBody()
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: IOException) {
-            return null
-        }
+        val response = postForm(
+            ENDPOINT,
+            listOf(
+                "client" to "dict-chrome-ex",
+                "sl" to "auto",
+                "tl" to target,
+                "dt" to "rm",
+                "q" to batch.payload,
+            ),
+        ) ?: return null
         return runCatching {
             val root = json.parseToJsonElement(response).jsonArray
             val romanizedBody = root[0].jsonArray.joinToString(separator = "") { segment ->
@@ -427,28 +402,18 @@ object LyricsTranslation {
     }
 
     private suspend fun requestNativeScript(text: String, sourceLanguage: String): String? {
-        val body = FormBody.Builder()
-            .add("text", text)
-            .add("itc", "$sourceLanguage-t-i0-und")
-            .add("num", "1")
-            .add("cp", "0")
-            .add("cs", "1")
-            .add("ie", "utf-8")
-            .add("oe", "utf-8")
-            .build()
-        val request = Request.Builder()
-            .url(INPUT_TOOLS_ENDPOINT)
-            .header("User-Agent", "Laya/1.7.1")
-            .header("Accept", "application/json")
-            .post(body)
-            .build()
-        val response = try {
-            client.newCall(request).awaitBody()
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: IOException) {
-            return null
-        }
+        val response = postForm(
+            INPUT_TOOLS_ENDPOINT,
+            listOf(
+                "text" to text,
+                "itc" to "$sourceLanguage-t-i0-und",
+                "num" to "1",
+                "cp" to "0",
+                "cs" to "1",
+                "ie" to "utf-8",
+                "oe" to "utf-8",
+            ),
+        ) ?: return null
         return runCatching {
             val root = json.parseToJsonElement(response).jsonArray
             if (root.getOrNull(0)?.jsonPrimitive?.contentOrNull != "SUCCESS") return@runCatching null
@@ -457,14 +422,14 @@ object LyricsTranslation {
         }.getOrNull()
     }
 
+    // Surrogate pairs are skipped: letters outside the BMP are vanishingly rare in lyrics.
     private fun predominantlyLatin(slots: List<TextSlot>): Boolean {
         var latin = 0
         var other = 0
         slots.forEach { slot ->
-            slot.text.codePoints().forEach { codePoint ->
-                if (Character.isLetter(codePoint)) {
-                    if (Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.LATIN) latin++
-                    else other++
+            slot.text.forEach { c ->
+                if (c.isLetter()) {
+                    if (c.isLatinLetter()) latin++ else other++
                 }
             }
         }
@@ -472,10 +437,14 @@ object LyricsTranslation {
     }
 
     private fun hasNonLatinLetters(slots: List<TextSlot>): Boolean = slots.any { slot ->
-        slot.text.codePoints().anyMatch { codePoint ->
-            Character.isLetter(codePoint) &&
-                Character.UnicodeScript.of(codePoint) != Character.UnicodeScript.LATIN
-        }
+        slot.text.any { it.isLetter() && !it.isLatinLetter() }
+    }
+
+    /** Approximates `Character.UnicodeScript.LATIN` for letters in the BMP. */
+    private fun Char.isLatinLetter(): Boolean = code.let {
+        (it <= 0x2B8 && it != 0xB5) || it in 0x1D00..0x1DBF || it in 0x1E00..0x1EFF ||
+            it in 0x2C60..0x2C7F || it in 0xA720..0xA7FF || it in 0xAB30..0xAB6F ||
+            it in 0xFB00..0xFB06 || it in 0xFF21..0xFF5A
     }
 
     private fun unchangedWeight(slots: List<TextSlot>, transformed: List<String>): Int =
@@ -485,25 +454,27 @@ object LyricsTranslation {
 
     private fun comparable(text: String): String = text
         .trim()
-        .lowercase(Locale.ROOT)
+        .lowercase()
         .replace(Regex("\\s+"), " ")
 
-    private suspend fun Call.awaitBody(): String = suspendCancellableCoroutine { continuation ->
-        continuation.invokeOnCancellation { cancel() }
-        enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                if (continuation.isActive) continuation.resumeWithException(e)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    val body = if (it.isSuccessful) it.body.string() else null
-                    if (!continuation.isActive) return
-                    if (body != null) continuation.resume(body)
-                    else continuation.resumeWithException(IOException("Translation HTTP ${it.code}"))
-                }
-            }
-        })
+    /** Body of a successful form POST; any transport failure or non-2xx is null. */
+    private suspend fun postForm(url: String, form: List<Pair<String, String>>): String? = try {
+        val response = withContext(ioDispatcher) {
+            NetHttp.execute(
+                HttpRequest(
+                    url,
+                    "POST",
+                    mapOf("User-Agent" to "Laya/1.7.1", "Accept" to "application/json"),
+                    form.formUrlEncode().encodeToByteArray(),
+                    "application/x-www-form-urlencoded",
+                    callTimeoutMs = 12_000,
+                    connectTimeoutMs = 5_000,
+                ),
+            )
+        }
+        if (response.isSuccessful) response.text() else null
+    } catch (_: HttpException) {
+        null
     }
 
     private fun rebuild(
@@ -547,12 +518,12 @@ object LyricsTranslation {
     }
 
     private fun canonicalLanguage(tag: String): String = when (
-        Locale.forLanguageTag(tag.replace('_', '-')).language.lowercase(Locale.ROOT)
+        val language = languageOf(tag.replace('_', '-')).lowercase()
     ) {
         "iw" -> "he"
         "in" -> "id"
         "ji" -> "yi"
-        else -> Locale.forLanguageTag(tag.replace('_', '-')).language.lowercase(Locale.ROOT)
+        else -> language
     }
 
     private fun sameLanguage(first: String, second: String): Boolean =
@@ -563,56 +534,58 @@ object LyricsTranslation {
             append(trackId).append('\u0000').append(target)
             slots.forEach { append('\u0000').append(it.text) }
         }
-        return MessageDigest.getInstance("SHA-256")
-            .digest(source.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
+        return sha256(source.encodeToByteArray())
+            .joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
     }
 
+    private val fs get() = FileSystem.SYSTEM
+
     private suspend fun readCache(key: String): CachedTranslation? =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             diskMutex.withLock {
                 val root = cacheDir ?: return@withLock null
-                val file = File(File(root, CACHE_DIRECTORY), "$key.json.gz")
-                if (!file.isFile) return@withLock null
+                val file = root / CACHE_DIRECTORY / "$key.json.gz"
+                if (!fs.exists(file)) return@withLock null
                 runCatching {
-                    val value = GZIPInputStream(FileInputStream(file)).bufferedReader().use {
-                        json.decodeFromString<CachedTranslation>(it.readText())
+                    val value = GzipSource(fs.source(file)).buffer().use {
+                        json.decodeFromString<CachedTranslation>(it.readUtf8())
                     }
-                    file.setLastModified(System.currentTimeMillis())
-                    value.takeIf { it.version == CACHE_VERSION }
+                    // okio cannot touch a file's mtime, which is what trimCache
+                    // ranks by; rewriting the few-KB entry refreshes it.
+                    value.takeIf { it.version == CACHE_VERSION }?.also { store(root, key, it) }
                 }.getOrNull()
             }
         }
 
     private suspend fun writeCache(key: String, value: CachedTranslation) =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             diskMutex.withLock {
                 val root = cacheDir ?: return@withLock
-                val directory = File(root, CACHE_DIRECTORY)
-                if (!directory.exists() && !directory.mkdirs()) return@withLock
-                val destination = File(directory, "$key.json.gz")
-                val temporary = File(directory, "$key.tmp")
-                runCatching {
-                    GZIPOutputStream(FileOutputStream(temporary)).bufferedWriter().use {
-                        it.write(json.encodeToString(value))
-                    }
-                    if (!temporary.renameTo(destination)) {
-                        temporary.copyTo(destination, overwrite = true)
-                        temporary.delete()
-                    }
-                    trimCache(directory)
-                }.onFailure { temporary.delete() }
+                store(root, key, value)
             }
         }
 
-    private fun trimCache(directory: File) {
-        val files = directory.listFiles { file -> file.extension == "gz" }
-            ?.sortedByDescending(File::lastModified)
-            .orEmpty()
+    private fun store(root: Path, key: String, value: CachedTranslation) {
+        val directory = root / CACHE_DIRECTORY
+        val destination = directory / "$key.json.gz"
+        val temporary = directory / "$key.tmp"
+        runCatching {
+            fs.createDirectories(directory)
+            GzipSink(fs.sink(temporary)).buffer().use { it.writeUtf8(json.encodeToString(value)) }
+            fs.atomicMove(temporary, destination)
+            trimCache(directory)
+        }.onFailure { runCatching { fs.delete(temporary) } }
+    }
+
+    private fun trimCache(directory: Path) {
+        val files = fs.list(directory)
+            .filter { it.name.endsWith(".gz") }
+            .mapNotNull { file -> fs.metadataOrNull(file)?.let { file to it } }
+            .sortedByDescending { it.second.lastModifiedAtMillis ?: 0L }
         var kept = 0L
-        files.forEach { file ->
-            kept += file.length()
-            if (kept > MAX_CACHE_BYTES) file.delete()
+        files.forEach { (file, meta) ->
+            kept += meta.size ?: 0L
+            if (kept > MAX_CACHE_BYTES) fs.delete(file)
         }
     }
 }

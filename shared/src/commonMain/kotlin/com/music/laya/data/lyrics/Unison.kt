@@ -1,9 +1,9 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import io.ktor.http.URLBuilder
 
 /**
  * A community-submitted lyrics database, and the only source here whose
@@ -34,14 +34,14 @@ object Unison {
         artist: String,
         durationMs: Long,
         album: String? = null,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
-        val url = BASE.toHttpUrl().newBuilder()
-            .addQueryParameter("song", title)
-            .addQueryParameter("artist", artist)
+    ): List<LyricLine>? = withContext(ioDispatcher) {
+        val url = URLBuilder(BASE)
+            .apply { param("song", title) }
+            .apply { param("artist", artist) }
             .apply {
-                if (!album.isNullOrBlank()) addQueryParameter("album", album)
+                if (!album.isNullOrBlank()) param("album", album)
                 val seconds = durationMs / 1000
-                if (seconds > 0) addQueryParameter("duration", seconds.toString())
+                if (seconds > 0) param("duration", seconds.toString())
             }
             .build()
 

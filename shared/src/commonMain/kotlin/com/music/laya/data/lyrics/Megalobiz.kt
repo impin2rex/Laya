@@ -1,16 +1,16 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import io.ktor.http.URLBuilder
 
 /** Line-synced community LRC scraped from Megalobiz. */
 object Megalobiz {
     private const val BASE = "https://www.megalobiz.com"
 
-    suspend fun lyrics(title: String, artist: String): List<LyricLine>? = withContext(Dispatchers.IO) {
-        val search = "$BASE/searchall".toHttpUrl().newBuilder()
-            .addQueryParameter("qry", "$artist $title".trim()).build()
+    suspend fun lyrics(title: String, artist: String): List<LyricLine>? = withContext(ioDispatcher) {
+        val search = URLBuilder("$BASE/searchall")
+            .apply { param("qry", "$artist $title".trim()) }.build()
         val results = lyricsGet(search.toString()) ?: return@withContext null
         val path = LRC_LINK.find(results)?.groupValues?.get(1) ?: return@withContext null
         val page = lyricsGet(BASE + path.replace("&amp;", "&")) ?: return@withContext null

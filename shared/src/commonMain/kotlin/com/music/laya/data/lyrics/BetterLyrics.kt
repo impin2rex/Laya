@@ -1,8 +1,8 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import io.ktor.http.URLBuilder
 
 /**
  * Word-timed lyrics from BetterLyrics — the backend behind the YouTube Music
@@ -42,14 +42,14 @@ object BetterLyrics {
         artist: String,
         durationMs: Long,
         album: String?,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
-        val url = endpoint.toHttpUrl().newBuilder()
-            .addQueryParameter("s", title)
-            .addQueryParameter("a", artist)
+    ): List<LyricLine>? = withContext(ioDispatcher) {
+        val url = URLBuilder(endpoint)
+            .apply { param("s", title) }
+            .apply { param("a", artist) }
             .apply {
                 val seconds = durationMs / 1000
-                if (seconds > 0) addQueryParameter("d", seconds.toString())
-                if (!album.isNullOrBlank()) addQueryParameter("al", album)
+                if (seconds > 0) param("d", seconds.toString())
+                if (!album.isNullOrBlank()) param("al", album)
             }
             .build()
 

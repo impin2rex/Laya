@@ -1,6 +1,6 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlin.math.abs
@@ -27,7 +27,7 @@ object SimpMusicLyrics {
     private const val DURATION_TOLERANCE_SECONDS = 10
 
     suspend fun lyrics(videoId: String, durationMs: Long): List<LyricLine>? =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             if (videoId.isBlank()) return@withContext null
             val body = lyricsGet(BASE + videoId) ?: return@withContext null
             val response = runCatching { lyricsJson.decodeFromString<Response>(body) }.getOrNull()

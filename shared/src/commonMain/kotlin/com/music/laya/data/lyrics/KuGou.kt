@@ -1,11 +1,11 @@
 package com.music.laya.data.lyrics
 
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import java.util.Base64
+import io.ktor.http.URLBuilder
+import kotlin.io.encoding.Base64
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -28,7 +28,7 @@ object KuGou {
         artist: String,
         durationMs: Long,
         album: String? = null,
-    ): List<LyricLine>? = withContext(Dispatchers.IO) {
+    ): List<LyricLine>? = withContext(ioDispatcher) {
         val keyword = keyword(title, artist, album)
         val seconds = (durationMs / 1000).toInt()
 
@@ -48,12 +48,12 @@ object KuGou {
      * as the right recording — and ordered closest match first.
      */
     private fun searchSongs(keyword: Keyword, seconds: Int): List<String>? {
-        val url = "https://mobileservice.kugou.com/api/v3/search/song".toHttpUrl().newBuilder()
-            .addQueryParameter("version", "9108")
-            .addQueryParameter("plat", "0")
-            .addQueryParameter("pagesize", "8")
-            .addQueryParameter("showtype", "0")
-            .addQueryParameter("keyword", keyword.query)
+        val url = URLBuilder("https://mobileservice.kugou.com/api/v3/search/song")
+            .apply { param("version", "9108") }
+            .apply { param("plat", "0") }
+            .apply { param("pagesize", "8") }
+            .apply { param("showtype", "0") }
+            .apply { param("keyword", keyword.query) }
             .build()
         val body = lyricsGet(url.toString()) ?: return null
         val response = runCatching { lyricsJson.decodeFromString<SearchSongResponse>(body) }.getOrNull()
@@ -64,15 +64,15 @@ object KuGou {
     }
 
     private fun searchLyrics(hash: String? = null, keyword: Keyword? = null, seconds: Int = -1): List<Candidate>? {
-        val builder = "https://lyrics.kugou.com/search".toHttpUrl().newBuilder()
-            .addQueryParameter("ver", "1")
-            .addQueryParameter("man", "yes")
-            .addQueryParameter("client", "pc")
+        val builder = URLBuilder("https://lyrics.kugou.com/search")
+            .apply { param("ver", "1") }
+            .apply { param("man", "yes") }
+            .apply { param("client", "pc") }
         when {
-            hash != null -> builder.addQueryParameter("hash", hash)
+            hash != null -> builder.param("hash", hash)
             keyword != null -> {
-                builder.addQueryParameter("keyword", keyword.query)
-                if (seconds > 0) builder.addQueryParameter("duration", (seconds * 1000).toString())
+                builder.param("keyword", keyword.query)
+                if (seconds > 0) builder.param("duration", (seconds * 1000).toString())
             }
             else -> return null
         }
@@ -82,19 +82,19 @@ object KuGou {
     }
 
     private fun download(id: String, accessKey: String): String? {
-        val url = "https://lyrics.kugou.com/download".toHttpUrl().newBuilder()
-            .addQueryParameter("fmt", "lrc")
-            .addQueryParameter("charset", "utf8")
-            .addQueryParameter("client", "pc")
-            .addQueryParameter("ver", "1")
-            .addQueryParameter("id", id)
-            .addQueryParameter("accesskey", accessKey)
+        val url = URLBuilder("https://lyrics.kugou.com/download")
+            .apply { param("fmt", "lrc") }
+            .apply { param("charset", "utf8") }
+            .apply { param("client", "pc") }
+            .apply { param("ver", "1") }
+            .apply { param("id", id) }
+            .apply { param("accesskey", accessKey) }
             .build()
         val body = lyricsGet(url.toString()) ?: return null
         val response = runCatching { lyricsJson.decodeFromString<DownloadResponse>(body) }.getOrNull()
             ?: return null
         val decoded = runCatching {
-            Base64.getDecoder().decode(response.content).toString(Charsets.UTF_8)
+            Base64.Default.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL).decode(response.content).decodeToString()
         }.getOrNull() ?: return null
         return decoded.stripCredits().takeUnless { it.isInstrumentalNotice() }
     }

@@ -1,7 +1,8 @@
 package com.music.laya.data.lyrics
 
-import com.music.laya.data.Http
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -9,8 +10,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
+import io.ktor.http.URLBuilder
 import kotlin.math.abs
 
 /**
@@ -31,7 +31,7 @@ object LrcLib {
 
     /** Synced lyrics for a track, or null when nothing usable is published. */
     suspend fun lyrics(title: String, artist: String, durationMs: Long): List<LyricLine>? =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val cleanTitle = title.clean()
             val cleanArtist = artist.clean()
             val seconds = (durationMs / 1000).toInt()
@@ -43,10 +43,10 @@ object LrcLib {
         }
 
     private fun exactMatch(title: String, artist: String, seconds: Int): String? {
-        val url = "$BASE/get".toHttpUrl().newBuilder()
-            .addQueryParameter("track_name", title)
-            .addQueryParameter("artist_name", artist)
-            .addQueryParameter("duration", seconds.toString())
+        val url = URLBuilder("$BASE/get")
+            .apply { param("track_name", title) }
+            .apply { param("artist_name", artist) }
+            .apply { param("duration", seconds.toString()) }
             .build()
         val body = get(url.toString()) ?: return null
         return (json.parseToJsonElement(body) as? JsonObject)
@@ -58,9 +58,9 @@ object LrcLib {
      * actually playing — same song, different edit, would drift otherwise.
      */
     private fun bestSearchHit(title: String, artist: String, seconds: Int): String? {
-        val url = "$BASE/search".toHttpUrl().newBuilder()
-            .addQueryParameter("track_name", title)
-            .addQueryParameter("artist_name", artist)
+        val url = URLBuilder("$BASE/search")
+            .apply { param("track_name", title) }
+            .apply { param("artist_name", artist) }
             .build()
         val body = get(url.toString()) ?: return null
         val hits = json.parseToJsonElement(body) as? JsonArray ?: return null
@@ -74,11 +74,8 @@ object LrcLib {
     }
 
     private fun get(url: String): String? {
-        val request = Request.Builder().url(url).header("User-Agent", AGENT).build()
-        Http.client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return null
-            return response.body.string()
-        }
+        val response = NetHttp.execute(HttpRequest(url, headers = mapOf("User-Agent" to AGENT)))
+        return if (response.isSuccessful) response.text() else null
     }
 
     /**

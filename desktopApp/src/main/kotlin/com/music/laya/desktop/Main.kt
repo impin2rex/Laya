@@ -23,6 +23,7 @@ import laya.desktopapp.generated.resources.logo
 import java.awt.Dimension
 import java.awt.Rectangle
 import java.awt.Toolkit
+import okio.Path.Companion.toOkioPath
 import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.painterResource
 
@@ -38,7 +39,7 @@ fun main() {
     DebugLog.sink = DebugLog.Sink { level, tag, message, error ->
         DesktopTrackLog.log("$tag/$level: $message" + (error?.let { " (${it.message})" } ?: ""))
     }
-    LyricsTranslation.cacheDir = DesktopMediaCache.directory.toFile()
+    LyricsTranslation.cacheDir = DesktopMediaCache.directory.toOkioPath()
     // The Spotify library both apps share, on the tokens the web player mints in JavaFX.
     SpotifyLibrary.auth = SpotifyLibrary.Auth {
         DesktopSpotifyToken.accessToken()?.let { SpotifyLibrary.Tokens(it, DesktopSpotifyToken.clientToken()) }

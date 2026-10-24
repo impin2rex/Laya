@@ -1,11 +1,10 @@
 package com.music.laya.data.lyrics
 
-import org.w3c.dom.Element
-import org.w3c.dom.Node
-import java.io.StringReader
-import javax.xml.XMLConstants
-import javax.xml.parsers.DocumentBuilderFactory
-import org.xml.sax.InputSource
+import com.fleeksoft.ksoup.Ksoup
+import com.fleeksoft.ksoup.nodes.Document
+import com.fleeksoft.ksoup.nodes.Element
+import com.fleeksoft.ksoup.nodes.Node
+import com.fleeksoft.ksoup.nodes.TextNode
 
 /**
  * Apple Music's word-timed lyric format.
@@ -24,8 +23,8 @@ import org.xml.sax.InputSource
  * between them ("e" + "nough"), so whitespace — not the span boundary — is
  * what separates words. That is the whole trick to reading this format.
  *
- * Parsed with DOM rather than a pull parser so this stays plain JVM code and
- * can be unit tested off-device.
+ * Parsed as an XML tree (ksoup) rather than with a pull parser, so the same
+ * code runs on every platform and can be unit tested off-device.
  */
 object TtmlLyrics {
 
@@ -44,35 +43,17 @@ object TtmlLyrics {
     private const val BACKGROUND_ROLE = "x-bg"
 
     fun parse(ttml: String): List<LyricLine> = runCatching {
-        val factory = DocumentBuilderFactory.newInstance().apply {
-            // The document declares four namespaces and we address attributes
-            // by their qualified names (ttm:agent), so leave prefixes intact.
-            isNamespaceAware = false
-            // Lyrics arrive from a third-party host; refuse to resolve
-            // anything the document asks us to go and fetch.
-            //
-            // Every one of these is optional, and asking a parser for a feature
-            // it does not have is an exception rather than a no — Android's
-            // Expat-backed factory rejects the Apache name outright, which
-            // aborted the whole parse and left every Apple source on the device
-            // returning nothing at all. So each is attempted on its own, and
-            // the hardening is whatever the parser in hand will agree to.
-            harden("http://apache.org/xml/features/disallow-doctype-decl")
-            harden("http://xml.org/sax/features/external-general-entities", false)
-            harden("http://xml.org/sax/features/external-parameter-entities", false)
-            harden(XMLConstants.FEATURE_SECURE_PROCESSING)
-            runCatching { isExpandEntityReferences = false }
-        }
-        val document = factory.newDocumentBuilder().parse(InputSource(StringReader(ttml)))
-        val paragraphs = document.getElementsByTagName("p")
+        // Prefixes stay intact (ttm:agent is addressed by its qualified name),
+        // and nothing the document references is ever fetched.
+        val document = Ksoup.parseXml(ttml)
+        val paragraphs = document.getElementsByTag("p")
 
         // The line and the voice that sang it, kept together: which side of the
         // panel a line belongs on can only be worked out once they all are.
-        val sung = ArrayList<Pair<LyricLine, String?>>(paragraphs.length)
-        for (i in 0 until paragraphs.length) {
-            val paragraph = paragraphs.item(i) as? Element ?: continue
+        val sung = ArrayList<Pair<LyricLine, String?>>(paragraphs.size)
+        for (paragraph in paragraphs) {
             val line = lineFrom(paragraph) ?: continue
-            sung += line to paragraph.qualified("ttm:agent").takeIf { it.isNotEmpty() }
+            sung += line to paragraph.attr("ttm:agent").takeIf { it.isNotEmpty() }
         }
         sung.sortBy { it.first.timeMs }
 
@@ -81,63 +62,30 @@ object TtmlLyrics {
             .withInstrumentalGaps()
     }.getOrDefault(emptyList())
 
-    /** One optional parser feature, set if this parser has it. */
-    private fun DocumentBuilderFactory.harden(feature: String, value: Boolean = true) {
-        runCatching { setFeature(feature, value) }
-    }
-
     /**
      * The `<ttm:agent>` declarations in the head, as id to type — `person`,
      * `group`, `other`. A document that names its voices without describing
      * them is common enough that [lineAlignments] guesses rather than gives up.
      */
-    private fun agentTypes(document: org.w3c.dom.Document): Map<String, String> {
-        val agents = document.getElementsByTagName("ttm:agent")
-            .takeIf { it.length > 0 }
-            ?: document.getElementsByTagName("agent")
-        val types = HashMap<String, String>(agents.length)
-        for (i in 0 until agents.length) {
-            val agent = agents.item(i) as? Element ?: continue
-            val id = agent.qualified("xml:id")
-            val type = agent.getAttribute("type")
+    private fun agentTypes(document: Document): Map<String, String> {
+        val agents = document.getElementsByTag("ttm:agent")
+            .takeIf { it.isNotEmpty() }
+            ?: document.getElementsByTag("agent")
+        val types = HashMap<String, String>(agents.size)
+        for (agent in agents) {
+            val id = agent.attr("xml:id")
+            val type = agent.attr("type")
             if (id.isNotEmpty() && type.isNotEmpty()) types[id] = type
         }
         return types
     }
 
-    /**
-     * An attribute named with a prefix, read the same way on both DOM
-     * implementations this runs on.
-     *
-     * The parser above is deliberately not namespace-aware, and the two
-     * implementations disagree about what that makes an attribute called. The
-     * JVM's keeps `ttm:agent` whole, so [Element.getAttribute] finds it.
-     * Android's, built on Expat, files it under its local name — so the same
-     * call returns `""` on a phone.
-     *
-     * That difference is invisible from a unit test, which runs on the JVM: the
-     * duet layout passed every test and shipped with every line drawn down the
-     * left, because on the device no paragraph appeared to name a voice at all.
-     * The same applies to `ttm:role`, which is how the answering vocal is told
-     * apart from the lead, and to `xml:id`.
-     *
-     * So: ask for the whole name, and if nothing comes back, look through the
-     * attributes for one that ends in it.
-     */
-    private fun Element.qualified(name: String): String {
-        getAttribute(name).takeIf { it.isNotEmpty() }?.let { return it }
-        val local = name.substringAfter(':')
-        val found = attributes ?: return ""
-        for (i in 0 until found.length) {
-            val attribute = found.item(i) ?: continue
-            if (attribute.nodeName == name ||
-                attribute.nodeName == local ||
-                attribute.localName == local
-            ) {
-                return attribute.nodeValue.orEmpty()
-            }
+    /** The text under [this], as the DOM's `textContent` gives it: no `<br>` newlines, nothing trimmed. */
+    private fun Node.textContent(): String = buildString {
+        fun walk(node: Node) {
+            for (child in node.childNodes()) if (child is TextNode) append(child.getWholeText()) else walk(child)
         }
-        return ""
+        walk(this@textContent)
     }
 
     private fun lineFrom(paragraph: Element): LyricLine? {
@@ -158,19 +106,19 @@ object TtmlLyrics {
             // textContent is the whole paragraph, backing vocal included, so
             // there is nothing here to hang underneath — the bracket in the
             // text is all the separation the document gave.
-            val text = paragraph.textContent?.trim().orEmpty()
-            val begin = time(paragraph.getAttribute("begin")) ?: return null
+            val text = paragraph.textContent().trim()
+            val begin = time(paragraph.attr("begin")) ?: return null
             if (text.isEmpty()) return null
             // The paragraph's own end is the only thing that says when the
             // singing stops, so carry it — a break can't be found without it.
-            val end = time(paragraph.getAttribute("end"))?.takeIf { it > begin }
+            val end = time(paragraph.attr("end"))?.takeIf { it > begin }
             return LyricLine(timeMs = begin, text = text, sungUntilMs = end)
         }
 
         // Prefer the paragraph's own stamp: Apple sets it a hair before the
         // first syllable on lines that open with a soft consonant, and that
         // lead-in is when the line should appear.
-        val begin = time(paragraph.getAttribute("begin")) ?: words.first().startMs
+        val begin = time(paragraph.attr("begin")) ?: words.first().startMs
         return LyricLine(
             timeMs = minOf(begin, words.first().startMs),
             text = words.joinToString(" ") { it.text },
@@ -189,37 +137,35 @@ object TtmlLyrics {
      * [backing] instead of [out], which is what keeps the two voices apart.
      */
     private fun collect(node: Node, out: MutableList<Piece>, backing: MutableList<Piece>) {
-        val children = node.childNodes
-        for (i in 0 until children.length) {
-            when (val child = children.item(i)) {
+        for (child in node.childNodes()) {
+            when (child) {
                 is Element -> {
-                    val role = child.qualified("ttm:role")
+                    val role = child.attr("ttm:role")
                     if (role in SKIPPED_ROLES) continue
                     // Inside a backing span every leaf is backing, so the sink
                     // switches for the whole of that subtree — whether the
                     // span holds its own syllables or is a single timed leaf.
                     val sink = if (role == BACKGROUND_ROLE) backing else out
-                    val begin = time(child.getAttribute("begin"))
-                    val end = time(child.getAttribute("end"))
+                    val begin = time(child.attr("begin"))
+                    val end = time(child.attr("end"))
                     if (begin != null && end != null && !hasTimedChild(child)) {
-                        sink += Piece.Timed(child.textContent.orEmpty(), begin, end)
+                        sink += Piece.Timed(child.textContent(), begin, end)
                     } else {
                         collect(child, sink, backing)
                     }
                 }
-                else -> if (child.nodeType == Node.TEXT_NODE) {
-                    val text = child.textContent.orEmpty()
+                is TextNode -> {
+                    val text = child.getWholeText()
                     if (text.isNotEmpty()) out += Piece.Text(text)
                 }
+                else -> Unit
             }
         }
     }
 
     private fun hasTimedChild(element: Element): Boolean {
-        val children = element.childNodes
-        for (i in 0 until children.length) {
-            val child = children.item(i) as? Element ?: continue
-            if (child.getAttribute("begin").isNotEmpty() || hasTimedChild(child)) return true
+        for (child in element.children()) {
+            if (child.attr("begin").isNotEmpty() || hasTimedChild(child)) return true
         }
         return false
     }
