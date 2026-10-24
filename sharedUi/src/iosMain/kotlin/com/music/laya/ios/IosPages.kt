@@ -63,6 +63,7 @@ internal sealed interface IosPage {
     data object Account : IosPage
     data object Equalizer : IosPage
     class History(val songs: UiState<List<Song>>) : IosPage
+    class ShowAll(val shelf: HomeShelf) : IosPage
 }
 
 /** YouTube browse ids are prefixed by kind (Android's MainViewModel.browseTypeOf, minus the device-local kinds). */

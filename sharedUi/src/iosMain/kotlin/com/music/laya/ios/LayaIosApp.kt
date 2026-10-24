@@ -110,6 +110,8 @@ import com.music.laya.data.model.MoodGenre
 import com.music.laya.data.model.withoutRepeatsOf
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.screens.HomeScreen
+import com.music.laya.ui.screens.LibraryGridPage
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.music.laya.ui.screens.LibraryScreen
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.ui.screens.EqualizerScreen
@@ -481,6 +483,13 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onRetry = { stack = stack.dropLast(1); openHistory() },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
+                                    is IosPage.ShowAll -> LibraryGridPage(
+                                        shelf = top.shelf,
+                                        gridState = rememberLazyGridState(),
+                                        onItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it) },
+                                        onItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
                                     null -> Unit
                                 }
                             }
@@ -530,7 +539,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onShelfItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it) },
                                 onShelfItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onNewPlaylist = {},
-                                onShowAll = {},
+                                onShowAll = { stack = stack + IosPage.ShowAll(it) },
                                 replay = {},
                                 onSignIn = { showLogin = true },
                                 onRetry = { scope.launch { library = UiState.Loading; loadLibrary() } },
