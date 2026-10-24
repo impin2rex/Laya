@@ -4,7 +4,6 @@ import com.music.laya.auth.normalizeDataSyncId
 import com.music.laya.data.DebugLog as Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.timeout
@@ -41,10 +40,13 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import java.io.IOException
-import java.security.MessageDigest
-import java.util.Base64
-import java.util.Locale
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.ktorClient
+import com.music.laya.platform.sha1
+import com.music.laya.platform.systemLanguageTag
+import kotlin.concurrent.Volatile
+import kotlin.io.encoding.Base64
+import kotlinx.io.IOException
 
 /**
  * Minimal Innertube (youtubei) client.
@@ -68,7 +70,7 @@ object Innertube {
     val currentLocaleTag: String
         get() {
             val raw = appLanguage()?.ifEmpty { null }
-                ?: Locale.getDefault().toLanguageTag().ifEmpty { "en" }
+                ?: systemLanguageTag().ifEmpty { "en" }
             return com.music.laya.data.LocaleTags.normalizeAppTag(raw)
         }
 
@@ -461,9 +463,7 @@ object Innertube {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val client = HttpClient(OkHttp) {
-        // Same OkHttp instance ExoPlayer streams through — see Http.
-        engine { preconfigured = com.music.laya.data.Http.client }
+    private val client = ktorClient {
         install(ContentNegotiation) { json(json) }
         // Without this the only bound is OkHttp's own read timeout, and the
         // failure it raises reads as "Socket timeout has expired […]
@@ -605,8 +605,8 @@ object Innertube {
     /** Timed caption transcript used as a last-resort lyrics source. */
     suspend fun transcript(videoId: String): JsonObject = postMusic("get_transcript") {
         // get_transcript expects a tiny protobuf: field 1, length, video id.
-        val bytes = byteArrayOf(10, videoId.toByteArray().size.toByte()) + videoId.toByteArray()
-        put("params", Base64.getEncoder().encodeToString(bytes))
+        val bytes = byteArrayOf(10, videoId.encodeToByteArray().size.toByte()) + videoId.encodeToByteArray()
+        put("params", Base64.encode(bytes))
     }
 
     suspend fun search(query: String, params: String? = null, anonymous: Boolean = true): JsonObject =
@@ -1256,10 +1256,9 @@ object Innertube {
         listOf("SAPISID", "__Secure-3PAPISID", "__Secure-1PAPISID")
 
     private fun sapisidHash(sapisid: String, origin: String = MUSIC_ORIGIN): String {
-        val timestamp = System.currentTimeMillis() / 1000
-        val digest = MessageDigest.getInstance("SHA-1")
-            .digest("$timestamp $sapisid $origin".toByteArray())
-            .joinToString("") { "%02x".format(Locale.ROOT, it) }
+        val timestamp = currentTimeMillis() / 1000
+        val digest = sha1("$timestamp $sapisid $origin".encodeToByteArray())
+            .joinToString("") { it.toUByte().toString(16).padStart(2, '0') }
         return "SAPISIDHASH ${timestamp}_$digest"
     }
 }

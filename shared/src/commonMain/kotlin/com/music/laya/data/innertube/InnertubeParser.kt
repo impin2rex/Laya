@@ -26,7 +26,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
-import java.util.Locale
 
 /**
  * Innertube responses are deeply nested and their shape drifts between
@@ -569,14 +568,13 @@ object InnertubeParser {
         val out = LinkedHashMap<String, ShelfItem>()
         collectRenderers(root, "musicTwoRowItemRenderer").forEach { renderer ->
             val item = parseTwoRowItem(renderer) ?: return@forEach
-            item.browseId?.let { out.putIfAbsent(it, item) }
+            item.browseId?.let { out.getOrPut(it) { item } }
         }
         collectRenderers(root, "musicResponsiveListItemRenderer").forEach { renderer ->
             val item = parseBrowseItem(renderer) ?: return@forEach
-            out.putIfAbsent(
-                item.browseId,
-                ShelfItem(item.title, item.subtitle, item.thumbnailUrl, null, item.browseId),
-            )
+            out.getOrPut(item.browseId) {
+                ShelfItem(item.title, item.subtitle, item.thumbnailUrl, null, item.browseId)
+            }
         }
         return LibraryItemPage(out.values.toList(), continuationToken(root))
     }
@@ -655,11 +653,11 @@ object InnertubeParser {
             }
         // On the "All" tab the first segment is the row type ("Song", "Video"),
         // not the artist — skip those so the subtitle reads like a credit.
-        val rowType = parts.firstOrNull { it.lowercase(Locale.ROOT) in TYPE_WORDS }?.lowercase(Locale.ROOT)
+        val rowType = parts.firstOrNull { it.lowercase() in TYPE_WORDS }?.lowercase()
         // A track row on an album lists its play count where a search row
         // lists the artist, so a segment that reads as a tally is no credit.
         val artist = parts.firstOrNull {
-            !it.matches(DURATION) && it.lowercase(Locale.ROOT) !in TYPE_WORDS && !it.matches(TALLY)
+            !it.matches(DURATION) && it.lowercase() !in TYPE_WORDS && !it.matches(TALLY)
         }
 
         // The artist/album names in the subtitle carry browse endpoints; pull
@@ -719,12 +717,12 @@ object InnertubeParser {
         val subtitle = subtitleRuns.joinToString("") { it.s("text").orEmpty() }
         val parts = subtitle.split(" • ").filter { it.isNotBlank() }
         val duration = parts.lastOrNull()?.takeIf { it.matches(DURATION) }
-        val rowType = parts.firstOrNull { it.lowercase(Locale.ROOT) in TYPE_WORDS }
-            ?.lowercase(Locale.ROOT)
+        val rowType = parts.firstOrNull { it.lowercase() in TYPE_WORDS }
+            ?.lowercase()
         val credits = creditsOf(subtitleRuns)
         val creditedArtists = artistNamesFromRuns(subtitleRuns)
         val artist = parts.firstOrNull {
-            !it.matches(DURATION) && it.lowercase(Locale.ROOT) !in TYPE_WORDS && !it.matches(TALLY)
+            !it.matches(DURATION) && it.lowercase() !in TYPE_WORDS && !it.matches(TALLY)
         }
         val thumbnails = renderer.o("thumbnail").o("musicThumbnailRenderer")
             .o("thumbnail").a("thumbnails")
@@ -943,7 +941,7 @@ object InnertubeParser {
         val parts = lines.flatMap { line ->
             line.joinToString("") { it.s("text").orEmpty() }.split(" • ", " · ").map(String::trim)
         }
-        if (parts.none { it.lowercase(Locale.ROOT) in RELEASE_WORDS }) return Credits()
+        if (parts.none { it.lowercase() in RELEASE_WORDS }) return Credits()
 
         val credits = creditsOf(lines.flatten())
         val creditedArtists = lines.firstNotNullOfOrNull(::artistNamesFromRuns)
@@ -951,7 +949,7 @@ object InnertubeParser {
         // An artist YouTube has no page for is named in the same line without
         // a link to follow, leaving the name as the only thing to go on.
         val name = parts.firstOrNull {
-            it.isNotBlank() && it.lowercase(Locale.ROOT) !in TYPE_WORDS && !it.matches(TALLY) &&
+            it.isNotBlank() && it.lowercase() !in TYPE_WORDS && !it.matches(TALLY) &&
                 !it.matches(YEAR) && !it.matches(DURATION)
         }
         return credits.copy(artistName = name)

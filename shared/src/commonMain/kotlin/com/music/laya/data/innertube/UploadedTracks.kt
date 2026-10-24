@@ -1,18 +1,18 @@
 package com.music.laya.data.innertube
 
-import java.util.concurrent.ConcurrentHashMap
+import com.music.laya.platform.ConcurrentMap
 
 /** Video ids known to be the signed-in user's own uploads, which need an upload-hinted request. */
 object UploadedTracks {
 
     private const val MAX_REMEMBERED = 20_000
 
-    private val ids = ConcurrentHashMap.newKeySet<String>()
+    private val ids = ConcurrentMap<String, Boolean>()
 
     fun mark(videoId: String) {
         if (videoId.isBlank()) return
         if (ids.size >= MAX_REMEMBERED) ids.clear()
-        ids.add(videoId)
+        ids[videoId] = true
     }
 
     fun contains(videoId: String): Boolean = videoId in ids

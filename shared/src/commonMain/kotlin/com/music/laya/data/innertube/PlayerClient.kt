@@ -1,9 +1,9 @@
 package com.music.laya.data.innertube
 
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import org.schabi.newpipe.extractor.NewPipe
-import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
-import java.util.Locale
+import io.ktor.http.Url
+
+/** NewPipe's VisionOS user agent, read from NewPipe so the two can't drift; null where there is no NewPipe. */
+internal expect fun visionOsUserAgent(): String?
 
 /**
  * The identity a googlevideo URL says minted it, as far as its media fetch
@@ -118,9 +118,9 @@ data class PlayerClient(
          * iPhone asked for.
          */
         fun forStreamUrl(url: String): PlayerClient {
-            val parsed = url.toHttpUrlOrNull() ?: return IOS
-            val name = parsed.queryParameter("c")?.uppercase(Locale.ROOT) ?: return IOS
-            val version = parsed.queryParameter("cver")
+            val parsed = parse(url) ?: return IOS
+            val name = parsed.parameters["c"]?.uppercase() ?: return IOS
+            val version = parsed.parameters["cver"]
             return when {
                 name.startsWith("IOS") ->
                     if (version == IOS_RECENT.clientVersion) IOS_RECENT else IOS
@@ -136,18 +136,19 @@ data class PlayerClient(
             }
         }
 
-        /** NewPipe's extraction mints with this; its agent is read from NewPipe so the two can't drift. */
-        private fun visionOs(version: String?) = PlayerClient(
-            clientName = "VISIONOS",
-            clientVersion = version ?: "1.02",
-            userAgent = YoutubeParsingHelper.getVisionOsUserAgent(NewPipe.getPreferredLocalization()),
-        )
+        /** NewPipe's extraction mints with this. */
+        private fun visionOs(version: String?) = visionOsUserAgent()?.let {
+            PlayerClient(clientName = "VISIONOS", clientVersion = version ?: "1.02", userAgent = it)
+        } ?: IOS
+
+        private fun parse(url: String): Url? = runCatching { Url(url) }.getOrNull()
+            ?.takeIf { it.protocol.name == "http" || it.protocol.name == "https" }
 
         /** Largest single range googlevideo reliably serves for [url]'s client; mirrors InnerTubeX's `mediaRangeChunkSize`. */
         fun rangeBytesFor(url: String): Long {
-            val parsed = url.toHttpUrlOrNull() ?: return Long.MAX_VALUE
+            val parsed = parse(url) ?: return Long.MAX_VALUE
             if (!parsed.host.endsWith("googlevideo.com")) return Long.MAX_VALUE
-            val name = parsed.queryParameter("c")?.uppercase(Locale.ROOT)
+            val name = parsed.parameters["c"]?.uppercase()
             return if (name == "ANDROID_VR" || name?.startsWith("TVHTML5_SIMPLY") == true) {
                 NARROW_RANGE_BYTES
             } else {

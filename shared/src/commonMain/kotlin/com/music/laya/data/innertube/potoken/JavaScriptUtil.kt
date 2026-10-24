@@ -75,7 +75,7 @@ fun parseIntegrityTokenData(rawIntegrityTokenData: String): Pair<String, Long> {
  * `Uint8Array` that can be embedded directly in JavaScript code.
  */
 fun stringToU8(identifier: String): String {
-    return newUint8Array(identifier.toByteArray())
+    return newUint8Array(identifier.encodeToByteArray())
 }
 
 /**
