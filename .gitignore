@@ -48,3 +48,6 @@ AGENTS.md
 # Built packages — release APKs/bundles are handed out, never committed
 *.apk
 *.aab
+
+# Local agent task logs (iOS port decisions, etc.)
+.claude/tasks/
