@@ -1,5 +1,9 @@
 package com.music.laya.data.listentogether
 
+import kotlin.concurrent.Volatile
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlin.time.TimeSource
 
 /**
  * This device's offset from the party server's clock.
@@ -40,11 +44,12 @@ class ServerClock(
      * has `System.nanoTime`. Both are monotonic, which is the whole requirement — see the note on
      * the wall clock above.
      */
-    private val localNowMs: () -> Long = { System.nanoTime() / 1_000_000L },
+    private val localNowMs: () -> Long = { monotonicStart.elapsedNow().inWholeMilliseconds },
 ) {
 
     private data class Sample(val offsetMs: Long, val roundTripMs: Long, val takenAtMs: Long)
 
+    private val lock = SynchronizedObject()
     private val samples = ArrayDeque<Sample>()
 
     @Volatile
@@ -58,8 +63,7 @@ class ServerClock(
     /** True once at least one round trip has completed. */
     val synced: Boolean get() = offsetMs != null
 
-    @Synchronized
-    fun record(sentAtLocalMs: Long, serverMs: Long, receivedAtLocalMs: Long) {
+    fun record(sentAtLocalMs: Long, serverMs: Long, receivedAtLocalMs: Long) = synchronized(lock) {
         val roundTrip = (receivedAtLocalMs - sentAtLocalMs).coerceAtLeast(0)
         val midpoint = sentAtLocalMs + roundTrip / 2
         samples.addLast(Sample(serverMs - midpoint, roundTrip, receivedAtLocalMs))
@@ -78,8 +82,7 @@ class ServerClock(
     /** The server's clock, read from here. Null until the first pong lands. */
     fun serverNowMs(): Long? = offsetMs?.let { localNowMs() + it }
 
-    @Synchronized
-    fun reset() {
+    fun reset() = synchronized(lock) {
         samples.clear()
         offsetMs = null
         roundTripMs = 0
@@ -93,3 +96,5 @@ class ServerClock(
         private const val SAMPLE_TTL_MS = 120_000L
     }
 }
+
+private val monotonicStart = TimeSource.Monotonic.markNow()

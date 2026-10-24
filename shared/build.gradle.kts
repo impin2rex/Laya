@@ -19,6 +19,9 @@ kotlin {
         }
     }
 
+    iosArm64()
+    iosSimulatorArm64()
+
     // Android and desktop are both JVM, but the default hierarchy gives them no source set in
     // common.
     applyDefaultHierarchyTemplate()
@@ -53,6 +56,8 @@ kotlin {
         commonMain.dependencies {
             // Models in this module intentionally have no Android or Compose dependency.
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            // Common locks/atomics; the version coroutines already pulls in.
+            implementation("org.jetbrains.kotlinx:atomicfu:0.26.0")
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
