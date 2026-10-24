@@ -190,9 +190,7 @@ final class EqualizerTap {
                     .process(UnsafeMutableAudioBufferListPointer(bufferList), frames: Int(framesOut.pointee))
             }
         )
-        var out: MTAudioProcessingTap?
-        guard MTAudioProcessingTapCreate(kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &out) == noErr,
-              let out else {
+        guard let out = adopt(create(MTAudioProcessingTapCreate, &callbacks)) else {
             Unmanaged.passUnretained(tap).release()
             return
         }
@@ -203,3 +201,16 @@ final class EqualizerTap {
         item.audioMix = mix
     }
 }
+
+// MTAudioProcessingTapCreate's out-parameter is `Unmanaged<MTAudioProcessingTap>?` in the
+// Xcode 16 SDK (CI) and `MTAudioProcessingTap?` in newer ones; inferring T compiles on both.
+private func create<T>(
+    _ make: (CFAllocator?, UnsafePointer<MTAudioProcessingTapCallbacks>, MTAudioProcessingTapCreationFlags, UnsafeMutablePointer<T?>) -> OSStatus,
+    _ callbacks: UnsafePointer<MTAudioProcessingTapCallbacks>
+) -> T? {
+    var out: T?
+    return make(kCFAllocatorDefault, callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &out) == noErr ? out : nil
+}
+
+private func adopt(_ tap: Unmanaged<MTAudioProcessingTap>?) -> MTAudioProcessingTap? { tap?.takeRetainedValue() }
+private func adopt(_ tap: MTAudioProcessingTap?) -> MTAudioProcessingTap? { tap }
