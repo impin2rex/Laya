@@ -1,9 +1,10 @@
 package com.music.laya.data.presence
 
 import com.music.laya.data.DebugLog
-import com.music.laya.data.Http
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,10 +16,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.concurrent.TimeUnit
+import kotlin.concurrent.Volatile
 import kotlin.random.Random
 
 enum class PresencePlatform(val wire: String) { Android("android"), Pc("pc") }
@@ -46,7 +44,7 @@ class Presence(
     @Volatile private var intervalSec = DEFAULT_INTERVAL_SEC
 
     init {
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+        CoroutineScope(SupervisorJob() + ioDispatcher).launch {
             // collectLatest: a change of state cancels whatever the last one was
             // still doing, so a close cancels the ping loop and a quick reopen
             // cancels a pending close.
@@ -89,25 +87,28 @@ class Presence(
             put("id", installId)
             put("platform", platform.wire)
             put("open", open)
-        }.toString().toRequestBody(JSON)
-        val request = Request.Builder().url(endpoint).post(body).build()
+        }.toString()
         // Set before sending: a ping that times out may still have been counted,
         // so it still needs a close.
         if (open) announced = true
         try {
-            val call = Http.client.newCall(request)
-            call.timeout().timeout(timeoutSec, TimeUnit.SECONDS)
-            call.execute().use { response ->
-                if (!open) announced = false
-                if (!response.isSuccessful) {
-                    DebugLog.w(TAG, "presence ping refused: HTTP ${response.code}")
-                    return
-                }
-                val text = response.body.string().orEmpty()
-                runCatching { Json.parseToJsonElement(text).jsonObject["intervalSec"]?.jsonPrimitive?.intOrNull }
-                    .getOrNull()
-                    ?.let { intervalSec = it }
+            val response = NetHttp.execute(
+                HttpRequest(
+                    url = endpoint,
+                    method = "POST",
+                    body = body.encodeToByteArray(),
+                    contentType = "application/json",
+                    callTimeoutMs = timeoutSec * 1000,
+                ),
+            )
+            if (!open) announced = false
+            if (!response.isSuccessful) {
+                DebugLog.w(TAG, "presence ping refused: HTTP ${response.code}")
+                return
             }
+            runCatching { Json.parseToJsonElement(response.text()).jsonObject["intervalSec"]?.jsonPrimitive?.intOrNull }
+                .getOrNull()
+                ?.let { intervalSec = it }
         } catch (e: Exception) {
             // Offline, or the server is down. The next ping is soon enough.
             DebugLog.d(TAG, "presence ping failed: ${e.message}")
@@ -121,6 +122,5 @@ class Presence(
         private const val MIN_INTERVAL_SEC = 60
         private const val MAX_INTERVAL_SEC = 3600
         private const val CLOSE_DEBOUNCE_MS = 2_000L
-        private val JSON = "application/json".toMediaType()
     }
 }

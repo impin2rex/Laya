@@ -1,7 +1,8 @@
 package com.music.laya.data.spotify
 
-import com.music.laya.data.Http
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -17,9 +18,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import kotlin.concurrent.Volatile
 
 /** A Spotify playlist's page id in the detail stack: this plus the playlist id (or [SpotifyLibrary.LIKED_ID]). */
 const val SPOTIFY_PAGE_PREFIX = "spotify:playlist:"
@@ -69,10 +68,9 @@ object SpotifyLibrary {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/122.0.0.0 Safari/537.36"
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-    private val mediaType = "application/json; charset=utf-8".toMediaType()
 
     /** Every playlist in the library, however many pages it takes. */
-    suspend fun playlists(): List<SpotifyPlaylist> = withContext(Dispatchers.IO) {
+    suspend fun playlists(): List<SpotifyPlaylist> = withContext(ioDispatcher) {
         val headers = authHeaders()
         val collected = mutableListOf<SpotifyPlaylist>()
         var offset = 0
@@ -95,7 +93,7 @@ object SpotifyLibrary {
     suspend fun tracks(
         playlistId: String,
         onPage: (List<SpotifyTrack>) -> Unit = {},
-    ): List<SpotifyTrack> = withContext(Dispatchers.IO) {
+    ): List<SpotifyTrack> = withContext(ioDispatcher) {
         val headers = authHeaders()
         val collected = mutableListOf<SpotifyTrack>()
         var offset = 0
@@ -153,7 +151,7 @@ object SpotifyLibrary {
      * thumbnail, which looks soft once it fills a playlist page's header, so
      * the page asks for the real image after it opens.
      */
-    suspend fun cover(playlistId: String): String? = withContext(Dispatchers.IO) {
+    suspend fun cover(playlistId: String): String? = withContext(ioDispatcher) {
         if (playlistId == LIKED_ID) return@withContext LIKED_COVER
         val variables = buildJsonObject {
             put("uri", "spotify:playlist:$playlistId")
@@ -198,17 +196,18 @@ object SpotifyLibrary {
                 }
             }
         }
-        val request = Request.Builder()
-            .url(GQL)
-            .post(body.toString().toRequestBody(mediaType))
-            .apply { headers.forEach { (name, value) -> header(name, value) } }
-            .build()
-        val text = Http.client.newCall(request).execute().use { response ->
-            val payload = response.body.string().orEmpty()
-            if (!response.isSuccessful) {
-                throw IllegalStateException("Spotify $operation failed (${response.code})")
-            }
-            payload
+        val response = NetHttp.execute(
+            HttpRequest(
+                url = GQL,
+                method = "POST",
+                headers = headers,
+                body = body.toString().encodeToByteArray(),
+                contentType = "application/json; charset=utf-8",
+            ),
+        )
+        val text = response.text()
+        if (!response.isSuccessful) {
+            throw IllegalStateException("Spotify $operation failed (${response.code})")
         }
         val root = json.parseToJsonElement(text).jsonObject
         val error = root.arr("errors")?.firstOrNull()?.jsonObject?.str("message")

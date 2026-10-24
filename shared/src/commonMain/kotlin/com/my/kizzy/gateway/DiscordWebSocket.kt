@@ -18,7 +18,6 @@ import com.my.kizzy.gateway.entities.op.OpCode.RESUME
 import com.my.kizzy.gateway.entities.presence.Presence
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
-import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.header
 import io.ktor.websocket.CloseReason
@@ -39,13 +38,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import com.music.laya.platform.runBlockingCompat
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import com.music.laya.data.DebugLog
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import java.util.logging.Logger
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
@@ -82,7 +84,10 @@ open class DiscordWebSocket(
     private val browser: String = "Discord Android",
     private val device: String = "Generic Android Device",
 ) : CoroutineScope {
-    private val logger = Logger.getLogger(DiscordWebSocket::class.java.name)
+    private val logger = object {
+        fun info(message: String) = DebugLog.i(TAG, message)
+        fun warning(message: String) = DebugLog.w(TAG, message)
+    }
     private val gatewayUrl = "wss://gateway.discord.gg/?v=9&encoding=json"
     private var websocket: DefaultClientWebSocketSession? = null
     private var sequence = 0
@@ -90,9 +95,7 @@ open class DiscordWebSocket(
     private var heartbeatInterval = 0L
     private var resumeGatewayUrl: String? = null
     private var heartbeatJob: Job? = null
-    private var client: HttpClient = HttpClient {
-        install(WebSockets)
-    }
+    private var client: HttpClient = gatewayHttpClient()
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -120,7 +123,7 @@ open class DiscordWebSocket(
      */
     private var connectionLoop: Job? = null
 
-    private val loopLock = Any()
+    private val loopLock = SynchronizedObject()
 
     /** Set by [close]. Stops the loop retrying an intentionally closed socket. */
     @Volatile
@@ -498,7 +501,7 @@ open class DiscordWebSocket(
         // likely queued a moment ago by KizzyRPC.close(), and only a graceful
         // close flushes the outgoing frames before the connection goes. Bounded
         // so a socket that is already unreachable can't hold up a teardown.
-        runBlocking {
+        runBlockingCompat {
             withTimeoutOrNull(CLOSE_TIMEOUT) {
                 runCatching { socket?.close(CloseReason(CloseReason.Codes.NORMAL, "Client closed")) }
             }
@@ -573,6 +576,7 @@ open class DiscordWebSocket(
     }
 
     companion object {
+        private const val TAG = "DiscordWebSocket"
         private val INITIAL_RECONNECT_DELAY = 1.seconds
         private val MAX_RECONNECT_DELAY = 60.seconds
 
@@ -590,19 +594,3 @@ open class DiscordWebSocket(
     }
 }
 
-/**
- * Milliseconds since boot, counting time the device spent asleep.
- *
- * `System.nanoTime` is not that on Android — it can stop during deep sleep,
- * which is exactly when this reading matters: the point of it is to notice that
- * a lot of wall time has passed with nothing heard from Discord. So Android's
- * own clock is used where there is one, found reflectively because this module
- * is shared with the desktop and cannot import it.
- */
-private val androidElapsedRealtime: java.lang.reflect.Method? = runCatching {
-    Class.forName("android.os.SystemClock").getMethod("elapsedRealtime")
-}.getOrNull()
-
-internal fun elapsedRealtimeMs(): Long =
-    androidElapsedRealtime?.let { runCatching { it.invoke(null) as Long }.getOrNull() }
-        ?: (System.nanoTime() / 1_000_000L)
