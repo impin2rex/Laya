@@ -5,6 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeUIViewController
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.music.laya.data.DebugLog
 import com.music.laya.data.TrackLog
 import com.music.laya.data.innertube.InnerTubeXResolver
@@ -19,6 +22,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     // Not NSLog: Kotlin strings passed through its C varargs crash (EXC_BAD_ACCESS).
     DebugLog.sink = DebugLog.Sink { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
     TrackLog.echo = { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
+    SingletonImageLoader.setSafe { ctx -> ImageLoader.Builder(ctx).components { add(KtorNetworkFetcherFactory()) }.build() }
     val dir = NSFileManager.defaultManager
         .URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }
     InnerTubeXResolver.init(

@@ -64,14 +64,6 @@ kotlin {
     }
 
     sourceSets {
-        // Both targets are JVMs, so the UI is written once against the JDK here
-        // rather than in commonMain.
-        val jvmSharedMain by creating {
-            dependsOn(commonMain.get())
-        }
-        androidMain.get().dependsOn(jvmSharedMain)
-        jvmMain.get().dependsOn(jvmSharedMain)
-
         commonMain.dependencies {
             api(project(":shared"))
             api("org.jetbrains.compose.runtime:runtime:$cmp")
@@ -110,6 +102,15 @@ kotlin {
             // The 1.7.3 pin above is the Android anchor. On iOS a klib built against
             // Compose 1.7 fails at runtime against ui 1.10, so use the release paired with $cmp.
             api("org.jetbrains.compose.material3:material3:1.10.0-alpha05")
+            // Same reason, per library: newest releases still built against Compose <= $cmp
+            // (haze 1.7.2 -> ui 1.10.0, coil 3.4.0 -> foundation 1.9.3, lifecycle 2.9.6 -> CMP 1.10 line).
+            // material-icons-extended 1.7.3 is the last release there is (frozen), so it stays.
+            api("dev.chrisbanes.haze:haze:1.7.2")
+            api("dev.chrisbanes.haze:haze-materials:1.7.2")
+            api("io.coil-kt.coil3:coil-compose:3.4.0")
+            // Native has no ServiceLoader, so the fetcher is registered by hand in MainViewController.
+            api("io.coil-kt.coil3:coil-network-ktor3:3.4.0")
+            api("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.6")
         }
     }
 }
