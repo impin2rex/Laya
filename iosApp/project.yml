@@ -29,4 +29,6 @@ targets:
         basedOnDependencyAnalysis: false
         script: |
           cd "$SRCROOT/.."
+          # Xcode passes no JAVA_HOME; Gradle 8.11 can't run on the newest JDKs.
+          if [ -z "$JAVA_HOME" ]; then export JAVA_HOME="$(/usr/libexec/java_home -v 21)"; fi
           ./gradlew :sharedUi:embedAndSignAppleFrameworkForXcode

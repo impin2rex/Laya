@@ -1,6 +1,9 @@
 package com.music.laya.ios
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeUIViewController
 import com.music.laya.data.DebugLog
 import com.music.laya.data.TrackLog
@@ -30,5 +33,5 @@ fun MainViewController(engine: AudioEngine): UIViewController {
         },
         poTokenProvider = null,
     )
-    return ComposeUIViewController { MaterialTheme { DebugPlayerScreen(engine) } }
+    return ComposeUIViewController { MaterialTheme { Surface(Modifier.fillMaxSize()) { DebugPlayerScreen(engine) } } }
 }
