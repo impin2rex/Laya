@@ -10,12 +10,17 @@ import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.platform.ioDispatcher
 import com.music.laya.playback.PlaybackPosition
+import com.music.laya.playback.EqLayout
+import com.music.laya.data.settings.EqualizerMode
 import com.music.laya.playback.QueueBuilder
+import com.music.laya.playback.manualCurve
+import com.music.laya.playback.toneCurve
 import com.music.laya.playback.QueueTimeline
 import com.music.laya.playback.QueueTimeline.asQueueEntry
 import com.music.laya.ui.player.RepeatModes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -48,7 +53,28 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     /** Entry ids of the upcoming tracks as they were before Shuffle, so turning it off can restore them. */
     private var preShuffle = emptyList<String?>()
 
-    init { engine.setListener(this) }
+    init {
+        engine.setListener(this)
+        scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
+        scope.launch {
+            combine(
+                AppSettings.equalizerEnabled, AppSettings.equalizerMode, AppSettings.equalizerBands,
+                AppSettings.equalizerToneX, AppSettings.equalizerToneY, AppSettings.equalizerFocused,
+                AppSettings.equalizerBalance,
+            ) { it }.collect { v ->
+                val c = when (v[1] as EqualizerMode) {
+                    EqualizerMode.DYNAMIC -> toneCurve(v[3] as Int, v[4] as Int, v[5] as Boolean)
+                    EqualizerMode.MANUAL -> manualCurve(@Suppress("UNCHECKED_CAST") (v[2] as List<Float>))
+                }
+                val on = v[0] as Boolean
+                // Off = a flat curve, so the filters glide out instead of clicking.
+                engine.setEqualizer(
+                    if (on) c.gainsDb.toList() else List(EqLayout.SLOTS) { 0f }, c.qs.toList(),
+                    if (on) c.preampDb else 0f, if (on) v[6] as Float else 0f,
+                )
+            }
+        }
+    }
 
     fun play(songs: List<Song>, startIndex: Int) {
         val entries = songs.map { it.asQueueEntry(QueueTier.CONTEXT) }

@@ -23,6 +23,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     /// Loader per queued item; an item's loader must live as long as the item.
     private var loaders: [ObjectIdentifier: ChunkedResourceLoader] = [:]
+    private var speed: Float = 1
     private var currentItem: AVPlayerItem?
     private var nextItem: AVPlayerItem?
 
@@ -102,7 +103,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         try? AVAudioSession.sharedInstance().setActive(true)
         becomeCurrent(item)
         player.insert(item, after: nil)
-        player.play()
+        go()
     }
 
     func setNext(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
@@ -133,7 +134,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     func resume() {
         try? AVAudioSession.sharedInstance().setActive(true)
-        player.play()
+        go()
         reportProgress()
     }
 
@@ -167,6 +168,24 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         pendingSeekMs = nil
         seekingToMs = nil
         pausedByInterruption = false
+    }
+
+    /// Play at the chosen speed (play() alone would reset the rate to 1).
+    private func go() {
+        player.play()
+        player.rate = speed
+    }
+
+    func setSpeed(speed: Float) {
+        self.speed = speed
+        if player.timeControlStatus != .paused { player.rate = speed }
+        updateNowPlayingTiming()
+    }
+
+    func setEqualizer(gainsDb: [KotlinFloat], qs: [KotlinFloat], preampDb: Float, balance: Float) {
+        func floats(_ a: [KotlinFloat]) -> [Float] { a.map { $0.floatValue } }
+        EqualizerTuning.set(gains: floats(gainsDb), qs: floats(qs), preampDb: preampDb, balance: balance)
+        if EqualizerTuning.wanted { [currentItem, nextItem].forEach { $0.map(EqualizerTap.attach) } }
     }
 
     func setNowPlaying(title: String, artist: String, album: String?, artworkUrl: String?) {
@@ -222,6 +241,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         if source.isFileURL {
             let item = AVPlayerItem(asset: AVURLAsset(url: source))
             item.preferredForwardBufferDuration = 30
+            prepare(item)
             return item
         }
         let loader = ChunkedResourceLoader(
@@ -235,6 +255,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         asset.resourceLoader.setDelegate(loader, queue: loader.queue)
         let item = AVPlayerItem(asset: asset)
         item.preferredForwardBufferDuration = 30
+        prepare(item)
         loader.onHTTPError = { [weak self, weak item] status in
             DispatchQueue.main.async {
                 // Only the playing item's refusal is actionable; a queued one is
@@ -245,6 +266,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         }
         loaders[ObjectIdentifier(item)] = loader
         return item
+    }
+
+    private func prepare(_ item: AVPlayerItem) {
+        item.audioTimePitchAlgorithm = .spectral
+        if EqualizerTuning.wanted { EqualizerTap.attach(to: item) }
     }
 
     /// Point the status observation and the end/fail notifications at [item].
@@ -323,7 +349,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             nowPlaying[MPMediaItemPropertyPlaybackDuration] = duration
         }
         nowPlaying[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position.isFinite ? position : 0
-        nowPlaying[MPNowPlayingInfoPropertyPlaybackRate] = player.timeControlStatus == .playing ? 1.0 : 0.0
+        nowPlaying[MPNowPlayingInfoPropertyPlaybackRate] = player.timeControlStatus == .playing ? Double(speed) : 0.0
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlaying
     }
 

@@ -18,6 +18,12 @@ interface AudioEngine {
     fun seekTo(positionMs: Long)
     fun stop()
 
+    /** Playback rate with pitch preserved. */
+    fun setSpeed(speed: Float)
+
+    /** The equaliser curve, one entry per EqLayout slot (the slot shapes and centres are fixed on both sides). */
+    fun setEqualizer(gainsDb: List<Float>, qs: List<Float>, preampDb: Float, balance: Float)
+
     fun setNowPlaying(title: String, artist: String, album: String?, artworkUrl: String?)
     fun setQueueCapabilities(hasNext: Boolean, hasPrevious: Boolean)
     fun setListener(listener: AudioEngineListener?)
