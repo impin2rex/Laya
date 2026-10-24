@@ -279,6 +279,10 @@ import androidx.media3.common.Player
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.ui.player.NowPlayingScreen
 import com.music.laya.ui.player.PlayerSheetMotion
+import com.music.laya.ui.player.attachWindow
+import com.music.laya.ui.player.PlayerSheetShape
+import com.music.laya.ui.player.PLAYER_SCRIM_ALPHA
+import com.music.laya.ui.player.PLAYER_PULL_FLING_VELOCITY
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.window.DialogWindowProvider
@@ -5556,33 +5560,6 @@ private const val SEEK_END_GUARD_MS = 1_000L
  * between that estimate and a particular page's real header.
  */
 private val DETAIL_TITLE_DROP = 320.dp
-
-/**
- * How fast, a second, a mini-player pull has to be moving when the finger
- * lifts to decide open or closed on its own, wherever it got to — see
- * [MiniPlayerPull]. A flick is a whole gesture; only a slow pull is judged by
- * the distance it covered.
- */
-private val PLAYER_PULL_FLING_VELOCITY = 400.dp
-
-/** M3's own scrim strength, which the player's dim stands in for. */
-private const val PLAYER_SCRIM_ALPHA = 0.32f
-
-/**
- * The player sheet's shape: square, as [RectangleShape] was, but reaching a
- * whole sheet's height above the sheet's top edge.
- *
- * The sheet's Surface clips its content to this shape, and on the way down to
- * the mini player the artwork travels ahead of the sheet carrying it — up
- * above the sheet's top edge, where a plain rectangle cut it off mid-air,
- * leaving only its lower part to arrive in the bar. Nothing else is drawn
- * outside the sheet (its background is transparent and it casts no shadow),
- * so at rest this is the rectangle it replaces.
- */
-private object PlayerSheetShape : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
-        Outline.Rectangle(Rect(0f, -size.height, size.width, size.height))
-}
 
 private const val TAB_HOME = 0
 private const val TAB_EXPLORE = 1

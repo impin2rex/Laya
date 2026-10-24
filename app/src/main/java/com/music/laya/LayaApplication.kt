@@ -55,6 +55,13 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        com.music.laya.ui.theme.SFProDisplay = androidx.compose.ui.text.font.FontFamily(
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_regular, androidx.compose.ui.text.font.FontWeight.W400),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_medium, androidx.compose.ui.text.font.FontWeight.W500),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_semibold, androidx.compose.ui.text.font.FontWeight.W600),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_bold, androidx.compose.ui.text.font.FontWeight.W700),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_heavy, androidx.compose.ui.text.font.FontWeight.W800),
+        )
         // The player is drawn by the shared UI module; this is what it reads
         // underneath — settings, the Canvas decoder, outputs, the party.
         AndroidStreamHooks.installEarly()

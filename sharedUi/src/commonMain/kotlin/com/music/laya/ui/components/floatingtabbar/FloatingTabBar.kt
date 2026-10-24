@@ -112,7 +112,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.music.laya.data.settings.AppSettings
+import com.music.laya.ui.player.PlayerSettings
 import com.music.laya.ui.components.GlassSpring
 import com.music.laya.ui.components.LocalGlassExport
 import com.music.laya.ui.components.backdrop.backdrops.layerBackdrop
@@ -746,8 +746,8 @@ private fun SharedTransitionScope.ExpandedTabs(
     val inlineTab = scope.getInlineTab(selectedTabKey)
     val selectedTabIndex = scope.tabs.indexOfFirst { it.key == selectedTabKey }
     val currentSelectedTabIndex by rememberUpdatedState(selectedTabIndex)
-    val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
-    val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
+    val reduceAnimation by PlayerSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val reduceDynamicBlur by PlayerSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     val selectionSpec: AnimationSpec<Float> = if (reduceAnimation) {
         snap()
     } else {

@@ -7,10 +7,12 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.music.laya.data.DebugLog
 import com.music.laya.data.TrackLog
 import com.music.laya.data.innertube.InnerTubeXResolver
+import com.music.laya.data.lyrics.LyricsTranslation
 import com.music.laya.ui.AppUi
 import com.music.laya.ui.player.PlayerPlatform
 import okio.Path.Companion.toPath
 import platform.Foundation.NSApplicationSupportDirectory
+import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIViewController
@@ -23,6 +25,8 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     SingletonImageLoader.setSafe { ctx -> ImageLoader.Builder(ctx).components { add(KtorNetworkFetcherFactory()) }.build() }
     val dir = NSFileManager.defaultManager
         .URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }
+    LyricsTranslation.cacheDir = NSFileManager.defaultManager
+        .URLsForDirectory(NSCachesDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }.toPath()
     InnerTubeXResolver.init(
         filesDir = dir.toPath(),
         // ponytail: in-memory, so cached player config is refetched each launch; NSUserDefaults when that hurts.

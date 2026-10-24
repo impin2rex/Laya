@@ -1,7 +1,7 @@
 package com.music.laya.ui.player
 
-import android.view.Window
 import androidx.compose.animation.core.Spring
+import com.music.laya.platform.nanoTime
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -12,7 +12,14 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.WindowInfo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import com.music.laya.ui.components.MiniPlayerPull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -81,9 +88,8 @@ class PlayerSheetMotion(
     /** The sheet, while it is up. Set by the host. */
     var sheet: SheetState? = null
 
-    /** The sheet's window, while it is up — see [attachWindow]. */
-    private var window: Window? = null
-    private var windowAnimations = 0
+    /** Switches the sheet window's own animations off (true) or back on, while it is up — see [attachWindow]. */
+    private var quiet: ((Boolean) -> Unit)? = null
     private var windowRestore: Job? = null
 
     // When the current pull started and how far the finger has taken it — for
@@ -151,7 +157,7 @@ class PlayerSheetMotion(
     }
 
     private fun sampleSheet(at: Float) {
-        val now = System.nanoTime()
+        val now = nanoTime()
         if (!sheetSampleAt.isNaN()) {
             val seconds = (now - sheetSampleNanos) / 1e9f
             if (seconds > 0f) {
@@ -165,7 +171,7 @@ class PlayerSheetMotion(
 
     /** The sheet's speed, if it was still moving a moment ago. */
     private fun recentSheetVelocity(): Float =
-        if ((System.nanoTime() - sheetSampleNanos) / 1e6f < SHEET_VELOCITY_FRESH_MS) sheetVelocity else 0f
+        if ((nanoTime() - sheetSampleNanos) / 1e6f < SHEET_VELOCITY_FRESH_MS) sheetVelocity else 0f
 
     /** A tap on the mini player. */
     fun open() {
@@ -196,14 +202,13 @@ class PlayerSheetMotion(
      * closed by anything else (opening an album from it, say) still fades as
      * it always has.
      */
-    fun attachWindow(window: Window?) {
-        this.window = window ?: return
-        windowAnimations = window.attributes.windowAnimations
-        window.setWindowAnimations(0)
+    fun attachWindow(quiet: ((Boolean) -> Unit)?) {
+        this.quiet = quiet ?: return
+        quiet(true)
         windowRestore?.cancel()
         windowRestore = scope.launch {
             delay(WINDOW_ENTER_MS)
-            window.setWindowAnimations(windowAnimations)
+            quiet(false)
         }
     }
 
@@ -214,7 +219,7 @@ class PlayerSheetMotion(
      */
     private fun quietWindow() {
         windowRestore?.cancel()
-        window?.setWindowAnimations(0)
+        quiet?.invoke(true)
     }
 
     /** From the sheet: whatever asked for it to hide, this is how it goes. */
@@ -244,7 +249,7 @@ class PlayerSheetMotion(
             closing = false
             held = travel()
             pullStartAt = held
-            pullStartNanos = System.nanoTime()
+            pullStartNanos = nanoTime()
             setShown(true)
         }
         settle?.cancel()
@@ -256,7 +261,7 @@ class PlayerSheetMotion(
         val travel = travel()
         // The finger's speed as it lifted, or across the whole pull if that
         // was faster — see [pullStartNanos].
-        val seconds = (System.nanoTime() - pullStartNanos) / 1e9f
+        val seconds = (nanoTime() - pullStartNanos) / 1e9f
         val average = if (seconds > 0f) (held - pullStartAt) / seconds else 0f
         val speed = if (abs(average) > abs(velocity)) average else velocity
         val flick = abs(speed) >= flingVelocity
@@ -287,7 +292,7 @@ class PlayerSheetMotion(
         held = Float.NaN
         laidOut = false
         sheet = null
-        window = null
+        quiet = null
     }
 
     private suspend fun slide(from: Float, to: Float, velocity: Float = 0f) {
@@ -315,3 +320,31 @@ class PlayerSheetMotion(
         setShown(false)
     }
 }
+
+/**
+ * How fast, a second, a mini-player pull has to be moving when the finger
+ * lifts to decide open or closed on its own, wherever it got to — see
+ * [MiniPlayerPull]. A flick is a whole gesture; only a slow pull is judged by
+ * the distance it covered.
+ */
+val PLAYER_PULL_FLING_VELOCITY = 400.dp
+
+/** M3's own scrim strength, which the player's dim stands in for. */
+const val PLAYER_SCRIM_ALPHA = 0.32f
+
+/**
+ * The player sheet's shape: square, as [RectangleShape] was, but reaching a
+ * whole sheet's height above the sheet's top edge.
+ *
+ * The sheet's Surface clips its content to this shape, and on the way down to
+ * the mini player the artwork travels ahead of the sheet carrying it — up
+ * above the sheet's top edge, where a plain rectangle cut it off mid-air,
+ * leaving only its lower part to arrive in the bar. Nothing else is drawn
+ * outside the sheet (its background is transparent and it casts no shadow),
+ * so at rest this is the rectangle it replaces.
+ */
+object PlayerSheetShape : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        Outline.Rectangle(Rect(0f, -size.height, size.width, size.height))
+}
+

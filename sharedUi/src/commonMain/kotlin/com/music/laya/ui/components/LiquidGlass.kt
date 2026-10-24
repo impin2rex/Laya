@@ -9,7 +9,7 @@
  */
 package com.music.laya.ui.components
 
-import android.os.Build
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CornerBasedShape
@@ -25,7 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.music.laya.data.settings.AppSettings
+import com.music.laya.ui.components.backdrop.isRenderEffectSupported
+import com.music.laya.ui.player.PlayerSettings
 import com.music.laya.ui.components.backdrop.Backdrop
 import com.music.laya.ui.components.backdrop.backdrops.LayerBackdrop
 import com.music.laya.ui.components.backdrop.drawBackdrop
@@ -57,7 +58,7 @@ internal val LocalGlassExport = compositionLocalOf<LayerBackdrop?> { null }
  * The backdrop blur pipeline requires [android.graphics.RenderEffect] on a
  * [android.graphics.RenderNode], available from Android 12 (API 31).
  */
-fun isGlassSupported(sdkInt: Int = Build.VERSION.SDK_INT): Boolean = sdkInt >= Build.VERSION_CODES.S
+fun isGlassSupported(): Boolean = isRenderEffectSupported()
 
 /** Apple-matched defaults (Echo's GlassEffectConfig()), fixed rather than user sliders. */
 private const val VIBRANCY = 1f
@@ -88,8 +89,8 @@ private const val GLASS_RESOLUTION_SCALE = 0.33f
  * against a dark page — it is the same near-black the page is. The glass gets
  * its edge from [Highlight], and this is that edge for everything that does not.
  */
-internal val GLASS_EDGE_WIDTH = 0.5.dp
-internal val GLASS_EDGE_COLOR = Color.White.copy(alpha = 0.10f)
+val GLASS_EDGE_WIDTH = 0.5.dp
+val GLASS_EDGE_COLOR = Color.White.copy(alpha = 0.10f)
 
 /**
  * Icon and label colour for content sitting on a glass surface.
@@ -220,7 +221,7 @@ fun Modifier.liquidGlass(
     surfaceTint: Color? = null,
 ): Modifier {
     if (!isGlassSupported()) return this
-    val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
+    val reduceDynamicBlur by PlayerSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     if (reduceDynamicBlur) {
         return background(MaterialTheme.colorScheme.surface, shape)
             .border(GLASS_EDGE_WIDTH, GLASS_EDGE_COLOR, shape)
@@ -244,14 +245,12 @@ fun Modifier.liquidGlass(
         effects = {
             colorControls(saturation = 1f + 0.5f * VIBRANCY)
             blur(blurPx)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                lens(
-                    refractionHeight = lensHeightPx,
-                    refractionAmount = lensAmountPx,
-                    depthEffect = true,
-                    chromaticAberration = true,
-                )
-            }
+            lens(
+                refractionHeight = lensHeightPx,
+                refractionAmount = lensAmountPx,
+                depthEffect = true,
+                chromaticAberration = true,
+            )
         },
         highlight = { Highlight.Default },
         shadow = { Shadow.Default },
@@ -261,4 +260,34 @@ fun Modifier.liquidGlass(
         exportedBackdrop = exportedBackdrop,
         backdropScale = GLASS_RESOLUTION_SCALE,
     )
+}
+
+/**
+ * The spring the selection indicator and the tab glyphs both travel on.
+ *
+ * Damping 0.72 rather than the 0.5 it was: half-damped overshoots two or three
+ * times, and a run of diminishing bounces is what makes a control read as a
+ * spring rather than as a material. This settles on the second approach — one
+ * soft pass beyond the mark and done — which is the difference between bouncy
+ * and alive.
+ *
+ * Stiffness 320 puts the whole movement at roughly a third of a second, quick
+ * enough that the tap and the arrival feel like one event.
+ */
+val GlassSpring = spring<Float>(dampingRatio = 0.72f, stiffness = 320f)
+
+/**
+ * Pulling the mini player up into the full player, the way the full player is
+ * pulled back down into it: the player follows the finger the whole way, and
+ * on release carries on to whichever end the gesture meant — open for a flick
+ * upwards or for most of the way up, closed for anything less.
+ *
+ * Implemented by the host, which owns the player's sheet.
+ */
+interface MiniPlayerPull {
+    /** The finger moved this far, in pixels — negative is upwards. */
+    fun drag(delta: Float)
+
+    /** The finger lifted, moving this fast in pixels a second. */
+    fun release(velocity: Float)
 }

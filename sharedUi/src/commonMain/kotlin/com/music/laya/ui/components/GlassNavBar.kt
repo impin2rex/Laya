@@ -47,11 +47,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.pause
+import com.music.laya.sharedui.resources.play
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.music.laya.R
 import com.music.laya.data.model.ROW_ART_PX
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.artworkAt
@@ -61,6 +63,7 @@ import com.music.laya.ui.components.floatingtabbar.FloatingTabBarScrollConnectio
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
 import com.music.laya.ui.player.PlayerDock
+import com.music.laya.ui.player.rememberRemoteArtworkUrl
 
 /**
  * The liquid glass navigation bar: the iOS 26 shape where the now playing
@@ -427,7 +430,7 @@ private fun GlassNowPlaying(
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        contentDescription = stringResource(if (isPlaying) R.string.pause else R.string.play),
+                        contentDescription = stringResource(if (isPlaying) Res.string.pause else Res.string.play),
                         tint = contentColor,
                         modifier = Modifier.size(glyphSize),
                     )

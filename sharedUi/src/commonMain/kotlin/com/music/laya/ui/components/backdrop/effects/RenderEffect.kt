@@ -16,7 +16,6 @@ import com.music.laya.ui.components.backdrop.internal.RuntimeShaderEffect
 import com.music.laya.ui.components.backdrop.internal.chain
 import com.music.laya.ui.components.backdrop.isRenderEffectSupported
 import com.music.laya.ui.components.backdrop.isRuntimeShaderSupported
-import org.intellij.lang.annotations.Language
 import kotlin.contracts.ExperimentalContracts
 
 fun BackdropEffectScope.effect(effect: RenderEffect) {
@@ -28,7 +27,7 @@ fun BackdropEffectScope.effect(effect: RenderEffect) {
 @OptIn(ExperimentalContracts::class)
 fun BackdropEffectScope.runtimeShaderEffect(
     key: String,
-    @Language("AGSL") shaderString: String,
+    shaderString: String,
     uniformShaderName: String,
     block: RuntimeShader.() -> Unit
 ) {

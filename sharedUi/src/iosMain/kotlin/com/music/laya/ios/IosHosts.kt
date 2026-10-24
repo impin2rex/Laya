@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsSource
+import com.music.laya.data.lyrics.LyricsTranslation
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AudioQuality
 import com.music.laya.data.settings.LastPlayerScreen
@@ -70,10 +71,18 @@ internal object IosPlayerHost : PlayerHost {
     override val party = MutableStateFlow(PartyUi())
 
     override suspend fun translateLyrics(trackId: String, lines: List<LyricLine>, targetLanguageTag: String) =
-        LyricsTranslationResult.Unavailable
+        when (val result = LyricsTranslation.translate(trackId, lines, targetLanguageTag)) {
+            is LyricsTranslation.Result.Translated -> LyricsTranslationResult.Translated(result.lines)
+            is LyricsTranslation.Result.SameLanguage -> LyricsTranslationResult.SameLanguage(result.language)
+            LyricsTranslation.Result.Unavailable -> LyricsTranslationResult.Unavailable
+        }
 
     override suspend fun romanizeLyrics(trackId: String, lines: List<LyricLine>, targetLanguageTag: String) =
-        LyricsRomanizationResult.Unavailable
+        when (val result = LyricsTranslation.romanize(trackId, lines, targetLanguageTag)) {
+            is LyricsTranslation.RomanizationResult.Romanized -> LyricsRomanizationResult.Romanized(result.lines)
+            LyricsTranslation.RomanizationResult.AlreadyRomanized -> LyricsRomanizationResult.AlreadyRomanized
+            LyricsTranslation.RomanizationResult.Unavailable -> LyricsRomanizationResult.Unavailable
+        }
 
     /** The newest notice, shown by [LayaIosApp] as a snackbar. */
     val messages = MutableStateFlow<String?>(null)

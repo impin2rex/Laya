@@ -11,7 +11,6 @@
  */
 package com.music.laya.ui.components.floatingtabbar
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -535,13 +534,11 @@ internal fun GlassSelectionPill(
             backdrop = backdrop,
             shape = { shape },
             effects = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    lens(
-                        refractionHeight = LENS_HEIGHT.toPx() * motion.glassPresence,
-                        refractionAmount = LENS_AMOUNT.toPx() * motion.material,
-                        chromaticAberration = true,
-                    )
-                }
+                lens(
+                    refractionHeight = LENS_HEIGHT.toPx() * motion.glassPresence,
+                    refractionAmount = LENS_AMOUNT.toPx() * motion.material,
+                    chromaticAberration = true,
+                )
             },
             highlight = {
                 val alpha = motion.material * rimOf(motion.glassPresence)

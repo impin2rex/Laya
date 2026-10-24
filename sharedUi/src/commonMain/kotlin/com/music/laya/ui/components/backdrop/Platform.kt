@@ -9,11 +9,8 @@
  */
 package com.music.laya.ui.components.backdrop
 
-import android.os.Build
-import androidx.annotation.ChecksSdkIntAtLeast
+/** RenderEffect (blur, colour matrix) on the layer — Android 12+, always on Skia. */
+expect fun isRenderEffectSupported(): Boolean
 
-@ChecksSdkIntAtLeast(Build.VERSION_CODES.S)
-fun isRenderEffectSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-
-@ChecksSdkIntAtLeast(Build.VERSION_CODES.TIRAMISU)
-fun isRuntimeShaderSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+/** Runtime shaders — Android 13+, always on Skia. */
+expect fun isRuntimeShaderSupported(): Boolean
