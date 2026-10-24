@@ -1,6 +1,7 @@
 package com.music.laya.data
 
-import java.util.Locale
+import com.music.laya.platform.languageOf
+import com.music.laya.platform.systemLanguageTag
 
 /**
  * Single place that knows zh-Hant / zh-Hans.
@@ -22,7 +23,7 @@ object LocaleTags {
      */
     fun normalizeAppTag(raw: String?): String {
         val tag = raw?.trim()?.replace('_', '-')?.takeIf { it.isNotBlank() } ?: return "en"
-        val lower = tag.lowercase(Locale.ROOT)
+        val lower = tag.lowercase()
         if (lower.startsWith("zh")) {
             // Explicit script wins.
             if ("hant" in lower) return ZH_HANT
@@ -34,7 +35,7 @@ object LocaleTags {
             return ZH_HANS
         }
         // Other languages: base language only ("en-US" -> "en"), with legacy fixes.
-        val base = Locale.forLanguageTag(tag).language.lowercase(Locale.ROOT).ifBlank { lower.substringBefore('-') }
+        val base = languageOf(tag).lowercase().ifBlank { lower.substringBefore('-') }
         return when (base) {
             "iw" -> "he"
             "in" -> "id"
@@ -44,7 +45,7 @@ object LocaleTags {
     }
 
     /** Full tag for the current device/app locale, script-preserving. */
-    fun systemTag(): String = normalizeAppTag(Locale.getDefault().toLanguageTag())
+    fun systemTag(): String = normalizeAppTag(systemLanguageTag())
 
     /** What YouTube Music wants as `hl` / Innertube context hl. */
     fun ytHl(appTag: String): String {
@@ -99,17 +100,17 @@ object LocaleTags {
     fun sameLanguageScriptAware(first: String, second: String): Boolean {
         fun canon(tag: String): String {
             val t = tag.trim().replace('_', '-')
-            val lower = t.lowercase(Locale.ROOT)
+            val lower = t.lowercase()
             if (lower.startsWith("zh")) {
                 if ("tw" in lower || "hant" in lower || "hk" in lower || "mo" in lower) return "zh-hant"
                 if ("cn" in lower || "hans" in lower || "sg" in lower) return "zh-hans"
                 return "zh"
             }
-            return Locale.forLanguageTag(t).language.lowercase(Locale.ROOT).ifBlank { lower.substringBefore('-') }
+            return languageOf(t).lowercase().ifBlank { lower.substringBefore('-') }
         }
         return canon(first) == canon(second)
     }
 
     fun isChineseTag(tag: String): Boolean =
-        tag.trim().replace('_', '-').lowercase(Locale.ROOT).startsWith("zh")
+        tag.trim().replace('_', '-').lowercase().startsWith("zh")
 }

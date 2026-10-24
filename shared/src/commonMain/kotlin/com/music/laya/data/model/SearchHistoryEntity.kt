@@ -1,5 +1,6 @@
 package com.music.laya.data.model
 
+import com.music.laya.platform.currentTimeMillis
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -23,7 +24,7 @@ data class SearchHistoryEntity(
     /** The kind of entity this represents. */
     val entityType: EntityType,
     /** Timestamp (epoch millis) — updated on each re-tap to bubble it to the top. */
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: Long = currentTimeMillis(),
 )
 
 enum class EntityType {

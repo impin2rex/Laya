@@ -1,5 +1,7 @@
 package com.music.laya.data
 
+import kotlin.concurrent.Volatile
+
 /**
  * Debug logging for code both applications run.
  *

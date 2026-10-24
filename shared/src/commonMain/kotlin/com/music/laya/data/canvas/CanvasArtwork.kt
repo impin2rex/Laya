@@ -1,7 +1,6 @@
 package com.music.laya.data.canvas
 
-import java.text.Normalizer
-import java.util.Locale
+import com.music.laya.platform.normalizeNfd
 
 /**
  * Which provider a clip came from — read in one place, by
@@ -65,9 +64,9 @@ data class CanvasArtwork(
  * "Beyonce Crazy in Love feat Jay Z". Fold all three away before comparing.
  */
 fun String.normalizeForMatch(): String =
-    Normalizer.normalize(this, Normalizer.Form.NFD)
-        .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-        .lowercase(Locale.ROOT)
+    normalizeNfd(this)
+        .replace(Regex("[\u0300-\u036F]+"), "")
+        .lowercase()
         .replace(Regex("[^a-z0-9\\s]"), " ")
         .replace(Regex("\\s+"), " ")
         .trim()

@@ -1,5 +1,9 @@
 package com.music.laya.data.canvas
 
+import com.music.laya.platform.currentTimeMillis
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlin.concurrent.Volatile
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -116,23 +120,26 @@ object SpotifyCanvasQuery {
      */
     class QueryHashes(
         private val fetch: (String) -> String?,
-        private val now: () -> Long = System::currentTimeMillis,
+        private val now: () -> Long = ::currentTimeMillis,
         private val maxScripts: Int = 8,
     ) {
         @Volatile private var hash: String? = null
         @Volatile private var checkedAt = 0L
 
-        @Synchronized
+        private val lock = SynchronizedObject()
+
         fun canvasHash(forceRefresh: Boolean = false): String {
-            val current = hash
-            val age = now() - checkedAt
-            if (!forceRefresh && checkedAt != 0L && age < (if (current != null) FOUND_TTL_MS else MISSED_TTL_MS)) {
-                return current ?: KNOWN_CANVAS_HASH
+            return synchronized(lock) {
+                val current = hash
+                val age = now() - checkedAt
+                if (!forceRefresh && checkedAt != 0L && age < (if (current != null) FOUND_TTL_MS else MISSED_TTL_MS)) {
+                    return@synchronized current ?: KNOWN_CANVAS_HASH
+                }
+                checkedAt = now()
+                val found = lookUp()
+                if (found != null) hash = found
+                hash ?: KNOWN_CANVAS_HASH
             }
-            checkedAt = now()
-            val found = lookUp()
-            if (found != null) hash = found
-            return hash ?: KNOWN_CANVAS_HASH
         }
 
         private fun lookUp(): String? {

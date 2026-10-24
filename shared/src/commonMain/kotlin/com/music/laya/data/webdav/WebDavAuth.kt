@@ -1,5 +1,7 @@
 package com.music.laya.data.webdav
 
+import kotlin.concurrent.Volatile
+
 /**
  * In-memory credentials for [com.music.laya.data.Http]'s interceptor.
  *

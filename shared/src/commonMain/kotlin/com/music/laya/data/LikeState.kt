@@ -37,7 +37,7 @@ object LikeState {
     fun seedLiked(videoIds: Set<String>) {
         if (videoIds.isEmpty()) return
         val next = _overrides.value.toMutableMap()
-        videoIds.forEach { next.putIfAbsent(it, LikeStatus.LIKE) }
+        videoIds.forEach { next.getOrPut(it) { LikeStatus.LIKE } }
         if (next != _overrides.value) _overrides.value = next
     }
 

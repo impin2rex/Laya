@@ -2,8 +2,7 @@ package com.music.laya.data.sources
 
 import com.music.laya.data.model.Song
 import kotlin.math.abs
-import java.text.Normalizer
-import java.util.Locale
+import com.music.laya.platform.normalizeNfkc
 
 /**
  * Decides whether one catalogue's track is the same recording as another's,
@@ -372,7 +371,7 @@ object TrackMatcher {
     )
 
     internal fun parseTitle(raw: String, artist: String = ""): TitleParts {
-        val versions = sortedSetOf<String>()
+        val versions = mutableSetOf<String>()
         val context = mutableSetOf<String>()
         var text = normalize(raw)
 
@@ -428,12 +427,8 @@ object TrackMatcher {
         // these titles into empty or broken strings, so CJK titles keep their
         // raw character sequence intact (stripping only punctuation and whitespace).
         val containsCJK = text.any {
-            Character.UnicodeBlock.of(it) in setOf(
-                Character.UnicodeBlock.HIRAGANA,
-                Character.UnicodeBlock.KATAKANA,
-                Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS,
-                Character.UnicodeBlock.HANGUL_SYLLABLES
-            )
+            it in '\u3040'..'\u309F' || it in '\u30A0'..'\u30FF' || // Hiragana, Katakana
+                it in '\u4E00'..'\u9FFF' || it in '\uAC00'..'\uD7AF' // CJK ideographs, Hangul syllables
         }
 
         var words = text.split(WORD_SPLIT)
@@ -466,7 +461,7 @@ object TrackMatcher {
         return TitleParts(
             words = words,
             core = coreString,
-            versions = versions,
+            versions = versions.sorted().toSet(),
             context = context,
         )
     }
@@ -521,8 +516,8 @@ object TrackMatcher {
      * every non-Latin catalogue out of matching entirely.
      */
     internal fun normalize(text: String): String =
-        Normalizer.normalize(text, Normalizer.Form.NFKC)
-            .lowercase(Locale.ROOT)
+        normalizeNfkc(text)
+            .lowercase()
             .replace("&", " and ")
             .replace(CJK_OPEN, "(")
             .replace(CJK_CLOSE, ")")

@@ -1,6 +1,5 @@
 package com.music.laya.data.sources
 
-import java.util.Locale
 
 /**
  * What a source is about to hand the decoder, as far as the source will say.
@@ -46,9 +45,9 @@ data class StreamFormat(
     /** "24-bit · 192 kHz", "FLAC", "320 kbps" — whichever parts are known. */
     val summary: String
         get() = if (isDolbyAtmos) "Dolby Atmos" else listOfNotNull(
-            codec?.uppercase(Locale.ROOT),
+            codec?.uppercase(),
             bitDepth?.let { "$it-bit" },
-            sampleRateHz?.let { "${"%.1f".format(Locale.ROOT, it / 1000f).removeSuffix(".0")} kHz" },
+            sampleRateHz?.let { "${((it + 50) / 100).let { t -> "${t / 10}.${t % 10}" }.removeSuffix(".0")} kHz" },
             kbps?.takeIf { isLossless != true }?.let { "$it kbps" },
         ).joinToString(" · ").ifEmpty { "Unknown format" }
 
