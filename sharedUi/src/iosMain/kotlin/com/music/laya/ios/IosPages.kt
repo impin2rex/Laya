@@ -1,6 +1,21 @@
 package com.music.laya.ios
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import com.music.laya.sharedui.resources.listening_history
+import com.music.laya.sharedui.resources.settings
+import com.music.laya.ui.components.thumbnailBorder
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
@@ -157,6 +172,30 @@ internal fun IosAccountPage(signedIn: Boolean, account: Account?, onSignIn: () -
         SettingsGroup(topSpacing = 0.dp) {
             AccountCard(signedIn = signedIn, account = account, onSignIn = onSignIn, grouped = true)
             if (signedIn) DestructiveRow(label = stringResource(Res.string.sign_out), onClick = onSignOut)
+        }
+    }
+}
+
+/** Android's top-right pill: the account photo (a person glyph when signed out), with History beside it on Library. */
+@Composable
+internal fun IosTopPill(account: Account?, onHistory: (() -> Unit)?, onAccount: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (onHistory != null) IconButton(onClick = onHistory) {
+            Icon(Icons.Rounded.History, stringResource(Res.string.listening_history))
+        }
+        IconButton(onClick = onAccount) {
+            val avatar = Modifier.size(28.dp).clip(CircleShape).thumbnailBorder(CircleShape)
+            val photo = account?.thumbnailUrl
+            if (photo != null) {
+                AsyncImage(photo, stringResource(Res.string.settings), avatar, contentScale = ContentScale.Crop)
+            } else {
+                Box(avatar.background(MaterialTheme.colorScheme.surfaceVariant), Alignment.Center) {
+                    Icon(Icons.Rounded.Person, stringResource(Res.string.settings), Modifier.size(18.dp), MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
     }
 }

@@ -575,16 +575,12 @@ fun LayaIosApp(engine: AudioEngine) {
                         }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = barHeight))
                             if (stack.isEmpty()) {
-                                if (tab == 2 && signedIn) IconButton(
-                                    onClick = { openHistory() },
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 56.dp)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
-                                ) { Icon(Icons.Rounded.History, "History") }
-                                IconButton(
-                                    onClick = { stack = stack + IosPage.Settings },
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
-                                ) { Icon(Icons.Rounded.Settings, "Settings") }
+                                IosTopPill(
+                                    account = account,
+                                    onHistory = if (tab == 2 && signedIn) ({ openHistory() }) else null,
+                                    onAccount = { stack = stack + IosPage.Settings },
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                )
                             } else {
                                 IconButton(
                                     onClick = { stack = stack.dropLast(1) },
