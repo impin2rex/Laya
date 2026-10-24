@@ -15,7 +15,11 @@ import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
+import platform.Foundation.NSUserDefaults
 import platform.UIKit.UIViewController
+import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.AppSettingsHost
+import com.russhwolf.settings.NSUserDefaultsSettings
 
 /** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]. */
 fun MainViewController(engine: AudioEngine): UIViewController {
@@ -39,6 +43,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
         },
         poTokenProvider = null,
     )
+    AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
     AppUi.install(IosAppUiHost)
     PlayerPlatform.install(IosPlayerHost)
     return ComposeUIViewController { LayaIosApp(engine) }

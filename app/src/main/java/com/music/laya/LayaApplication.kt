@@ -39,6 +39,7 @@ import com.music.laya.data.innertube.AndroidStreamHooks
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.scrobbling.LastFM
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.init
 import com.music.laya.data.settings.SearchHistory
 import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.stats.ArtistFacts

@@ -62,6 +62,8 @@ kotlin {
             api("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
             api("com.fleeksoft.ksoup:ksoup:0.2.6")
             api("com.squareup.okio:okio:3.17.0")
+            // Settings storage: SharedPreferences on Android, NSUserDefaults on iOS.
+            api("com.russhwolf:multiplatform-settings:1.3.0")
             // YouTube stream resolution: InnerTubeX's client catalog and cipher tiers.
             api("com.github.MetrolistGroup.innertubex:innertubex:v0.7.0")
             // Common locks/atomics; the version coroutines already pulls in.
@@ -74,6 +76,7 @@ kotlin {
             implementation(kotlin("test"))
         }
         jvmTest.dependencies {
+            implementation("com.russhwolf:multiplatform-settings-test:1.3.0")
             implementation("com.squareup.okhttp3:mockwebserver:5.3.2")
             implementation("com.microsoft.onnxruntime:onnxruntime:1.20.0")
         }

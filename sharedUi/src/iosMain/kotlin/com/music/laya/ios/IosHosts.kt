@@ -4,16 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.lyrics.LyricLine
-import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.lyrics.LyricsTranslation
 import com.music.laya.data.model.Song
-import com.music.laya.data.settings.AudioQuality
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.LastPlayerScreen
-import com.music.laya.data.settings.LibrarySort
 import com.music.laya.data.settings.LibraryViewType
-import com.music.laya.data.settings.MixBlend
-import com.music.laya.data.settings.SmartAnalysis
-import com.music.laya.data.settings.TransitionWindow
 import com.music.laya.ui.AppUiHost
 import com.music.laya.ui.player.AudioOutputDevice
 import com.music.laya.ui.player.CanvasVideoSpec
@@ -26,17 +21,13 @@ import com.music.laya.ui.player.PlayerSettingsSource
 import com.music.laya.ui.player.SystemVolume
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-
-// ponytail: in-memory settings at Android's defaults; 4d swaps them for multiplatform-settings.
 
 internal object IosAppUiHost : AppUiHost {
-    override val swipeToPlayNext = MutableStateFlow(false)
-    private val recents = MutableStateFlow(LibraryViewType.LIST)
-    override val homeRecentsViewType: StateFlow<LibraryViewType> = recents
-    override fun setHomeRecentsViewType(value: LibraryViewType) { recents.value = value }
-    override val pinnedPlaylists = MutableStateFlow(emptyList<String>())
-    override val librarySort = MutableStateFlow(LibrarySort.DEFAULT)
+    override val swipeToPlayNext = AppSettings.swipeToPlayNext
+    override val homeRecentsViewType = AppSettings.homeRecentsViewType
+    override fun setHomeRecentsViewType(value: LibraryViewType) = AppSettings.setHomeRecentsViewType(value)
+    override val pinnedPlaylists = AppSettings.pinnedPlaylists
+    override val librarySort = AppSettings.librarySort
 
     @Composable
     override fun downloadedIds(): Set<String> = emptySet() // TODO(4d): downloads
@@ -94,37 +85,37 @@ internal object IosPlayerHost : PlayerHost {
 
 private object IosPlayerSettings : PlayerSettingsSource {
     override val animatedCanvas = MutableStateFlow(false) // no canvas decoder on iOS
-    override val audioQualityCellular = MutableStateFlow(AudioQuality.LOSSLESS)
-    override val audioQualityWifi = MutableStateFlow(AudioQuality.LOSSLESS)
-    override val canvasOverCellular = MutableStateFlow(true)
-    override val fullBleedArtwork = MutableStateFlow(false)
-    override val hideSongStatus = MutableStateFlow(false)
-    override val showQueueHistory = MutableStateFlow(false)
+    override val audioQualityCellular get() = AppSettings.audioQualityCellular
+    override val audioQualityWifi get() = AppSettings.audioQualityWifi
+    override val canvasOverCellular get() = AppSettings.canvasOverCellular
+    override val fullBleedArtwork get() = AppSettings.fullBleedArtwork
+    override val hideSongStatus get() = AppSettings.hideSongStatus
+    override val showQueueHistory get() = AppSettings.showQueueHistory
     override val hideVolumeBar = MutableStateFlow(true) // no system volume bridge yet
-    override val hideStatusBar = MutableStateFlow(false)
-    override val lastPlayerScreen = MutableStateFlow(LastPlayerScreen.MAIN)
-    override val legacyMeshGradient = MutableStateFlow(false)
-    override val lyricsBlur = MutableStateFlow(true)
-    override val lyricsOffsetMs = MutableStateFlow(0)
-    override val lyricsSourceOrder = MutableStateFlow<List<LyricsSource>>(LyricsSource.offered)
-    override val meteredConnection = MutableStateFlow<Boolean?>(null)
-    override val preferUsbDac = MutableStateFlow(false)
-    override val prioritizeSpotifyCanvas = MutableStateFlow(false)
-    override val reduceAnimation = MutableStateFlow(false)
-    override val reduceDynamicBlur = MutableStateFlow(false)
-    override val reverbEnabled = MutableStateFlow(false)
-    override val showNerdStats = MutableStateFlow(false)
-    override val smartAnalysis = MutableStateFlow(SmartAnalysis())
-    override val smartFadeEnabled = MutableStateFlow(false)
-    override val smartMixInProgress = MutableStateFlow(false)
-    override val smartMixBlend = MutableStateFlow<MixBlend?>(null)
-    override val smartTransitionWindow = MutableStateFlow<TransitionWindow?>(null)
-    override val spotifyCanvasAutoHide = MutableStateFlow(true)
-    override val syncedLyrics = MutableStateFlow(true)
-    override val translationLanguage = MutableStateFlow("")
-    override val versionAlignmentInProgress = MutableStateFlow(false)
+    override val hideStatusBar get() = AppSettings.hideStatusBarInPlayer
+    override val lastPlayerScreen get() = AppSettings.lastPlayerScreen
+    override val legacyMeshGradient get() = AppSettings.legacyMeshGradient
+    override val lyricsBlur get() = AppSettings.lyricsBlur
+    override val lyricsOffsetMs get() = AppSettings.lyricsOffsetMs
+    override val lyricsSourceOrder get() = AppSettings.lyricsSourceOrder
+    override val meteredConnection get() = AppSettings.meteredConnection
+    override val preferUsbDac get() = AppSettings.preferUsbDac
+    override val prioritizeSpotifyCanvas get() = AppSettings.prioritizeSpotifyCanvas
+    override val reduceAnimation get() = AppSettings.reduceAnimation
+    override val reduceDynamicBlur get() = AppSettings.reduceDynamicBlur
+    override val reverbEnabled get() = AppSettings.reverbEnabled
+    override val showNerdStats get() = AppSettings.showNerdStats
+    override val smartAnalysis get() = AppSettings.smartAnalysis
+    override val smartFadeEnabled get() = AppSettings.smartFadeEnabled
+    override val smartMixInProgress get() = AppSettings.smartMixInProgress
+    override val smartMixBlend get() = AppSettings.smartMixBlend
+    override val smartTransitionWindow get() = AppSettings.smartTransitionWindow
+    override val spotifyCanvasAutoHide get() = AppSettings.spotifyCanvasAutoHide
+    override val syncedLyrics get() = AppSettings.syncedLyrics
+    override val translationLanguage get() = AppSettings.translationLanguage
+    override val versionAlignmentInProgress get() = AppSettings.versionAlignmentInProgress
 
-    override fun setLastPlayerScreen(value: LastPlayerScreen) { lastPlayerScreen.value = value }
-    override fun setLyricsOffsetMs(value: Int) { lyricsOffsetMs.value = value }
-    override fun setReverbEnabled(value: Boolean) { reverbEnabled.value = value }
+    override fun setLastPlayerScreen(value: LastPlayerScreen) = AppSettings.setLastPlayerScreen(value)
+    override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value)
+    override fun setReverbEnabled(value: Boolean) = AppSettings.setReverbEnabled(value)
 }

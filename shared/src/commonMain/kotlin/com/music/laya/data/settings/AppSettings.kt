@@ -1,50 +1,12 @@
 package com.music.laya.data.settings
 
-import com.music.laya.data.webdav.update
-import android.content.Context
-import android.content.SharedPreferences
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import androidx.media3.common.Player
-import com.music.laya.BuildConfig
-import com.music.laya.auth.AuthStore
-import com.music.laya.data.canvas.SpotifyToken
 import com.music.laya.data.lyrics.LyricsSource
-import com.music.laya.data.sources.SourceKind
 import com.music.laya.playback.EqLayout
 import com.music.laya.playback.EqualizerPreset
 import com.music.laya.playback.ReverbSettings
+import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 
-
-/**
- * Whether a stream started under this ceiling may be served by [kind].
- *
- * Asked per stream rather than written into
- * [SourceConfig.enabled][com.music.laya.data.sources.SourceConfig.enabled],
- * which is what this used to do — an `applyQualityPreset` call flipped the
- * module and JioSaavn switches the moment a rung was picked. Two things
- * were wrong with that and both were reported together: picking a rung for
- * *mobile data* turned the sources off while sitting on Wi-Fi, and nothing
- * turned them back on when the connection changed, so a Wi-Fi ceiling of
- * Lossless still had no lossless source to reach. A ceiling is a property
- * of the connection in force; the switches on the Sources screen are the
- * user's standing choice. Storing the first in the second lost the second.
- *
- * [SourceKind.YOUTUBE] is permitted on every rung: it is what [maxKbps]
- * caps, and it is the only source that can answer at all when the ones
- * above it are skipped.
- */
-fun AudioQuality.permits(kind: SourceKind): Boolean = when (this) {
-    AudioQuality.LOSSLESS -> true
-    // No lossless answer is wanted here, and a source that can serve one is
-    // the slow half of the list: an addon fronting several catalogues walks
-    // all of them before it answers, which is seconds spent to land on a
-    // transcode JioSaavn already has at 320.
-    AudioQuality.HIGH -> !kind.canServeLossless
-    AudioQuality.MEDIUM, AudioQuality.LOW -> kind == SourceKind.YOUTUBE
-}
 
 /**
  * PCM format requested from Media3's AudioTrack sink.
@@ -147,12 +109,55 @@ enum class SongSort {
  * same flows and applies changes to the live ExoPlayer instance immediately —
  * no restart, no rebinding.
  */
+/**
+ * The few things [AppSettings] needs from the platform: the encrypted secrets, the
+ * build-time defaults, and side effects that live in app code. Open with no-op
+ * defaults so a platform without those features (iOS, for now) passes `AppSettingsHost()`.
+ */
+open class AppSettingsHost {
+    open var webdavPassword: String? = null
+    open var smbPassword: String? = null
+    open var discordToken: String? = null
+    open val lastfmApiKey: String = ""
+    open val lastfmSecret: String = ""
+    open val signatureApiUrl: String = ""
+    open fun smbAuthChanged(host: String, share: String, basePath: String, username: String, password: String) {}
+    open fun webdavAuthChanged(url: String, username: String, password: String) {}
+    open fun spotifyTokenChanged() {}
+    /** Every stored pair with its native type; only used by backup export. */
+    open fun dumpPrefs(): Map<String, Any?> = emptyMap()
+    /** Replaces the whole store; only used by backup import. */
+    open fun replacePrefs(values: Map<String, Any?>) {}
+}
+
+/** Keeps the `prefs.getX` / `prefs.edit().putX().apply()` call shape the Android code always had. */
+private class Prefs(private val s: Settings) {
+    fun getBoolean(k: String, d: Boolean) = s.getBoolean(k, d)
+    fun getInt(k: String, d: Int) = s.getInt(k, d)
+    fun getLong(k: String, d: Long) = s.getLong(k, d)
+    fun getFloat(k: String, d: Float) = s.getFloat(k, d)
+    fun getString(k: String, d: String?): String? = if (d == null) s.getStringOrNull(k) else s.getString(k, d)
+    fun contains(k: String) = s.hasKey(k)
+    fun edit() = Editor()
+
+    // Writes land immediately, so apply() has nothing left to do.
+    inner class Editor {
+        fun putBoolean(k: String, v: Boolean) = apply { s.putBoolean(k, v) }
+        fun putInt(k: String, v: Int) = apply { s.putInt(k, v) }
+        fun putLong(k: String, v: Long) = apply { s.putLong(k, v) }
+        fun putFloat(k: String, v: Float) = apply { s.putFloat(k, v) }
+        fun putString(k: String, v: String) = apply { s.putString(k, v) }
+        fun remove(k: String) = apply { s.remove(k) }
+        fun apply() {}
+    }
+}
+
 object AppSettings {
 
-    private lateinit var prefs: SharedPreferences
+    private lateinit var prefs: Prefs
 
     /** Only for the Discord, WebDAV and SMB secrets — everything else on here is plain prefs. */
-    private lateinit var authStore: AuthStore
+    private lateinit var host: AppSettingsHost
 
     /**
      * Quality ceilings, one per kind of connection — the point of the split is
@@ -360,7 +365,7 @@ object AppSettings {
     val shuffleEnabled = MutableStateFlow(false)
 
     /** Repeat mode for the player — Off, All, or One. */
-    val repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
+    val repeatMode = MutableStateFlow(REPEAT_MODE_OFF)
 
     /** Put the playing track's codec, bitrate and sample rate on the player. */
     val showNerdStats = MutableStateFlow(false)
@@ -791,16 +796,14 @@ object AppSettings {
         get() = !wifiOnlyDownloads.value || meteredConnection.value != true
 
     /**
-     * [authStore] is the application's own, passed in rather than opened again:
+     * [host] carries the application's own, passed in rather than opened again:
      * each open of the encrypted store is a keystore round trip, and a second
      * one here was a measurable slice of cold start.
      */
-    fun init(context: Context, authStore: AuthStore) {
-        prefs = context.getSharedPreferences("laya_settings", Context.MODE_PRIVATE)
-        this.authStore = authStore
-        com.music.laya.data.spotify.LocalPlaylistStore.init(context)
+    fun init(settings: Settings, host: AppSettingsHost) {
+        prefs = Prefs(settings)
+        this.host = host
         readAll()
-        watchConnection(context)
     }
 
     /**
@@ -868,7 +871,7 @@ object AppSettings {
         }.getOrDefault(ThemeMode.DARK)
         autoplay.value = prefs.getBoolean(KEY_AUTOPLAY, true)
         shuffleEnabled.value = prefs.getBoolean(KEY_SHUFFLE_ENABLED, false)
-        repeatMode.value = prefs.getInt(KEY_REPEAT_MODE, Player.REPEAT_MODE_OFF)
+        repeatMode.value = prefs.getInt(KEY_REPEAT_MODE, REPEAT_MODE_OFF)
         showNerdStats.value = prefs.getBoolean(KEY_NERD_STATS, false)
         reduceAnimation.value = prefs.getBoolean(KEY_REDUCE_ANIMATION, false)
         systemFont.value = prefs.getBoolean(KEY_SYSTEM_FONT, false)
@@ -921,8 +924,8 @@ object AppSettings {
         lastfmEnabled.value = prefs.getBoolean(KEY_LASTFM_ENABLED, false)
         lastfmUsername.value = prefs.getString(KEY_LASTFM_USERNAME, "").orEmpty()
         lastfmSessionKey.value = prefs.getString(KEY_LASTFM_SESSION_KEY, "").orEmpty()
-        lastfmApiKey.value = prefs.getString(KEY_LASTFM_API_KEY, "").orEmpty().ifBlank { BuildConfig.LASTFM_API_KEY }
-        lastfmSecret.value = prefs.getString(KEY_LASTFM_SECRET, "").orEmpty().ifBlank { BuildConfig.LASTFM_SECRET }
+        lastfmApiKey.value = prefs.getString(KEY_LASTFM_API_KEY, "").orEmpty().ifBlank { host.lastfmApiKey }
+        lastfmSecret.value = prefs.getString(KEY_LASTFM_SECRET, "").orEmpty().ifBlank { host.lastfmSecret }
         lastfmEndpoint.value = prefs.getString(KEY_LASTFM_ENDPOINT, "").orEmpty()
         lastfmScrobbleEnabled.value = prefs.getBoolean(KEY_LASTFM_SCROBBLE_ENABLED, false)
         lastfmNowPlaying.value = prefs.getBoolean(KEY_LASTFM_NOW_PLAYING, false) && lastfmScrobbleEnabled.value
@@ -948,26 +951,26 @@ object AppSettings {
         localMusicFolderUri.value = prefs.getString(KEY_LOCAL_MUSIC_FOLDER_URI, "").orEmpty()
         webdavUrl.value = prefs.getString(KEY_WEBDAV_URL, "").orEmpty()
         webdavUsername.value = prefs.getString(KEY_WEBDAV_USERNAME, "").orEmpty()
-        webdavPassword.value = authStore.webdavPassword.orEmpty()
+        webdavPassword.value = host.webdavPassword.orEmpty()
         smbHost.value = prefs.getString(KEY_SMB_HOST, "").orEmpty()
         smbShare.value = prefs.getString(KEY_SMB_SHARE, "").orEmpty()
         smbBasePath.value = prefs.getString(KEY_SMB_BASE_PATH, "").orEmpty()
         smbUsername.value = prefs.getString(KEY_SMB_USERNAME, "").orEmpty()
-        smbPassword.value = authStore.smbPassword.orEmpty()
-        com.music.laya.data.smb.SmbAuth.update(
+        smbPassword.value = host.smbPassword.orEmpty()
+        host.smbAuthChanged(
             smbHost.value,
             smbShare.value,
             smbBasePath.value,
             smbUsername.value,
             smbPassword.value,
         )
-        com.music.laya.data.webdav.WebDavAuth.update(
+        host.webdavAuthChanged(
             webdavUrl.value,
             webdavUsername.value,
             webdavPassword.value,
         )
         pinnedPlaylists.value = readPinnedPlaylists()
-        discordToken.value = authStore.discordToken.orEmpty()
+        discordToken.value = host.discordToken.orEmpty()
         discordUsername.value = prefs.getString(KEY_DISCORD_USERNAME, "").orEmpty()
         discordName.value = prefs.getString(KEY_DISCORD_NAME, "").orEmpty()
         discordAvatar.value = prefs.getString(KEY_DISCORD_AVATAR, "").orEmpty()
@@ -1051,34 +1054,6 @@ object AppSettings {
     private fun readDownloadQuality(): DownloadQuality {
         val stored = prefs.getString(KEY_QUALITY_DOWNLOAD, null) ?: return DownloadQuality.LOSSLESS
         return runCatching { DownloadQuality.valueOf(stored) }.getOrDefault(DownloadQuality.LOSSLESS)
-    }
-
-    /**
-     * Track the active network so [effectiveAudioQuality] can answer without
-     * touching ConnectivityManager. Stream resolution happens off the main
-     * thread mid-playback; a callback keeps that lookup off the hot path and
-     * lets the settings page show which ceiling is currently in force.
-     */
-    private fun watchConnection(context: Context) {
-        val manager = context.getSystemService(ConnectivityManager::class.java) ?: return
-        val refresh = {
-            meteredConnection.value = runCatching {
-                if (manager.activeNetwork == null) null else manager.isActiveNetworkMetered
-            }.getOrNull()
-        }
-        refresh()
-        runCatching {
-            manager.registerDefaultNetworkCallback(
-                object : ConnectivityManager.NetworkCallback() {
-                    override fun onAvailable(network: Network) = refresh()
-                    override fun onLost(network: Network) = refresh()
-                    override fun onCapabilitiesChanged(
-                        network: Network,
-                        capabilities: NetworkCapabilities,
-                    ) = refresh()
-                },
-            )
-        }
     }
 
     fun setAutoplay(value: Boolean) {
@@ -1566,7 +1541,7 @@ object AppSettings {
     fun setSpotifySpdcToken(value: String) {
         spotifySpdcToken.value = value
         prefs.edit().putString(KEY_SPOTIFY_SPDC_TOKEN, value).apply()
-        SpotifyToken.invalidate()
+        host.spotifyTokenChanged()
     }
 
     fun setLastfmScrobbleEnabled(value: Boolean) {
@@ -1647,7 +1622,7 @@ object AppSettings {
     /** Writes through to the encrypted store; pass "" to disconnect. */
     fun setDiscordToken(value: String) {
         discordToken.value = value
-        authStore.discordToken = value.ifEmpty { null }
+        host.discordToken = value.ifEmpty { null }
     }
 
     fun setDiscordAccount(username: String, name: String, avatar: String?) {
@@ -1791,7 +1766,7 @@ object AppSettings {
     /** Writes through to the encrypted store; pass "" to forget. */
     fun setWebDavPassword(value: String) {
         webdavPassword.value = value
-        authStore.webdavPassword = value.ifEmpty { null }
+        host.webdavPassword = value.ifEmpty { null }
         publishWebDavAuth()
     }
 
@@ -1832,7 +1807,7 @@ object AppSettings {
     /** Writes through to the encrypted store; pass "" to forget. */
     fun setSmbPassword(value: String) {
         smbPassword.value = value
-        authStore.smbPassword = value.ifEmpty { null }
+        host.smbPassword = value.ifEmpty { null }
         publishSmbAuth()
     }
 
@@ -1845,8 +1820,8 @@ object AppSettings {
     }
 
     private fun publishSmbAuth() {
-        if (!this::prefs.isInitialized || !this::authStore.isInitialized) return
-        com.music.laya.data.smb.SmbAuth.update(
+        if (!this::prefs.isInitialized || !this::host.isInitialized) return
+        host.smbAuthChanged(
             smbHost.value,
             smbShare.value,
             smbBasePath.value,
@@ -1856,8 +1831,8 @@ object AppSettings {
     }
 
     private fun publishWebDavAuth() {
-        if (!this::prefs.isInitialized || !this::authStore.isInitialized) return
-        com.music.laya.data.webdav.WebDavAuth.update(
+        if (!this::prefs.isInitialized || !this::host.isInitialized) return
+        host.webdavAuthChanged(
             webdavUrl.value,
             webdavUsername.value,
             webdavPassword.value,
@@ -1937,7 +1912,7 @@ object AppSettings {
      */
     fun exportPrefs(): Map<String, Any?> {
         if (!this::prefs.isInitialized) return emptyMap()
-        return prefs.all.filterKeys { it !in SECRETS && it !in DEVICE_LOCAL }
+        return host.dumpPrefs().filterKeys { it !in SECRETS && it !in DEVICE_LOCAL }
     }
 
     /**
@@ -1951,22 +1926,8 @@ object AppSettings {
      */
     fun importPrefs(values: Map<String, Any?>) {
         if (!this::prefs.isInitialized) return
-        val kept = prefs.all.filterKeys { it in SECRETS || it in DEVICE_LOCAL }
-        prefs.edit().apply {
-            clear()
-            val incoming = values.filterKeys { it !in SECRETS && it !in DEVICE_LOCAL }
-            (kept + incoming).forEach { (key, value) ->
-                when (value) {
-                    is Boolean -> putBoolean(key, value)
-                    is Int -> putInt(key, value)
-                    is Long -> putLong(key, value)
-                    is Float -> putFloat(key, value)
-                    is String -> putString(key, value)
-                    is Set<*> -> putStringSet(key, value.filterIsInstance<String>().toSet())
-                    else -> Unit
-                }
-            }
-        }.apply()
+        val kept = host.dumpPrefs().filterKeys { it in SECRETS || it in DEVICE_LOCAL }
+        host.replacePrefs(kept + values.filterKeys { it !in SECRETS && it !in DEVICE_LOCAL })
         reload()
     }
 
@@ -2016,6 +1977,9 @@ object AppSettings {
     const val MIN_UPGRADE_LENGTH_SLACK_SECONDS = 0
     const val MAX_UPGRADE_LENGTH_SLACK_SECONDS = 10
 
+    /** Media3's `Player.REPEAT_MODE_OFF`, which is what gets persisted. */
+    private const val REPEAT_MODE_OFF = 0
+
     private const val DEFAULT_PERFORMANCE_REFRESH_RATE = 120
 
     private fun normalizePerformanceRefreshRate(value: Int): Int =
@@ -2025,7 +1989,7 @@ object AppSettings {
      * The address this build shipped pointed at (`SIGNATURE_API_URL` in `local.properties`), which
      * stands in until one is saved. Empty for a build that was given none.
      */
-    val defaultSignatureApiUrl: String get() = normalizeSignatureApiUrl(BuildConfig.SIGNATURE_API_URL)
+    val defaultSignatureApiUrl: String get() = normalizeSignatureApiUrl(if (this::host.isInitialized) host.signatureApiUrl else "") // "" until init(); readAll() republishes
 
     fun normalizeSignatureApiUrl(raw: String): String =
         raw.trim().trimEnd('/').take(500)
