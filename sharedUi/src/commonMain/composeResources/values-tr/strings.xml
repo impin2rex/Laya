@@ -432,4 +432,14 @@
     <string name="work_out_genres">Türleri belirle</string>
     <string name="your_data">Verileriniz</string>
     <string name="youtube_music_account">YouTube Music hesabı</string>
+    <string name="sign_out">Çıkış yap</string>
+    <string name="listening_history">Dinleme geçmişi</string>
+    <string name="history_empty">Henüz bir şey çalınmadı</string>
+    <string name="history_sign_in_required">Ne dinlediğini görmek için giriş yap</string>
+    <string name="library_empty">Kitaplığında henüz bir şey yok</string>
+    <string name="close">Kapat</string>
+    <string name="checking">Kontrol ediliyor…</string>
+    <string name="use_this_profile">Bu profili kullan</string>
+    <string name="switch_profile_hint">Avatarı kullanarak değiştir, sonra bu profili kullan.</string>
+    <string name="profile_unavailable">Bu sayfada henüz giriş yapılmış bir profil yok.</string>
 </resources>

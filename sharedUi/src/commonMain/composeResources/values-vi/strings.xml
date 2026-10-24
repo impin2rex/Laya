@@ -431,4 +431,14 @@
     <string name="work_out_genres">Phân tích thể loại</string>
     <string name="your_data">Dữ liệu của bạn</string>
     <string name="youtube_music_account">Tài khoản YouTube Music</string>
+    <string name="sign_out">Đăng xuất</string>
+    <string name="listening_history">Lịch sử nghe</string>
+    <string name="history_empty">Chưa phát bài nào</string>
+    <string name="history_sign_in_required">Đăng nhập để xem những gì bạn đã nghe gần đây</string>
+    <string name="library_empty">Chưa có gì trong thư viện của bạn</string>
+    <string name="close">Đóng</string>
+    <string name="checking">Đang kiểm tra…</string>
+    <string name="use_this_profile">Sử dụng hồ sơ này</string>
+    <string name="switch_profile_hint">Chuyển đổi bằng ảnh đại diện, sau đó sử dụng hồ sơ này.</string>
+    <string name="profile_unavailable">Chưa có hồ sơ đã đăng nhập nào trên trang này.</string>
 </resources>

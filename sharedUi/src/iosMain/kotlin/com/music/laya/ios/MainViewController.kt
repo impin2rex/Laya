@@ -45,6 +45,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
         poTokenProvider = null,
     )
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
+    IosAuth.restore() // Keychain session -> Innertube, before the first request
     AppUi.install(IosAppUiHost)
     SettingsExtras.host = IosSettingsHost
     PlayerPlatform.install(IosPlayerHost)

@@ -431,4 +431,14 @@
     <string name="work_out_genres">Hitung genre</string>
     <string name="your_data">Data Anda</string>
     <string name="youtube_music_account">Akun YouTube Music</string>
+    <string name="sign_out">Keluar</string>
+    <string name="listening_history">Riwayat mendengarkan</string>
+    <string name="history_empty">Belum ada yang diputar</string>
+    <string name="history_sign_in_required">Masuk untuk melihat apa yang telah Anda dengarkan</string>
+    <string name="library_empty">Belum ada apa pun di perpustakaan Anda</string>
+    <string name="close">Tutup</string>
+    <string name="checking">Memeriksa…</string>
+    <string name="use_this_profile">Gunakan profil ini</string>
+    <string name="switch_profile_hint">Beralih menggunakan avatar, lalu gunakan profil ini.</string>
+    <string name="profile_unavailable">Belum ada profil masuk yang tersedia di halaman ini.</string>
 </resources>

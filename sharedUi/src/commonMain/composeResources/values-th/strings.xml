@@ -431,4 +431,14 @@
     <string name="work_out_genres">คำนวณแนวเพลง</string>
     <string name="your_data">ข้อมูลของคุณ</string>
     <string name="youtube_music_account">บัญชี YouTube Music</string>
+    <string name="sign_out">ออกจากระบบ</string>
+    <string name="listening_history">ประวัติการฟัง</string>
+    <string name="history_empty">ยังไม่มีการเล่นเพลง</string>
+    <string name="history_sign_in_required">ลงชื่อเข้าใช้เพื่อดูสิ่งที่คุณเคยฟัง</string>
+    <string name="library_empty">ยังไม่มีอะไรในคลังเพลงของคุณ</string>
+    <string name="close">ปิด</string>
+    <string name="checking">กำลังตรวจสอบ…</string>
+    <string name="use_this_profile">ใช้โปรไฟล์นี้</string>
+    <string name="switch_profile_hint">สลับโดยใช้รูปโปรไฟล์ แล้วใช้โปรไฟล์นี้</string>
+    <string name="profile_unavailable">ยังไม่มีโปรไฟล์ที่ลงชื่อเข้าใช้ในหน้านี้</string>
 </resources>

@@ -432,4 +432,14 @@
     <string name="work_out_genres">חישוב ז\'אנרים</string>
     <string name="your_data">הנתונים שלך</string>
     <string name="youtube_music_account">חשבון YouTube Music</string>
+    <string name="sign_out">התנתקות</string>
+    <string name="listening_history">היסטוריית האזנה</string>
+    <string name="history_empty">שום דבר לא הושמע עדיין</string>
+    <string name="history_sign_in_required">היכנס כדי לראות למה האזנת</string>
+    <string name="library_empty">שום דבר בספרייה שלך עדיין</string>
+    <string name="close">סגירה</string>
+    <string name="checking">בודק…</string>
+    <string name="use_this_profile">השתמש בפרופיל זה</string>
+    <string name="switch_profile_hint">החלף באמצעות האווטאר, ואז השתמש בפרופיל זה.</string>
+    <string name="profile_unavailable">אין עדיין פרופיל מחובר זמין בדף זה.</string>
 </resources>

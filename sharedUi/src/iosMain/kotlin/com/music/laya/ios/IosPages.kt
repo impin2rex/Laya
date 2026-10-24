@@ -7,6 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,6 +21,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.music.laya.data.YtMusicRepository
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import com.music.laya.data.model.Account
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.sign_out
+import com.music.laya.ui.screens.AccountCard
+import com.music.laya.ui.screens.DestructiveRow
+import com.music.laya.ui.screens.SettingsGroup
+import org.jetbrains.compose.resources.stringResource
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.DetailPage
 import com.music.laya.data.model.HomeShelf
@@ -33,6 +45,8 @@ internal sealed interface IosPage {
     class Detail(val page: DetailPage) : IosPage
     class Mood(val item: MoodGenre, val shelves: UiState<List<HomeShelf>>) : IosPage
     data object Settings : IosPage
+    data object Account : IosPage
+    class History(val songs: UiState<List<Song>>) : IosPage
 }
 
 /** YouTube browse ids are prefixed by kind (Android's MainViewModel.browseTypeOf, minus the device-local kinds). */
@@ -90,7 +104,7 @@ internal suspend fun loadMood(item: MoodGenre): UiState<List<HomeShelf>> =
         { UiState.Error(friendly(it)) },
     )
 
-/** Long-press menu. Account actions (like, playlists, library) and downloads are Phase 5/6, so not offered. */
+/** Long-press menu. Like needs sign-in; playlists, library and downloads are not offered yet. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun IosSongMenu(
@@ -100,6 +114,9 @@ internal fun IosSongMenu(
     onAddToQueue: () -> Unit,
     onOpenAlbum: (String) -> Unit,
     onOpenArtist: (String) -> Unit,
+    /** Null hides the row (signed out). */
+    liked: Boolean? = null,
+    onToggleLike: () -> Unit = {},
 ) {
     @Composable
     fun Action(icon: ImageVector, label: String, onClick: () -> Unit) = ListItem(
@@ -115,6 +132,7 @@ internal fun IosSongMenu(
                 supportingContent = { Text(song.artist, maxLines = 1) },
                 colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
             )
+            liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) "Remove from liked" else "Like", onToggleLike) }
             Action(Icons.AutoMirrored.Rounded.PlaylistPlay, "Play next", onPlayNext)
             Action(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue", onAddToQueue)
             song.albumId?.let { id -> Action(Icons.Rounded.Album, "Open album") { onOpenAlbum(id) } }
@@ -129,4 +147,15 @@ private fun shareText(text: String) {
     var top = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return
     while (true) top = top.presentedViewController ?: break
     top.presentViewController(UIActivityViewController(listOf(text), null), true, null)
+}
+
+/** Who is signed in, with the way out. ponytail: no channel switcher (single account). */
+@Composable
+internal fun IosAccountPage(signedIn: Boolean, account: Account?, onSignIn: () -> Unit, onSignOut: () -> Unit, contentPadding: PaddingValues) {
+    Column(Modifier.padding(contentPadding)) {
+        SettingsGroup(topSpacing = 0.dp) {
+            AccountCard(signedIn = signedIn, account = account, onSignIn = onSignIn, grouped = true)
+            if (signedIn) DestructiveRow(label = stringResource(Res.string.sign_out), onClick = onSignOut)
+        }
+    }
 }

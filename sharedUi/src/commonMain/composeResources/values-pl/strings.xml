@@ -434,4 +434,14 @@
     <string name="work_out_genres">Gatunki do ćwiczeń</string>
     <string name="your_data">Twoje dane</string>
     <string name="youtube_music_account">Konto YouTube Music</string>
+    <string name="sign_out">Wyloguj</string>
+    <string name="listening_history">Historia odtwarzania</string>
+    <string name="history_empty">Nie odtworzono jeszcze nic</string>
+    <string name="history_sign_in_required">Zaloguj się, aby zobaczyć, czego słuchałeś</string>
+    <string name="library_empty">Nie masz jeszcze nic w bibliotece</string>
+    <string name="close">Zamknij</string>
+    <string name="checking">Sprawdzanie…</string>
+    <string name="use_this_profile">Użyj tego profilu</string>
+    <string name="switch_profile_hint">Zmień za pomocą awatara, a następnie użyj tego profilu.</string>
+    <string name="profile_unavailable">Na tej stronie nie ma jeszcze zalogowanego profilu.</string>
 </resources>

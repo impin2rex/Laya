@@ -432,4 +432,14 @@
     <string name="work_out_genres">Calcular géneros</string>
     <string name="your_data">Tus datos</string>
     <string name="youtube_music_account">Cuenta de YouTube Music</string>
+    <string name="sign_out">Cerrar sesión</string>
+    <string name="listening_history">Historial de reproducción</string>
+    <string name="history_empty">Todavía no has reproducido nada</string>
+    <string name="history_sign_in_required">Inicia sesión para ver lo que has escuchado</string>
+    <string name="library_empty">Tu biblioteca todavía está vacía</string>
+    <string name="close">Cerrar</string>
+    <string name="checking">Comprobando…</string>
+    <string name="use_this_profile">Usar este perfil</string>
+    <string name="switch_profile_hint">Cambia con el avatar y luego usa este perfil.</string>
+    <string name="profile_unavailable">Aún no hay un perfil con sesión iniciada en esta página.</string>
 </resources>

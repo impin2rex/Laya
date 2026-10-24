@@ -434,4 +434,14 @@
     <string name="work_out_genres">Определять жанры</string>
     <string name="your_data">Ваши данные</string>
     <string name="youtube_music_account">Аккаунт YouTube Music</string>
+    <string name="sign_out">Выйти</string>
+    <string name="listening_history">История прослушивания</string>
+    <string name="history_empty">Пока ничего не воспроизводилось</string>
+    <string name="history_sign_in_required">Войдите, чтобы увидеть, что вы слушали</string>
+    <string name="library_empty">В библиотеке пока ничего нет</string>
+    <string name="close">Закрыть</string>
+    <string name="checking">Проверка…</string>
+    <string name="use_this_profile">Использовать этот профиль</string>
+    <string name="switch_profile_hint">Смените через аватар и используйте этот профиль.</string>
+    <string name="profile_unavailable">На этой странице еще нет авторизованного профиля.</string>
 </resources>

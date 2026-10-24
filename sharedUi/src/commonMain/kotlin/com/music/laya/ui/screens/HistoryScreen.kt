@@ -1,6 +1,7 @@
 package com.music.laya.ui.screens
 
-import com.music.laya.R
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.retry
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +12,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.UiState
@@ -57,7 +58,7 @@ fun HistoryScreen(
             is UiState.Error -> item(key = "history:message") {
                 MessageState(
                     message = state.message,
-                    actionLabel = stringResource(R.string.try_again),
+                    actionLabel = stringResource(Res.string.retry),
                     onAction = onRetry,
                 )
             }

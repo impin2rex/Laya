@@ -431,4 +431,14 @@
     <string name="work_out_genres">ジャンルを推定</string>
     <string name="your_data">あなたのデータ</string>
     <string name="youtube_music_account">YouTube Musicアカウント</string>
+    <string name="sign_out">ログアウト</string>
+    <string name="listening_history">再生履歴</string>
+    <string name="history_empty">まだ何も再生されていません</string>
+    <string name="history_sign_in_required">これまでの再生履歴を見るにはログインしてください</string>
+    <string name="library_empty">ライブラリにはまだ何もありません</string>
+    <string name="close">閉じる</string>
+    <string name="checking">確認中…</string>
+    <string name="use_this_profile">このプロフィールを使用</string>
+    <string name="switch_profile_hint">アバターで切り替えて、このプロフィールを使用します。</string>
+    <string name="profile_unavailable">このページではログインしているプロフィールはまだありません。</string>
 </resources>

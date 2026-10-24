@@ -432,4 +432,14 @@
     <string name="work_out_genres">Genres ermitteln</string>
     <string name="your_data">Deine Daten</string>
     <string name="youtube_music_account">YouTube-Music-Konto</string>
+    <string name="sign_out">Abmelden</string>
+    <string name="listening_history">Hörverlauf</string>
+    <string name="history_empty">Noch nichts gespielt</string>
+    <string name="history_sign_in_required">Melde dich an, um zu sehen, was du gehört hast</string>
+    <string name="library_empty">Noch nichts in deiner Bibliothek</string>
+    <string name="close">Schließen</string>
+    <string name="checking">Wird geprüft…</string>
+    <string name="use_this_profile">Dieses Profil nutzen</string>
+    <string name="switch_profile_hint">Über den Avatar wechseln und dieses Profil nutzen.</string>
+    <string name="profile_unavailable">Auf dieser Seite ist noch kein angemeldetes Profil verfügbar.</string>
 </resources>

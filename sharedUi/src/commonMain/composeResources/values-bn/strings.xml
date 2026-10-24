@@ -411,4 +411,14 @@
     <string name="work_out_genres">শৈলী বের করুন</string>
     <string name="your_data">আপনার ডেটা</string>
     <string name="youtube_music_account">YouTube Music অ্যাকাউন্ট</string>
+    <string name="sign_out">সাইন আউট</string>
+    <string name="listening_history">শোনার হিস্ট্রি</string>
+    <string name="history_empty">এখনও কিছু চালানো হয়নি</string>
+    <string name="history_sign_in_required">আপনি কী শুনছিলেন দেখতে সাইন ইন করুন</string>
+    <string name="library_empty">আপনার লাইব্রেরিতে এখনও কিছু নেই</string>
+    <string name="close">বন্ধ করুন</string>
+    <string name="checking">দেখা হচ্ছে…</string>
+    <string name="use_this_profile">এই প্রোফাইল ব্যবহার করুন</string>
+    <string name="switch_profile_hint">অ্যাভাটার থেকে বদলে নিন, তারপর এই প্রোফাইল ব্যবহার করুন।</string>
+    <string name="profile_unavailable">এই পেজে এখনও সাইন ইন করা কোনো প্রোফাইল পাওয়া যাচ্ছে না।</string>
 </resources>

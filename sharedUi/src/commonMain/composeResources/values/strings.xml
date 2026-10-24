@@ -439,4 +439,14 @@
     <string name="work_out_genres">Work out genres</string>
     <string name="your_data">Your data</string>
     <string name="youtube_music_account">YouTube Music account</string>
+    <string name="sign_out">Sign out</string>
+    <string name="listening_history">Listening history</string>
+    <string name="history_empty">Nothing played yet</string>
+    <string name="history_sign_in_required">Sign in to see what you have been listening to</string>
+    <string name="library_empty">Nothing in your library yet</string>
+    <string name="close">Close</string>
+    <string name="checking">Checking…</string>
+    <string name="use_this_profile">Use this profile</string>
+    <string name="switch_profile_hint">Switch using the avatar, then use this profile.</string>
+    <string name="profile_unavailable">No signed-in profile is available on this page yet.</string>
 </resources>

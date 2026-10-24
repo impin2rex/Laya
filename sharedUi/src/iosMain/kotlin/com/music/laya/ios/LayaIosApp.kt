@@ -117,6 +117,14 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.material.icons.rounded.Settings
 import kotlinx.coroutines.launch
 import platform.Foundation.NSProcessInfo
+import androidx.compose.material.icons.rounded.History
+import com.music.laya.data.LikeState
+import com.music.laya.data.model.LibraryPage
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.history_empty
+import com.music.laya.sharedui.resources.library_empty
+import com.music.laya.ui.screens.HistoryScreen
+import org.jetbrains.compose.resources.getString
 
 private fun ShelfItem.toSong() = videoId?.let {
     Song(it, title, InnertubeParser.artistFromSubtitle(subtitle), thumbnailUrl)
@@ -143,6 +151,9 @@ fun LayaIosApp(engine: AudioEngine) {
     val sheetMotion = remember { PlayerSheetMotion(scope, playerDock, { nowPlayingOpen }, { nowPlayingOpen = it }) }
     sheetMotion.windowInfo = LocalWindowInfo.current
     sheetMotion.flingVelocity = with(LocalDensity.current) { PLAYER_PULL_FLING_VELOCITY.toPx() }
+    val signedIn by IosAuth.signedIn.collectAsState()
+    val account by IosAuth.account.collectAsState()
+    var showLogin by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val message by IosPlayerHost.messages.collectAsState()
     LaunchedEffect(message) {
@@ -159,6 +170,55 @@ fun LayaIosApp(engine: AudioEngine) {
         explore = YtMusicRepository.moodAndGenres().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Error") })
     }
     LaunchedEffect(Unit) { loadHome(); loadExplore() }
+
+    // Library: same calls MainViewModel.fetchLibrary makes (liked songs beyond page one are synced into LikeState).
+    var library by remember { mutableStateOf<UiState<LibraryPage>>(UiState.Loading) }
+    var libraryRefreshing by remember { mutableStateOf(false) }
+    suspend fun loadLibrary() {
+        library = YtMusicRepository.library().fold(
+            onSuccess = { page ->
+                page.likedContinuation?.let { token ->
+                    scope.launch { YtMusicRepository.syncLikedMusic(token) { YtMusicRepository.moreSongs(it).getOrNull() } }
+                }
+                if (page.isEmpty) UiState.Error(getString(Res.string.library_empty)) else UiState.Success(page.copy(likedContinuation = null))
+            },
+            onFailure = { UiState.Error(it.message ?: "Error") },
+        )
+    }
+    LaunchedEffect(signedIn) {
+        if (signedIn) { library = UiState.Loading; loadLibrary(); loadHome() }
+        else { library = UiState.Loading; stack = stack.filterNot { it is IosPage.Account || it is IosPage.History } }
+    }
+    fun openHistory() {
+        val loading = IosPage.History(UiState.Loading)
+        stack = stack + loading
+        scope.launch {
+            val songs = YtMusicRepository.history().fold(
+                { if (it.isEmpty()) UiState.Error(getString(Res.string.history_empty)) else UiState.Success(it) },
+                { UiState.Error(it.message ?: "Error") },
+            )
+            stack = stack.map { if (it === loading) IosPage.History(songs) else it }
+        }
+    }
+
+    // Likes: optimistic via LikeState, rolled back if YouTube refuses (MainViewModel.setLike).
+    val likes by LikeState.overrides.collectAsState()
+    fun isLiked(id: String) = likes[id] == LikeStatus.LIKE
+    fun toggleLike(id: String) {
+        val previous = likes[id] ?: LikeStatus.INDIFFERENT
+        val next = if (previous == LikeStatus.LIKE) LikeStatus.INDIFFERENT else LikeStatus.LIKE
+        LikeState.set(id, next)
+        scope.launch { YtMusicRepository.rate(id, next).onFailure { LikeState.set(id, previous) } }
+    }
+    // A track's own rating comes from its menu data; the playing track and the long-pressed one are looked up.
+    LaunchedEffect(player.song?.videoId, signedIn) {
+        val id = player.song?.videoId ?: return@LaunchedEffect
+        if (signedIn) YtMusicRepository.songMenu(id).getOrNull()?.let { LikeState.rememberStated(id, it.likeStatus) }
+    }
+    LaunchedEffect(menuSong?.videoId, signedIn) {
+        val id = menuSong?.videoId ?: return@LaunchedEffect
+        if (signedIn) YtMusicRepository.songMenu(id).getOrNull()?.let { LikeState.rememberStated(id, it.likeStatus) }
+    }
 
     fun openDetail(id: String, title: String, subtitle: String = "", thumb: String? = null, type: BrowseType = BrowseType.OTHER) {
         val base = loadingPage(id, title, subtitle, thumb, type)
@@ -286,10 +346,30 @@ fun LayaIosApp(engine: AudioEngine) {
                                     )
                                     IosPage.Settings -> SettingsScreen(
                                         windowWidth = this@BoxWithConstraints.maxWidth,
-                                        signedIn = false, // Phase 5: sign-in
-                                        account = null,
-                                        onSignIn = {},
-                                        onSignOut = {},
+                                        signedIn = signedIn,
+                                        account = account,
+                                        onSignIn = { showLogin = true },
+                                        onSignOut = { scope.launch { IosAuth.signOut() } },
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                        // Opens the account page; Last.fm / Spotify / Discord live behind it on Android (5e).
+                                        onAccountScrobbling = { if (signedIn) stack = stack + IosPage.Account else showLogin = true },
+                                    )
+                                    IosPage.Account -> IosAccountPage(
+                                        signedIn = signedIn,
+                                        account = account,
+                                        onSignIn = { showLogin = true },
+                                        onSignOut = { scope.launch { IosAuth.signOut() } },
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
+                                    is IosPage.History -> HistoryScreen(
+                                        state = top.songs,
+                                        listState = rememberLazyListState(),
+                                        currentSong = song,
+                                        isPlaying = player.isPlaying,
+                                        onSongClick = { songs, i -> player.play(songs, i) },
+                                        onSongLongPress = { menuSong = it },
+                                        onSongSwipe = ::swipe,
+                                        onRetry = { stack = stack.dropLast(1); openHistory() },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
                                     null -> Unit
@@ -316,7 +396,8 @@ fun LayaIosApp(engine: AudioEngine) {
                                 pullState = homePull,
                                 contentPadding = noPadding,
                                 title = "Listen now",
-                                signedIn = false, // Phase 5: sign-in
+                                signedIn = signedIn,
+                                onSignIn = { showLogin = true },
                                 currentSong = song,
                                 isPlaying = player.isPlaying,
                             )
@@ -331,18 +412,18 @@ fun LayaIosApp(engine: AudioEngine) {
                                 contentPadding = noPadding,
                             )
                             2 -> LibraryScreen(
-                                signedIn = false, // Phase 5: sign-in, then YtMusicRepository.library()
-                                state = UiState.Loading,
+                                signedIn = signedIn,
+                                state = library,
                                 listState = libraryList,
-                                onShelfItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } },
+                                onShelfItemClick = { it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it) },
                                 onShelfItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onNewPlaylist = {},
                                 onShowAll = {},
                                 replay = {},
-                                onSignIn = {},
-                                onRetry = {},
-                                refreshing = false,
-                                onRefresh = {},
+                                onSignIn = { showLogin = true },
+                                onRetry = { scope.launch { library = UiState.Loading; loadLibrary() } },
+                                refreshing = libraryRefreshing,
+                                onRefresh = { scope.launch { libraryRefreshing = true; loadLibrary(); libraryRefreshing = false } },
                                 pullState = libraryPull,
                                 contentPadding = noPadding,
                                 links = emptyList(),
@@ -382,6 +463,11 @@ fun LayaIosApp(engine: AudioEngine) {
                         }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = barHeight))
                             if (stack.isEmpty()) {
+                                if (tab == 2 && signedIn) IconButton(
+                                    onClick = { openHistory() },
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 56.dp)
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
+                                ) { Icon(Icons.Rounded.History, "History") }
                                 IconButton(
                                     onClick = { stack = stack + IosPage.Settings },
                                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
@@ -421,10 +507,10 @@ fun LayaIosApp(engine: AudioEngine) {
                         exit = slideOutVertically { it },
                     ) {
                         OnboardingScreen(
-                            signedIn = false,
+                            signedIn = signedIn,
                             initialName = "",
                             onNameChosen = {}, // Phase 6: Listen Together nickname
-                            onSignIn = null, // Phase 5: sign-in
+                            onSignIn = { showLogin = true },
                             onFinish = AppSettings::setOnboardingComplete,
                         )
                     }
@@ -437,6 +523,8 @@ fun LayaIosApp(engine: AudioEngine) {
                             onAddToQueue = { player.addToQueue(m) },
                             onOpenAlbum = { openDetail(it, m.albumName.orEmpty(), m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
                             onOpenArtist = { openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
+                            liked = if (signedIn) isLiked(m.videoId) else null,
+                            onToggleLike = { toggleLike(m.videoId) },
                         )
                     }
 
@@ -508,10 +596,10 @@ fun LayaIosApp(engine: AudioEngine) {
                                         repeatMode = repeat,
                                         shuffleEnabled = shuffle,
                                         autoplayEnabled = autoplay,
-                                        signedIn = false,
-                                        accountName = null,
-                                        likeStatus = LikeStatus.INDIFFERENT,
-                                        onToggleLike = {}, // needs sign-in (Phase 5)
+                                        signedIn = signedIn,
+                                        accountName = account?.name,
+                                        likeStatus = if (isLiked(song.videoId)) LikeStatus.LIKE else LikeStatus.INDIFFERENT,
+                                        onToggleLike = { toggleLike(song.videoId) },
                                         onPlayPause = player::togglePlayPause,
                                         onNext = player::next,
                                         onPrevious = player::previous,
@@ -551,6 +639,7 @@ fun LayaIosApp(engine: AudioEngine) {
                             }
                         }
                     }
+                    if (showLogin) IosLoginScreen(onClose = { showLogin = false })
                 }
             }
         }

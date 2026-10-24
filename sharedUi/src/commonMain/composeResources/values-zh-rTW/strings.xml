@@ -431,4 +431,14 @@
     <string name="work_out_genres">推算流派</string>
     <string name="your_data">你的資料</string>
     <string name="youtube_music_account">YouTube Music 賬號</string>
+    <string name="sign_out">退出登入</string>
+    <string name="listening_history">收聽記錄</string>
+    <string name="history_empty">尚未播放過任何內容</string>
+    <string name="history_sign_in_required">登入後即可檢視你的收聽記錄</string>
+    <string name="library_empty">你的資料庫還是空的</string>
+    <string name="close">關閉</string>
+    <string name="checking">正在檢查…</string>
+    <string name="use_this_profile">使用此資料</string>
+    <string name="switch_profile_hint">點選頭像切換，然後使用此個人資料。</string>
+    <string name="profile_unavailable">此頁面暫無已登入的個人資料。</string>
 </resources>

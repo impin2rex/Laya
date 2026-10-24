@@ -432,4 +432,14 @@
     <string name="work_out_genres">शैलियों का पता लगाएं</string>
     <string name="your_data">आपका डेटा</string>
     <string name="youtube_music_account">YouTube Music खाता</string>
+    <string name="sign_out">साइन आउट करें</string>
+    <string name="listening_history">सुनने का इतिहास</string>
+    <string name="history_empty">अभी तक कुछ नहीं चलाया गया</string>
+    <string name="history_sign_in_required">आपने क्या सुना है, यह देखने के लिए साइन इन करें</string>
+    <string name="library_empty">आपकी लाइब्रेरी में अभी कुछ नहीं है</string>
+    <string name="close">बंद करें</string>
+    <string name="checking">जांच हो रही है…</string>
+    <string name="use_this_profile">इस प्रोफ़ाइल का उपयोग करें</string>
+    <string name="switch_profile_hint">अवतार से बदलें, फिर इस प्रोफ़ाइल का उपयोग करें।</string>
+    <string name="profile_unavailable">इस पृष्ठ पर अभी कोई साइन-इन प्रोफ़ाइल उपलब्ध नहीं है।</string>
 </resources>
