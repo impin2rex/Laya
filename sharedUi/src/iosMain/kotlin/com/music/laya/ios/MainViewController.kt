@@ -1,9 +1,5 @@
 package com.music.laya.ios
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeUIViewController
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -11,6 +7,8 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.music.laya.data.DebugLog
 import com.music.laya.data.TrackLog
 import com.music.laya.data.innertube.InnerTubeXResolver
+import com.music.laya.ui.AppUi
+import com.music.laya.ui.player.PlayerPlatform
 import okio.Path.Companion.toPath
 import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSFileManager
@@ -37,5 +35,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
         },
         poTokenProvider = null,
     )
-    return ComposeUIViewController { MaterialTheme { Surface(Modifier.fillMaxSize()) { DebugPlayerScreen(engine) } } }
+    AppUi.install(IosAppUiHost)
+    PlayerPlatform.install(IosPlayerHost)
+    return ComposeUIViewController { LayaIosApp(engine) }
 }
