@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import LayaKit
 import MediaToolbox
 
 /// Target curve shared by every item's tap. Plain pointers, no locks: the audio
@@ -11,13 +12,20 @@ enum EqualizerTuning {
     /// Mirror of Android's EqLayout: 0 bell, 1 low shelf, 2 high shelf.
     static let kinds = [1, 0, 0, 0, 0, 0, 2, 1, 0, 2]
     static let frequenciesHz: [Float] = [60, 150, 400, 1_000, 2_500, 6_000, 14_000, 250, 1_000, 4_000]
-    static var wanted = false
+    static var eqOn = false
+    /// Reverb or karaoke (IosDsp) is on.
+    static var dsp = false
+    static var skipSilence = false
+    /// Whether the player is currently racing through silence; toggled from the audio thread.
+    static var skipping = false
+    static var onSkipping: ((Bool) -> Void)?
+    static var wanted: Bool { eqOn || dsp || skipSilence }
 
     static func set(gains: [Float], qs: [Float], preampDb: Float, balance: Float) {
         for i in 0..<slots { values[i] = gains[i]; values[slots + i] = qs[i] }
         values[20] = preampDb
         values[21] = balance
-        wanted = gains.contains { abs($0) > 0.01 } || abs(balance) > 0.0005
+        eqOn = gains.contains { abs($0) > 0.01 } || abs(balance) > 0.0005
     }
 }
 
@@ -30,6 +38,11 @@ final class EqualizerTap {
     private static let glide: Float = 0.08
     private static let settledDb: Float = 0.01
     private static let maxChannels = 8
+    /// Android's silence threshold (1024 of 32768) and minimum run (1 s).
+    private static let silentLevel: Float = 0.03
+
+    private var scratch: UnsafeMutablePointer<Float>?
+    private var quietFrames = 0
 
     private var sampleRate: Float = 44_100
     private var channels = 2
@@ -50,12 +63,19 @@ final class EqualizerTap {
     private var state = [Float](repeating: 0, count: maxChannels * n * 2)
     private var channelGain = [Float](repeating: 1, count: maxChannels)
 
-    func prepare(_ format: AudioStreamBasicDescription) {
+    deinit { scratch?.deallocate() }
+
+    func prepare(_ format: AudioStreamBasicDescription, maxFrames: Int) {
         sampleRate = Float(format.mSampleRate)
         channels = min(Int(format.mChannelsPerFrame), Self.maxChannels)
         isFloat = (format.mFormatFlags & kAudioFormatFlagIsFloat) != 0 && format.mBitsPerChannel == 32
         isInterleaved = (format.mFormatFlags & kAudioFormatFlagIsNonInterleaved) == 0
         for i in state.indices { state[i] = 0 }
+        scratch?.deallocate()
+        scratch = isFloat ? .allocate(capacity: maxFrames * channels) : nil
+        if isFloat {
+            IosDsp.shared.prepare(sampleRate: Int32(format.mSampleRate), channelCount: Int32(channels), maxFrames: Int32(maxFrames))
+        }
     }
 
     private func forEachSample(_ buffers: UnsafeMutableAudioBufferListPointer, from: Int, count: Int,
@@ -77,6 +97,50 @@ final class EqualizerTap {
     }
 
     func process(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int) {
+        guard isFloat, frames > 0 else { return }
+        if EqualizerTuning.skipSilence { listen(buffers, frames: frames) }
+        // Karaoke's centre-cancel needs the untouched stereo image, so it runs before the EQ's balance (as on Android).
+        if IosDsp.shared.active { runDsp(buffers, frames: frames) }
+        equalize(buffers, frames: frames)
+    }
+
+    /// Skip silence. ponytail: AVPlayer taps can't drop frames, so a run of silence longer than a
+    /// second is played at 4x instead (speed restored when sound returns, so the first ~100 ms of
+    /// a note after a gap is sped up). A silent outro still plays out at 4x rather than being cut.
+    private func listen(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int) {
+        var peak: Float = 0
+        for b in buffers {
+            guard let d = b.mData?.assumingMemoryBound(to: Float.self) else { continue }
+            for i in 0..<frames * Int(b.mNumberChannels) { peak = max(peak, abs(d[i])) }
+        }
+        quietFrames = peak < Self.silentLevel ? quietFrames + frames : 0
+        let skipping = quietFrames > Int(sampleRate)
+        if skipping != EqualizerTuning.skipping {
+            EqualizerTuning.skipping = skipping
+            EqualizerTuning.onSkipping?(skipping)
+        }
+    }
+
+    /// Karaoke and reverb live in Kotlin (IosDsp) on interleaved samples.
+    private func runDsp(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int) {
+        let dsp = IosDsp.shared
+        if isInterleaved {
+            if let data = buffers.first?.mData?.assumingMemoryBound(to: Float.self) { dsp.process(data: data, frames: Int32(frames)) }
+            return
+        }
+        guard let scratch, buffers.count >= channels else { return }
+        for c in 0..<channels {
+            guard let src = buffers[c].mData?.assumingMemoryBound(to: Float.self) else { return }
+            for f in 0..<frames { scratch[f * channels + c] = src[f] }
+        }
+        dsp.process(data: scratch, frames: Int32(frames))
+        for c in 0..<channels {
+            let dst = buffers[c].mData!.assumingMemoryBound(to: Float.self)
+            for f in 0..<frames { dst[f] = scratch[f * channels + c] }
+        }
+    }
+
+    private func equalize(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int) {
         guard isFloat, frames > 0, sampleRate > 0 else { return }
         let target = EqualizerTuning.values
         var idle = abs(target[20]) < Self.settledDb && abs(preamp) < Self.settledDb
@@ -178,9 +242,9 @@ final class EqualizerTap {
             clientInfo: Unmanaged.passRetained(tap).toOpaque(),
             init: { _, clientInfo, storageOut in storageOut.pointee = clientInfo },
             finalize: { tap in Unmanaged<EqualizerTap>.fromOpaque(MTAudioProcessingTapGetStorage(tap)).release() },
-            prepare: { tap, _, format in
+            prepare: { tap, maxFrames, format in
                 Unmanaged<EqualizerTap>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
-                    .takeUnretainedValue().prepare(format.pointee)
+                    .takeUnretainedValue().prepare(format.pointee, maxFrames: Int(maxFrames))
             },
             unprepare: nil,
             process: { tap, frames, _, bufferList, framesOut, flagsOut in

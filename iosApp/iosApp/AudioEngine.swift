@@ -24,6 +24,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Loader per queued item; an item's loader must live as long as the item.
     private var loaders: [ObjectIdentifier: ChunkedResourceLoader] = [:]
     private var speed: Float = 1
+    /// Racing through a silent stretch (see EqualizerTap.listen).
+    private var skipping = false
     private var currentItem: AVPlayerItem?
     private var nextItem: AVPlayerItem?
 
@@ -95,6 +97,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     func play(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
         stop()
+        IosDsp.shared.reset()
+        setSkipping(false)
         guard let item = makeItem(url: url, headers: headers, mimeType: mimeType,
                                   contentLength: contentLength, chunkBytes: chunkBytes) else {
             listener?.onError(message: "Bad stream URL", httpStatus: 0)
@@ -148,6 +152,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         // instead of decoding up to an exact sample — much faster over the network.
         let tolerance = CMTime(value: 250, timescale: 1000)
         seekingToMs = positionMs
+        IosDsp.shared.reset()
         reportProgress()
         player.seek(to: time, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
             guard let self else { return }
@@ -173,13 +178,32 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Play at the chosen speed (play() alone would reset the rate to 1).
     private func go() {
         player.play()
-        player.rate = speed
+        player.rate = skipping ? speed * 4 : speed
     }
 
     func setSpeed(speed: Float) {
         self.speed = speed
-        if player.timeControlStatus != .paused { player.rate = speed }
+        applyRate()
         updateNowPlayingTiming()
+    }
+
+    private func applyRate() {
+        if player.timeControlStatus != .paused { player.rate = skipping ? speed * 4 : speed }
+    }
+
+    private func setSkipping(_ on: Bool) {
+        EqualizerTuning.skipping = on
+        guard on != skipping else { return }
+        skipping = on
+        applyRate()
+    }
+
+    func setEffects(dsp: Bool, skipSilence: Bool) {
+        EqualizerTuning.dsp = dsp
+        EqualizerTuning.skipSilence = skipSilence
+        EqualizerTuning.onSkipping = { [weak self] on in DispatchQueue.main.async { self?.setSkipping(on) } }
+        if !skipSilence { setSkipping(false) }
+        if EqualizerTuning.wanted { [currentItem, nextItem].forEach { $0.map(EqualizerTap.attach) } }
     }
 
     func setEqualizer(gainsDb: [KotlinFloat], qs: [KotlinFloat], preampDb: Float, balance: Float) {
@@ -317,6 +341,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             return
         }
         if now === nextItem {
+            IosDsp.shared.reset()
+            setSkipping(false)
             nextItem = nil
             becomeCurrent(now)
             listener?.onAdvancedToNext()

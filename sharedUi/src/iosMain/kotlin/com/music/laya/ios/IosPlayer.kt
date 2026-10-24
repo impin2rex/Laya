@@ -9,6 +9,7 @@ import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.platform.ioDispatcher
+import com.music.laya.playback.Karaoke
 import com.music.laya.playback.PlaybackPosition
 import com.music.laya.playback.EqLayout
 import com.music.laya.data.settings.EqualizerMode
@@ -21,6 +22,7 @@ import com.music.laya.ui.player.RepeatModes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -56,6 +58,12 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     init {
         engine.setListener(this)
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
+        scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
+        scope.launch { combine(Karaoke.enabled, Karaoke.level) { on, l -> on to l }.collect { (on, l) -> IosDsp.setKaraoke(on, l) } }
+        scope.launch {
+            combine(AppSettings.reverbEnabled, Karaoke.enabled, AppSettings.skipSilence) { r, k, s -> (r || k) to s }
+                .distinctUntilChanged().collect { (dsp, silence) -> engine.setEffects(dsp, silence) }
+        }
         scope.launch {
             combine(
                 AppSettings.equalizerEnabled, AppSettings.equalizerMode, AppSettings.equalizerBands,
@@ -226,6 +234,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun announce() {
+        Karaoke.trackChanged(song?.videoId) // karaoke is per song, as on Android
         song?.let { engine.setNowPlaying(it.title, it.artist, it.albumName, it.thumbnailUrl) }
         engine.setQueueCapabilities(hasNext, hasPrevious)
     }
