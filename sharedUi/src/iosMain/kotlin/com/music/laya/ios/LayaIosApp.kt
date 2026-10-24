@@ -491,6 +491,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                         // Opens the account page; Last.fm / Spotify / Discord live behind it on Android (5e).
                                         onEqualizer = { stack = stack + IosPage.Equalizer },
                                         onAccountScrobbling = { stack = stack + IosPage.Account },
+                                        onSpotifyCanvasAuth = { stack = stack + IosPage.Account },
                                     )
                                     IosPage.Spotify -> SpotifyLibraryScreen(
                                         onOpenPlaylist = { openDetail(SPOTIFY_PAGE_PREFIX + it.id, it.name, it.owner ?: "Spotify", it.imageUrl, BrowseType.PLAYLIST) },

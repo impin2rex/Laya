@@ -55,8 +55,6 @@ import org.jetbrains.compose.resources.getString
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.sharedui.resources.connected
-import com.music.laya.sharedui.resources.prioritize_spotify_canvas
-import com.music.laya.sharedui.resources.prioritize_spotify_canvas_subtitle
 import com.music.laya.sharedui.resources.sign_out
 import com.music.laya.sharedui.resources.spotify
 import com.music.laya.sharedui.resources.spotify_canvas_auto_hide
@@ -250,7 +248,6 @@ internal fun IosAccountPage(
 ) {
     val spotifyConnected = AppSettings.spotifySpdcToken.collectAsState().value.isNotBlank()
     val autoHide by AppSettings.spotifyCanvasAutoHide.collectAsState()
-    val prioritize by AppSettings.prioritizeSpotifyCanvas.collectAsState()
     @Composable
     fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) = SettingsRow(
         title = title,
@@ -273,7 +270,6 @@ internal fun IosAccountPage(
             if (spotifyConnected) {
                 HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
                 Toggle(stringResource(Res.string.spotify_canvas_auto_hide), stringResource(Res.string.spotify_canvas_auto_hide_subtitle), autoHide, AppSettings::setSpotifyCanvasAutoHide)
-                Toggle(stringResource(Res.string.prioritize_spotify_canvas), stringResource(Res.string.prioritize_spotify_canvas_subtitle), prioritize, AppSettings::setPrioritizeSpotifyCanvas)
                 HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
                 DestructiveRow(label = stringResource(Res.string.spotify_disconnect), onClick = onSpotifyDisconnect)
             }

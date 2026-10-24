@@ -45,11 +45,11 @@ internal object IosAppUiHost : AppUiHost {
 internal object IosPlayerHost : PlayerHost {
     override val settings: PlayerSettingsSource = IosPlayerSettings
 
-    override fun cachedCanvas(song: Song): CanvasArtwork? = null
-    override suspend fun canvasFor(song: Song): CanvasArtwork? = null
+    override fun cachedCanvas(song: Song): CanvasArtwork? = IosCanvas.cached(song)
+    override suspend fun canvasFor(song: Song): CanvasArtwork? = IosCanvas.canvasFor(song)
 
     @Composable
-    override fun CanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) = Unit
+    override fun CanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) = IosCanvasVideo(spec, modifier)
 
     @Composable
     override fun rememberRemoteArtworkUrl(song: Song?): String? = song?.thumbnailUrl
@@ -93,7 +93,7 @@ internal object IosPlayerHost : PlayerHost {
 }
 
 private object IosPlayerSettings : PlayerSettingsSource {
-    override val animatedCanvas = MutableStateFlow(false) // no canvas decoder on iOS
+    override val animatedCanvas get() = AppSettings.animatedCanvas // Spotify Canvas only on iOS
     override val audioQualityCellular get() = AppSettings.audioQualityCellular
     override val audioQualityWifi get() = AppSettings.audioQualityWifi
     override val canvasOverCellular get() = AppSettings.canvasOverCellular
