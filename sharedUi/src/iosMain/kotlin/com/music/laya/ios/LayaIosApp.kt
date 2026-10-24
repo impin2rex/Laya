@@ -635,7 +635,8 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onHistoryRemove = {},
                                 onHistoryClear = {},
                                 contentPadding = noPadding,
-                                topPadding = 0.dp,
+                                // Below the floating account pill, as Android leaves room for its top bar.
+                                topPadding = com.music.laya.ui.components.topBarContentPadding(),
                             )
                         }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = barHeight))
