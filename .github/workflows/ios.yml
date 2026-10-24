@@ -67,6 +67,8 @@ jobs:
       run: |
         APP=build/dd/Build/Products/Release-iphoneos/Laya.app
         find "$APP" -type d -empty -delete
+        # Embedded frameworks (ONNX Runtime) are signed before the bundle that contains them.
+        for f in "$APP"/Frameworks/*.framework; do [ -e "$f" ] && codesign --force --sign - --timestamp=none "$f"; done
         codesign --force --sign - --timestamp=none --generate-entitlement-der "$APP"
         codesign --verify --strict --verbose=2 "$APP"
 
