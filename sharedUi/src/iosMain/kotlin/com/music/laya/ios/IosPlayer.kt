@@ -15,6 +15,14 @@ import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.SmartAnalysis
+import com.music.laya.data.settings.TrackAnalysisState
+import com.music.laya.data.settings.TransitionWindow
+import com.music.laya.playback.smart.AnalysisSource
+import com.music.laya.playback.smart.AutomixAnalyzer
+import com.music.laya.playback.smart.CrossfadeMode
+import com.music.laya.playback.smart.TransitionTrackInfo
+import com.music.laya.playback.smart.planTransition
 import com.music.laya.data.sources.SourceKind
 import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.sources.SourceResolver
@@ -61,6 +69,9 @@ private const val MAX_AUTOPLAY = 10
 
 /** How long a source ranked above YouTube gets before a track starts on YouTube regardless (Android's SUBSTITUTE_TIMEOUT_MS). */
 private const val SUBSTITUTE_TIMEOUT_MS = 20_000L
+
+/** Android's DEFAULT_SMART_FALLBACK_SECONDS: the fade a pair gets before it is analysed, when the slider says Off. */
+private const val DEFAULT_SMART_FALLBACK_SECONDS = 6.0
 
 /** Tracks kept queued on the receiver after the playing one (Android CastPlayback.AHEAD), so it moves on alone with the phone asleep. */
 private const val CAST_AHEAD = 3
@@ -142,7 +153,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         scope.launch { AppSettings.spatialAudio.collect { IosDsp.setSpatial(it) } }
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
         scope.launch {
-            combine(AppSettings.crossfadeSeconds, AppSettings.repeatMode, ListenTogether.state.map { it.inParty }) { _, _, _ -> }
+            combine(AppSettings.crossfadeSeconds, AppSettings.smartFadeEnabled, AppSettings.repeatMode, ListenTogether.state.map { it.inParty }) { _, _, _, _ -> }
                 .collect { syncTransition() }
         }
         scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
@@ -180,7 +191,69 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
      */
     private fun syncTransition() {
         val off = IosCast.active || ListenTogether.state.value.inParty || sleepAfterTrack || autoNext() == index
-        engine.setTransition(-1, if (off) 0 else AppSettings.crossfadeSeconds.value * 1000L, 0, 1f)
+        when {
+            off -> engine.setTransition(-1, 0, 0, 1f, 1f)
+            AppSettings.smartFadeEnabled.value -> automix(position.positionMs)
+            else -> engine.setTransition(-1, AppSettings.crossfadeSeconds.value * 1000L, 0, 1f, 1f)
+        }
+    }
+
+    // ---- Automix (Android's CrossfadeController.considerSmartTransition, minus the filter / bass-swap rendering) ----
+
+    private val analyzer = AutomixAnalyzer(scope, CHUNK_BYTES)
+    private var lastVerdict = ""
+
+    private fun source(s: Song) = streams[s.videoId]?.let { AnalysisSource(it.url, it.headers, it.mime, it.length) }
+
+    /** "3:45" / "1:02:03" as seconds, or 0 when the row states none. */
+    private fun secondsOf(s: Song) = s.durationText?.split(':')?.mapNotNull { it.trim().toIntOrNull() }
+        ?.fold(0) { acc, part -> acc * 60 + part }?.toDouble() ?: 0.0
+
+    /**
+     * Asks for the analysis of the playing and the next track (a no-op once measured), publishes the stats line's
+     * state, and hands the engine the planner's window for this pair. The decode, the DSP and the beat model all run
+     * on the analyzer's worker; this only reads what they have finished.
+     */
+    private fun automix(positionMs: Long) {
+        val cur = song ?: return
+        val next = queue.getOrNull(autoNext())
+        val dur = durationMs.takeIf { it > 0 } ?: return
+        if (next == null || cur.isVideoOrigin || next.isVideoOrigin) {
+            AppSettings.smartTransitionWindow.value = null
+            engine.setTransition(-1, 0, 0, 1f, 1f)
+            return
+        }
+        source(cur)?.let { analyzer.request(cur.videoId, it, dur / 1000.0) }
+        source(next)?.let { analyzer.request(next.videoId, it, secondsOf(next)) }
+        val state = SmartAnalysis(analyzer.stateOf(cur.videoId), analyzer.stateOf(next.videoId))
+        if (AppSettings.smartAnalysis.value != state) AppSettings.smartAnalysis.value = state
+
+        val a = analyzer.analysisFor(cur.videoId)
+        val b = analyzer.analysisFor(next.videoId)
+        val plan = planTransition(
+            analysis = a,
+            nextAnalysis = b,
+            currentTrack = TransitionTrackInfo(cur.videoId, dur, cur.title, cur.artist),
+            nextTrack = TransitionTrackInfo(next.videoId, (secondsOf(next) * 1000).toLong(), next.title, next.artist),
+            currentTime = positionMs / 1000.0,
+            duration = dur / 1000.0,
+            fadeSeconds = AppSettings.crossfadeSeconds.value.takeIf { it > 0 }?.toDouble() ?: DEFAULT_SMART_FALLBACK_SECONDS,
+            mode = CrossfadeMode.SMART,
+            advanced = true,
+        )
+        val verdict = "${plan.reason}|${plan.transitionStyle}|start=${plan.transitionStart}|fade=${plan.fadeMs}|cue=${plan.incomingCueTime}" +
+            "|rate=${plan.incomingPlaybackRate}/${plan.outgoingPlaybackRate}|blocked=${plan.blocked}|bpm=${a.bpm}/${b.bpm}"
+        if (verdict != lastVerdict) { lastVerdict = verdict; println("Automix plan ${cur.videoId}->${next.videoId}: $verdict") }
+
+        val measured = setOf(TrackAnalysisState.ANALYSED, TrackAnalysisState.REFINING)
+        AppSettings.smartTransitionWindow.value = if (!plan.blocked && plan.markerVisible && state.current in measured && state.next in measured) {
+            TransitionWindow((plan.transitionStart * 1000.0 / dur).toFloat().coerceIn(0f, 1f), (plan.transitionEnd * 1000.0 / dur).toFloat().coerceIn(0f, 1f))
+        } else null
+        if (plan.blocked || plan.fadeMs <= 0) return engine.setTransition(-1, 0, 0, 1f, 1f)
+        engine.setTransition(
+            (plan.transitionStart * 1000).toLong(), plan.fadeMs, (plan.incomingCueTime * 1000).toLong(),
+            plan.incomingPlaybackRate.toFloat(), plan.outgoingPlaybackRate.toFloat(),
+        )
     }
 
     /** A host that holds the controls takes them from every listener: the call does nothing. */
@@ -663,6 +736,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         this.durationMs = durationMs
         this.isPlaying = isPlaying
         isLoading = isBuffering
+        if (isPlaying && AppSettings.smartFadeEnabled.value && pendingMs == null) syncTransition()
         // Position about every 5 s while playing, and straight away on pause.
         val now = NSDate().timeIntervalSinceReferenceDate.toLong()
         if (pendingMs == null && song != null && (!isPlaying || now - lastSavedAt >= 5)) { lastSavedAt = now; saveState() }

@@ -480,7 +480,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     // MARK: - Crossfade
 
-    private struct Transition { var startMs: Int64 = -1; var fadeMs: Int64 = 0; var cueMs: Int64 = 0; var rate: Float = 1 }
+    private struct Transition { var startMs: Int64 = -1; var fadeMs: Int64 = 0; var cueMs: Int64 = 0; var rate: Float = 1; var outRate: Float = 1 }
 
     /// One fade in flight. `out` is the deck the track is leaving on, `inn` the deck it arrives on.
     private final class Fade {
@@ -502,9 +502,9 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private var fade: Fade?
     private var fadeTimer: Timer?
 
-    func setTransition(startMs: Int64, fadeMs: Int64, cueMs: Int64, rate: Float) {
+    func setTransition(startMs: Int64, fadeMs: Int64, cueMs: Int64, rate: Float, outRate: Float) {
         onMain {
-            self.transition = Transition(startMs: startMs, fadeMs: max(0, fadeMs), cueMs: max(0, cueMs), rate: rate)
+            self.transition = Transition(startMs: startMs, fadeMs: max(0, fadeMs), cueMs: max(0, cueMs), rate: rate, outRate: outRate)
             self.placeNext()
         }
     }
@@ -563,8 +563,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
               player.timeControlStatus == .playing else { return }
         let duration = streamDuration(of: current)
         guard duration.isFinite, duration > 0 else { return }
-        let length = min(Double(transition.fadeMs) / 1000, duration / 3)
-        let start = transition.startMs >= 0 ? Double(transition.startMs) / 1000 : duration - length
+        // An Automix plan states its own window; a plain fade is kept to a third of the track and ends with it.
+        let planned = transition.startMs >= 0
+        let length = planned ? Double(transition.fadeMs) / 1000 : min(Double(transition.fadeMs) / 1000, duration / 3)
+        let start = planned ? Double(transition.startMs) / 1000 : duration - length
         let position = player.currentTime().seconds
         guard position >= start else { return }
         if position - start > 1 { // arrived late (a seek into the window): no fade for this pair
@@ -576,6 +578,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         let deck = idle
         deck.volume = 0
         deck.rate = speed * transition.rate
+        if transition.outRate != 1 { player.rate = speed * transition.outRate }
         fade = Fade(out: player, inn: deck, item: item, oldItem: current, start: position, length: length)
         print("Crossfade: begin out=\(position)s len=\(length)s cue=\(transition.cueMs)ms rate=\(transition.rate)")
     }

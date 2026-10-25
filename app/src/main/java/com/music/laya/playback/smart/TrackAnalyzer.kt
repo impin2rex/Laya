@@ -882,7 +882,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
      * only one of the two is a strike.
      */
     private class Structural(
-        val features: TrackFeatures.Features?,
+        val features: TrackFeatureSet?,
         val decodedShort: Boolean = false,
     )
 
@@ -1110,7 +1110,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
         val vocalMask: DoubleArray?,
         val seconds: Double,
         /** Only populated when the caller asked for it; see [region]'s `deriveFeatures`. */
-        val features: TrackFeatures.Features? = null,
+        val features: TrackFeatureSet? = null,
     )
 
     /**
@@ -1131,7 +1131,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
         openSource: () -> MediaDataSource?,
         startSeconds: Double,
         endSeconds: Double,
-        features: TrackFeatures.Features?,
+        features: TrackFeatureSet?,
         deriveFeatures: Boolean = false,
     ): Region? {
         val decoded = openSource()?.use { AudioDecoder.decodeRegionStereo(it, startSeconds, endSeconds) { stopped } }
@@ -1170,7 +1170,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
     }
 
     /** A region's model input, and its DSP features when the caller asked for them. */
-    private class RegionInputs(val forModel: FloatArray?, val derived: TrackFeatures.Features?)
+    private class RegionInputs(val forModel: FloatArray?, val derived: TrackFeatureSet?)
 
     /**
      * Reduces a decoded region to the buffers the models and the DSP actually read.
@@ -1223,7 +1223,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
      */
     private fun vocalMask(
         stereo: AudioDecoder.StereoPcm,
-        features: TrackFeatures.Features,
+        features: TrackFeatureSet,
         actualStart: Double,
     ): DoubleArray? {
         val curve = features.energyCurve

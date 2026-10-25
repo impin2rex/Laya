@@ -11,6 +11,7 @@ struct iOSApp: App {
 
     init() {
         IosKaraoke.shared.native = KaraokeNativeImpl()
+        IosAutomix.shared.native = AutomixNativeImpl()
         _ = iOSApp.castNative // statics are lazy
     }
 

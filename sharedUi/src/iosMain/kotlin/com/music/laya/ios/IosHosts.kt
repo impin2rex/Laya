@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 internal object IosSettingsHost : SettingsHost {
     override val hasEngineOptions = false // the AVPlayer engine has none of these yet
     override val hasCrossfade = true
+    override val hasAutomix = true
     override val hasLiquidGlassOption = false
     override val party = IosParty.info
     override val hasDownloads = true

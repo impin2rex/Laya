@@ -22,6 +22,11 @@ targets:
       # Neural karaoke's model, the same file Android bundles.
       - path: ../app/src/main/assets/UVR_MDXNET_9482.onnx
         buildPhase: resources
+      # Automix's beat model, and the C++ analyzer Android and the desktop compile behind JNI.
+      - path: ../app/src/main/assets/beat_this_int8.onnx
+        buildPhase: resources
+      - path: ../native/analyzer
+        includes: [audio_analysis.cpp, tempo_analysis.cpp, resampler.cpp, mel_spectrogram.cpp]
     dependencies:
       - package: onnxruntime
         product: onnxruntime
@@ -38,6 +43,11 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../sharedUi/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        SWIFT_OBJC_BRIDGING_HEADER: iosApp/iosApp-Bridging-Header.h
+        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../native"
+        CLANG_CXX_LANGUAGE_STANDARD: gnu++17
+        # The analyzer's DSP is O(n) over a whole track; -O0 would make it crawl in Debug.
+        GCC_OPTIMIZATION_LEVEL: "3"
         OTHER_LDFLAGS: "$(inherited) -framework LayaKit"
     preBuildScripts:
       - name: Compile Kotlin framework

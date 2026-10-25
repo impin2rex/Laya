@@ -59,8 +59,9 @@ private final class OrtModelRun: NSObject, KaraokeModelRun {
 }
 
 /// AVAssetReader over the same chunked stream the player reads, as 44.1 kHz interleaved stereo float.
-private final class PcmReader: NSObject, KaraokePcmSource {
-    private static let rate = 44_100.0
+final class PcmReader: NSObject, KaraokePcmSource {
+    private let rate: Double
+    private let channels: Int
     private let asset: AVURLAsset
     private let loader: ChunkedResourceLoader?
     private var reader: AVAssetReader?
@@ -70,7 +71,9 @@ private final class PcmReader: NSObject, KaraokePcmSource {
 
     let durationFrames: Int64
 
-    init?(source: URL, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
+    init?(source: URL, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64, rate: Double = 44_100, channels: Int = 2) {
+        self.rate = rate
+        self.channels = channels
         if source.isFileURL {
             asset = AVURLAsset(url: source)
             loader = nil
@@ -82,7 +85,7 @@ private final class PcmReader: NSObject, KaraokePcmSource {
             loader = l
         }
         let seconds = asset.duration.seconds
-        durationFrames = seconds.isFinite ? Int64(seconds * Self.rate) : -1
+        durationFrames = seconds.isFinite ? Int64(seconds * rate) : -1
         super.init()
         if !start(at: 0) { return nil }
     }
@@ -96,8 +99,8 @@ private final class PcmReader: NSObject, KaraokePcmSource {
         guard let track = asset.tracks(withMediaType: .audio).first, let r = try? AVAssetReader(asset: asset) else { return false }
         let o = AVAssetReaderTrackOutput(track: track, outputSettings: [
             AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: Self.rate,
-            AVNumberOfChannelsKey: 2,
+            AVSampleRateKey: rate,
+            AVNumberOfChannelsKey: channels,
             AVLinearPCMBitDepthKey: 32,
             AVLinearPCMIsFloatKey: true,
             AVLinearPCMIsBigEndianKey: false,
@@ -106,7 +109,7 @@ private final class PcmReader: NSObject, KaraokePcmSource {
         o.alwaysCopiesSampleData = false
         guard r.canAdd(o) else { return false }
         r.add(o)
-        if frame > 0 { r.timeRange = CMTimeRange(start: CMTime(seconds: Double(frame) / Self.rate, preferredTimescale: 44_100), duration: .positiveInfinity) }
+        if frame > 0 { r.timeRange = CMTimeRange(start: CMTime(seconds: Double(frame) / rate, preferredTimescale: 44_100), duration: .positiveInfinity) }
         guard r.startReading() else { return false }
         reader = r
         output = o
@@ -114,7 +117,7 @@ private final class PcmReader: NSObject, KaraokePcmSource {
     }
 
     func read(into destination: UnsafeMutableRawPointer, maxFrames: Int32) -> Int32 {
-        let want = Int(maxFrames) * 2
+        let want = Int(maxFrames) * channels
         while pending.count - pendingPos < want, let sample = output?.copyNextSampleBuffer() {
             guard let block = CMSampleBufferGetDataBuffer(sample) else { continue }
             let floats = CMBlockBufferGetDataLength(block) / MemoryLayout<Float>.size
@@ -125,10 +128,10 @@ private final class PcmReader: NSObject, KaraokePcmSource {
         }
         let have = pending.count - pendingPos
         if have == 0 { return reader?.status == .failed ? -1 : 0 }
-        let n = min(have, want) / 2 * 2
+        let n = min(have, want) / channels * channels
         pending.withUnsafeBufferPointer { destination.copyMemory(from: $0.baseAddress! + pendingPos, byteCount: n * MemoryLayout<Float>.size) }
         pendingPos += n
-        return Int32(n / 2)
+        return Int32(n / channels)
     }
 
     func seek(frame: Int64) -> Int64 { start(at: frame) ? frame : -1 }
