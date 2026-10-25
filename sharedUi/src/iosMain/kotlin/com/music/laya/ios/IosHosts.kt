@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Everything not overridden is hidden on iOS; Phase 5/6 fill in accounts, Listen Together, downloads. */
 internal object IosSettingsHost : SettingsHost {
+    override val hasEngineOptions = false // the AVPlayer engine has none of these yet
     @Composable
     override fun versionName() =
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
@@ -55,11 +56,7 @@ internal object IosPlayerHost : PlayerHost {
     @Composable
     override fun rememberRemoteArtworkUrl(song: Song?): String? = song?.thumbnailUrl
 
-    override val volume = object : SystemVolume {
-        override val level = MutableStateFlow(1f)
-        override fun set(level: Float) = Unit
-        override fun refresh() = Unit
-    }
+    override val volume = IosVolume
 
     @Composable
     override fun rememberAudioOutputs(): List<AudioOutputDevice> = emptyList()
@@ -101,7 +98,7 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val fullBleedArtwork get() = AppSettings.fullBleedArtwork
     override val hideSongStatus get() = AppSettings.hideSongStatus
     override val showQueueHistory get() = AppSettings.showQueueHistory
-    override val hideVolumeBar = MutableStateFlow(true) // no system volume bridge yet
+    override val hideVolumeBar get() = AppSettings.hideVolumeBar
     override val hideStatusBar get() = AppSettings.hideStatusBarInPlayer
     override val lastPlayerScreen get() = AppSettings.lastPlayerScreen
     override val legacyMeshGradient get() = AppSettings.legacyMeshGradient

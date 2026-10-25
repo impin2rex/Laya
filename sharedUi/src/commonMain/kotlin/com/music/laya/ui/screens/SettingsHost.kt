@@ -33,6 +33,11 @@ interface SettingsHost {
     val hasDownloads: Boolean get() = false // Phase 6
     val hasSongCache: Boolean get() = false
     val hasBackgroundService: Boolean get() = false
+    /**
+     * false hides the rows that only drive Android's playback service: streaming quality ceilings,
+     * prefer music only, loudness, crossfade / automix, don't repeat, hide status bar, version alignment.
+     */
+    val hasEngineOptions: Boolean get() = true
     val appIconRow: (@Composable () -> Unit)? get() = null
 
     @Composable fun versionName(): String = ""

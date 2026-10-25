@@ -170,6 +170,7 @@ fun SettingsScreen(
     onEditSignatureApi: (() -> Unit)? = null,
 ) {
     val host = SettingsExtras.host
+    val engineOptions = host.hasEngineOptions
 
     val wifiQuality by AppSettings.audioQualityWifi.collectAsStateWithLifecycle()
     val cellularQuality by AppSettings.audioQualityCellular.collectAsStateWithLifecycle()
@@ -360,7 +361,7 @@ fun SettingsScreen(
                 }
             }
             val onWifiTitle = stringResource(Res.string.on_wifi)
-            row(onWifiTitle, "wi-fi", "streaming quality") {
+            row(onWifiTitle, "wi-fi", "streaming quality", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.Wifi,
                     title = onWifiTitle,
@@ -370,7 +371,7 @@ fun SettingsScreen(
                 )
             }
             val onMobileDataTitle = stringResource(Res.string.on_mobile_data)
-            row(onMobileDataTitle, "cellular", "streaming quality") {
+            row(onMobileDataTitle, "cellular", "streaming quality", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.SignalCellularAlt,
                     title = onMobileDataTitle,
@@ -461,7 +462,7 @@ fun SettingsScreen(
 
         SearchableSettingsGroup(search, header = stringResource(Res.string.playback)) {
             val preferMusicOnlyTitle = stringResource(Res.string.prefer_music_only)
-            row(preferMusicOnlyTitle, "video", "audio", "music video") {
+            row(preferMusicOnlyTitle, "video", "audio", "music video", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.SmartDisplay,
                     title = preferMusicOnlyTitle,
@@ -505,7 +506,7 @@ fun SettingsScreen(
                 }
             }
             val loudnessTitle = stringResource(Res.string.loudness_normalization)
-            row(loudnessTitle, "loudness", "volume", "normalize", "replaygain", "lufs") {
+            row(loudnessTitle, "loudness", "volume", "normalize", "replaygain", "lufs", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.AutoMirrored.Rounded.VolumeUp,
                     title = loudnessTitle,
@@ -524,7 +525,7 @@ fun SettingsScreen(
                 )
             }
             val loudnessSpeakerTitle = stringResource(Res.string.loudness_off_on_speaker)
-            row(loudnessSpeakerTitle, "loudness", "speaker", "normalize") {
+            row(loudnessSpeakerTitle, "loudness", "speaker", "normalize", available = engineOptions) {
                 SettingsSubRow(
                     title = loudnessSpeakerTitle,
                     checked = loudnessOffOnSpeaker,
@@ -536,7 +537,7 @@ fun SettingsScreen(
             // than needing it set to anything first.
             if (!smartFade) {
                 val crossfadeTitle = stringResource(Res.string.crossfade)
-                row(crossfadeTitle, "fade", "gapless") {
+                row(crossfadeTitle, "fade", "gapless", available = engineOptions) {
                     SliderRow(
                         icon = Icons.Rounded.Waves,
                         title = crossfadeTitle,
@@ -550,7 +551,7 @@ fun SettingsScreen(
                 }
             }
             val automixTitle = stringResource(Res.string.automix)
-            row(automixTitle, "crossfade", "smart fade", "mix") {
+            row(automixTitle, "crossfade", "smart fade", "mix", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.AutoAwesome,
                     title = automixTitle,
@@ -573,7 +574,7 @@ fun SettingsScreen(
                 )
             }
             val automixPerformanceTitle = stringResource(Res.string.automix_performance)
-            row(automixPerformanceTitle, "cpu", "battery") {
+            row(automixPerformanceTitle, "cpu", "battery", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.Tune,
                     title = automixPerformanceTitle,
@@ -1271,7 +1272,7 @@ fun SettingsScreen(
                 )
             }
             val dontRepeatSongsTitle = stringResource(Res.string.dont_repeat_songs)
-            row(dontRepeatSongsTitle, "radio", "suggestions") {
+            row(dontRepeatSongsTitle, "radio", "suggestions", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.History,
                     title = dontRepeatSongsTitle,
@@ -1330,7 +1331,7 @@ fun SettingsScreen(
                 )
             }
             val hideStatusBarTitle = stringResource(Res.string.hide_status_bar_in_player)
-            row(hideStatusBarTitle, "status bar", "immersive", "fullscreen", "player") {
+            row(hideStatusBarTitle, "status bar", "immersive", "fullscreen", "player", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.WebAssetOff,
                     title = hideStatusBarTitle,
@@ -1402,7 +1403,7 @@ fun SettingsScreen(
 
         SearchableSettingsGroup(search, header = stringResource(Res.string.advanced_options)) {
             val smartAlignmentTitle = stringResource(Res.string.smart_version_alignment)
-            row(smartAlignmentTitle, "alignment", "sync", "waveform", "video", "audio", "skit", "intro") {
+            row(smartAlignmentTitle, "alignment", "sync", "waveform", "video", "audio", "skit", "intro", available = engineOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.GraphicEq,
                     title = smartAlignmentTitle,
@@ -2081,8 +2082,11 @@ private class SettingsGroupScope(
     fun row(
         vararg keywords: String?,
         divided: Boolean = true,
+        /** false drops the row entirely: it drives something this platform's player doesn't have. */
+        available: Boolean = true,
         content: @Composable () -> Unit,
     ) {
+        if (!available) return
         // The header counts for every row beneath it: searching "playback"
         // should turn up the playback group entire, not nothing at all.
         if (search.matches(header, *keywords)) entries += Entry(divided, content)
