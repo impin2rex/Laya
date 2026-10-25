@@ -3,11 +3,14 @@ package com.music.laya.data.stats
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.durationMillis
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.ioDispatcher
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
 
 /**
@@ -43,6 +46,8 @@ import kotlin.math.min
  */
 object ListeningRecorder {
 
+    private val lock = SynchronizedObject()
+
     private var currentId: String? = null
     private var lastSampleAt: Long = 0L
     private var playedThisTrack: Long = 0L
@@ -56,9 +61,8 @@ object ListeningRecorder {
      * runtime stands in until it does, and a track with neither simply has to
      * clear the thirty-second floor to count as a play.
      */
-    @Synchronized
-    fun onSample(song: Song, durationMs: Long) {
-        val now = System.currentTimeMillis()
+    fun onSample(song: Song, durationMs: Long) = synchronized(lock) {
+        val now = currentTimeMillis()
         if (song.videoId != currentId) {
             // A new track anchors the clock and contributes nothing yet — see
             // the class note on undercounting.
@@ -66,11 +70,11 @@ object ListeningRecorder {
             lastSampleAt = now
             playedThisTrack = 0L
             playCounted = false
-            return
+            return@synchronized
         }
         val step = (now - lastSampleAt).coerceIn(0L, MAX_STEP_MS)
         lastSampleAt = now
-        if (step <= 0L) return
+        if (step <= 0L) return@synchronized
         playedThisTrack += step
 
         val length = durationMs.takeIf { it > 0 } ?: song.durationMillis()
@@ -97,12 +101,13 @@ object ListeningRecorder {
      * than contribute: without it, a player paused for an afternoon would hand
      * [MAX_STEP_MS] of listening to whatever was on screen when it resumed.
      */
-    @Synchronized
     fun onStopped() {
-        currentId = null
-        playedThisTrack = 0L
-        playCounted = false
-        samplesSinceFlush = 0
+        synchronized(lock) {
+            currentId = null
+            playedThisTrack = 0L
+            playCounted = false
+            samplesSinceFlush = 0
+        }
         ListeningStats.flush()
     }
 
@@ -127,12 +132,12 @@ object ListeningRecorder {
      * One request per track, kept for the life of the process, and the answer is
      * cached a second time by the repository itself.
      */
-    private val extras = ConcurrentHashMap<String, Song>()
+    private val extras = ConcurrentMap<String, Song>()
 
     /** Ids already sent for, so a track on repeat is asked about once. */
-    private val asked = ConcurrentHashMap.newKeySet<String>()
+    private val asked = ConcurrentMap<String, Boolean>()
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     /**
      * [song] with whatever the lookup has found so far.
@@ -155,7 +160,7 @@ object ListeningRecorder {
         // source-module track both carry ids this endpoint has never heard of,
         // and asking would be a failed request per play, forever.
         if (song.localUri != null || song.videoId.length != YOUTUBE_ID_LENGTH) return song
-        if (asked.add(song.videoId)) {
+        if (asked.put(song.videoId, true) == null) {
             scope.launch {
                 YtMusicRepository.trackLinks(song.videoId).getOrNull()?.let {
                     extras[song.videoId] = it

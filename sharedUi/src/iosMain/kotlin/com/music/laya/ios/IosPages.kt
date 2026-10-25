@@ -107,6 +107,7 @@ internal sealed interface IosPage {
     data object Equalizer : IosPage
     data object Sources : IosPage
     data object ListenTogether : IosPage
+    data object Replay : IosPage
     class History(val songs: UiState<List<Song>>) : IosPage
     class ShowAll(val shelf: HomeShelf) : IosPage
 }
@@ -283,10 +284,13 @@ private fun DownloadRow(song: Song) {
 }
 
 /** The system share sheet, presented from whatever view controller is on top. */
-internal fun shareText(text: String) {
+internal fun shareText(text: String) = presentShare(listOf(text))
+
+/** [shareText] for anything the system can send: strings, file URLs (pictures). */
+internal fun presentShare(items: List<Any>) {
     var top = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return
     while (true) top = top.presentedViewController ?: break
-    top.presentViewController(UIActivityViewController(listOf(text), null), true, null)
+    top.presentViewController(UIActivityViewController(items, null), true, null)
 }
 
 /** Who is signed in, with the way out, and the Spotify connection. ponytail: no channel switcher (single account). */

@@ -1,16 +1,14 @@
 package com.music.laya.data.stats
 
-import android.content.Context
-import android.net.Uri
-import android.util.Log
-import com.music.laya.BuildConfig
-import com.music.laya.data.Http
+import com.music.laya.data.DebugLog
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.model.SearchFilter
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -18,16 +16,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Locale
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.Request
-import java.io.File
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import okio.FileSystem
+import okio.Path
 
 /**
  * What the Replay knows about an artist beyond their name: their picture, their
@@ -74,19 +69,27 @@ import java.util.concurrent.TimeUnit
  */
 object ArtistFacts {
 
-    private lateinit var file: File
+    private lateinit var file: Path
+
+    private val fs get() = FileSystem.SYSTEM
+
+    /**
+     * Fetches Last.fm's `artist.gettoptags` body for a name; null when the build has no
+     * Last.fm key (iOS), which is also what keeps the genre chart off there.
+     */
+    var genreTagsFetcher: (suspend (String) -> String?)? = null
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     /** artist (lowercased) → what is known about them. */
-    private val known = ConcurrentHashMap<String, StoredArtist>()
+    private val known = ConcurrentMap<String, StoredArtist>()
 
     /** Names already queued this session, so a track on repeat asks once. */
-    private val queued = ConcurrentHashMap.newKeySet<String>()
+    private val queued = ConcurrentMap<String, Boolean>()
 
     private val requests = Channel<String>(Channel.UNLIMITED)
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     private var dirty = false
 
@@ -101,8 +104,9 @@ object ArtistFacts {
     private val _revision = MutableStateFlow(0)
     val revision: StateFlow<Int> = _revision.asStateFlow()
 
-    fun init(context: Context) {
-        file = File(context.filesDir, FILE_NAME)
+    /** [file] is `artist_facts.json` under the app's files directory. */
+    fun init(file: Path) {
+        this.file = file
         scope.launch {
             load()
             worker()
@@ -123,7 +127,7 @@ object ArtistFacts {
 
     /** Whether a genre chart can be drawn at all on this build and these settings. */
     val genresAvailable: Boolean
-        get() = AppSettings.replayGenres.value && BuildConfig.LASTFM_API_KEY.isNotBlank()
+        get() = AppSettings.replayGenres.value && genreTagsFetcher != null
 
     // ── Reading ─────────────────────────────────────────────────────────────
     //
@@ -156,7 +160,7 @@ object ArtistFacts {
         if (key.isEmpty() || key.length > MAX_NAME_LENGTH) return
         val entry = known[key]
         if (entry != null && !entry.wants()) return
-        if (!queued.add(key)) return
+        if (queued.put(key, true) != null) return
         requests.trySend(artist.trim())
     }
 
@@ -166,9 +170,9 @@ object ArtistFacts {
         // asked about on every play forever. It expires, because the reason for
         // a miss is as often a dropped connection as an unknown artist.
         val wantsCard = browseId == null &&
-            System.currentTimeMillis() - cardAt > TimeUnit.DAYS.toMillis(RETRY_DAYS)
+            currentTimeMillis() - cardAt > RETRY_DAYS * 86_400_000L
         val wantsGenres = genresAvailable && genres.isEmpty() &&
-            System.currentTimeMillis() - genresAt > TimeUnit.DAYS.toMillis(RETRY_DAYS)
+            currentTimeMillis() - genresAt > RETRY_DAYS * 86_400_000L
         return wantsCard || wantsGenres
     }
 
@@ -187,11 +191,11 @@ object ArtistFacts {
             val existing = known[key(name)]
             if (existing?.browseId == null) {
                 runCatching { fetchCard(name) }
-                    .onFailure { Log.w(TAG, "Artist lookup failed for $name", it) }
+                    .onFailure { DebugLog.w(TAG, "Artist lookup failed for $name", it) }
             }
             if (genresAvailable && existing?.genres.isNullOrEmpty()) {
                 runCatching { fetchGenres(name) }
-                    .onFailure { Log.w(TAG, "Genre lookup failed for $name", it) }
+                    .onFailure { DebugLog.w(TAG, "Genre lookup failed for $name", it) }
             }
             // Published straight away so an open Replay picks the answer up;
             // the disk copy follows on its own timer, above.
@@ -223,21 +227,13 @@ object ArtistFacts {
                 ?: entry.image,
             browseId = hit?.browseId?.takeIf { hit.title.equals(name, ignoreCase = true) }
                 ?: entry.browseId,
-            cardAt = System.currentTimeMillis(),
+            cardAt = currentTimeMillis(),
         )
         dirty = true
     }
 
-    private fun fetchGenres(name: String) {
-        val url = "https://ws.audioscrobbler.com/2.0/?method=artist.gettoptags" +
-            "&artist=${Uri.encode(name)}" +
-            "&api_key=${Uri.encode(BuildConfig.LASTFM_API_KEY)}" +
-            "&autocorrect=1&format=json"
-        val request = Request.Builder().url(url).header("User-Agent", USER_AGENT).build()
-        val body = Http.client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return
-            response.body.string()
-        }
+    private suspend fun fetchGenres(name: String) {
+        val body = genreTagsFetcher?.invoke(name) ?: return
 
         val tags = runCatching {
             Json.parseToJsonElement(body).jsonObject["toptags"]
@@ -252,7 +248,7 @@ object ArtistFacts {
             .toList()
 
         val entry = known[key(name)] ?: StoredArtist(key = key(name))
-        known[key(name)] = entry.copy(genres = genres, genresAt = System.currentTimeMillis())
+        known[key(name)] = entry.copy(genres = genres, genresAt = currentTimeMillis())
         dirty = true
     }
 
@@ -265,7 +261,7 @@ object ArtistFacts {
      * admitting "seen live", just less obvious on the page.
      */
     private fun canonical(tag: String): String? {
-        val cleaned = tag.trim().lowercase(Locale.ROOT)
+        val cleaned = tag.trim().lowercase()
             .replace('-', ' ')
             .replace("&", "and")
             .replace(Regex("[^a-z0-9 ]"), "")
@@ -275,19 +271,19 @@ object ArtistFacts {
         return VOCABULARY[cleaned] ?: VOCABULARY[ALIASES[cleaned] ?: return null]
     }
 
-    private fun key(artist: String): String = artist.trim().lowercase(Locale.ROOT)
+    private fun key(artist: String): String = artist.trim().lowercase()
 
     // ── Persistence ─────────────────────────────────────────────────────────
 
     private fun load() {
-        if (!ready || !file.exists()) return
+        if (!ready || !fs.exists(file)) return
         runCatching {
-            json.decodeFromString(Stored.serializer(), file.readText())
+            json.decodeFromString(Stored.serializer(), fs.read(file) { readUtf8() })
         }.onSuccess { stored ->
             stored.artists.forEach { known[it.key] = it }
         }.onFailure {
-            Log.w(TAG, "Discarding unreadable artist cache", it)
-            file.delete()
+            DebugLog.w(TAG, "Discarding unreadable artist cache", it)
+            fs.delete(file)
         }
     }
 
@@ -300,8 +296,9 @@ object ArtistFacts {
                     .sortedByDescending { maxOf(it.cardAt, it.genresAt) }
                     .take(MAX_ARTISTS),
             )
-            file.writeText(json.encodeToString(Stored.serializer(), stored))
-        }.onFailure { Log.w(TAG, "Could not write artist cache", it) }
+            file.parent?.let { fs.createDirectories(it) }
+            fs.write(file) { writeUtf8(json.encodeToString(Stored.serializer(), stored)) }
+        }.onFailure { DebugLog.w(TAG, "Could not write artist cache", it) }
     }
 
     @Serializable
@@ -318,8 +315,7 @@ object ArtistFacts {
     )
 
     private const val TAG = "LayaArtists"
-    private const val FILE_NAME = "artist_facts.json"
-    private const val USER_AGENT = "Laya/${BuildConfig.VERSION_NAME}"
+    const val FILE_NAME ="artist_facts.json"
     private const val MAX_NAME_LENGTH = 120
     private const val MAX_GENRES_PER_ARTIST = 2
     private const val MAX_ARTISTS = 4_000
@@ -380,7 +376,7 @@ object ArtistFacts {
         "cloud rap", "conscious hip hop", "west coast rap", "east coast rap",
     ).associateWith { normalised ->
         SPELLINGS[normalised] ?: normalised.split(" ").joinToString(" ") { word ->
-            word.replaceFirstChar { it.uppercase(Locale.ROOT) }
+            word.replaceFirstChar { it.uppercase() }
         }
     }
 

@@ -84,6 +84,12 @@ internal object IosPlayerHost : PlayerHost {
     @Composable
     override fun CastDialog(hazeState: HazeState, onDismiss: () -> Unit) = IosCastDialog(hazeState, onDismiss)
 
+    override val lyricsShareAvailable: Boolean get() = true
+
+    @Composable
+    override fun LyricsShareSheet(hazeState: HazeState, request: com.music.laya.ui.player.LyricsShareRequest, onDismiss: () -> Unit) =
+        com.music.laya.ui.player.LyricsShareSheetContent(hazeState, request, onDismiss)
+
     override suspend fun translateLyrics(trackId: String, lines: List<LyricLine>, targetLanguageTag: String) =
         when (val result = LyricsTranslation.translate(trackId, lines, targetLanguageTag)) {
             is LyricsTranslation.Result.Translated -> LyricsTranslationResult.Translated(result.lines)

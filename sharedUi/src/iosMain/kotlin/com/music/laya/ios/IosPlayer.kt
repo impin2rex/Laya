@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import com.music.laya.data.NerdStats
 import com.music.laya.data.TelemetryProvenance
 import com.music.laya.data.TrackLog
+import com.music.laya.data.stats.ListeningRecorder
+import com.music.laya.platform.currentTimeMillis
 import io.ktor.http.Url
 import com.music.laya.data.listentogether.PartyTrack
 import com.music.laya.data.listentogether.ListenTogether
@@ -597,6 +599,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     private fun start(i: Int, fromMs: Long = 0) {
         val song = queue.getOrNull(i) ?: return
+        ListeningRecorder.onStopped() // as PlaybackService on a transition: repeat-one's second pass must not continue the first
         index = i
         NerdStats.onTrackTransition(song.videoId)
         TrackLog.onTrackStarted(song.videoId)
@@ -769,10 +772,25 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         this.durationMs = durationMs
         this.isPlaying = isPlaying
         isLoading = isBuffering
+        recordListening(isPlaying, durationMs)
         if (isPlaying && AppSettings.smartFadeEnabled.value && pendingMs == null) syncTransition()
         // Position about every 5 s while playing, and straight away on pause.
         val now = NSDate().timeIntervalSinceReferenceDate.toLong()
         if (pendingMs == null && song != null && (!isPlaying || now - lastSavedAt >= 5)) { lastSavedAt = now; saveState() }
+    }
+
+    private var lastListenTickAt = 0L
+
+    /** PlaybackService's sampler: a tick every PROGRESS_SAMPLE_MS while audio plays, and a stop the moment it does not. */
+    private fun recordListening(playing: Boolean, durationMs: Long) {
+        val now = currentTimeMillis()
+        if (!playing) {
+            if (lastListenTickAt != 0L) { lastListenTickAt = 0L; ListeningRecorder.onStopped() }
+            return
+        }
+        if (now - lastListenTickAt < LISTEN_SAMPLE_MS) return
+        lastListenTickAt = now
+        song?.let { ListeningRecorder.onSample(it, durationMs) }
     }
 
     override fun onAudioFormat(mimeType: String?, sampleRateHz: Int, channels: Int, bitDepth: Int, bitrateKbps: Int) {
@@ -810,6 +828,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     override fun onAdvancedToNext() {
         if (IosCast.active) return
+        ListeningRecorder.onStopped()
         index = preloaded
         if (sleepAfterTrack) { cancelSleep(); engine.pause() }
         NerdStats.onTrackTransition(song?.videoId)
@@ -879,6 +898,9 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 }
 
 /** The member a party's AutoPlay queue comes from: the host, else the lowest id among those connected. */
+/** PlaybackService.PROGRESS_SAMPLE_MS: the listening record is fed on this beat. */
+private const val LISTEN_SAMPLE_MS = 5_000L
+
 private fun partyAutoplaySupplier(party: ListenTogether.State): String? {
     val host = party.members.firstOrNull { it.isHost && it.connected }?.memberId
     if (party.hostOnlyControl) return host

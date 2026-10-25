@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -131,6 +132,15 @@ import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.LibraryGridPage
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.music.laya.ui.screens.LibraryScreen
+import com.music.laya.ui.replay.cmp.LibraryReplayEntry
+import com.music.laya.ui.replay.cmp.ReplayScreen
+import com.music.laya.ui.replay.cmp.ReplayShareSheet
+import com.music.laya.ui.replay.cmp.ReplayStories
+import com.music.laya.ui.replay.cmp.ReplayStoryPage
+import com.music.laya.ui.replay.cmp.cards
+import com.music.laya.ui.replay.cmp.rememberReplayState
+import com.music.laya.ui.share.LocalImageSharer
+import com.music.laya.data.stats.ReplayPeriod
 import com.music.laya.ui.screens.LibraryLink
 import com.music.laya.ui.screens.SPOTIFY_BROWSE_ID
 import com.music.laya.ui.screens.SpotifyLibraryScreen
@@ -353,6 +363,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     var infoTarget by remember { mutableStateOf<Song?>(null) }
     var sleepPicker by remember { mutableStateOf(false) }
     var testSheet by remember { mutableStateOf<String?>(null) } // only set by the LAYA_OPEN=player-output|pipeline hook
+    // Replay (Android's MainActivity): the page is a route, the stories and the share sheet draw over everything.
+    var replayLandingPage by remember { mutableStateOf(ReplayStoryPage.INTRO) }
+    var replayStory by remember { mutableStateOf<ReplayStoryPage?>(null) }
+    var showReplayShare by remember { mutableStateOf(false) }
+    var replaySharePage by remember { mutableStateOf<ReplayStoryPage?>(null) }
     // A track's own rating comes from its menu data; the playing track and the long-pressed one are looked up.
     LaunchedEffect(player.song?.videoId, signedIn) {
         val id = player.song?.videoId ?: return@LaunchedEffect
@@ -609,6 +624,14 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
 
+    val replayOpen = stack.lastOrNull() === IosPage.Replay || replayStory != null || showReplayShare || (tab == 2 && stack.isEmpty())
+    val (replay, setReplayPeriod) = rememberReplayState(replayOpen)
+    val replayCards = remember(replay.summary) { replay.summary?.takeUnless { it.isEmpty }?.cards().orEmpty() }
+    // Debug only: SIMCTL_CHILD_LAYA_SEED_PLAYS=1 fills the listening record with fake plays (never set in normal use).
+    LaunchedEffect(Unit) {
+        if (NSProcessInfo.processInfo.environment["LAYA_SEED_PLAYS"] != null) seedFakePlays()
+    }
+
     // Test hook: SIMCTL_CHILD_LAYA_OPEN=player | settings | search | artist:<name> opens that screen.
     LaunchedEffect(Unit) {
         val what = NSProcessInfo.processInfo.environment["LAYA_OPEN"] as? String ?: return@LaunchedEffect
@@ -616,18 +639,35 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             what == "player" -> { kotlinx.coroutines.delay(12_000); nowPlayingOpen = true }
             // player-menu | player-sleep | player-info | player-output | player-pipeline: the player with that sheet raised.
             what.startsWith("player-") -> {
-                kotlinx.coroutines.delay(12_000); if (!what.endsWith("output") && !what.endsWith("pipeline")) nowPlayingOpen = true; kotlinx.coroutines.delay(2_000)
+                kotlinx.coroutines.delay(12_000); if (!what.endsWith("output") && !what.endsWith("pipeline") && !what.endsWith("share")) nowPlayingOpen = true; kotlinx.coroutines.delay(2_000)
                 when (what.removePrefix("player-")) {
                     "menu" -> menuSong = player.song
                     "sleep" -> sleepPicker = true
                     "info" -> infoTarget = player.song
                     "output" -> testSheet = "output"
                     "pipeline" -> testSheet = "pipeline"
+                    "share" -> testSheet = "lyrics"
                 }
             }
             what == "settings" -> stack = stack + IosPage.Settings
+            // replay | replay:weekly|monthly|yearly|lifetime | replay-story:<PAGE> | replay-share[:<PAGE>]
+            what.startsWith("replay") -> {
+                val arg = what.substringAfter(':', "")
+                if (what.startsWith("replay:")) {
+                    kotlinx.coroutines.delay(1_000)
+                    setReplayPeriod(when (arg) { "weekly" -> ReplayPeriod.THIS_WEEK; "monthly" -> ReplayPeriod.THIS_MONTH; "lifetime" -> ReplayPeriod.ALL_TIME; else -> ReplayPeriod.THIS_YEAR })
+                }
+                stack = stack + IosPage.Replay
+                if (what.startsWith("replay-")) {
+                    kotlinx.coroutines.delay(3_000)
+                    val page = ReplayStoryPage.entries.firstOrNull { it.name.equals(arg, true) }
+                    if (what.startsWith("replay-story")) replayStory = page ?: ReplayStoryPage.INTRO
+                    else { replaySharePage = page; showReplayShare = true }
+                }
+            }
             what == "downloads" -> stack = stack + IosPage.Detail(IosDownloads.page())
             what == "search" -> tab = 3
+            what == "library" -> tab = 2
             what == "sources" -> stack = stack + IosPage.Sources
             what == "party" -> stack = stack + IosPage.ListenTogether
             what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
@@ -659,7 +699,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         // The glass samples this layer; opaque like Android's, so it has something to blur.
         val windowBackground = MaterialTheme.colorScheme.background
         val appBackdrop = rememberLayerBackdrop(onDraw = remember(windowBackground) { { drawRect(windowBackground); drawContent() } })
-        CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop) {
+        CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     val noPadding = PaddingValues(bottom = barHeight)
@@ -717,6 +757,28 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         onRetry = { stack = stack.dropLast(1); openMood(top.item) },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
+                                    IosPage.Replay -> ReplayScreen(
+                                        state = replay,
+                                        holder = account?.name.orEmpty(),
+                                        onPeriodChange = setReplayPeriod,
+                                        onOpenStory = { replayStory = it },
+                                        // Android starts a station off the tapped track; AutoPlay carries on as the radio here.
+                                        onPlaySong = { player.play(listOf(it), 0) },
+                                        onOpenArtist = { id, name ->
+                                            if (id != null) openDetail(id, name, "Artist", null, BrowseType.ARTIST)
+                                            else scope.launch {
+                                                YtMusicRepository.search(name, SearchFilter.ARTISTS).getOrNull()
+                                                    ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
+                                                    ?.let { openDetail(it.browseId, it.title, it.subtitle, it.thumbnailUrl, it.type) }
+                                            }
+                                        },
+                                        onOpenAlbum = { id, title, artist, art ->
+                                            if (id != null) openDetail(id, title, artist.orEmpty(), art, BrowseType.ALBUM)
+                                        },
+                                        onShare = { replaySharePage = null; showReplayShare = true },
+                                        contentPadding = PaddingValues(top = 8.dp, bottom = barHeight),
+                                        landingPage = replayLandingPage,
+                                    )
                                     IosPage.Settings -> SettingsScreen(
                                         windowWidth = this@BoxWithConstraints.maxWidth,
                                         signedIn = signedIn,
@@ -726,6 +788,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                         // Opens the account page; Last.fm / Spotify / Discord live behind it on Android (5e).
                                         onEqualizer = { stack = stack + IosPage.Equalizer },
+                                        onOpenReplay = { replayLandingPage = ReplayStoryPage.INTRO; stack = stack + IosPage.Replay },
                                         onSources = { stack = stack + IosPage.Sources },
                                         onListenTogether = { stack = stack + IosPage.ListenTogether },
                                         onAccountScrobbling = { stack = stack + IosPage.Account },
@@ -834,7 +897,15 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 onShelfItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onNewPlaylist = {},
                                 onShowAll = { stack = stack + IosPage.ShowAll(it) },
-                                replay = {},
+                                replay = {
+                                    LibraryReplayEntry(
+                                        cards = replayCards,
+                                        loading = replay.loading,
+                                        holder = account?.name.orEmpty(),
+                                        memberSince = replay.memberSince,
+                                        onOpenReplay = { page -> replayLandingPage = page; stack = stack + IosPage.Replay },
+                                    )
+                                },
                                 onSignIn = { showLogin = true },
                                 onRetry = { scope.launch { library = UiState.Loading; loadLibrary() } },
                                 refreshing = libraryRefreshing,
@@ -1052,7 +1123,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     if (sleepPicker) IosSleepTimerDialog(player, onDismiss = { sleepPicker = false })
                     testSheet?.let { which ->
                         val haze = remember { dev.chrisbanes.haze.HazeState() }
-                        if (which == "output") com.music.laya.ui.player.AudioOutputSheet(haze, null, { testSheet = null }, { testSheet = "pipeline" }, {})
+                        if (which == "lyrics") com.music.laya.ui.player.LyricsShareSheetContent(haze, request = com.music.laya.ui.player.LyricsShareRequest(
+                            song = Song(videoId = "dQw4w9WgXcQ", title = "Never Gonna Give You Up", artist = "Rick Astley", thumbnailUrl = null, fromAutoplay = false),
+                            artworkUrl = "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+                            lines = listOf(
+                                com.music.laya.ui.player.LyricsShareLine("Never gonna give you up", null),
+                                com.music.laya.ui.player.LyricsShareLine("Never gonna let you down", "Nunca te voy a abandonar"),
+                                com.music.laya.ui.player.LyricsShareLine("", null, isGap = true),
+                                com.music.laya.ui.player.LyricsShareLine("Never gonna run around and desert you", null),
+                            ),
+                        ), onDismiss = { testSheet = null })
+                        else if (which == "output") com.music.laya.ui.player.AudioOutputSheet(haze, null, { testSheet = null }, { testSheet = "pipeline" }, {})
                         else IosAudioPipeline(haze) { testSheet = null }
                     }
 
@@ -1167,6 +1248,35 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         )
                                     }
                                 }
+                            }
+                        }
+                    }
+                    // Replay's stories cover the window (over the player too); the share sheet rises over them.
+                    replayStory?.let { start ->
+                        replay.summary?.takeUnless { it.isEmpty }?.let { summary ->
+                            ReplayStories(
+                                summary = summary,
+                                start = start,
+                                onClose = { replayStory = null },
+                                onShare = { card -> replaySharePage = card; showReplayShare = true },
+                                paused = showReplayShare,
+                            )
+                        }
+                    }
+                    if (showReplayShare) {
+                        replay.summary?.takeUnless { it.isEmpty }?.let { summary ->
+                            ModalBottomSheet(
+                                onDismissRequest = { showReplayShare = false },
+                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                                containerColor = MaterialTheme.colorScheme.background,
+                            ) {
+                                ReplayShareSheet(
+                                    summary = summary,
+                                    holder = account?.name.orEmpty(),
+                                    memberSince = replay.memberSince,
+                                    page = replaySharePage,
+                                    onDismiss = { showReplayShare = false },
+                                )
                             }
                         }
                     }
