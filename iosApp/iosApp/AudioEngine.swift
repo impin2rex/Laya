@@ -593,8 +593,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             idle.seek(to: CMTime(value: transition.cueMs, timescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] done in
                 // Ready to sound the moment the blend asks: starting a cold deck costs a couple of hundred ms of phase.
                 DispatchQueue.main.async {
-                    guard done, let self, self.parked else { return }
-                    self.idle.preroll(atRate: self.speed * self.transition.rate) { _ in }
+                    // preroll throws (and the app aborts) unless the player is ready and stopped; by now the blend
+                    // may have started, the decks swapped, or the item still be loading.
+                    guard done, let self, self.parked, self.fade == nil else { return }
+                    let deck = self.idle
+                    guard deck.status == .readyToPlay, deck.currentItem?.status == .readyToPlay, deck.rate == 0 else { return }
+                    deck.preroll(atRate: self.speed * self.transition.rate) { _ in }
                 }
             }
         }
@@ -651,13 +655,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         let deck = idle
         let inSpeed = speed * transition.rate
         let outSpeed = speed * transition.outRate
-        if item.status == .readyToPlay {
-            // Start the incoming deck at a host time, at the point of its track that the outgoing one's position implies
-            // (Android's cue is met as the fade starts; a deck started with a plain rate sounds ~200 ms late).
-            let lead = 0.12
-            let host = CACurrentMediaTime()
-            let ratio = Double(transition.rate / transition.outRate)
-            let at = Double(transition.cueMs) / 1000 + max(0, position + lead * Double(outSpeed) - start) * ratio
+        // Start the incoming deck at a host time, at the point of its track that the outgoing one's position implies
+        // (Android's cue is met as the fade starts; a deck started with a plain rate sounds ~200 ms late).
+        let lead = 0.12
+        let host = CACurrentMediaTime()
+        let ratio = Double(transition.rate / transition.outRate)
+        let at = Double(transition.cueMs) / 1000 + max(0, position + lead * Double(outSpeed) - start) * ratio
+        // setRate(_:time:atHostTime:) throws unless the player is ready; a plain start is the safe fallback.
+        if item.status == .readyToPlay, deck.status == .readyToPlay, at.isFinite {
             deck.automaticallyWaitsToMinimizeStalling = false
             deck.setRate(inSpeed, time: CMTime(seconds: at, preferredTimescale: 1000),
                          atHostTime: CMTime(seconds: host + lead, preferredTimescale: 1000))
