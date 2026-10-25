@@ -118,6 +118,7 @@ internal fun AudioOutputSheet(
                     onSelect = { PlayerPlatform.host.selectAudioOutput(device.id) },
                 )
             }
+            if (PlayerPlatform.host.hasRoutePicker) RoutePickerRow()
             // One more place to send the music, listed with the others. The
             // receivers behind it are chosen in a popup of their own — there
             // can be any number of them, and they come and go while it is open.
@@ -137,6 +138,44 @@ internal fun AudioOutputSheet(
 
         Spacer(Modifier.height(6.dp))
         AudioPipelineRow(onClick = onOpenPipeline)
+    }
+}
+
+/** iOS: the row that stands for every idle Bluetooth / AirPlay output. The platform's real route picker sits invisibly over it, so the tap goes straight to the system control. */
+@Composable
+private fun RoutePickerRow() {
+    Box(Modifier.fillMaxWidth().clip(ROW_SHAPE).background(Color.White.copy(alpha = 0.05f))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Rounded.Bluetooth, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(21.dp))
+            }
+            Spacer(Modifier.width(13.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.audio_output_bluetooth_airplay),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(Res.string.audio_output_bluetooth_airplay_subtitle),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.55f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Color.White.copy(alpha = 0.35f), modifier = Modifier.size(20.dp))
+        }
+        PlayerPlatform.host.RoutePickerOverlay(Modifier.matchParentSize())
     }
 }
 

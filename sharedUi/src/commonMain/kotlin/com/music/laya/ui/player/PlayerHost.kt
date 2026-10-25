@@ -65,6 +65,12 @@ interface PlayerHost {
 
     fun selectAudioOutput(id: Int?)
 
+    /** iOS cannot list idle outputs; its system route picker is laid over the "Bluetooth & AirPlay" row. Android has the list instead. */
+    val hasRoutePicker: Boolean get() = false
+
+    @Composable
+    fun RoutePickerOverlay(modifier: Modifier) {}
+
     /** The negotiated output format, as the pipeline row and the hi-res shine read it. */
     val outputFormat: StateFlow<OutputFormatUi>
 

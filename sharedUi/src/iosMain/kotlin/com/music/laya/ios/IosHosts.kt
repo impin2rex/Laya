@@ -71,8 +71,12 @@ internal object IosPlayerHost : PlayerHost {
     @Composable
     override fun rememberOutputPicker(onOpen: () -> Unit): () -> Unit = onOpen
 
-    // iOS cannot switch routes itself or list idle ones: tapping the current route opens the system picker (Bluetooth, AirPlay, speaker).
-    override fun selectAudioOutput(id: Int?) = showRoutePicker()
+    // iOS cannot switch routes itself or list idle ones: the sheet's "Bluetooth & AirPlay" row hosts the system picker.
+    override fun selectAudioOutput(id: Int?) {}
+    override val hasRoutePicker = true
+
+    @Composable
+    override fun RoutePickerOverlay(modifier: Modifier) = IosRoutePicker(modifier)
     override val outputFormat = MutableStateFlow(OutputFormatUi())
     override val party = IosParty.ui
     override val castState = IosCast.ui

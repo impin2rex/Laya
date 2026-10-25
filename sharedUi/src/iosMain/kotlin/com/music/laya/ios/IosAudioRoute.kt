@@ -19,20 +19,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
+import androidx.compose.ui.viewinterop.UIKitView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.music.laya.data.NerdStats
 import com.music.laya.ui.player.AudioOutputDevice
 import com.music.laya.ui.player.AudioOutputKind
 import com.music.laya.ui.player.PlayerDrawer
 import dev.chrisbanes.haze.HazeState
-import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVKit.AVRoutePickerView
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
-import platform.UIKit.UIApplication
-import platform.UIKit.UIButton
-import platform.UIKit.UIControlEventTouchUpInside
-import platform.UIKit.UIView
+import platform.UIKit.UIColor
 
 /** The audio session's current output route, as the Swift engine reports it. */
 internal class RouteInfo(val name: String, val portType: String, val rateHz: Int, val channels: Int, val ioBufferMs: Int)
@@ -73,20 +72,27 @@ internal fun rememberCurrentOutputs(): List<AudioOutputDevice> {
 }
 
 /**
- * Opens the system route picker (Bluetooth, AirPlay, speaker). iOS has no API to present it directly:
- * the documented way is an AVRoutePickerView, whose button is pressed here once instead of being shown.
+ * The system route picker (Bluetooth, AirPlay, speaker). iOS has no API to list or switch outputs, and a hidden
+ * picker whose button is "pressed" from code never lays out or presents, so the real, transparent control is
+ * placed over the output row and receives the tap itself.
  */
-private var routePicker: AVRoutePickerView? = null
-
-@OptIn(ExperimentalForeignApi::class)
-internal fun showRoutePicker() {
-    val window = UIApplication.sharedApplication.keyWindow ?: return
-    // One invisible picker kept in the window; its button is what presents the system sheet.
-    val picker = routePicker ?: AVRoutePickerView().apply { alpha = 0.01 }.also { routePicker = it }
-    if (picker.superview == null) window.addSubview(picker)
-    fun UIView.firstButton(): UIButton? =
-        (this as? UIButton) ?: subviews.filterIsInstance<UIView>().firstNotNullOfOrNull { it.firstButton() }
-    picker.firstButton()?.sendActionsForControlEvents(UIControlEventTouchUpInside)
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+internal fun IosRoutePicker(modifier: Modifier) {
+    UIKitView(
+        factory = {
+            AVRoutePickerView().apply {
+                tintColor = UIColor.clearColor
+                activeTintColor = UIColor.clearColor
+                backgroundColor = UIColor.clearColor
+                opaque = false
+                alpha = 0.02 // invisible but still hit-testable (< 0.01 is not)
+            }
+        },
+        modifier = modifier,
+        // Above the Compose canvas: behind it the view punches a hole that shows the window's white.
+        properties = UIKitInteropProperties(placedAsOverlay = true),
+    )
 }
 
 private fun rateText(hz: Int) = "${((hz / 100.0).toInt() / 10.0).toString().removeSuffix(".0")} kHz"
