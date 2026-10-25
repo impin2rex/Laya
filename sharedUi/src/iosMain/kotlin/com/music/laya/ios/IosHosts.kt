@@ -16,7 +16,6 @@ import com.music.laya.ui.player.CanvasVideoSpec
 import com.music.laya.ui.player.LyricsRomanizationResult
 import com.music.laya.ui.player.LyricsTranslationResult
 import com.music.laya.ui.player.OutputFormatUi
-import com.music.laya.ui.player.PartyUi
 import com.music.laya.ui.player.PlayerHost
 import com.music.laya.ui.player.PlayerSettingsSource
 import com.music.laya.ui.player.SystemVolume
@@ -29,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 internal object IosSettingsHost : SettingsHost {
     override val hasEngineOptions = false // the AVPlayer engine has none of these yet
     override val hasLiquidGlassOption = false
+    override val party = IosParty.info
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
     @Composable
     override fun versionName() =
@@ -68,7 +68,7 @@ internal object IosPlayerHost : PlayerHost {
 
     override fun selectAudioOutput(id: Int?) = Unit
     override val outputFormat = MutableStateFlow(OutputFormatUi())
-    override val party = MutableStateFlow(PartyUi())
+    override val party = IosParty.ui
 
     override suspend fun translateLyrics(trackId: String, lines: List<LyricLine>, targetLanguageTag: String) =
         when (val result = LyricsTranslation.translate(trackId, lines, targetLanguageTag)) {

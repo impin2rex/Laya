@@ -5,6 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.music.laya.data.NerdStats
 import com.music.laya.data.TelemetryProvenance
+import com.music.laya.data.listentogether.PartyTrack
+import com.music.laya.data.listentogether.ListenTogether
+import com.music.laya.playback.toQueueSong
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
@@ -97,6 +100,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     /** Set while a restored track sits paused and unloaded; the first play loads it and seeks here. */
     private var pendingMs: Long? = null
     private var lastSavedAt = 0L
+    private val party = IosPartySync(scope, this)
 
     init {
         engine.setListener(this)
@@ -111,6 +115,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         listOf("UIApplicationWillResignActiveNotification", "UIApplicationDidEnterBackgroundNotification").forEach {
             NSNotificationCenter.defaultCenter.addObserverForName(it, null, NSOperationQueue.mainQueue) { _ -> saveState() }
         }
+        party.start()
         scope.launch { AppSettings.spatialAudio.collect { IosDsp.setSpatial(it) } }
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
         scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
@@ -140,7 +145,17 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         }
     }
 
-    fun play(songs: List<Song>, startIndex: Int) {
+    /** A host that holds the controls takes them from every listener: the call does nothing. */
+    private fun locked() = ListenTogether.state.value.controlsLocked
+
+    /** A user action: refused while locked, and told to the party once done. */
+    private inline fun intent(block: () -> Unit) {
+        if (locked()) return
+        block()
+        party.onLocalIntent()
+    }
+
+    fun play(songs: List<Song>, startIndex: Int) = intent {
         val entries = songs.map { it.asQueueEntry(QueueTier.CONTEXT) }
         if (AppSettings.shuffleEnabled.value) {
             queue = QueueTimeline.shuffledStartingOrder(entries, startIndex)
@@ -161,17 +176,21 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     /** Where playback goes by itself: the same track under Repeat one. */
     private fun autoNext() = if (AppSettings.repeatMode.value == RepeatModes.ONE) index else manualNext()
 
-    fun next() { manualNext().let { if (it >= 0) start(it) } }
-    fun previous() { if (hasPrevious) start(index - 1) else seekTo(0) }
-    fun jumpTo(i: Int) { if (i in queue.indices) start(i) }
+    fun next() = intent { manualNext().let { if (it >= 0) start(it) } }
+    fun previous() = intent { if (hasPrevious) start(index - 1) else rawSeek(0) }
+    fun jumpTo(i: Int) = intent { if (i in queue.indices) start(i) }
     fun togglePlayPause() {
+        if (party.handleLockedPlayPause()) return
         val at = pendingMs
         if (at != null) start(index, at) else if (isPlaying) engine.pause() else engine.resume()
+        party.onLocalIntent()
     }
 
     private fun saveState() { if (song != null) IosPlayerStore.saveState(pendingMs ?: position.positionMs, durationMs) }
 
-    fun seekTo(ms: Long) {
+    fun seekTo(ms: Long) = intent { rawSeek(ms) }
+
+    private fun rawSeek(ms: Long) {
         if (pendingMs != null) { pendingMs = ms; position.seeks++; position.report(ms); return }
         engine.seekTo(ms)
         position.seeks++
@@ -181,22 +200,22 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun playNext(song: Song) = enqueue(song, next = true)
     fun addToQueue(song: Song) = enqueue(song, next = false)
 
-    private fun enqueue(song: Song, next: Boolean) {
-        if (queue.isEmpty()) return play(listOf(song), 0)
+    private fun enqueue(song: Song, next: Boolean) = intent {
+        if (queue.isEmpty()) return@intent play(listOf(song), 0)
         val at = QueueTimeline.findUserQueueInsertionIndex(queue, index, next)
         queue = queue.toMutableList().apply { add(at, song.asQueueEntry(QueueTier.USER_QUEUE)) }
         queueChanged()
     }
 
-    fun removeAt(i: Int) {
-        if (i !in queue.indices || i == index) return
+    fun removeAt(i: Int) = intent {
+        if (i !in queue.indices || i == index) return@intent
         queue = queue.toMutableList().apply { removeAt(i) }
         if (i < index) index--
         queueChanged()
     }
 
-    fun move(from: Int, to: Int) {
-        if (from !in queue.indices || to !in queue.indices || from == to) return
+    fun move(from: Int, to: Int) = intent {
+        if (from !in queue.indices || to !in queue.indices || from == to) return@intent
         queue = queue.toMutableList().apply { add(to, removeAt(from)) }
         index = when {
             from == index -> to
@@ -208,17 +227,17 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     /** Clear drops the listener's own queued tracks; the album / playlist and AutoPlay stay. */
-    fun clearUserQueue() {
+    fun clearUserQueue() = intent {
         val drop = QueueTimeline.upcomingUserQueueIndices(queue.map { it.queueTier }, index).toSet()
-        if (drop.isEmpty()) return
+        if (drop.isEmpty()) return@intent
         queue = queue.filterIndexed { i, _ -> i !in drop }
         queueChanged()
     }
 
     /** Shuffle as an edit to the upcoming queue (same rules as Android's QueueShuffle): your queue stays pinned first. */
-    fun setShuffle(on: Boolean) {
+    fun setShuffle(on: Boolean) = intent {
         AppSettings.setShuffleEnabled(on)
-        if (index !in queue.indices) return
+        if (index !in queue.indices) return@intent
         val head = queue.take(index + 1)
         val upcoming = queue.drop(index + 1)
         val tiers = upcoming.map { it.queueTier }
@@ -242,8 +261,37 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     )
 
     fun setAutoplay(on: Boolean) {
+        if (ListenTogether.state.value.inParty) return ListenTogether.setAutoplay(on)
         AppSettings.setAutoplay(on)
         if (on) topUpAutoplay()
+    }
+
+    // ---- Listen Together: the party's writes to the engine, which are never intents ----
+
+    internal fun partyPause() = engine.pause()
+    internal fun partyResume() { if (pendingMs != null) start(index, pendingMs ?: 0) else engine.resume() }
+    internal fun partySeek(ms: Long) = rawSeek(ms)
+
+    /** Puts the party's running order on this device and starts the track at [at]. */
+    internal fun partyLoad(tracks: List<PartyTrack>, at: Int) {
+        queue = tracks.map { it.toQueueSong().let { s -> s.asQueueEntry(s.queueTier) } }
+        start(at)
+    }
+
+    /** Replaces what follows the playing track with the party's, keeping the entries already here. */
+    internal fun partyUpcoming(tracks: List<PartyTrack>) {
+        val head = queue.take(index + 1)
+        val have = queue.drop(index + 1)
+        if (have.map { it.videoId to (it.queueTier == QueueTier.AUTOPLAY) } == tracks.map { it.videoId to it.fromAutoplay }) return
+        val reuse = have.groupBy { it.videoId }.mapValues { it.value.toMutableList() }
+        queue = head + tracks.map { t ->
+            reuse[t.videoId]?.takeIf { it.isNotEmpty() }?.removeAt(0)
+                ?.let { it.copy(queueTier = if (t.fromAutoplay) QueueTier.AUTOPLAY else QueueTier.USER_QUEUE) }
+                ?: t.toQueueSong().let { s -> s.asQueueEntry(s.queueTier) }
+        }
+        IosPlayerStore.saveQueue(queue, index)
+        announce()
+        preResolveNext()
     }
 
     private fun queueChanged() {
@@ -256,7 +304,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     /** AutoPlay: on the last track, append the radio for it (Android's loadAutoplayTracks, minus party and module sources). */
     private fun topUpAutoplay() {
         val seed = song ?: return
-        if (!AppSettings.autoplay.value || AppSettings.repeatMode.value == RepeatModes.ALL ||
+        val inParty = ListenTogether.state.value
+        // A party has one AutoPlay supplier, elected the way Android does; the others wait for its queue.
+        if (inParty.inParty && (!inParty.playback.autoplayEnabled || inParty.you?.memberId != partyAutoplaySupplier(inParty))) return
+        if (!inParty.inParty && !AppSettings.autoplay.value || AppSettings.repeatMode.value == RepeatModes.ALL ||
             index != queue.lastIndex || autoplayJob?.isActive == true
         ) return
         autoplayJob = scope.launch {
@@ -266,6 +317,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             queue = queue + extra.map { it.asQueueEntry(QueueTier.AUTOPLAY) }
             announce()
             preResolveNext()
+            party.onLocalIntent()
         }
     }
 
@@ -468,7 +520,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
     }
 
-    override fun onEnded() { autoNext().let { if (it >= 0) start(it) else isPlaying = false } }
+    override fun onEnded() {
+        autoNext().let { if (it >= 0) start(it) else isPlaying = false }
+        party.onLocalIntent()
+    }
 
     override fun onAdvancedToNext() {
         index = preloaded
@@ -478,6 +533,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         announce()
         preResolveNext()
         topUpAutoplay()
+        party.onLocalIntent()
     }
 
     override fun onError(message: String, httpStatus: Int) {
@@ -488,4 +544,11 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     override fun onVolumeChanged(level: Float) { IosVolume.level.value = level }
     override fun onRemoteNext() = next()
     override fun onRemotePrevious() = previous()
+}
+
+/** The member a party's AutoPlay queue comes from: the host, else the lowest id among those connected. */
+private fun partyAutoplaySupplier(party: ListenTogether.State): String? {
+    val host = party.members.firstOrNull { it.isHost && it.connected }?.memberId
+    if (party.hostOnlyControl) return host
+    return host ?: party.members.asSequence().filter { it.connected }.minByOrNull { it.memberId }?.memberId
 }

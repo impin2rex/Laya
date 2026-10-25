@@ -1,5 +1,6 @@
 package com.music.laya.ios
 
+import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.settings.AppSettings
 import platform.Network.nw_path_get_status
 import platform.Network.nw_path_is_expensive
@@ -17,8 +18,9 @@ import platform.darwin.dispatch_get_main_queue
 internal fun watchIosConnection() {
     val monitor = nw_path_monitor_create()
     nw_path_monitor_set_update_handler(monitor) { path ->
-        AppSettings.meteredConnection.value =
-            if (path == null || nw_path_get_status(path) != nw_path_status_satisfied) null else nw_path_is_expensive(path)
+        val online = path != null && nw_path_get_status(path) == nw_path_status_satisfied
+        AppSettings.meteredConnection.value = if (!online) null else nw_path_is_expensive(path)
+        if (online) ListenTogether.onNetworkAvailable() else ListenTogether.onNetworkLost()
     }
     nw_path_monitor_set_queue(monitor, dispatch_get_main_queue())
     nw_path_monitor_start(monitor)

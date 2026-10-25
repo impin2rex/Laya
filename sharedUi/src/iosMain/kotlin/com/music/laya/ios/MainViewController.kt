@@ -61,6 +61,7 @@ fun MainViewController(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit)
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
     watchIosConnection()
+    IosParty.install()
     SourceRegistry.init(IosSourcesHost)
     DetailExtras.host = IosDetailHost
     IosSpotify.restore()
