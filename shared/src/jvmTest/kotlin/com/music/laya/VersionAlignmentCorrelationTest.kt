@@ -1,6 +1,6 @@
 package com.music.laya
 
-import com.music.laya.playback.smart.VersionAudioAligner
+import com.music.laya.playback.smart.VersionAlignment
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,13 +10,13 @@ import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
- * [VersionAudioAligner.crossCorrelate] now runs the per-lag sums through an
+ * [VersionAlignment.crossCorrelate] now runs the per-lag sums through an
  * FFT instead of the double loop it replaced. These tests pin the two
  * implementations together: same searchable range, same winning lag, same
  * confidence — a silent sign flip or wraparound here would turn every switch
  * into a misaligned one.
  */
-class VersionAudioAlignerCorrelationTest {
+class VersionAlignmentCorrelationTest {
 
     @Test
     fun `fft correlation matches brute force over many random envelopes`() {
@@ -34,7 +34,7 @@ class VersionAudioAlignerCorrelationTest {
                 (base + random.nextFloat() * 0.2f).coerceIn(0f, 1f)
             }
 
-            val fft = VersionAudioAligner.crossCorrelate(source, target)
+            val fft = VersionAlignment.crossCorrelate(source, target)
             val brute = bruteForce(source, target)
 
             assertEquals("floor differs in case $case", brute.floor, fft.floor)
@@ -57,7 +57,7 @@ class VersionAudioAlignerCorrelationTest {
             if (sourceIndex in source.indices) source[sourceIndex] else random.nextFloat() * 0.3f
         }
 
-        val result = VersionAudioAligner.crossCorrelate(source, target)
+        val result = VersionAlignment.crossCorrelate(source, target)
 
         assertEquals(trueLag, result.lagFrames)
         assertTrue("expected a confident peak, got ${result.confidence}", result.confidence > 0.9)
@@ -66,8 +66,20 @@ class VersionAudioAlignerCorrelationTest {
     }
 
     @Test
+    fun `align turns a planted shift of the target into its offset in ms`() {
+        val random = Random(11)
+        val rate = 8000.0
+        // 30 s of bursty noise; the target is the same audio 2.5 s later, starting 1 s into its file.
+        val source = FloatArray((30 * rate).toInt()) { i -> if ((i / 4000) % 3 == 0) random.nextFloat() - 0.5f else 0.02f * (random.nextFloat() - 0.5f) }
+        val shift = (2.5 * rate).toInt()
+        val target = FloatArray(source.size) { i -> source.getOrElse(i - shift) { 0f } }
+        val a = VersionAlignment.align(source, rate, 0.0, target, rate, 1.0)
+        assertEquals(3500.0, a.offsetMs!!.toDouble(), 50.0)
+    }
+
+    @Test
     fun `empty envelopes yield no measurable correlation`() {
-        val result = VersionAudioAligner.crossCorrelate(FloatArray(0), FloatArray(500))
+        val result = VersionAlignment.crossCorrelate(FloatArray(0), FloatArray(500))
         assertEquals(0, result.lagFrames)
         assertEquals(0.0, result.confidence, 0.0)
     }
@@ -78,9 +90,9 @@ class VersionAudioAlignerCorrelationTest {
         targetEnv: FloatArray,
         hopMs: Double = 10.0,
         maxLagSec: Double = 40.0,
-    ): VersionAudioAligner.Correlation {
+    ): VersionAlignment.Correlation {
         if (sourceEnv.isEmpty() || targetEnv.isEmpty()) {
-            return VersionAudioAligner.Correlation(0, 0.0, 0, 0)
+            return VersionAlignment.Correlation(0, 0.0, 0, 0)
         }
 
         val maxLagFrames = (maxLagSec * 1000.0 / hopMs).toInt()
@@ -128,7 +140,7 @@ class VersionAudioAlignerCorrelationTest {
             }
         }
 
-        return VersionAudioAligner.Correlation(bestLag, bestCorrelation, minLag, maxLag)
+        return VersionAlignment.Correlation(bestLag, bestCorrelation, minLag, maxLag)
     }
 
     private val Double.absoluteValue: Double
