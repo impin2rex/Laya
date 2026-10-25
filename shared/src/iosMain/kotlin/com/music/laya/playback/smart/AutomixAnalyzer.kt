@@ -90,10 +90,18 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytes:
             // reads at most VocalModel.maxRegionSeconds of each, so it stands in for the DSP heuristic only there.
             val headMask = vocalMask(s, features, 0.0, minOf(window, seconds))
             val tailMask = if (tailStart > window / 2) vocalMask(s, features, tailStart, seconds) else null
+            val merged = VocalModel.mergeMasks(features.energyCurve.size, headMask, tailMask)
             println(
                 "Automix: analysed $trackId bpm=${leading?.bpm ?: features.bpm} conf=${leading?.beatConfidence ?: features.beatConfidence} " +
                     "contentEnd=${features.contentEndTime} vocalMask=${if (headMask != null || tailMask != null) "model" else "dsp"}",
             )
+            (merged ?: features.vocalActivityMask).let { m ->
+                // Only what the model measured: everything outside the head and tail windows reads as the neutral 0.5.
+                val measured = m.filter { it != VocalModel.NEUTRAL_VOCAL }
+                println("Automix: vocal mask summary $trackId source=${if (merged != null) "model" else "dsp"} size=${m.size} " +
+                    "measured=${measured.size} min=${measured.minOrNull()} mean=${if (measured.isEmpty()) 0.0 else measured.average()} " +
+                    "max=${measured.maxOrNull()} above0.5=${measured.count { it > 0.5 }}")
+            }
             return TrackAnalysis(
                 status = TrackAnalysis.STATUS_READY,
                 trackId = trackId,
@@ -118,7 +126,7 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytes:
                 energyCurve = features.energyCurve,
                 lowEnergyCurve = features.lowEnergyCurve,
                 // The model's mask where it ran, the DSP heuristic's where it didn't, as Android does.
-                vocalActivityMask = VocalModel.mergeMasks(features.energyCurve.size, headMask, tailMask) ?: features.vocalActivityMask,
+                vocalActivityMask = merged ?: features.vocalActivityMask,
                 vocalProbability = features.vocalProbability,
             ).also { store.save(trackId, it) }
         } finally {
