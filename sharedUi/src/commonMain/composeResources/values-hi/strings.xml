@@ -516,4 +516,22 @@
     <string name="save">सेव करें</string>
     <string name="artist_signatures_test_failed">उस URL पर API तक नहीं पहुंचा जा सका</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">स्रोत, इसी क्रम में आज़माए जाते हैं</string>
+    <string name="sources_order_footer">अगर किसी स्रोत के पास कोई ट्रैक नहीं है या उस तक पहुंचा नहीं जा सकता, तो Laya अगला स्रोत आज़माता है। YouTube से ऊपर के स्रोत बेहतर वर्शन मिलने पर उसकी रिकॉर्डिंग बदल सकते हैं।</string>
+    <string name="sources_quality_capped">यह कनेक्शन हाई क्वालिटी से नीचे सेट है, इसलिए स्ट्रीम को उस सीमा में फिट करने के लिए ट्रांसकोड किया जाता है। डाउनलोड पर कोई असर नहीं पड़ता।</string>
+    <string name="sources_no_lossless">कोई भी चालू स्रोत लॉसलेस ऑडियो नहीं दे सकता। बिना ट्रांसकोडिंग के उपलब्ध लॉसलेस फ़ाइलें चलाने के लिए कस्टम मॉड्यूल जोड़ें।</string>
+    <string name="source_skipped_by_quality">%1$s पर उपयोग नहीं किया गया · गुणवत्ता %2$s पर सेट है</string>
+    <string name="source_setup_required">सेटअप पूरा करने के लिए टैप करें</string>
+    <string name="source_downloads_off">सिर्फ़ स्ट्रीमिंग</string>
+    <string name="source_unreachable">अभी पहुंचा नहीं जा सकता · %1$s</string>
+    <string name="source_unrecognised">Laya इस लिंक को पहचान नहीं सका</string>
+    <string name="source_already_added">पहले से %1$s के रूप में जोड़ा गया</string>
+    <string name="add_addon">एडऑन जोड़ें</string>
+    <string name="add_addon_detail">Laya को किसी एडऑन सर्वर से कनेक्ट करें</string>
+    <string name="addon_url_description">एडऑन का URL पेस्ट करें — रूट या manifest.json।</string>
+    <string name="always_on">हमेशा चालू</string>
+    <string name="remove_source">यह स्रोत हटाएं</string>
+    <string name="test">जांचें</string>
+    <string name="testing">जांच हो रही है…</string>
+    <string name="search_addons_none">कोई ऐडऑन चालू नहीं है। सेटिंग → स्रोत में जाकर एक जोड़ें।</string>
 </resources>

@@ -10,6 +10,13 @@ import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.sources.SourceKind
+import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.SourceResolver
+import com.music.laya.data.sources.SourceStream
+import com.music.laya.data.sources.StreamFormat
+import com.music.laya.data.sources.TrackMatcher
+import com.music.laya.playback.youtubeSeedFor
 import com.music.laya.platform.ioDispatcher
 import com.music.laya.playback.Karaoke
 import com.music.laya.playback.karaoke.IosKaraoke
@@ -24,7 +31,12 @@ import com.music.laya.playback.toneCurve
 import com.music.laya.playback.QueueTimeline
 import com.music.laya.playback.QueueTimeline.asQueueEntry
 import com.music.laya.ui.player.RepeatModes
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -39,6 +51,21 @@ private const val CHUNK_BYTES = 1024L * 1024
 
 /** Most AutoPlay tracks queued ahead at once, same as Android's MAX_QUEUED_AUTOPLAY. */
 private const val MAX_AUTOPLAY = 10
+
+/** How long a source ranked above YouTube gets before a track starts on YouTube regardless (Android's SUBSTITUTE_TIMEOUT_MS). */
+private const val SUBSTITUTE_TIMEOUT_MS = 20_000L
+
+/** What [IosPlayer.open] hands the engine, and what the source said about it. */
+private class Opened(
+    val url: String,
+    val headers: Map<String, String>,
+    val mime: String,
+    val length: Long,
+    val sourceName: String,
+    val format: StreamFormat? = null,
+    /** A better copy that may still arrive (a lossless search that outlasted the quick answer). */
+    val pending: Deferred<SourceStream?>? = null,
+)
 
 private class KaraokeSource(val url: String, val headers: Map<String, String>, val mime: String, val length: Long)
 
@@ -60,6 +87,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     private var startJob: Job? = null
     private var nextJob: Job? = null
+    private var upgradeJob: Job? = null
     private var autoplayJob: Job? = null
     private var preloaded = -1
     /** What [resolveInto] last handed the engine for each track, so Karaoke can decode the same bytes. */
@@ -232,7 +260,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             index != queue.lastIndex || autoplayJob?.isActive == true
         ) return
         autoplayJob = scope.launch {
-            val related = YtMusicRepository.radio(seed.videoId).getOrNull() ?: return@launch
+            val related = YtMusicRepository.radio(youtubeSeedFor(seed) ?: return@launch).getOrNull() ?: return@launch
             val extra = QueueBuilder.extend(queue, related, MAX_AUTOPLAY)
             if (extra.isEmpty() || song?.videoId != seed.videoId) return@launch
             queue = queue + extra.map { it.asQueueEntry(QueueTier.AUTOPLAY) }
@@ -243,15 +271,122 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     fun seekFraction(f: Float) { if (durationMs > 0) seekTo((f * durationMs).toLong()) }
 
-    private suspend fun resolveInto(song: Song, next: Boolean) = withContext(ioDispatcher) {
-        val url = StreamResolver.resolve(song.videoId)
-        val headers = StreamResolver.mediaHeadersFor(url)
+    /** YouTube's own stream for [videoId], the only path before addons existed. */
+    private suspend fun youtube(videoId: String): Opened {
+        val url = StreamResolver.resolve(videoId)
         // googlevideo URLs carry the format as ?mime=audio%2Fmp4
         val mime = url.substringAfter("mime=", "audio%2Fmp4").substringBefore('&').replace("%2F", "/")
-        val length = StreamResolver.contentLength(song.videoId) ?: -1L
-        streams[song.videoId] = KaraokeSource(url, headers, mime, length)
-        if (next) engine.setNext(url, headers, mime, length, CHUNK_BYTES)
-        else engine.play(url, headers, mime, length, CHUNK_BYTES)
+        return Opened(url, StreamResolver.mediaHeadersFor(url), mime, StreamResolver.contentLength(videoId) ?: -1L, "YouTube")
+    }
+
+    /** A source's answer as the engine wants it. A YouTube answer goes back through [youtube] for its headers and length. */
+    private suspend fun fromSource(stream: SourceStream, pending: Deferred<SourceStream?>? = null): Opened {
+        val config = stream.sourceConfigId?.let(SourceRegistry::config)
+        if (config?.kind == SourceKind.YOUTUBE && stream.matchedId != null) return youtube(stream.matchedId!!)
+        return Opened(
+            url = stream.url,
+            headers = stream.headers,
+            mime = mimeOf(stream),
+            length = -1L, // the loader learns the size from the first Content-Range
+            sourceName = config?.displayName ?: "Source",
+            format = stream.format,
+            pending = pending,
+        )
+    }
+
+    /** The container AVPlayer should expect, from the codec the source stated or else the file extension. */
+    private fun mimeOf(stream: SourceStream): String {
+        val ext = stream.url.substringBefore('?').substringAfterLast('.', "").lowercase()
+        return when (stream.format.codec ?: ext) {
+            "flac" -> "audio/flac"
+            "wav" -> "audio/wav"
+            "aiff" -> "audio/aiff"
+            "mp3" -> "audio/mpeg"
+            "aac" -> if (ext == "aac") "audio/aac" else "audio/mp4" // bare ADTS vs AAC in MP4
+            else -> "audio/mp4" // alac, m4a, mp4
+        }
+    }
+
+    /**
+     * Where Android decides which source plays a track (PlaybackService's resolver): a row that came from
+     * a source is resolved by it, falling back through the rest; a YouTube row is offered to every source
+     * ranked above YouTube first, racing YouTube itself so a slow addon costs nothing.
+     *
+     * [patient] is for the track after the one playing, where nobody is waiting: the lookup may take its
+     * time and the lossless answer is preferred over the quick one.
+     */
+    private suspend fun open(song: Song, patient: Boolean): Opened {
+        val target = TrackMatcher.targetOf(song)
+        SourceRegistry.parseTrackKey(song.videoId)?.let { (configId, trackId) ->
+            // Addon rows play as the row the listener picked, never its Atmos sibling or YouTube's copy (MIX_PARAM).
+            val mix = if (SourceRegistry.config(configId)?.kind == SourceKind.ADDON) {
+                when (song.sourceQuality) {
+                    null -> SourceResolver.MIX_ANY
+                    "DOLBY" -> SourceResolver.MIX_ATMOS
+                    else -> SourceResolver.MIX_STEREO
+                }
+            } else null
+            val late = CompletableDeferred<SourceStream?>()
+            val stream = withTimeoutOrNull(SUBSTITUTE_TIMEOUT_MS * 6) { SourceResolver.resolve(configId, trackId, target, mix, late) }
+                ?: error("No enabled source could serve ${song.title}")
+            return fromSource(stream, late.takeIf { !it.isCompleted })
+        }
+        if (!SourceResolver.canSubstituteForYouTube()) return youtube(song.videoId)
+        if (patient) {
+            val warmed = runCatching { SourceResolver.prefetchSubstitute(target, patient = true) }.getOrNull()
+            return warmed?.let { fromSource(it) } ?: youtube(song.videoId)
+        }
+        val late = CompletableDeferred<SourceStream?>()
+        val lookup = scope.async(ioDispatcher) { withTimeoutOrNull(SUBSTITUTE_TIMEOUT_MS) { SourceResolver.substituteForYouTube(target, late) } }
+        val fallback = scope.async(ioDispatcher) { runCatching { youtube(song.videoId) } }
+        // First past the post. A YouTube answer that failed has not won anything.
+        val quick: SourceStream? = select {
+            lookup.onAwait { it }
+            fallback.onAwait { r -> if (r.isSuccess) null else lookup.await() }
+        }
+        if (quick != null) {
+            fallback.cancel()
+            return fromSource(quick, late.takeIf { !it.isCompleted })
+        }
+        val onYouTube = fallback.await().getOrThrow()
+        // The lookup is still looking (or missed): what it lands on later swaps in mid-song.
+        return if (lookup.isActive) Opened(onYouTube.url, onYouTube.headers, onYouTube.mime, onYouTube.length, onYouTube.sourceName, pending = lookup)
+        else onYouTube.also { late.cancel() }
+    }
+
+    private suspend fun resolveInto(song: Song, next: Boolean) = withContext(ioDispatcher) {
+        val o = open(song, patient = next)
+        hand(song, o, next)
+        if (!next && o.pending != null) watchUpgrade(song, o)
+    }
+
+    /** Gives the engine [o] and records what it is, for Karaoke and the nerd stats. */
+    private fun hand(song: Song, o: Opened, next: Boolean) {
+        streams[song.videoId] = KaraokeSource(o.url, o.headers, o.mime, o.length)
+        NerdStats.recordSource(song.videoId, o.sourceName)
+        o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
+        if (next) engine.setNext(o.url, o.headers, o.mime, o.length, CHUNK_BYTES)
+        else engine.play(o.url, o.headers, o.mime, o.length, CHUNK_BYTES)
+    }
+
+    /**
+     * Swaps to the better copy a source lands on while [song] is playing, at the same position. Only when
+     * it is the same recording (runtime within the resolver's drift) and worth the short break in the audio.
+     */
+    private fun watchUpgrade(song: Song, o: Opened) {
+        upgradeJob?.cancel()
+        upgradeJob = scope.launch {
+            val better = runCatching { o.pending?.await() }.getOrNull() ?: return@launch
+            if (this@IosPlayer.song?.videoId != song.videoId) return@launch
+            if (!SourceResolver.worthSwapping(better.format, o.format)) return@launch
+            if (!SourceResolver.sameRecordingAs(better.durationSec, durationMs.takeIf { it > 0 }?.let { (it / 1000).toInt() })) return@launch
+            val at = position.positionMs
+            val opened = withContext(ioDispatcher) { fromSource(better) }
+            if (this@IosPlayer.song?.videoId != song.videoId) return@launch
+            hand(song, opened, next = false)
+            engine.seekTo(at)
+            preResolveNext() // the swap replaced the engine's queued item
+        }
     }
 
     private fun start(i: Int, fromMs: Long = 0) {
@@ -265,6 +400,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         IosPlayerStore.saveQueue(queue, i)
         IosPlayerStore.saveState(fromMs, 0)
         nextJob?.cancel()
+        upgradeJob?.cancel()
         startJob?.cancel()
         startJob = scope.launch {
             runCatching { resolveInto(song, next = false) }
@@ -324,7 +460,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                 sampleRateHz = sampleRateHz.takeIf { it > 0 },
                 channels = channels.takeIf { it > 0 },
                 bitDepth = bitDepth.takeIf { lossless && it > 0 },
-                sourceName = "YouTube",
+                sourceName = NerdStats.exactSourceFor(id) ?: "YouTube",
                 bitrateProvenance = provenance,
                 mediaId = id,
             ),

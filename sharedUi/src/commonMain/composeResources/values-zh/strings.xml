@@ -515,4 +515,22 @@
     <string name="save">保存</string>
     <string name="artist_signatures_test_failed">无法连接到该地址的 API</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">来源，按此顺序尝试</string>
+    <string name="sources_order_footer">如果某个来源没有该曲目或无法访问，Laya 会尝试下一个来源。排在 YouTube 之前的来源如果返回更好的版本，可以替换其录音。</string>
+    <string name="sources_quality_capped">此连接的设置低于高品质，因此串流会被转码以符合该限制，下载不受影响。</string>
+    <string name="sources_no_lossless">已启用的来源均无法提供无损音频。添加自定义模块即可播放可用的无损文件，而无需转码。</string>
+    <string name="source_skipped_by_quality">未在 %1$s 上使用 · 音质已设为 %2$s</string>
+    <string name="source_setup_required">点按以完成设置</string>
+    <string name="source_downloads_off">仅限在线播放</string>
+    <string name="source_unreachable">目前无法访问 · %1$s</string>
+    <string name="source_unrecognised">Laya 无法识别该链接</string>
+    <string name="source_already_added">已添加为 %1$s</string>
+    <string name="add_addon">添加插件</string>
+    <string name="add_addon_detail">将 Laya 指向你自建或获取链接的插件服务器</string>
+    <string name="addon_url_description">粘贴插件网址 — 根目录或 manifest.json 均可。Laya 会读取其搜索和流式播放内容，并通过标准 HTTP 请求曲目。</string>
+    <string name="always_on">始终开启</string>
+    <string name="remove_source">移除此来源</string>
+    <string name="test">测试</string>
+    <string name="testing">测试中…</string>
+    <string name="search_addons_none">未启用任何插件。请在“设置 → 音源”中添加。</string>
 </resources>

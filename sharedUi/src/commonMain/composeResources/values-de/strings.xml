@@ -516,4 +516,22 @@
     <string name="save">Speichern</string>
     <string name="artist_signatures_test_failed">Die API war unter dieser URL nicht erreichbar</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Quellen, in dieser Reihenfolge versucht</string>
+    <string name="sources_order_footer">Wenn eine Quelle einen Titel nicht hat oder nicht erreichbar ist, versucht Laya die nächste. Quellen über YouTube können dessen Aufnahme ersetzen, wenn sie eine bessere Version liefern.</string>
+    <string name="sources_quality_capped">Diese Verbindung ist unter Hohe Qualität eingestellt, daher werden Streams transkodiert, um dieses Limit einzuhalten. Downloads sind davon nicht betroffen.</string>
+    <string name="sources_no_lossless">Keine aktivierte Quelle kann verlustfreies Audio liefern. Füge ein eigenes Modul hinzu, um verfügbare verlustfreie Dateien ohne Transkodierung abzuspielen.</string>
+    <string name="source_skipped_by_quality">Nicht auf %1$s verwendet · Qualität ist auf %2$s gesetzt</string>
+    <string name="source_setup_required">Tippen, um die Einrichtung abzuschließen</string>
+    <string name="source_downloads_off">Nur Streaming</string>
+    <string name="source_unreachable">Momentan nicht erreichbar · %1$s</string>
+    <string name="source_unrecognised">Laya konnte diesen Link nicht erkennen</string>
+    <string name="source_already_added">Bereits als %1$s hinzugefügt</string>
+    <string name="add_addon">Add-on hinzufügen</string>
+    <string name="add_addon_detail">Verbinde Laya mit einem Add-on-Server</string>
+    <string name="addon_url_description">Füge die URL des Add-ons ein — Stammverzeichnis oder manifest.json.</string>
+    <string name="always_on">Immer an</string>
+    <string name="remove_source">Diese Quelle entfernen</string>
+    <string name="test">Testen</string>
+    <string name="testing">Wird getestet…</string>
+    <string name="search_addons_none">Es sind keine Addons aktiviert. Füge eines unter Einstellungen → Quellen hinzu.</string>
 </resources>

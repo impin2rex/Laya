@@ -495,4 +495,22 @@
     <string name="save">সেভ করুন</string>
     <string name="artist_signatures_test_failed">ওই URL-এ API-র সঙ্গে যোগাযোগ করা গেল না</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">সোর্স, এই ক্রমে চেষ্টা করা হয়</string>
+    <string name="sources_order_footer">কোনো সোর্সে গান না থাকলে বা সেটায় পৌঁছানো না গেলে Laya পরেরটা চেষ্টা করে। YouTube-এর উপরের সোর্সগুলো ভালো ভার্সন পেলে তার রেকর্ডিংয়ের বদলে সেটা চালাতে পারে।</string>
+    <string name="sources_quality_capped">এই কানেকশনে কোয়ালিটি High-এর নিচে সেট করা আছে, তাই স্ট্রিম সেই সীমার মধ্যে ট্রান্সকোড করা হয়। ডাউনলোডে এর প্রভাব পড়ে না।</string>
+    <string name="sources_no_lossless">চালু থাকা কোনো সোর্সই lossless অডিও দিতে পারে না। ট্রান্সকোডিং ছাড়া lossless ফাইল চালাতে একটা অ্যাডঅন যোগ করুন।</string>
+    <string name="source_skipped_by_quality">%1$s-এ ব্যবহার হচ্ছে না · কোয়ালিটি %2$s-এ সেট করা আছে</string>
+    <string name="source_setup_required">সেটআপ শেষ করতে ট্যাপ করুন</string>
+    <string name="source_downloads_off">শুধু স্ট্রিমিং</string>
+    <string name="source_unreachable">এখন কানেক্ট করা যাচ্ছে না · %1$s</string>
+    <string name="source_unrecognised">লিংকটি কী, Laya বুঝতে পারেনি</string>
+    <string name="source_already_added">আগেই %1$s হিসেবে যোগ করা আছে</string>
+    <string name="add_addon">অ্যাডঅন যোগ করুন</string>
+    <string name="add_addon_detail">আপনার নিজের হোস্ট করা বা লিঙ্ক পাওয়া কোনো অ্যাডঅন সার্ভারের সঙ্গে Laya যুক্ত করুন</string>
+    <string name="addon_url_description">অ্যাডঅনের URL পেস্ট করুন — এর রুট বা manifest.json। Laya দেখে নেয় এটি কী সার্চ ও স্ট্রিম করতে পারে, তারপর সাধারণ HTTP-তে এর কাছ থেকে গান চায়।</string>
+    <string name="always_on">সবসময় চালু</string>
+    <string name="remove_source">এই সোর্সটি সরান</string>
+    <string name="test">টেস্ট</string>
+    <string name="testing">টেস্ট হচ্ছে…</string>
+    <string name="search_addons_none">কোনো অ্যাডঅন চালু নেই। সেটিংস → সোর্স থেকে একটি যোগ করুন।</string>
 </resources>

@@ -38,6 +38,8 @@ interface SettingsHost {
      * prefer music only, loudness, crossfade / automix, don't repeat, hide status bar, version alignment.
      */
     val hasEngineOptions: Boolean get() = true
+    /** false hides just the Wi-Fi / mobile-data streaming-quality rows, which are what addons are asked at. */
+    val hasQualityOptions: Boolean get() = hasEngineOptions
     val appIconRow: (@Composable () -> Unit)? get() = null
 
     @Composable fun versionName(): String = ""

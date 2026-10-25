@@ -515,4 +515,22 @@
     <string name="save">Lưu</string>
     <string name="artist_signatures_test_failed">Không thể kết nối tới API tại URL này</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Các nguồn nhạc, được thử theo thứ tự này</string>
+    <string name="sources_order_footer">Nếu một nguồn không có bản nhạc hoặc không thể kết nối, Laya sẽ thử nguồn tiếp theo. Các nguồn nằm trên YouTube có thể thay thế bản ghi âm của YouTube khi tìm được phiên bản tốt hơn.</string>
+    <string name="sources_quality_capped">Kết nối này được đặt dưới chất lượng Cao, vì vậy luồng phát sẽ được chuyển mã để phù hợp giới hạn đó. Việc tải xuống không bị ảnh hưởng.</string>
+    <string name="sources_no_lossless">Không có nguồn nào được bật có thể cung cấp âm thanh Lossless. Hãy thêm tiện ích mở rộng để phát các tệp Lossless mà không cần chuyển mã.</string>
+    <string name="source_skipped_by_quality">Không dùng trên %1$s · chất lượng được đặt thành %2$s</string>
+    <string name="source_setup_required">Nhấn để hoàn tất thiết lập</string>
+    <string name="source_downloads_off">Chỉ phát trực tuyến</string>
+    <string name="source_unreachable">Hiện không thể truy cập · %1$s</string>
+    <string name="source_unrecognised">Laya không nhận dạng được liên kết đó</string>
+    <string name="source_already_added">Đã được thêm dưới tên %1$s</string>
+    <string name="add_addon">Thêm tiện ích mở rộng</string>
+    <string name="add_addon_detail">Trỏ Laya tới máy chủ tiện ích bạn tự lưu trữ hoặc được chia sẻ liên kết</string>
+    <string name="addon_url_description">Dán URL của tiện ích mở rộng — đường dẫn gốc hoặc manifest.json. Laya sẽ đọc các mục có thể tìm kiếm và phát, sau đó yêu cầu bản nhạc qua giao thức HTTP tiêu chuẩn.</string>
+    <string name="always_on">Luôn bật</string>
+    <string name="remove_source">Xóa nguồn này</string>
+    <string name="test">Kiểm tra</string>
+    <string name="testing">Đang kiểm tra…</string>
+    <string name="search_addons_none">Chưa bật addon nào. Hãy thêm một addon trong Cài đặt → Nguồn.</string>
 </resources>

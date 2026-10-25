@@ -516,4 +516,22 @@
     <string name="save">Salvar</string>
     <string name="artist_signatures_test_failed">Não foi possível alcançar a API nesse URL</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Fontes, tentadas nesta ordem</string>
+    <string name="sources_order_footer">Se uma fonte não tiver a faixa, o Laya tenta a próxima. Fontes acima do YouTube podem substituí-lo quando encontram uma versão melhor.</string>
+    <string name="sources_quality_capped">Esta conexão está definida abaixo de Alta qualidade, então os fluxos são transcodificados. Downloads não são afetados.</string>
+    <string name="sources_no_lossless">Nenhuma fonte habilitada pode fornecer áudio lossless. Adicione um módulo personalizado para tocar arquivos lossless sem transcodificação.</string>
+    <string name="source_skipped_by_quality">Não usado em %1$s · qualidade definida para %2$s</string>
+    <string name="source_setup_required">Toque para concluir a configuração</string>
+    <string name="source_downloads_off">Somente streaming</string>
+    <string name="source_unreachable">Não é possível acessar agora · %1$s</string>
+    <string name="source_unrecognised">O Laya não reconheceu esse link</string>
+    <string name="source_already_added">Já adicionado como %1$s</string>
+    <string name="add_addon">Adicionar extensão</string>
+    <string name="add_addon_detail">Aponte o Laya para um servidor de extensão que você hospeda ou recebeu um link</string>
+    <string name="addon_url_description">Cole a URL da extensão — raiz ou manifest.json. O Laya lerá os conteúdos disponíveis.</string>
+    <string name="always_on">Sempre ativo</string>
+    <string name="remove_source">Remover esta fonte</string>
+    <string name="test">Testar</string>
+    <string name="testing">Testando…</string>
+    <string name="search_addons_none">Nenhum addon ativado. Adicione um em Configurações → Fontes.</string>
 </resources>

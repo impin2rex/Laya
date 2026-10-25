@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 /** Everything not overridden is hidden on iOS; Phase 5/6 fill in accounts, Listen Together, downloads. */
 internal object IosSettingsHost : SettingsHost {
     override val hasEngineOptions = false // the AVPlayer engine has none of these yet
+    override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
     @Composable
     override fun versionName() =
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"

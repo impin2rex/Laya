@@ -30,6 +30,7 @@ import platform.Foundation.NSUserDomainMask
 import platform.Foundation.NSUserDefaults
 import platform.UIKit.UIViewController
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.settings.AppSettingsHost
 import com.russhwolf.settings.NSUserDefaultsSettings
 
@@ -59,6 +60,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
+    SourceRegistry.init(IosSourcesHost)
     DetailExtras.host = IosDetailHost
     IosSpotify.restore()
     com.music.laya.playback.smart.AnalysisLog.install { m, e -> println("Analysis: $m ${e ?: ""}") }

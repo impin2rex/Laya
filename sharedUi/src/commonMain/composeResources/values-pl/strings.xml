@@ -518,4 +518,22 @@
     <string name="save">Zapisz</string>
     <string name="artist_signatures_test_failed">Nie można połączyć się z API pod tym adresem URL</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Źródła, sprawdzane w tej kolejności</string>
+    <string name="sources_order_footer">Jeśli źródło nie ma utworu lub jest niedostępne, Laya próbuje następne. Źródła przed YouTube mogą je zastąpić, gdy znajdą lepszą wersję.</string>
+    <string name="sources_quality_capped">To połączenie jest ustawione poniżej Wysokiej jakości, więc strumienie są transkodowane. Pobierania pozostają nienaruszone.</string>
+    <string name="sources_no_lossless">Żadne włączone źródło nie może dostarczyć bezstratnego dźwięku. Dodaj moduł niestandardowy, aby odtwarzać dostępne pliki bezstratne bez transkodowania.</string>
+    <string name="source_skipped_by_quality">Nie używane na %1$s · jakość ustawiona na %2$s</string>
+    <string name="source_setup_required">Dotknij, aby zakończyć konfigurację</string>
+    <string name="source_downloads_off">Tylko streaming</string>
+    <string name="source_unreachable">Nie można się teraz połączyć · %1$s</string>
+    <string name="source_unrecognised">Laya nie rozpoznał tego linku</string>
+    <string name="source_already_added">Już dodano jako %1$s</string>
+    <string name="add_addon">Dodaj wtyczkę</string>
+    <string name="add_addon_detail">Wskaż serwer wtyczki, który hostujesz lub do którego masz link</string>
+    <string name="addon_url_description">Wklej adres URL wtyczki — katalog główny lub manifest.json.</string>
+    <string name="always_on">Zawsze włączone</string>
+    <string name="remove_source">Usuń to źródło</string>
+    <string name="test">Test</string>
+    <string name="testing">Testowanie…</string>
+    <string name="search_addons_none">Brak włączonych dodatków. Dodaj jeden w Ustawienia → Źródła.</string>
 </resources>

@@ -135,6 +135,13 @@ import org.jetbrains.compose.resources.stringResource
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.ui.screens.EqualizerScreen
 import com.music.laya.ui.screens.SettingsScreen
+import com.music.laya.ui.screens.SourcesPage
+import com.music.laya.data.sources.AddonSource
+import com.music.laya.data.sources.SourceRegistry
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.Job
+import com.music.laya.sharedui.resources.search_addons_none
 import com.music.laya.ui.onboarding.OnboardingScreen
 import androidx.compose.animation.EnterTransition
 import androidx.compose.material.icons.rounded.Settings
@@ -352,6 +359,33 @@ fun LayaIosApp(engine: AudioEngine) {
     var typeahead by remember { mutableStateOf<List<SearchResult>>(emptyList()) }
     var searchSubmitted by remember { mutableStateOf(false) }
     var searchSource by remember { mutableIntStateOf(0) } // 0 YouTube, 1 Library, 2 Addons
+    var addonResults by remember { mutableStateOf<UiState<List<Song>>?>(null) }
+    var addonJob by remember { mutableStateOf<Job?>(null) }
+    val addonHistory by IosSearchHistory.addonRecent.collectAsState()
+    val noAddons = stringResource(Res.string.search_addons_none)
+    /** Asks every enabled addon in parallel; a slow or failing one costs only its own rows (Android's runAddonSearch). */
+    fun searchAddons() {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        searchSubmitted = true
+        suggestions = emptyList(); typeahead = emptyList()
+        IosSearchHistory.recordAddon(q)
+        addonJob?.cancel()
+        val addons = SourceRegistry.active().filterIsInstance<AddonSource>()
+        if (addons.isEmpty()) { addonResults = UiState.Error(noAddons); return }
+        addonResults = UiState.Loading
+        addonJob = scope.launch {
+            val perAddon = coroutineScope {
+                addons.map { addon ->
+                    async { withTimeoutOrNull(12_000) { runCatching { addon.search(q, limit = 20) }.getOrDefault(emptyList()) } ?: emptyList() }
+                }.map { it.await() }
+            }
+            // Round-robin, so no single catalogue buries the others.
+            addonResults = UiState.Success(buildList {
+                for (i in 0 until (perAddon.maxOfOrNull { it.size } ?: 0)) perAddon.forEach { rows -> rows.getOrNull(i)?.let(::add) }
+            })
+        }
+    }
     var searchContinuation by remember { mutableStateOf<String?>(null) }
     var searchLoadingMore by remember { mutableStateOf(false) }
     val searchHistory by IosSearchHistory.recent.collectAsState()
@@ -369,7 +403,7 @@ fun LayaIosApp(engine: AudioEngine) {
     fun onQueryChange(value: String) {
         query = value
         searchSubmitted = false
-        if (value.isBlank()) { suggestions = emptyList(); typeahead = emptyList(); results = null }
+        if (value.isBlank()) { suggestions = emptyList(); typeahead = emptyList(); results = null; addonJob?.cancel(); addonResults = null }
     }
     fun searchFor(term: String) { query = term; scope.launch { search() } }
     // Typing: completions (led by the raw text) and live media, debounced; cancelled by the next keystroke or a submit.
@@ -463,6 +497,21 @@ fun LayaIosApp(engine: AudioEngine) {
         }
     }
 
+    // Test hooks: SIMCTL_CHILD_LAYA_ADDON=<url> installs that addon; SIMCTL_CHILD_LAYA_ADDON_PLAY=<query> then
+    // plays the first addon hit (what tapping a row in the Addons tab does).
+    LaunchedEffect(Unit) {
+        val env = NSProcessInfo.processInfo.environment
+        if (env.keys.any { it.toString().startsWith("LAYA_") }) AppSettings.setOnboardingComplete() // hooks skip the intro
+        if (env["LAYA_NERD"] != null) AppSettings.setShowNerdStats(true)
+        (env["LAYA_ADDON"] as? String)?.let { url ->
+            if (SourceRegistry.duplicateOf(url) == null) SourceRegistry.identify(url).getOrNull()?.let(SourceRegistry::add)
+        }
+        (env["LAYA_ADDON_PLAY"] as? String)?.let { q ->
+            SourceRegistry.active().filterIsInstance<AddonSource>().firstOrNull()?.search(q, limit = 20)
+                ?.let { if (it.isNotEmpty()) player.play(it, 0) }
+        }
+    }
+
     // Test hook: `simctl launch` with SIMCTL_CHILD_LAYA_AUTOPLAY=<query> searches and plays the first hit.
     LaunchedEffect(Unit) {
         val q = NSProcessInfo.processInfo.environment["LAYA_AUTOPLAY"] as? String ?: return@LaunchedEffect
@@ -477,6 +526,7 @@ fun LayaIosApp(engine: AudioEngine) {
         when {
             what == "player" -> { kotlinx.coroutines.delay(12_000); nowPlayingOpen = true }
             what == "settings" -> stack = stack + IosPage.Settings
+            what == "sources" -> stack = stack + IosPage.Sources
             what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
                 ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
                 ?.let { openDetail(it.browseId, it.title, it.subtitle, it.thumbnailUrl, it.type) }
@@ -569,6 +619,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                         // Opens the account page; Last.fm / Spotify / Discord live behind it on Android (5e).
                                         onEqualizer = { stack = stack + IosPage.Equalizer },
+                                        onSources = { stack = stack + IosPage.Sources },
                                         onAccountScrobbling = { stack = stack + IosPage.Account },
                                         onSpotifyCanvasAuth = { stack = stack + IosPage.Account },
                                         onEditSignatureApi = { editingSignatureApi = true },
@@ -577,6 +628,9 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onOpenPlaylist = { openDetail(SPOTIFY_PAGE_PREFIX + it.id, it.name, it.owner ?: "Spotify", it.imageUrl, BrowseType.PLAYLIST) },
                                         onOpenLogin = { showSpotifyLogin = true },
                                         onOpenTokenSetup = null,
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
+                                    IosPage.Sources -> SourcesPage(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
                                     IosPage.Equalizer -> EqualizerScreen(
@@ -723,7 +777,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                 history = searchHistory,
                                 suggestions = suggestions,
                                 typeaheadResults = typeahead,
-                                onSubmit = { scope.launch { search(anonymous = false) } },
+                                onSubmit = { if (searchSource == 2) searchAddons() else scope.launch { search(anonymous = false) } },
                                 onSuggestionClick = ::searchFor,
                                 onHistoryClick = { e ->
                                     val s = e.toSong()
@@ -748,14 +802,19 @@ fun LayaIosApp(engine: AudioEngine) {
                                             searchSource = it
                                             suggestions = emptyList(); typeahead = emptyList()
                                             if (it == 0 && query.isNotBlank()) scope.launch { search() }
+                                            if (it == 2 && query.isNotBlank()) searchAddons()
                                         },
                                     )
                                 },
-                                // No Local Music folder or addons on iOS yet: both sources answer "nothing", as Android does with none.
+                                // No Local Music folder on iOS yet: it answers "nothing", as Android does with none.
                                 searchingLibrary = searchSource == 1,
                                 libraryResults = if (query.isBlank()) null else UiState.Success(emptyList()),
                                 searchingAddons = searchSource == 2,
-                                addonResults = if (searchSubmitted) UiState.Success(emptyList()) else null,
+                                addonResults = addonResults,
+                                addonHistory = addonHistory,
+                                onAddonHistoryClick = { query = it; searchAddons() },
+                                onAddonHistoryRemove = IosSearchHistory::removeAddon,
+                                onAddonHistoryClear = IosSearchHistory::clearAddons,
                                 contentPadding = noPadding,
                                 // Below the floating account pill, as Android leaves room for its top bar.
                                 topPadding = com.music.laya.ui.components.topBarContentPadding(),

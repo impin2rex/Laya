@@ -164,6 +164,10 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         case "audio/mp4", "audio/m4a", "audio/x-m4a": return AVFileType.m4a.rawValue
         case "audio/mpeg": return AVFileType.mp3.rawValue
         case "audio/aac": return "public.aac-audio"
+        // Addon streams: FLAC plays natively from iOS 11 (ALAC arrives as audio/mp4 above).
+        case "audio/flac", "audio/x-flac": return "org.xiph.flac"
+        case "audio/wav", "audio/x-wav": return AVFileType.wav.rawValue
+        case "audio/aiff", "audio/x-aiff": return AVFileType.aiff.rawValue
         default: return AVFileType.m4a.rawValue
         }
     }

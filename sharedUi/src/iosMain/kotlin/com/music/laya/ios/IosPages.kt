@@ -94,6 +94,7 @@ internal sealed interface IosPage {
     data object Account : IosPage
     data object Spotify : IosPage
     data object Equalizer : IosPage
+    data object Sources : IosPage
     class History(val songs: UiState<List<Song>>) : IosPage
     class ShowAll(val shelf: HomeShelf) : IosPage
 }

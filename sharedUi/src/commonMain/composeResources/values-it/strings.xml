@@ -516,4 +516,22 @@
     <string name="save">Salva</string>
     <string name="artist_signatures_test_failed">Impossibile raggiungere l\'API a questo URL</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Sorgenti, provate in quest\'ordine</string>
+    <string name="sources_order_footer">Se una sorgente non ha un brano o non è raggiungibile, Laya prova la successiva. Le sorgenti sopra YouTube possono sostituire la sua registrazione quando restituiscono una versione migliore.</string>
+    <string name="sources_quality_capped">Questa connessione è impostata sotto Alta qualità, quindi gli stream vengono transcodificati per rispettare questo limite. I download non ne risentono.</string>
+    <string name="sources_no_lossless">Nessuna sorgente attiva può fornire audio lossless. Aggiungi un modulo personalizzato per riprodurre i file lossless disponibili senza transcodifica.</string>
+    <string name="source_skipped_by_quality">Non usato su %1$s · qualità impostata su %2$s</string>
+    <string name="source_setup_required">Tocca per completare la configurazione</string>
+    <string name="source_downloads_off">Solo streaming</string>
+    <string name="source_unreachable">Non raggiungibile al momento · %1$s</string>
+    <string name="source_unrecognised">Laya non riconosce questo link</string>
+    <string name="source_already_added">Già aggiunto come %1$s</string>
+    <string name="add_addon">Aggiungi un componente aggiuntivo</string>
+    <string name="add_addon_detail">Collega Laya a un server di componenti aggiuntivi che gestisci o di cui hai un link</string>
+    <string name="addon_url_description">Incolla l\'URL del componente aggiuntivo — radice o manifest.json. Laya leggerà i contenuti disponibili.</string>
+    <string name="always_on">Sempre attivo</string>
+    <string name="remove_source">Rimuovi questa sorgente</string>
+    <string name="test">Testa</string>
+    <string name="testing">Test in corso…</string>
+    <string name="search_addons_none">Nessun addon attivo. Aggiungine uno in Impostazioni → Fonti.</string>
 </resources>

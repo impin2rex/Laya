@@ -518,4 +518,22 @@
     <string name="save">Сохранить</string>
     <string name="artist_signatures_test_failed">Не удалось связаться с API по этому URL</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Источники, пробуются в этом порядке</string>
+    <string name="sources_order_footer">Если у источника нет трека или он недоступен, Laya пробует следующий. Источники выше YouTube могут заменить его запись, если предоставляют более качественную версию.</string>
+    <string name="sources_quality_capped">Это соединение установлено ниже высокого качества, поэтому потоки перекодируются под это ограничение. На загрузки это не влияет.</string>
+    <string name="sources_no_lossless">Ни один включённый источник не может предоставить аудио без потерь. Добавьте пользовательский модуль, чтобы воспроизводить доступные файлы без потерь без перекодирования.</string>
+    <string name="source_skipped_by_quality">Не используется на %1$s · качество установлено на %2$s</string>
+    <string name="source_setup_required">Нажмите, чтобы завершить настройку</string>
+    <string name="source_downloads_off">Только стриминг</string>
+    <string name="source_unreachable">Сейчас недоступно · %1$s</string>
+    <string name="source_unrecognised">Laya не удалось распознать ссылку</string>
+    <string name="source_already_added">Уже добавлено как %1$s</string>
+    <string name="add_addon">Добавить плагин</string>
+    <string name="add_addon_detail">Подключите Laya к серверу плагина</string>
+    <string name="addon_url_description">Вставьте URL плагина — корень или manifest.json. Laya считает доступные треки.</string>
+    <string name="always_on">Всегда включено</string>
+    <string name="remove_source">Удалить этот источник</string>
+    <string name="test">Проверить</string>
+    <string name="testing">Проверка…</string>
+    <string name="search_addons_none">Нет включённых аддонов. Добавьте аддон в Настройки → Источники.</string>
 </resources>

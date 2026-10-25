@@ -171,6 +171,7 @@ fun SettingsScreen(
 ) {
     val host = SettingsExtras.host
     val engineOptions = host.hasEngineOptions
+    val qualityOptions = host.hasQualityOptions
 
     val wifiQuality by AppSettings.audioQualityWifi.collectAsStateWithLifecycle()
     val cellularQuality by AppSettings.audioQualityCellular.collectAsStateWithLifecycle()
@@ -361,7 +362,7 @@ fun SettingsScreen(
                 }
             }
             val onWifiTitle = stringResource(Res.string.on_wifi)
-            row(onWifiTitle, "wi-fi", "streaming quality", available = engineOptions) {
+            row(onWifiTitle, "wi-fi", "streaming quality", available = qualityOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.Wifi,
                     title = onWifiTitle,
@@ -371,7 +372,7 @@ fun SettingsScreen(
                 )
             }
             val onMobileDataTitle = stringResource(Res.string.on_mobile_data)
-            row(onMobileDataTitle, "cellular", "streaming quality", available = engineOptions) {
+            row(onMobileDataTitle, "cellular", "streaming quality", available = qualityOptions) {
                 SettingsRow(
                     icon = Icons.Rounded.SignalCellularAlt,
                     title = onMobileDataTitle,

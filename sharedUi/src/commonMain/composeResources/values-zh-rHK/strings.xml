@@ -505,4 +505,21 @@
     <string name="spotify_import_local_fallback">無法在 YouTube Music 上建立，因此“%1$s”已儲存到本裝置。</string>
     <string name="remove">移除</string>
     <string name="save">儲存</string>
+    <string name="sources_order_header">來源，按此順序嘗試</string>
+    <string name="sources_order_footer">如果某個來源沒有該曲目或無法訪問，Laya 會嘗試下一個來源。排在 YouTube 之前的來源如果返回更好的版本，可以替換其錄音。</string>
+    <string name="sources_quality_capped">此連線的設定低於高品質，因此串流會被轉碼以符合該限制，下載不受影響。</string>
+    <string name="sources_no_lossless">已啟用的來源均無法提供無損音訊。新增自定義模組即可播放可用的無損檔案，而無需轉碼。</string>
+    <string name="source_skipped_by_quality">未在 %1$s 上使用 · 音質已設為 %2$s</string>
+    <string name="source_setup_required">點按以完成設定</string>
+    <string name="source_downloads_off">僅限線上播放</string>
+    <string name="source_unreachable">目前無法訪問 · %1$s</string>
+    <string name="source_unrecognised">Laya 無法識別該連結</string>
+    <string name="source_already_added">已新增為 %1$s</string>
+    <string name="add_addon">新增外掛</string>
+    <string name="add_addon_detail">將 Laya 指向你自建或獲取連結的外掛伺服器</string>
+    <string name="addon_url_description">貼上外掛網址 — 根目錄或 manifest.json 均可。Laya 會讀取其搜尋和流式播放內容，並透過標準 HTTP 請求曲目。</string>
+    <string name="always_on">始終開啟</string>
+    <string name="remove_source">移除此來源</string>
+    <string name="test">測試</string>
+    <string name="testing">測試中…</string>
 </resources>

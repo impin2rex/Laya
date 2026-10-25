@@ -515,4 +515,22 @@
     <string name="save">Simpan</string>
     <string name="artist_signatures_test_failed">Tidak dapat menjangkau API di URL tersebut</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Sumber, dicoba dalam urutan ini</string>
+    <string name="sources_order_footer">Jika suatu sumber tidak memiliki trek atau tidak dapat dijangkau, Laya mencoba sumber berikutnya. Sumber di atas YouTube dapat menggantikan rekamannya saat menghasilkan versi yang lebih baik.</string>
+    <string name="sources_quality_capped">Koneksi ini diatur di bawah Kualitas tinggi, sehingga stream ditranskode agar sesuai dengan batas tersebut. Unduhan tidak terpengaruh.</string>
+    <string name="sources_no_lossless">Tidak ada sumber aktif yang dapat menyediakan audio lossless. Tambahkan modul kustom untuk memutar file lossless yang tersedia tanpa transcoding.</string>
+    <string name="source_skipped_by_quality">Tidak digunakan pada %1$s · kualitas diatur ke %2$s</string>
+    <string name="source_setup_required">Ketuk untuk menyelesaikan pengaturan</string>
+    <string name="source_downloads_off">Hanya streaming</string>
+    <string name="source_unreachable">Tidak dapat dijangkau sekarang · %1$s</string>
+    <string name="source_unrecognised">Laya tidak mengenali tautan tersebut</string>
+    <string name="source_already_added">Sudah ditambahkan sebagai %1$s</string>
+    <string name="add_addon">Tambah addon</string>
+    <string name="add_addon_detail">Arahkan Laya ke server addon yang Anda miliki atau bagikan tautan</string>
+    <string name="addon_url_description">Tempel URL addon — direktori utama atau manifest.json.</string>
+    <string name="always_on">Selalu aktif</string>
+    <string name="remove_source">Hapus sumber ini</string>
+    <string name="test">Uji</string>
+    <string name="testing">Menguji…</string>
+    <string name="search_addons_none">Tidak ada addon yang aktif. Tambahkan satu di Pengaturan → Sumber.</string>
 </resources>

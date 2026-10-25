@@ -515,4 +515,22 @@
     <string name="save">保存</string>
     <string name="artist_signatures_test_failed">そのURLでAPIに到達できませんでした</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">ソース（この順番で試行）</string>
+    <string name="sources_order_footer">ソースにトラックがない、またはアクセスできない場合、Layaは次のソースを試します。YouTubeより上のソースは、より良いバージョンが見つかった場合にその録音を置き換えられます。</string>
+    <string name="sources_quality_capped">この接続は「高音質」より低く設定されているため、ストリームはその上限に合わせてトランスコードされます。ダウンロードには影響しません。</string>
+    <string name="sources_no_lossless">有効なソースの中にロスレスオーディオを提供できるものがありません。トランスコードなしでロスレスファイルを再生するにはカスタムモジュールを追加してください。</string>
+    <string name="source_skipped_by_quality">%1$s では使用されていません · 音質は %2$s に設定されています</string>
+    <string name="source_setup_required">タップして設定を完了</string>
+    <string name="source_downloads_off">ストリーミングのみ</string>
+    <string name="source_unreachable">現在アクセスできません · %1$s</string>
+    <string name="source_unrecognised">Laya はそのリンクを認識できませんでした</string>
+    <string name="source_already_added">%1$s として追加済み</string>
+    <string name="add_addon">アドオンを追加</string>
+    <string name="add_addon_detail">ホストしているかリンクを受け取ったアドオン サーバーを Laya に指定します</string>
+    <string name="addon_url_description">アドオンの URL（ルートまたは manifest.json）を貼り付けます。Laya が検索および再生できる曲を読み取ります。</string>
+    <string name="always_on">常にオン</string>
+    <string name="remove_source">このソースを削除</string>
+    <string name="test">テスト</string>
+    <string name="testing">テスト中…</string>
+    <string name="search_addons_none">有効なアドオンがありません。設定 → ソースで追加してください。</string>
 </resources>

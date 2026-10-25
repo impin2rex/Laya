@@ -516,4 +516,22 @@
     <string name="save">שמירה</string>
     <string name="artist_signatures_test_failed">לא ניתן היה להתחבר ל-API בכתובת זו</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">מקורות, נוסו בסדר זה</string>
+    <string name="sources_order_footer">אם למקור אין רצועה, Laya מנסה את הבא. מקורות מעל YouTube יכולים להחליפו כשהם מוצאים גרסה טובה יותר.</string>
+    <string name="sources_quality_capped">חיבור זה מוגדר מתחת לאיכות גבוהה, ולכן השידורים מומרים כדי להתאים למגבלה. הורדות אינן מושפעות.</string>
+    <string name="sources_no_lossless">שום מקור מופעל אינו יכול לספק שמע ללא אובדן נתונים. הוסף מודול מותאם אישית כדי להפעיל קבצים זמינים ללא אובדן נתונים ללא המרה.</string>
+    <string name="source_skipped_by_quality">לא בשימוש ב-%1$s · איכות הוגדרה ל-%2$s</string>
+    <string name="source_setup_required">הקש כדי לסיים את ההגדרה</string>
+    <string name="source_downloads_off">הזרמה בלבד</string>
+    <string name="source_unreachable">לא ניתן להתחבר כרגע · %1$s</string>
+    <string name="source_unrecognised">Laya לא זיהה את הקישור הזה</string>
+    <string name="source_already_added">כבר נוסף בתור %1$s</string>
+    <string name="add_addon">הוסף תוסף</string>
+    <string name="add_addon_detail">חבר את Laya לשרת תוספים</string>
+    <string name="addon_url_description">הדבק את כתובת ה-URL של התוסף — תיקיית שורש או manifest.json.</string>
+    <string name="always_on">מופעל תמיד</string>
+    <string name="remove_source">הסרת מקור זה</string>
+    <string name="test">בדיקה</string>
+    <string name="testing">בודק…</string>
+    <string name="search_addons_none">אין תוספים מופעלים. אפשר להוסיף אחד בהגדרות ← מקורות.</string>
 </resources>

@@ -515,4 +515,22 @@
     <string name="save">บันทึก</string>
     <string name="artist_signatures_test_failed">ไม่สามารถเข้าถึง API ที่ URL นี้ได้</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">แหล่งข้อมูล เรียงตามลำดับที่ลอง</string>
+    <string name="sources_order_footer">หากแหล่งข้อมูลหนึ่งไม่มีแทร็กหรือเชื่อมต่อไม่ได้ Laya จะลองแหล่งถัดไป แหล่งข้อมูลที่อยู่เหนือ YouTube สามารถแทนที่การบันทึกของ YouTube ได้เมื่อให้เวอร์ชันที่ดีกว่า</string>
+    <string name="sources_quality_capped">การเชื่อมต่อนี้ตั้งไว้ต่ำกว่าคุณภาพสูง สตรีมจึงถูกแปลงให้พอดีกับขีดจำกัดนั้น การดาวน์โหลดไม่ได้รับผลกระทบ</string>
+    <string name="sources_no_lossless">ไม่มีแหล่งข้อมูลที่เปิดใช้งานสามารถให้เสียงแบบไม่สูญเสียคุณภาพได้ เพิ่มแอดออนเพื่อเล่นไฟล์ไม่สูญเสียคุณภาพโดยไม่ต้องแปลงไฟล์</string>
+    <string name="source_skipped_by_quality">Not used on %1$s · quality is set to %2$s</string>
+    <string name="source_setup_required">แตะเพื่อตั้งค่าให้เสร็จสมบูรณ์</string>
+    <string name="source_downloads_off">สตรีมมิงเท่านั้น</string>
+    <string name="source_unreachable">ตอนนี้เชื่อมต่อไม่ได้ · %1$s</string>
+    <string name="source_unrecognised">Laya could not tell what that link is</string>
+    <string name="source_already_added">Already added as %1$s</string>
+    <string name="add_addon">Add an addon</string>
+    <string name="add_addon_detail">Point Laya at an addon server you host or were given a link to</string>
+    <string name="addon_url_description">Paste the addon’s URL — either its root or its manifest.json. Laya reads what it can search and stream, then asks it for tracks over plain HTTP.</string>
+    <string name="always_on">เปิดตลอดเวลา</string>
+    <string name="remove_source">นำแหล่งข้อมูลนี้ออก</string>
+    <string name="test">ทดสอบ</string>
+    <string name="testing">กำลังทดสอบ…</string>
+    <string name="search_addons_none">ยังไม่ได้เปิดใช้แอดออน เพิ่มได้ที่ การตั้งค่า → แหล่งที่มา</string>
 </resources>

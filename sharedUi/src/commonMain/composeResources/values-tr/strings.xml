@@ -516,4 +516,22 @@
     <string name="save">Kaydet</string>
     <string name="artist_signatures_test_failed">Bu URL\'de API\'ye ulaşılamadı</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Kaynaklar, bu sırayla denenir</string>
+    <string name="sources_order_footer">Bir kaynakta parça yoksa veya ulaşılamıyorsa Laya bir sonrakini dener. YouTube üzerindeki kaynaklar daha iyi bir sürüm döndürdüklerinde onun kaydının yerini alabilir.</string>
+    <string name="sources_quality_capped">Bu bağlantı Yüksek kalitenin altına ayarlandığından, akışlar bu sınıra uyacak şekilde yeniden kodlanır. İndirmeler etkilenmez.</string>
+    <string name="sources_no_lossless">Etkin hiçbir kaynak kayıpsız ses sağlayamıyor. Yeniden kodlama yapmadan mevcut kayıpsız dosyaları çalmak için özel bir modül ekleyin.</string>
+    <string name="source_skipped_by_quality">%1$s üzerinde kullanılmıyor · kalite %2$s olarak ayarlandı</string>
+    <string name="source_setup_required">Kurulumu tamamlamak için dokun</string>
+    <string name="source_downloads_off">Yalnızca akış</string>
+    <string name="source_unreachable">Şu anda ulaşılamıyor · %1$s</string>
+    <string name="source_unrecognised">Laya bu bağlantıyı tanıyamadı</string>
+    <string name="source_already_added">Zaten %1$s olarak eklendi</string>
+    <string name="add_addon">Eklenti ekle</string>
+    <string name="add_addon_detail">Laya\'u barındırdığınız veya bağlantısını aldığınız bir eklenti sunucusuna yönlendirin</string>
+    <string name="addon_url_description">Eklentinin URL\'sini yapıştırın — kök dizin veya manifest.json. Laya arama ve oynatma yeteneklerini okur.</string>
+    <string name="always_on">Her zaman açık</string>
+    <string name="remove_source">Bu kaynağı kaldır</string>
+    <string name="test">Test et</string>
+    <string name="testing">Test ediliyor…</string>
+    <string name="search_addons_none">Etkin eklenti yok. Ayarlar → Kaynaklar bölümünden bir tane ekleyin.</string>
 </resources>

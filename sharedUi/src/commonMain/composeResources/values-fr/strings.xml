@@ -516,4 +516,22 @@
     <string name="save">Enregistrer</string>
     <string name="artist_signatures_test_failed">Impossible de joindre l\'API à cette URL</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
+    <string name="sources_order_header">Sources, testées dans cet ordre</string>
+    <string name="sources_order_footer">Si une source n\'a pas un titre ou est inaccessible, Laya essaie la suivante. Les sources situées au-dessus de YouTube peuvent remplacer son enregistrement lorsqu\'elles renvoient une meilleure version.</string>
+    <string name="sources_quality_capped">Cette connexion est réglée en dessous de la qualité Élevée, les flux sont donc transcodés pour respecter cette limite. Les téléchargements ne sont pas concernés.</string>
+    <string name="sources_no_lossless">Aucune source activée ne peut fournir de l\'audio sans perte. Ajoutez un module personnalisé pour lire les fichiers sans perte disponibles sans transcodage.</string>
+    <string name="source_skipped_by_quality">Non utilisé sur %1$s · qualité réglée sur %2$s</string>
+    <string name="source_setup_required">Appuyez pour terminer la configuration</string>
+    <string name="source_downloads_off">Streaming uniquement</string>
+    <string name="source_unreachable">Inaccessible pour le moment · %1$s</string>
+    <string name="source_unrecognised">Laya n\'a pas reconnu ce lien</string>
+    <string name="source_already_added">Déjà ajouté en tant que %1$s</string>
+    <string name="add_addon">Ajouter une extension</string>
+    <string name="add_addon_detail">Pointez Laya vers un serveur d\'extension hébergé ou partagé</string>
+    <string name="addon_url_description">Collez l\'URL de l\'extension — racine ou manifest.json. Laya lira ce qu\'il peut rechercher et diffuser.</string>
+    <string name="always_on">Toujours activé</string>
+    <string name="remove_source">Supprimer cette source</string>
+    <string name="test">Tester</string>
+    <string name="testing">Test en cours…</string>
+    <string name="search_addons_none">Aucun addon n\'est activé. Ajoutez-en un dans Réglages → Sources.</string>
 </resources>
