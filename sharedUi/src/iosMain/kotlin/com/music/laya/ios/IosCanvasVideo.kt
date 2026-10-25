@@ -17,6 +17,18 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.layout.onSizeChanged
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+import org.jetbrains.skia.Rect
+import org.jetbrains.skia.Surface
+import kotlinx.cinterop.useContents
+import platform.AVFoundation.presentationSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.music.laya.ui.player.CanvasContentMode
@@ -69,14 +81,28 @@ private class CanvasPlayer(url: String) {
     private var image: Image? = null
     private var bytes = ByteArray(0)
 
+    /** Displayed size in px, so the output can be decoded at that size instead of the clip's full one. */
+    var viewSize = IntSize.Zero
+    var mode = CanvasContentMode.CROP
+    var alignTop = false
+
     fun play(on: Boolean) = if (on) player.play() else player.pause()
 
     /** AVPlayerLooper swaps items each loop; an output belongs to one item, so re-attach on change. */
-    private fun outputFor(cur: AVPlayerItem): AVPlayerItemVideoOutput {
+    private fun outputFor(cur: AVPlayerItem): AVPlayerItemVideoOutput? {
         // K/N hands out a fresh wrapper per call, so compare with isEqual, not identity.
         if (item?.isEqual(cur) != true || output == null) {
+            // Needs the clip's size and the view's, to ask the decoder for what is actually shown.
+            val (nw, nh) = cur.presentationSize.useContents { width.toInt() to height.toInt() }
+            if (nw <= 0 || nh <= 0 || viewSize.width <= 0 || viewSize.height <= 0) return null
+            val shown = placement(IntSize(nw, nh), androidx.compose.ui.geometry.Size(viewSize.width.toFloat(), viewSize.height.toFloat()), mode, alignTop).second
+            val k = min(1f, max(shown.width.toFloat() / nw, shown.height.toFloat() / nh))
             output?.let { item?.removeOutput(it) }
-            val o = AVPlayerItemVideoOutput(pixelBufferAttributes = mapOf<Any?, Any?>("PixelFormatType" to NSNumber(unsignedInt = kCVPixelFormatType_32BGRA)))
+            val o = AVPlayerItemVideoOutput(pixelBufferAttributes = mapOf<Any?, Any?>(
+                "PixelFormatType" to NSNumber(unsignedInt = kCVPixelFormatType_32BGRA),
+                "Width" to NSNumber(int = (nw * k).roundToInt().coerceAtLeast(2)),
+                "Height" to NSNumber(int = (nh * k).roundToInt().coerceAtLeast(2)),
+            ))
             cur.addOutput(o)
             item = cur
             output = o
@@ -87,7 +113,7 @@ private class CanvasPlayer(url: String) {
     /** The newest decoded frame, or null when nothing new arrived since the last call. */
     fun nextFrame(): ImageBitmap? {
         val cur = player.currentItem ?: return null
-        val o = outputFor(cur)
+        val o = outputFor(cur) ?: return null
         val t = o.itemTimeForHostTime(CACurrentMediaTime())
         if (!o.hasNewPixelBufferForItemTime(t)) return null
         val buf = o.copyPixelBufferForItemTime(t, null) ?: return null
@@ -106,6 +132,31 @@ private class CanvasPlayer(url: String) {
         } finally {
             CVBufferRelease(buf)
         }
+    }
+
+    /**
+     * Android's captureAt: what the view shows of the clip (the contain margins excluded), no more
+     * than [maxPx] on its longest edge, for the caller to average into a backdrop tint.
+     */
+    fun capture(maxPx: Int): ImageBitmap? {
+        val img = image ?: return null
+        val vw = viewSize.width.toFloat()
+        val vh = viewSize.height.toFloat()
+        if (vw <= 0f || vh <= 0f) return null
+        val (off, size) = placement(IntSize(img.width, img.height), androidx.compose.ui.geometry.Size(vw, vh), mode, alignTop)
+        val l = max(0f, off.x.toFloat()); val t = max(0f, off.y.toFloat())
+        val r = min(vw, (off.x + size.width).toFloat()); val b = min(vh, (off.y + size.height).toFloat())
+        if (r <= l || b <= t) return null
+        val sx = img.width.toFloat() / size.width; val sy = img.height.toFloat() / size.height
+        val src = Rect.makeLTRB((l - off.x) * sx, (t - off.y) * sy, (r - off.x) * sx, (b - off.y) * sy)
+        val scale = min(1f, maxPx.toFloat() / max(vw, vh))
+        val w = ((r - l) * scale).roundToInt().coerceAtLeast(1)
+        val h = ((b - t) * scale).roundToInt().coerceAtLeast(1)
+        val surface = Surface.makeRasterN32Premul(w, h)
+        surface.canvas.drawImageRect(img, src, Rect.makeWH(w.toFloat(), h.toFloat()))
+        val bmp = surface.makeImageSnapshot().toComposeImageBitmap()
+        surface.close()
+        return bmp
     }
 
     fun release() {
@@ -129,7 +180,7 @@ private fun placement(frame: IntSize, view: androidx.compose.ui.geometry.Size, m
     return IntOffset(((view.width - lw) / 2).toInt(), y.toInt()) to IntSize(lw.toInt(), lh.toInt())
 }
 
-/** PlayerHost.CanvasVideo on iOS: the Spotify Canvas loop behind the artwork. Frame capture / bottom fade are not implemented. */
+/** PlayerHost.CanvasVideo on iOS: the Spotify Canvas loop behind the artwork. Frame capture and bottom fade mirror Android's. */
 @Composable
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
@@ -157,15 +208,37 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
             clip.nextFrame()?.let { frame = it }
         }
     }
+    clip.mode = spec.contentMode
+    clip.alignTop = spec.alignPortraitTop
+    // Same cadence as Android: one capture once the first frame shows, then every refreshFrameEveryMs if asked.
+    LaunchedEffect(clip, rendered, spec.refreshFrameEveryMs, spec.frameCapturePx, aspect) {
+        if (!rendered) return@LaunchedEffect
+        androidx.compose.runtime.withFrameNanos { }
+        clip.capture(current.frameCapturePx)?.let { current.onFrameCaptured(it) }
+        val every = spec.refreshFrameEveryMs ?: return@LaunchedEffect
+        while (true) {
+            delay(every)
+            if (!current.pausedForTransition) clip.capture(current.frameCapturePx)?.let { current.onFrameCaptured(it) }
+        }
+    }
     LaunchedEffect(aspect) { current.onAspectRatioChanged(aspect) }
     LaunchedEffect(rendered) { current.onRenderedChanged(rendered) }
 
     val alpha by animateFloatAsState(if (rendered) 1f else 0f, tween(320), label = "canvasAlpha")
     LaunchedEffect(clip) { snapshotFlow { alpha * current.presentationAlpha() }.collect { current.onCoverChanged(it) } }
 
-    Canvas(modifier.graphicsLayer { this.alpha = if (current.contentMode == CanvasContentMode.FIT_PORTRAIT && aspect <= 0f) 0f else alpha * current.presentationAlpha() }) {
+    Canvas(modifier.onSizeChanged { clip.viewSize = it }.graphicsLayer {
+        this.alpha = if (current.contentMode == CanvasContentMode.FIT_PORTRAIT && aspect <= 0f) 0f else alpha * current.presentationAlpha()
+        if (current.bottomFade > 0.001f) compositingStrategy = CompositingStrategy.Offscreen
+    }) {
         val f = frame ?: return@Canvas
         val (off, size) = placement(IntSize(f.width, f.height), this.size, current.contentMode, current.alignPortraitTop)
         clipRect { drawImage(f, srcOffset = IntOffset.Zero, srcSize = IntSize(f.width, f.height), dstOffset = off, dstSize = size) }
+        // Android's FadingBottomFrame: a DST_IN gradient, opaque down to (1 - fade) of the clip's bottom edge, clear at it.
+        val fade = current.bottomFade.coerceIn(0f, 1f)
+        val endY = (current.bottomFadeEndPx ?: this.size.height).coerceIn(0f, this.size.height)
+        if (fade > 0.001f && endY > 0f) {
+            drawRect(Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = endY * (1f - fade), endY = endY), blendMode = BlendMode.DstIn)
+        }
     }
 }
