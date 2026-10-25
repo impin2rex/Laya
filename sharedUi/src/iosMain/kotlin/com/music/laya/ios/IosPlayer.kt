@@ -28,6 +28,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import platform.Foundation.NSDate
+import platform.Foundation.NSNotificationCenter
+import platform.Foundation.NSOperationQueue
 
 // 1 MiB, same as Android's STREAM_CHUNK_BYTES: googlevideo refuses/throttles larger ranges for some clients.
 private const val CHUNK_BYTES = 1024L * 1024
@@ -61,9 +64,21 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private val streams = mutableMapOf<String, KaraokeSource>()
     /** Entry ids of the upcoming tracks as they were before Shuffle, so turning it off can restore them. */
     private var preShuffle = emptyList<String?>()
+    /** Set while a restored track sits paused and unloaded; the first play loads it and seeks here. */
+    private var pendingMs: Long? = null
+    private var lastSavedAt = 0L
 
     init {
         engine.setListener(this)
+        IosPlayerStore.load()?.let { s ->
+            queue = s.songs; index = s.index; pendingMs = s.positionMs; durationMs = s.durationMs
+            position.report(s.positionMs)
+            announce() // mini player, lock screen card, Karaoke binding
+        }
+        // Same moments Android saves: leaving the foreground (the progress cadence covers the rest).
+        listOf("UIApplicationWillResignActiveNotification", "UIApplicationDidEnterBackgroundNotification").forEach {
+            NSNotificationCenter.defaultCenter.addObserverForName(it, null, NSOperationQueue.mainQueue) { _ -> saveState() }
+        }
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
         scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
         scope.launch { combine(Karaoke.enabled, Karaoke.level) { on, l -> on to l }.collect { (on, l) -> IosDsp.setKaraoke(on, l) } }
@@ -116,9 +131,15 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun next() { manualNext().let { if (it >= 0) start(it) } }
     fun previous() { if (hasPrevious) start(index - 1) else seekTo(0) }
     fun jumpTo(i: Int) { if (i in queue.indices) start(i) }
-    fun togglePlayPause() { if (isPlaying) engine.pause() else engine.resume() }
+    fun togglePlayPause() {
+        val at = pendingMs
+        if (at != null) start(index, at) else if (isPlaying) engine.pause() else engine.resume()
+    }
+
+    private fun saveState() { if (song != null) IosPlayerStore.saveState(pendingMs ?: position.positionMs, durationMs) }
 
     fun seekTo(ms: Long) {
+        if (pendingMs != null) { pendingMs = ms; position.seeks++; position.report(ms); return }
         engine.seekTo(ms)
         position.seeks++
         position.report(ms)
@@ -193,6 +214,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun queueChanged() {
+        IosPlayerStore.saveQueue(queue, index)
         announce()
         preResolveNext()
         topUpAutoplay()
@@ -227,18 +249,21 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         else engine.play(url, headers, mime, length, CHUNK_BYTES)
     }
 
-    private fun start(i: Int) {
+    private fun start(i: Int, fromMs: Long = 0) {
         val song = queue.getOrNull(i) ?: return
         index = i
+        pendingMs = null
         isLoading = true
         durationMs = 0
-        position.report(0)
+        position.report(fromMs)
+        IosPlayerStore.saveQueue(queue, i)
+        IosPlayerStore.saveState(fromMs, 0)
         nextJob?.cancel()
         startJob?.cancel()
         startJob = scope.launch {
             runCatching { resolveInto(song, next = false) }
                 .onFailure { isLoading = false; println("IosPlayer: ${it.message ?: it}") }
-                .onSuccess { announce(); preResolveNext(); topUpAutoplay() }
+                .onSuccess { if (fromMs > 0) engine.seekTo(fromMs); announce(); preResolveNext(); topUpAutoplay() }
         }
     }
 
@@ -275,6 +300,9 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         this.durationMs = durationMs
         this.isPlaying = isPlaying
         isLoading = isBuffering
+        // Position about every 5 s while playing, and straight away on pause.
+        val now = NSDate().timeIntervalSinceReferenceDate.toLong()
+        if (pendingMs == null && song != null && (!isPlaying || now - lastSavedAt >= 5)) { lastSavedAt = now; saveState() }
     }
 
     override fun onEnded() { autoNext().let { if (it >= 0) start(it) else isPlaying = false } }
@@ -282,6 +310,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     override fun onAdvancedToNext() {
         index = preloaded
         position.report(0)
+        IosPlayerStore.saveQueue(queue, index)
         announce()
         preResolveNext()
         topUpAutoplay()
