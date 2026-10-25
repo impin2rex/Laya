@@ -590,7 +590,13 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         }
         if parked && parkedCueMs != transition.cueMs {
             parkedCueMs = transition.cueMs
-            idle.seek(to: CMTime(value: transition.cueMs, timescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero)
+            idle.seek(to: CMTime(value: transition.cueMs, timescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] done in
+                // Ready to sound the moment the blend asks: starting a cold deck costs a couple of hundred ms of phase.
+                DispatchQueue.main.async {
+                    guard done, let self, self.parked else { return }
+                    self.idle.preroll(atRate: self.speed * self.transition.rate) { _ in }
+                }
+            }
         }
         updateFadeTimer()
     }
@@ -644,8 +650,22 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         }
         let deck = idle
         let inSpeed = speed * transition.rate
-        deck.rate = inSpeed
-        if transition.outRate != 1 { player.rate = speed * transition.outRate }
+        let outSpeed = speed * transition.outRate
+        if item.status == .readyToPlay {
+            // Start the incoming deck at a host time, at the point of its track that the outgoing one's position implies
+            // (Android's cue is met as the fade starts; a deck started with a plain rate sounds ~200 ms late).
+            let lead = 0.12
+            let host = CACurrentMediaTime()
+            let ratio = Double(transition.rate / transition.outRate)
+            let at = Double(transition.cueMs) / 1000 + max(0, position + lead * Double(outSpeed) - start) * ratio
+            deck.automaticallyWaitsToMinimizeStalling = false
+            deck.setRate(inSpeed, time: CMTime(seconds: at, preferredTimescale: 1000),
+                         atHostTime: CMTime(seconds: host + lead, preferredTimescale: 1000))
+            deck.automaticallyWaitsToMinimizeStalling = true
+        } else {
+            deck.rate = inSpeed
+        }
+        if transition.outRate != 1 { player.rate = outSpeed }
         rampedSpeed = nil
         fade = Fade(out: player, inn: deck, item: item, oldItem: current, start: position, length: length, inSpeed: inSpeed)
         print("Crossfade: begin out=\(position)s len=\(length)s cue=\(transition.cueMs)ms rate=\(transition.rate)/\(transition.outRate)")
