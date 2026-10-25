@@ -1,6 +1,7 @@
 package com.music.laya.ios
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.canvas.CanvasRepository
@@ -29,6 +30,8 @@ internal object IosSettingsHost : SettingsHost {
     override val hasEngineOptions = false // the AVPlayer engine has none of these yet
     override val hasLiquidGlassOption = false
     override val party = IosParty.info
+    override val hasDownloads = true
+    override val hasExportDownloads = false // no shared Music folder on iOS; downloads stay in the app
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
     @Composable
     override fun versionName() =
@@ -43,7 +46,7 @@ internal object IosAppUiHost : AppUiHost {
     override val librarySort = AppSettings.librarySort
 
     @Composable
-    override fun downloadedIds(): Set<String> = emptySet() // Phase 6: downloads
+    override fun downloadedIds(): Set<String> = IosDownloads.savedIds.collectAsState().value
 }
 
 internal object IosPlayerHost : PlayerHost {

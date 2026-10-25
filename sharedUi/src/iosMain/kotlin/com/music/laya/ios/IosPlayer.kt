@@ -386,6 +386,14 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
      * time and the lossless answer is preferred over the quick one.
      */
     private suspend fun open(song: Song, patient: Boolean): Opened {
+        // A downloaded copy always wins: no lookup, no network (a bad file falls back to the stream like any failed source).
+        IosDownloads.fileUrl(song.videoId)?.let { url ->
+            val mime = when (url.substringAfterLast('.')) {
+                "flac" -> "audio/flac"; "wav" -> "audio/wav"; "aiff" -> "audio/aiff"; "mp3" -> "audio/mpeg"; "aac" -> "audio/aac"
+                else -> "audio/mp4"
+            }
+            return Opened(url, emptyMap(), mime, -1L, "Downloaded")
+        }
         val target = TrackMatcher.targetOf(song)
         SourceRegistry.parseTrackKey(song.videoId)?.let { (configId, trackId) ->
             // Addon rows play as the row the listener picked, never its Atmos sibling or YouTube's copy (MIX_PARAM).

@@ -30,7 +30,9 @@ interface SettingsHost {
     val dspAvailable: StateFlow<Boolean> get() = DSP_AVAILABLE
     /** null hides the "system equaliser" row. */
     val openSystemEqualizer: (() -> Unit)? get() = null
-    val hasDownloads: Boolean get() = false // Phase 6
+    val hasDownloads: Boolean get() = false
+    /** false hides "Export compatible downloads" (the Music/Laya folder), which only Android has. */
+    val hasExportDownloads: Boolean get() = true
     val hasSongCache: Boolean get() = false
     val hasBackgroundService: Boolean get() = false
     /**

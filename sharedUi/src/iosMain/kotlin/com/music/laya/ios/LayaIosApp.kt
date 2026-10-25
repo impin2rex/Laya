@@ -137,9 +137,11 @@ import com.music.laya.ui.screens.SpotifyLibraryScreen
 import com.music.laya.data.model.isUnresolvedSpotify
 import com.music.laya.data.spotify.SPOTIFY_PAGE_PREFIX
 import com.music.laya.sharedui.resources.spotify
+import com.music.laya.sharedui.resources.downloads
 import com.music.laya.sharedui.resources.spotify_library_subtitle
 import com.music.laya.sharedui.resources.spotify_logo
 import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.Download
 import org.jetbrains.compose.resources.stringResource
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.ui.screens.EqualizerScreen
@@ -579,6 +581,20 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         if (invite != null && stack.lastOrNull() !== IosPage.ListenTogether) stack = stack + IosPage.ListenTogether
     }
 
+    // Test hooks: SIMCTL_CHILD_LAYA_DOWNLOAD=<search text> downloads its top song result; LAYA_PLAY_DOWNLOADS=1 plays the Downloads page's first song.
+    LaunchedEffect(Unit) {
+        val env = NSProcessInfo.processInfo.environment
+        (env["LAYA_DOWNLOAD"] as? String)?.let { q ->
+            YtMusicRepository.search(q, SearchFilter.SONGS).getOrNull()
+                ?.firstNotNullOfOrNull { (it as? SearchResult.Track)?.song ?: (it as? SearchResult.TopTrack)?.song }
+                ?.let { println("LAYA_DOWNLOAD ${it.videoId} ${it.title}"); IosDownloads.enqueue(it) }
+        }
+        if (env["LAYA_PLAY_DOWNLOADS"] != null) {
+            kotlinx.coroutines.delay(2_000)
+            (IosDownloads.page().songs as? UiState.Success)?.data?.let { if (it.isNotEmpty()) player.play(it, 0) }
+        }
+    }
+
     // Test hook: SIMCTL_CHILD_LAYA_OPEN=player | settings | search | artist:<name> opens that screen.
     LaunchedEffect(Unit) {
         val what = NSProcessInfo.processInfo.environment["LAYA_OPEN"] as? String ?: return@LaunchedEffect
@@ -596,6 +612,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 }
             }
             what == "settings" -> stack = stack + IosPage.Settings
+            what == "downloads" -> stack = stack + IosPage.Detail(IosDownloads.page())
             what == "search" -> tab = 3
             what == "sources" -> stack = stack + IosPage.Sources
             what == "party" -> stack = stack + IosPage.ListenTogether
@@ -642,7 +659,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 when (top) {
                                     is IosPage.Detail -> key(top) {
                                         var activeShelf by remember { mutableStateOf<HomeShelf?>(null) }
-                                        val page = top.page
+                                        // The Downloads page is rebuilt as songs are saved or deleted.
+                                        val downloaded by IosDownloads.savedIds.collectAsState()
+                                        val page = if (top.page.browseId == DOWNLOADS_BROWSE_ID) remember(downloaded) { IosDownloads.page() } else top.page
                                         DetailScreen(
                                             page = page,
                                             currentSong = song,
@@ -795,6 +814,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 listState = libraryList,
                                 onShelfItemClick = {
                                     if (it.browseId == SPOTIFY_BROWSE_ID) stack = stack + IosPage.Spotify
+                                    else if (it.browseId == DOWNLOADS_BROWSE_ID) stack = stack + IosPage.Detail(IosDownloads.page())
                                     else it.toSong()?.let { s -> player.play(listOf(s), 0) } ?: openShelfItem(it)
                                 },
                                 onShelfItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
@@ -809,6 +829,16 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 contentPadding = noPadding,
                                 onImportSpotifyPlaylist = { if (signedIn) showSpotifyImport = true else showLogin = true },
                                 links = listOfNotNull(
+                                    LibraryLink(
+                                        item = ShelfItem(
+                                            title = stringResource(Res.string.downloads),
+                                            subtitle = "Downloaded songs",
+                                            thumbnailUrl = null,
+                                            videoId = null,
+                                            browseId = DOWNLOADS_BROWSE_ID,
+                                        ),
+                                        icon = Icons.Rounded.Download,
+                                    ),
                                     // Only while signed in to Spotify; it opens that account's playlists rather than a browse page.
                                     LibraryLink(
                                         item = ShelfItem(

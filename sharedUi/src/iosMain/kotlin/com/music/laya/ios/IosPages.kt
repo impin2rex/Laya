@@ -24,6 +24,11 @@ import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.DownloadDone
+import androidx.compose.material.icons.rounded.Downloading
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.ThumbDown
@@ -200,7 +205,7 @@ internal suspend fun loadMood(item: MoodGenre): UiState<List<HomeShelf>> =
         { UiState.Error(friendly(it)) },
     )
 
-/** Long-press menu. Like needs sign-in; playlists, library and downloads are not offered yet. */
+/** Long-press menu. Like needs sign-in. The Download row carries a download's whole life, as Android's DownloadRow. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun IosSongMenu(
@@ -240,6 +245,7 @@ internal fun IosSongMenu(
             liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) "Remove from liked" else "Like", onToggleLike) }
             disliked?.let { Action(if (it) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt, if (it) "Undo dislike" else "Dislike", onToggleDislike) }
             onAddToPlaylist?.let { Action(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist", it) }
+            DownloadRow(song)
             Action(Icons.AutoMirrored.Rounded.PlaylistPlay, "Play next", onPlayNext)
             Action(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue", onAddToQueue)
             song.albumId?.let { id -> Action(Icons.Rounded.Album, "Open album") { onOpenAlbum(id) } }
@@ -249,6 +255,30 @@ internal fun IosSongMenu(
             Action(Icons.Rounded.Share, "Share") { shareText("https://music.youtube.com/watch?v=${song.videoId}") }
             onCopyLog?.let { Action(Icons.Rounded.BugReport, "Copy log", it) }
         }
+    }
+}
+
+/** Start, watch, cancel, retry and delete one song's download in a single row that keeps the sheet open. */
+@Composable
+private fun DownloadRow(song: Song) {
+    val id = song.videoId
+    val active by IosDownloads.active.collectAsState()
+    val saved by IosDownloads.savedIds.collectAsState()
+    DisposableEffect(id) { onDispose { IosDownloads.dismissFailure(id) } }
+    @Composable
+    fun Row(icon: ImageVector, label: String, value: String?, tint: androidx.compose.ui.graphics.Color? = null, onClick: () -> Unit) = ListItem(
+        headlineContent = { Text(label) },
+        leadingContent = { Icon(icon, null, tint = tint ?: androidx.compose.material3.LocalContentColor.current) },
+        trailingContent = value?.let { { Text(it) } },
+        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+        modifier = Modifier.clickable(onClick = onClick),
+    )
+    when (val state = active[id]) {
+        IosDownloadState.Queued -> Row(Icons.Rounded.Downloading, "Queued", "Cancel") { IosDownloads.cancel(id) }
+        is IosDownloadState.Running -> Row(Icons.Rounded.Downloading, "Downloading", if (state.fraction > 0f) "${(state.fraction * 100).toInt()}%" else null) { IosDownloads.cancel(id) }
+        is IosDownloadState.Failed -> Row(Icons.Rounded.ErrorOutline, state.reason, "Retry", MaterialTheme.colorScheme.error) { IosDownloads.enqueue(song) }
+        null -> if (id in saved) Row(Icons.Rounded.DownloadDone, "Saved to Downloads", "Delete") { IosDownloads.delete(id) }
+        else Row(Icons.Rounded.Download, "Download", null) { IosDownloads.enqueue(song) }
     }
 }
 

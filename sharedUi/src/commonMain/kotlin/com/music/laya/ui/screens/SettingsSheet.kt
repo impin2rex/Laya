@@ -451,7 +451,7 @@ fun SettingsScreen(
                 )
             }
             val exportDownloadsTitle = stringResource(Res.string.export_compatible_downloads)
-            row(exportDownloadsTitle, "music folder", divided = false) {
+            row(exportDownloadsTitle, "music folder", divided = false, available = host.hasExportDownloads) {
                 SettingsSubRow(
                     title = exportDownloadsTitle,
                     checked = exportDownloads,
