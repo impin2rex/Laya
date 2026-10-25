@@ -1,24 +1,21 @@
 package com.music.laya.data.listentogether
 
-import android.content.Intent
+import io.ktor.http.decodeURLQueryComponent
+import io.ktor.http.encodeURLParameter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.net.URI
-import java.net.URLDecoder
-import java.net.URLEncoder
 
 data class ParsedJamInvite(
     val code: String,
     val serverUrl: String? = null,
 )
 
-/** Relays a Laya web or scheme invite from [com.music.laya.MainActivity] to Compose. */
+/** Relays a Laya web or scheme invite from the platform's link handler to Compose. */
 object JamInviteLink {
 
     const val ORIGIN = "https://laya-listen-together.onrender.com"
 
-    private const val EXTRA_CONSUMED = "laya.jamInviteConsumed"
     private const val HOST = "laya-listen-together.onrender.com"
     private const val CUSTOM_SCHEME = "laya"
     private const val CUSTOM_HOST = "party"
@@ -26,17 +23,9 @@ object JamInviteLink {
     private val _pending = MutableStateFlow<ParsedJamInvite?>(null)
     val pending: StateFlow<ParsedJamInvite?> = _pending.asStateFlow()
 
-    /** Reads a web invite from a cold launch or a new intent on the existing task. */
-    fun consume(intent: Intent?): Boolean {
-        if (
-            intent == null ||
-            intent.action != Intent.ACTION_VIEW ||
-            intent.getBooleanExtra(EXTRA_CONSUMED, false)
-        ) return false
-
-        val invite = parseInvite(intent.dataString) ?: return false
-        intent.putExtra(EXTRA_CONSUMED, true)
-        _pending.value = invite
+    /** Hands over an invite the platform has just received; false when [url] is not one. */
+    fun offer(url: String?): Boolean {
+        _pending.value = parseInvite(url) ?: return false
         return true
     }
 
@@ -53,7 +42,7 @@ object JamInviteLink {
      * 2. https://laya-listen-together.onrender.com/invite/<CODE>?server=<SERVER>
      */
     fun parseInvite(value: String?): ParsedJamInvite? {
-        val uri = runCatching { URI(value ?: return null) }.getOrNull() ?: return null
+        val uri = parseUri(value ?: return null) ?: return null
         val scheme = uri.scheme?.lowercase() ?: return null
         val host = uri.host?.lowercase() ?: return null
         val query = uri.rawQuery
@@ -61,7 +50,7 @@ object JamInviteLink {
 
         // 1. Custom scheme: laya://party/<CODE> or laya://party?code=<CODE>
         if (scheme == CUSTOM_SCHEME && host == CUSTOM_HOST) {
-            val pathPart = uri.path.orEmpty().trim('/').takeIf { it.isNotBlank() }
+            val pathPart = uri.path.trim('/').takeIf { it.isNotBlank() }
             val candidate = pathPart ?: extractQueryParam(query, "code") ?: return null
             val code = cleanCode(candidate) ?: return null
             return ParsedJamInvite(code = code, serverUrl = server)
@@ -69,7 +58,7 @@ object JamInviteLink {
 
         // 2. Official web domain: https://laya-listen-together.onrender.com/invite/<CODE>
         if (scheme == "https" && host == HOST) {
-            val match = INVITE_PATH.matchEntire(uri.path.orEmpty()) ?: return null
+            val match = INVITE_PATH.matchEntire(uri.path) ?: return null
             val code = match.groupValues[1].uppercase()
             return ParsedJamInvite(code = code, serverUrl = server)
         }
@@ -90,7 +79,7 @@ object JamInviteLink {
         val normalizedCode = code.uppercase()
         val base = customServer?.trim()?.trimEnd('/')
         return if (!base.isNullOrBlank()) {
-            val encoded = runCatching { URLEncoder.encode(base, "UTF-8") }.getOrDefault(base)
+            val encoded = base.encodeURLParameter(spaceToPlus = true)
             "laya://party/$normalizedCode?server=$encoded"
         } else {
             "laya://party/$normalizedCode"
@@ -108,7 +97,7 @@ object JamInviteLink {
             .map { it.split('=', limit = 2) }
             .firstOrNull { it.isNotEmpty() && it[0].equals(paramName, ignoreCase = true) }
             ?.getOrNull(1)
-            ?.let { runCatching { URLDecoder.decode(it, "UTF-8") }.getOrDefault(it) }
+            ?.let { runCatching { it.decodeURLQueryComponent(plusIsSpace = true) }.getOrDefault(it) }
     }
 
     private fun sanitizeServerUrl(raw: String?): String? {
@@ -119,7 +108,7 @@ object JamInviteLink {
         } else {
             "https://$trimmed"
         }
-        val uri = runCatching { URI(withScheme) }.getOrNull() ?: return null
+        val uri = parseUri(withScheme) ?: return null
         if (uri.host.isNullOrBlank()) return null
         return withScheme
     }

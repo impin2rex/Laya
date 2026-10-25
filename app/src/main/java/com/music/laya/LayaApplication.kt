@@ -38,6 +38,7 @@ import com.music.laya.playback.OriginalVersion
 import com.music.laya.data.innertube.Innertube
 import com.music.laya.data.innertube.AndroidStreamHooks
 import com.music.laya.data.listentogether.ListenTogether
+import com.music.laya.data.listentogether.init
 import com.music.laya.data.scrobbling.LastFM
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.init

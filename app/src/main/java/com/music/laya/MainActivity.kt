@@ -129,6 +129,7 @@ import com.music.laya.auth.YtMusicLoginScreen
 import com.music.laya.data.AppUpdateChecker
 import com.music.laya.data.LocalMediaRepository
 import com.music.laya.data.listentogether.JamInviteLink
+import com.music.laya.data.listentogether.consume
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.listentogether.partyQueueIndexOf
 import com.music.laya.data.NerdStats

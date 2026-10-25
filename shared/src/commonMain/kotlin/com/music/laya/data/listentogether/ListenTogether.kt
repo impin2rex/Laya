@@ -1,17 +1,15 @@
 package com.music.laya.data.listentogether
 
-import android.content.Context
-import android.os.SystemClock
-import android.content.SharedPreferences
-import android.net.ConnectivityManager
-import android.net.Network
-import com.music.laya.LayaApplication
-import com.music.laya.BuildConfig
 import com.music.laya.data.DebugLog as Log
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.ioDispatcher
+import com.music.laya.platform.sha256
+import com.russhwolf.settings.Settings
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.timeout
@@ -30,16 +28,19 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
+import kotlin.concurrent.Volatile
 import kotlin.random.Random
+import kotlin.time.TimeSource
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,18 +50,32 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.async
-import java.net.URI
-import java.security.MessageDigest
-import java.util.UUID
-import java.util.concurrent.TimeUnit
+
+/** Who the signed-in account is, as the party needs it. [names] are tried in order after a typed nickname. */
+class PartyAccount(val idSeed: String, val names: List<String>, val avatar: String?)
+
+/** Everything [ListenTogether] needs from the platform it runs on. */
+class PartyHost(
+    val settings: Settings,
+    val defaultServer: String,
+    /** Monotonic milliseconds; Android passes `SystemClock.elapsedRealtime`, which counts through deep sleep. */
+    val elapsedRealtimeMs: () -> Long,
+    /** Null when nobody is signed in. */
+    val account: () -> PartyAccount?,
+    /** Builds the HTTP client around [ListenTogether]'s plugin setup. */
+    val createClient: (HttpClientConfig<*>.() -> Unit) -> HttpClient,
+    /** Transport failures the common check cannot recognise (Darwin's NSError wrapper). */
+    val isTransportError: (Throwable) -> Boolean = { false },
+)
 
 sealed interface ServerUrlError {
     data object Whitespace : ServerUrlError
@@ -220,20 +235,9 @@ object ListenTogether {
         explicitNulls = false
     }
 
-    private val http = HttpClient(OkHttp) {
-        engine {
-            config {
-                // Not the shared [Http.client]: that one is tuned for streaming
-                // media, and its read timeout would take down a socket that is
-                // merely quiet. A party can sit paused for ten minutes and the
-                // connection is not in trouble — the server's own heartbeat and
-                // the ping below are what say whether it is.
-                readTimeout(0, TimeUnit.MILLISECONDS)
-                connectTimeout(15, TimeUnit.SECONDS)
-                pingInterval(20, TimeUnit.SECONDS)
-                retryOnConnectionFailure(true)
-            }
-        }
+    // The engine is the host's: a socket must not die for being quiet, so Android
+    // builds it with no read timeout rather than reusing the streaming client.
+    private val http: HttpClient by lazy { host.createClient {
         install(ContentNegotiation) { json(json) }
         // Installed with no defaults so it changes nothing on its own — the
         // socket in particular must stay open indefinitely. It exists so the
@@ -244,10 +248,15 @@ object ListenTogether {
         // Off, so a 409 "party full" can be read out of the body and shown as
         // itself rather than arriving as a transport exception.
         expectSuccess = false
-    }
+    } }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val clock = ServerClock(SystemClock::elapsedRealtime)
+    private var hostOrNull: PartyHost? = null
+    private val host: PartyHost get() = hostOrNull ?: error("ListenTogether.init was not called")
+    private val bootMark = TimeSource.Monotonic.markNow()
+    private val prefs: Settings get() = host.settings
+
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    private val clock = ServerClock { hostOrNull?.elapsedRealtimeMs?.invoke() ?: bootMark.elapsedNow().inWholeMilliseconds }
     private val switchMutex = Mutex()
 
     private val _state = MutableStateFlow(State())
@@ -272,9 +281,7 @@ object ListenTogether {
 
         val candidate = if (trimmed.contains("://")) trimmed else "https://$trimmed"
 
-        val uri = try {
-            URI(candidate)
-        } catch (_: Exception) {
+        val uri = parseUri(candidate) ?: run {
             val authority = candidate.substringAfter("://").substringBefore("/").substringBefore("?").substringBefore("#")
             if (authority.isEmpty()) {
                 return ServerUrlValidationResult.Invalid(ServerUrlError.InvalidHost)
@@ -302,7 +309,7 @@ object ListenTogether {
             return ServerUrlValidationResult.Invalid(ServerUrlError.HasFragment)
         }
 
-        val pathSegments = uri.rawPath.orEmpty().split('/').filter { it.isNotEmpty() }
+        val pathSegments = uri.path.split('/').filter { it.isNotEmpty() }
         for (segment in pathSegments) {
             if (segment == "." || segment == "..") {
                 return ServerUrlValidationResult.Invalid(ServerUrlError.InvalidPath)
@@ -366,16 +373,15 @@ object ListenTogether {
      * The default party server this build ships pointed at, from `LISTEN_TOGETHER_SERVER`
      * in `local.properties` or build environment.
      */
-    val defaultServer: String = when (val res = parseAndNormalizeServerUrl(BuildConfig.LISTEN_TOGETHER_SERVER)) {
-        is ServerUrlValidationResult.Valid -> res.normalizedUrl
-        is ServerUrlValidationResult.Invalid -> error("Invalid BuildConfig.LISTEN_TOGETHER_SERVER: ${BuildConfig.LISTEN_TOGETHER_SERVER}")
-    }
+    val defaultServer: String get() = defaultServerBase
+
+    private var defaultServerBase: String = JamInvite.ORIGIN
 
     /**
      * The dynamic server currently determined to be healthy and available for IDLE operations.
      * Probes custom server first if configured; falls back to [defaultServer] if custom is down.
      */
-    private val _effectiveIdleServer = MutableStateFlow(defaultServer)
+    private val _effectiveIdleServer = MutableStateFlow(JamInvite.ORIGIN)
     fun effectiveIdleServerBase(): String = _effectiveIdleServer.value
 
     /**
@@ -430,20 +436,12 @@ object ListenTogether {
     val serverStatus: StateFlow<ServerStatus> = _serverStatus.asStateFlow()
 
     fun isEligibleForFallback(error: Throwable): Boolean = when (error) {
-        is java.net.UnknownHostException,
-        is java.net.ConnectException,
-        is java.net.NoRouteToHostException,
-        is java.net.PortUnreachableException,
-        is java.net.SocketTimeoutException,
-        is io.ktor.client.plugins.HttpRequestTimeoutException,
+        is IOException,
+        is HttpRequestTimeoutException,
         is io.ktor.client.network.sockets.SocketTimeoutException,
         is io.ktor.client.network.sockets.ConnectTimeoutException -> true
         is PartyException -> (error.statusCode ?: 0) in 500..599
-        else -> {
-            val cause = error.cause
-            if (cause != null && cause !== error && isEligibleForFallback(cause)) true
-            else false
-        }
+        else -> hostOrNull?.isTransportError?.invoke(error) == true || error.cause.let { it != null && it !== error && isEligibleForFallback(it) }
     }
 
     const val CUSTOM_SERVER_TIMEOUT_MS = 6_000L
@@ -477,7 +475,7 @@ object ListenTogether {
      * on metered data with no party. The socket itself proves reachability
      * while live, and nothing reads the status row unless the screen is open.
      */
-    internal fun shouldSkipIdleProbe(
+    fun shouldSkipIdleProbe(
         screenActive: Boolean,
         connectionLive: Boolean,
         inParty: Boolean,
@@ -652,16 +650,19 @@ object ListenTogether {
         }
     }
 
-    private lateinit var prefs: SharedPreferences
     private var token: String? = null
 
     @Volatile
     private var session: DefaultClientWebSocketSession? = null
     private var socketJob: Job? = null
 
-    fun init(context: Context) {
-        prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val rawSaved = prefs.getString(KEY_SERVER, null)?.trim().orEmpty()
+    fun init(partyHost: PartyHost) {
+        hostOrNull = partyHost
+        defaultServerBase = when (val res = parseAndNormalizeServerUrl(partyHost.defaultServer)) {
+            is ServerUrlValidationResult.Valid -> res.normalizedUrl
+            is ServerUrlValidationResult.Invalid -> error("Invalid party server: ${partyHost.defaultServer}")
+        }
+        val rawSaved = prefs.getStringOrNull(KEY_SERVER)?.trim().orEmpty()
         val normalizedSaved = when (val res = parseAndNormalizeServerUrl(rawSaved)) {
             is ServerUrlValidationResult.Valid -> res.normalizedUrl
             is ServerUrlValidationResult.Invalid -> ""
@@ -673,42 +674,12 @@ object ListenTogether {
             defaultServer
         }
 
-        val code = prefs.getString(KEY_CODE, null)
-        val saved = prefs.getString(KEY_TOKEN, null)
-        prefs.edit().remove(KEY_CODE).remove(KEY_TOKEN).apply()
+        val code = prefs.getStringOrNull(KEY_CODE)
+        val saved = prefs.getStringOrNull(KEY_TOKEN)
+        prefs.remove(KEY_CODE)
+        prefs.remove(KEY_TOKEN)
         if (!code.isNullOrBlank() && !saved.isNullOrBlank()) {
             releaseStaleSlot(code, saved)
-        }
-
-        val manager = context.getSystemService(ConnectivityManager::class.java)
-        if (manager != null) {
-            runCatching {
-                manager.registerDefaultNetworkCallback(
-                    object : ConnectivityManager.NetworkCallback() {
-                        override fun onAvailable(network: Network) {
-                            // A real network switch is worth one recheck, unless
-                            // it would be skipped as idle anyway (#788).
-                            val snapshot = _state.value
-                            if (!shouldSkipIdleProbe(
-                                    screenActive = isScreenActive,
-                                    connectionLive = snapshot.connection == Connection.LIVE,
-                                    inParty = snapshot.code != null,
-                                    metered = runCatching { AppSettings.meteredConnection.value }.getOrNull(),
-                                )
-                            ) {
-                                refreshServerHealth(showChecking = false)
-                            }
-                        }
-                        override fun onLost(network: Network) {
-                            _serverConnectionState.value = ServerConnectionState.Offline
-                            _serverStatus.value = ServerStatus(Health.OFFLINE)
-                        }
-                        // onCapabilitiesChanged is deliberately not handled: it fires on
-                        // every signal-strength change, and each one used to cost a
-                        // /healthz request. onAvailable covers a real network switch.
-                    }
-                )
-            }
         }
 
         startHealthMonitor()
@@ -716,6 +687,25 @@ object ListenTogether {
         // (custom vs default fallback) without opening the screen first. The
         // periodic monitor above is what was draining in #788, not this.
         refreshServerHealth(showChecking = true)
+    }
+
+    /** A real network switch is worth one recheck, unless it would be skipped as idle anyway (#788). */
+    fun onNetworkAvailable() {
+        val snapshot = _state.value
+        if (!shouldSkipIdleProbe(
+                screenActive = isScreenActive,
+                connectionLive = snapshot.connection == Connection.LIVE,
+                inParty = snapshot.code != null,
+                metered = runCatching { AppSettings.meteredConnection.value }.getOrNull(),
+            )
+        ) {
+            refreshServerHealth(showChecking = false)
+        }
+    }
+
+    fun onNetworkLost() {
+        _serverConnectionState.value = ServerConnectionState.Offline
+        _serverStatus.value = ServerStatus(Health.OFFLINE)
     }
 
     /**
@@ -746,7 +736,7 @@ object ListenTogether {
             "setCustomServerUrl accepts only canonical URLs produced by parseAndNormalizeServerUrl"
         }
 
-        prefs.edit().putString(KEY_SERVER, normalizedUrl).apply()
+        prefs.putString(KEY_SERVER, normalizedUrl)
         _customServer.value = normalizedUrl
 
         val (job, _) = resolutionMutex.withLock {
@@ -765,10 +755,10 @@ object ListenTogether {
     /** Whether this device has an account it can jam as. */
     fun canJoin(): Boolean = identity() != null
 
-    fun nickname(): String = prefs.getString(KEY_NICKNAME, null).orEmpty()
+    fun nickname(): String = prefs.getStringOrNull(KEY_NICKNAME).orEmpty()
 
     fun setNickname(value: String) {
-        prefs.edit().putString(KEY_NICKNAME, value.trim().take(80)).apply()
+        prefs.putString(KEY_NICKNAME, value.trim().take(80))
     }
 
     /**
@@ -827,10 +817,8 @@ object ListenTogether {
         withContext(NonCancellable) {
             activePartyServerBase = serverBase
             token = membership.token
-            prefs.edit()
-                .putString(KEY_CODE, membership.code)
-                .putString(KEY_TOKEN, membership.token)
-                .apply()
+            prefs.putString(KEY_CODE, membership.code)
+            prefs.putString(KEY_TOKEN, membership.token)
             clock.reset()
             _state.value = State(
                 code = membership.code,
@@ -884,10 +872,8 @@ object ListenTogether {
         withContext(NonCancellable) {
             activePartyServerBase = serverBase
             token = membership.token
-            prefs.edit()
-                .putString(KEY_CODE, membership.code)
-                .putString(KEY_TOKEN, membership.token)
-                .apply()
+            prefs.putString(KEY_CODE, membership.code)
+            prefs.putString(KEY_TOKEN, membership.token)
             clock.reset()
             _state.value = State(
                 code = membership.code,
@@ -932,7 +918,7 @@ object ListenTogether {
         targetCode: String,
         nickname: String = nickname(),
     ): SwitchPartyResult = switchMutex.withLock {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val who = identity(nickname)
                 ?: return@withContext if (_state.value.inParty) {
                     SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), "Sign in to listen together.")
@@ -1020,10 +1006,8 @@ object ListenTogether {
 
                 // Commit new party session
                 token = membership.token
-                prefs.edit()
-                    .putString(KEY_CODE, membership.code)
-                    .putString(KEY_TOKEN, membership.token)
-                    .apply()
+                prefs.putString(KEY_CODE, membership.code)
+                prefs.putString(KEY_TOKEN, membership.token)
                 clock.reset()
                 _state.value = State(
                     code = membership.code,
@@ -1045,7 +1029,7 @@ object ListenTogether {
 
     /** Give up this device's slot. The party carries on without it. */
     suspend fun leaveParty() = switchMutex.withLock {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val code = _state.value.code
             val held = token
             val currentServer = activePartyServerBase ?: resolveHttpBase(effectiveIdleServerBase())
@@ -1055,7 +1039,8 @@ object ListenTogether {
             clock.reset()
             token = null
             activePartyServerBase = null
-            prefs.edit().remove(KEY_CODE).remove(KEY_TOKEN).apply()
+            prefs.remove(KEY_CODE)
+            prefs.remove(KEY_TOKEN)
             _state.value = State()
             if (code != null && held != null) {
                 releaseStaleSlotOnServer(currentServer, code, held)
@@ -1466,21 +1451,15 @@ object ListenTogether {
      * real account identifiers would be holding something it has no use for.
      */
     private fun identity(nickname: String = nickname()): Identity? {
-        val store = LayaApplication.authStore
-        if (!store.isSignedIn) return null
-        val account = store.activeSession ?: return null
-        val profile = account.profiles.firstOrNull { it.profileId == account.activeProfileId }
-            ?: account.profiles.firstOrNull()
+        val account = host.account() ?: return null
         val name = nickname.trim().takeIf { it.isNotBlank() }
-            ?: profile?.name?.takeIf { it.isNotBlank() }
-            ?: account.name.takeIf { it.isNotBlank() }
-            ?: account.email.substringBefore('@').takeIf { it.isNotBlank() }
+            ?: account.names.firstOrNull { it.isNotBlank() }
             ?: return null
         return Identity(
-            userId = sha256("${account.accountId}:${profile?.profileId.orEmpty()}").take(32),
+            userId = sha256Hex(account.idSeed).take(32),
             deviceId = deviceId(),
             name = name,
-            avatar = profile?.avatar?.takeIf { it.startsWith("http") },
+            avatar = account.avatar?.takeIf { it.startsWith("http") },
         )
     }
 
@@ -1499,11 +1478,11 @@ object ListenTogether {
      * Stored as code → the epoch millisecond it lapses, pruned on every read.
      */
     private fun recentKicks(): Map<String, Long> {
-        val raw = prefs.getString(KEY_KICKED, null) ?: return emptyMap()
+        val raw = prefs.getStringOrNull(KEY_KICKED) ?: return emptyMap()
         val stored = runCatching {
             json.decodeFromString(MapSerializer(String.serializer(), Long.serializer()), raw)
         }.getOrNull() ?: return emptyMap()
-        val now = System.currentTimeMillis()
+        val now = currentTimeMillis()
         val live = stored.filterValues { it > now }
         if (live.size != stored.size) writeKicks(live)
         return live
@@ -1511,21 +1490,21 @@ object ListenTogether {
 
     private fun writeKicks(entries: Map<String, Long>) {
         if (entries.isEmpty()) {
-            prefs.edit().remove(KEY_KICKED).apply()
+            prefs.remove(KEY_KICKED)
             return
         }
         val encoded = json.encodeToString(
             MapSerializer(String.serializer(), Long.serializer()),
             entries,
         )
-        prefs.edit().putString(KEY_KICKED, encoded).apply()
+        prefs.putString(KEY_KICKED, encoded)
     }
 
     /** @see recentKicks */
     private fun recordKick(code: String) {
         val normalised = code.filter { it.isLetterOrDigit() }.uppercase()
         if (normalised.isEmpty()) return
-        writeKicks(recentKicks() + (normalised to System.currentTimeMillis() + KICK_BLOCK_MS))
+        writeKicks(recentKicks() + (normalised to currentTimeMillis() + KICK_BLOCK_MS))
     }
 
     /**
@@ -1560,11 +1539,10 @@ object ListenTogether {
      * from a sixth device — so it has to survive a sign-out, an account switch
      * and a process death, and must not survive an uninstall.
      */
+    @OptIn(ExperimentalUuidApi::class)
     private fun deviceId(): String {
-        prefs.getString(KEY_DEVICE, null)?.let { return it }
-        return UUID.randomUUID().toString().also {
-            prefs.edit().putString(KEY_DEVICE, it).apply()
-        }
+        prefs.getStringOrNull(KEY_DEVICE)?.let { return it }
+        return Uuid.random().toString().also { prefs.putString(KEY_DEVICE, it) }
     }
 
     private fun recordActivity(entry: PartyActivity) {
@@ -1686,9 +1664,8 @@ object ListenTogether {
             .replaceFirst("http://", "ws://")
     }
 
-    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray())
-        .joinToString("") { "%02x".format(it) }
+    private fun sha256Hex(value: String): String = sha256(value.encodeToByteArray())
+        .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
 
     const val CODE_LENGTH = 6
 
