@@ -3,6 +3,8 @@ package com.music.laya.ios
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.music.laya.data.NerdStats
+import com.music.laya.data.TelemetryProvenance
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
@@ -255,6 +257,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private fun start(i: Int, fromMs: Long = 0) {
         val song = queue.getOrNull(i) ?: return
         index = i
+        NerdStats.onTrackTransition(song.videoId)
         pendingMs = null
         isLoading = true
         durationMs = 0
@@ -308,10 +311,32 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         if (pendingMs == null && song != null && (!isPlaying || now - lastSavedAt >= 5)) { lastSavedAt = now; saveState() }
     }
 
+    override fun onAudioFormat(mimeType: String?, sampleRateHz: Int, channels: Int, bitDepth: Int, bitrateKbps: Int) {
+        val id = song?.videoId ?: return
+        val lossless = NerdStats.isLosslessMime(mimeType)
+        // The resolver's figure first (as Android); AVFoundation's estimate off a half-loaded stream only as a fallback.
+        val (kbps, provenance) = NerdStats.sourceBitrate(id) { bitrateKbps.takeIf { it > 0 } }
+            ?: (null to TelemetryProvenance.UNKNOWN)
+        NerdStats.publish(
+            NerdStats.Snapshot(
+                mimeType = mimeType,
+                bitrateKbps = kbps,
+                sampleRateHz = sampleRateHz.takeIf { it > 0 },
+                channels = channels.takeIf { it > 0 },
+                bitDepth = bitDepth.takeIf { lossless && it > 0 },
+                sourceName = "YouTube",
+                bitrateProvenance = provenance,
+                mediaId = id,
+            ),
+            NerdStats.currentGeneration,
+        )
+    }
+
     override fun onEnded() { autoNext().let { if (it >= 0) start(it) else isPlaying = false } }
 
     override fun onAdvancedToNext() {
         index = preloaded
+        NerdStats.onTrackTransition(song?.videoId)
         position.report(0)
         IosPlayerStore.saveQueue(queue, index)
         announce()

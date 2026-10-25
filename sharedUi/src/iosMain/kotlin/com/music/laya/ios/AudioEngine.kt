@@ -45,6 +45,9 @@ interface AudioEngineListener {
     fun onEnded()
     fun onAdvancedToNext()
 
+    /** The current item's decoded format once it is ready (0 where unknown): [mimeType] in Media3's naming, e.g. audio/mp4a-latm. */
+    fun onAudioFormat(mimeType: String?, sampleRateHz: Int, channels: Int, bitDepth: Int, bitrateKbps: Int)
+
     /** [httpStatus] is the googlevideo status that caused it, or 0 when it was not an HTTP refusal. */
     fun onError(message: String, httpStatus: Int)
     /** Hardware keys, Control Center or our own slider moved the system volume. */

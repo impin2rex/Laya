@@ -471,6 +471,18 @@ fun LayaIosApp(engine: AudioEngine) {
             ?.let { if (it.isNotEmpty()) player.play(it, 0) }
     }
 
+    // Test hook: SIMCTL_CHILD_LAYA_OPEN=player | settings | artist:<name> opens that screen.
+    LaunchedEffect(Unit) {
+        val what = NSProcessInfo.processInfo.environment["LAYA_OPEN"] as? String ?: return@LaunchedEffect
+        when {
+            what == "player" -> { kotlinx.coroutines.delay(12_000); nowPlayingOpen = true }
+            what == "settings" -> stack = stack + IosPage.Settings
+            what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
+                ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
+                ?.let { openDetail(it.browseId, it.title, it.subtitle, it.thumbnailUrl, it.type) }
+        }
+    }
+
     val homeList = rememberLazyListState()
     val exploreList = rememberLazyListState()
     val libraryList = rememberLazyListState()

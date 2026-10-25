@@ -352,6 +352,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                         self.seekTo(positionMs: ms)
                     }
                     self.updateNowPlayingTiming()
+                    self.reportAudioFormat(item)
                 case .failed:
                     let refused = self.loaders[ObjectIdentifier(item)]?.reportedHTTPError ?? false
                     if !refused {
@@ -365,6 +366,29 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                 }
             }
         }
+    }
+
+    /// What the decoder was handed, for the player's nerd stats (codec, rate, channels, bitrate).
+    private func reportAudioFormat(_ item: AVPlayerItem) {
+        guard let track = item.tracks.first(where: { $0.assetTrack?.mediaType == .audio })?.assetTrack,
+              let desc = (track.formatDescriptions as? [CMFormatDescription])?.first,
+              let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(desc)?.pointee else { return }
+        let mime: String?
+        switch CMFormatDescriptionGetMediaSubType(desc) {
+        case kAudioFormatMPEG4AAC: mime = "audio/mp4a-latm"
+        case kAudioFormatAppleLossless: mime = "audio/alac"
+        case kAudioFormatFLAC: mime = "audio/flac"
+        case kAudioFormatOpus: mime = "audio/opus"
+        case kAudioFormatMPEGLayer3: mime = "audio/mpeg"
+        default: mime = nil
+        }
+        listener?.onAudioFormat(
+            mimeType: mime,
+            sampleRateHz: Int32(asbd.mSampleRate),
+            channels: Int32(asbd.mChannelsPerFrame),
+            bitDepth: Int32(asbd.mBitsPerChannel),
+            bitrateKbps: Int32(track.estimatedDataRate / 1000)
+        )
     }
 
     private func currentItemChanged(from old: AVPlayerItem?) {
