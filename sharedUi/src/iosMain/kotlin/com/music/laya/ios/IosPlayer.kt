@@ -63,6 +63,8 @@ import platform.Foundation.NSOperationQueue
 
 // 1 MiB, same as Android's STREAM_CHUNK_BYTES: googlevideo refuses/throttles larger ranges for some clients.
 private const val CHUNK_BYTES = 1024L * 1024
+/** Retries of one broken track before it is left paused for the listener; reset by a different track or a quiet minute. */
+private const val MAX_RECOVERIES = 3
 
 /** Most AutoPlay tracks queued ahead at once, same as Android's MAX_QUEUED_AUTOPLAY. */
 private const val MAX_AUTOPLAY = 10
@@ -586,7 +588,14 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         if (IosCast.active) return castLoad(song, fromMs, play = true)
         startJob = scope.launch {
             runCatching { resolveInto(song, next = false) }
-                .onFailure { isLoading = false; println("IosPlayer: ${it.message ?: it}") }
+                .onFailure {
+                    if (it is kotlinx.coroutines.CancellationException) return@onFailure
+                    println("IosPlayer: ${it.message ?: it}")
+                    if (it is StreamResolver.PermanentlyUnplayableException) {
+                        isLoading = false
+                        IosPlayerHost.showMessage("Can't play ${song.title}")
+                    } else recover(song, it.message ?: "resolve failed", 0)
+                }
                 .onSuccess { if (fromMs > 0) engine.seekTo(fromMs); announce(); preResolveNext(); topUpAutoplay() }
         }
     }
@@ -790,9 +799,9 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     override fun onError(message: String, httpStatus: Int) {
         println("IosPlayer: $message ($httpStatus)")
-        val failed = song
+        val failed = song ?: run { isLoading = false; return }
         // Android's PlaybackFallback: a source that failed after being picked is not asked again, YouTube plays instead.
-        if (failed == null || !offSite.remove(failed.videoId)) { isLoading = false; return }
+        if (!offSite.remove(failed.videoId)) return recover(failed, "$message ($httpStatus)", httpStatus)
         val via = NerdStats.exactSourceFor(failed.videoId) ?: "source"
         TrackLog.w("Laya", "$via failed to play: $message ($httpStatus), falling back to YouTube", about = failed.videoId)
         NerdStats.clearDeclared(failed.videoId)
@@ -807,6 +816,36 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                 if (at > 0) engine.seekTo(at)
                 preResolveNext()
             }.onFailure { isLoading = false; println("IosPlayer: YouTube fallback failed: ${it.message ?: it}") }
+        }
+    }
+
+    private var recoverFor: String? = null
+    private var recoverCount = 0
+    private var recoverAt = 0.0
+
+    /**
+     * A track that broke (a dropped connection, a refused URL) starts again where it stopped, with a fresh
+     * URL when the old one was refused. It is never skipped: after [MAX_RECOVERIES] it waits, paused, for Play.
+     */
+    private fun recover(failed: Song, reason: String, httpStatus: Int) {
+        if (httpStatus > 0) streams[failed.videoId]?.url?.let { StreamResolver.onPlaybackRefused(it, httpStatus) }
+        val now = NSDate().timeIntervalSinceReferenceDate
+        if (recoverFor != failed.videoId || now - recoverAt > 60) { recoverFor = failed.videoId; recoverCount = 0 }
+        recoverAt = now
+        val at = pendingMs ?: position.positionMs
+        if (++recoverCount > MAX_RECOVERIES) {
+            TrackLog.w("Laya", "gave up after $MAX_RECOVERIES retries: $reason", about = failed.videoId)
+            isLoading = false
+            isPlaying = false
+            pendingMs = at // Play tries again from here
+            IosPlayerHost.showMessage("Couldn't play ${failed.title}")
+            return
+        }
+        TrackLog.w("Laya", "playback broke ($reason); retry $recoverCount at ${at} ms", about = failed.videoId)
+        isLoading = true
+        scope.launch {
+            delay(recoverCount * 1000L)
+            if (song?.videoId == failed.videoId) start(index, at)
         }
     }
 

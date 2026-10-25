@@ -30,6 +30,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private var skipping = false
     private var currentItem: AVPlayerItem?
     private var nextItem: AVPlayerItem?
+    /// Items already reported as failed, so the status, the notification and the loader don't report one failure three times.
+    private var failedItems = Set<ObjectIdentifier>()
 
     private var statusObservation: NSKeyValueObservation?
     private var notificationTokens: [NSObjectProtocol] = []
@@ -358,11 +360,26 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             DispatchQueue.main.async {
                 // Only the playing item's refusal is actionable; a queued one is
                 // re-resolved by Kotlin when it becomes current and fails.
-                guard let self, let item, item === self.currentItem else { return }
-                self.listener?.onError(message: "Stream refused (HTTP \(status))", httpStatus: Int32(status))
+                guard let self, let item else { return }
+                self.fail(item, message: "Stream refused (HTTP \(status))", httpStatus: Int32(status))
             }
         }
         loaders[ObjectIdentifier(item)] = loader
+    }
+
+    /// The playing item can't go on. AVQueuePlayer would quietly move to the queued next track
+    /// (a skip nobody asked for), so the queue is held here and Kotlin decides: retry, or move on.
+    /// A queued item's failure is left for when it becomes current.
+    private func fail(_ item: AVPlayerItem, message: String, httpStatus: Int32) {
+        guard item === currentItem, failedItems.insert(ObjectIdentifier(item)).inserted else { return }
+        cancelFade()
+        clearNextOnMain()
+        player.pause()
+        listener?.onError(message: message, httpStatus: httpStatus)
+    }
+
+    private func hasFailed(_ item: AVPlayerItem) -> Bool {
+        item.status == .failed || item.error != nil || failedItems.contains(ObjectIdentifier(item))
     }
 
     private func prepare(_ item: AVPlayerItem) {
@@ -388,13 +405,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                     self.updateNowPlayingTiming()
                     self.reportAudioFormat(item)
                 case .failed:
-                    let refused = self.loaders[ObjectIdentifier(item)]?.reportedHTTPError ?? false
-                    if !refused {
-                        self.listener?.onError(
-                            message: item.error?.localizedDescription ?? "Playback failed",
-                            httpStatus: 0
-                        )
-                    }
+                    self.fail(item, message: item.error?.localizedDescription ?? "Playback failed", httpStatus: 0)
                 default:
                     break
                 }
@@ -436,6 +447,17 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func currentItemChanged(from old: AVPlayerItem?) {
         let now = player.currentItem
+        if let old, old !== now, old === currentItem, hasFailed(old) {
+            // The queue moved past a track that broke rather than ended. Undo that and let Kotlin recover it.
+            cancelFade()
+            if let now, now === nextItem { player.remove(now); dropItem(now); nextItem = nil } else { clearNextOnMain() }
+            player.pause()
+            dropItem(old)
+            if failedItems.insert(ObjectIdentifier(old)).inserted {
+                listener?.onError(message: old.error?.localizedDescription ?? "Playback stopped", httpStatus: 0)
+            }
+            return
+        }
         if let old, old !== now {
             dropItem(old)
         }
@@ -691,10 +713,9 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         notificationTokens.append(center.addObserver(
             forName: .AVPlayerItemFailedToPlayToEndTime, object: nil, queue: .main
         ) { [weak self] note in
-            guard let self, let item = note.object as? AVPlayerItem, item === self.currentItem else { return }
-            if self.loaders[ObjectIdentifier(item)]?.reportedHTTPError ?? false { return }
+            guard let self, let item = note.object as? AVPlayerItem else { return }
             let error = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
-            self.listener?.onError(message: error?.localizedDescription ?? "Playback stopped", httpStatus: 0)
+            self.fail(item, message: error?.localizedDescription ?? "Playback stopped", httpStatus: 0)
         })
     }
 
