@@ -31,6 +31,7 @@ import com.music.laya.sharedui.resources.remove
 import com.music.laya.sharedui.resources.save
 import com.music.laya.ui.components.PillTextField
 import com.music.laya.ui.screens.DetailHost
+import coil3.request.transformations
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -41,6 +42,7 @@ internal object IosDetailHost : DetailHost {
     override fun signatureBase(enabled: Boolean, url: String) = ArtistSignatureRepository.effectiveBaseUrl(enabled, url)
     override fun cachedSignature(name: String, base: String?): ArtistSignature? = ArtistSignatureRepository.cached(name, base)
     override suspend fun signatureFor(name: String, base: String?): ArtistSignature? = ArtistSignatureRepository.signatureFor(name, base)
+    override fun coil3.request.ImageRequest.Builder.signatureInk() { transformations(IosSignatureInk) }
 }
 
 /** Port of Android's SignatureApiEditor: saves only once `GET /v1/health` answers 2xx; blank forgets the provider. */
