@@ -37,6 +37,8 @@ import com.music.laya.data.model.SearchResult
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.AutomixPerformanceMode
 import com.music.laya.data.sources.SourceResolver
+import com.music.laya.data.sources.isPickedAddonRow
+import com.music.laya.data.sources.targetIn
 import com.music.laya.data.sources.TrackMatcher
 import com.music.laya.playback.AudioCache
 import kotlinx.coroutines.CoroutineScope

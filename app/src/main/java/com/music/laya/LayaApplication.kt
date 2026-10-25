@@ -43,6 +43,7 @@ import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.init
 import com.music.laya.data.settings.SearchHistory
 import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.AndroidSourcesHost
 import com.music.laya.data.stats.ArtistFacts
 import com.music.laya.data.stats.ListeningStats
 import com.music.laya.download.Downloads
@@ -117,7 +118,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // threads racing to create it. Joined before onCreate returns, so
         // nothing that runs after startup can see any of them half open.
         val backgroundInit = thread(name = "startup-init") {
-            SourceRegistry.init(this)
+            SourceRegistry.init(AndroidSourcesHost(this))
             AndroidStreamHooks.initInnerTubeX(this)
             // Its own directory: canvas clips are looping video, not audio, and
             // belong in a cache AudioCache's own limit and eviction policy were

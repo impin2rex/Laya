@@ -9,11 +9,10 @@ import com.music.laya.data.sources.addon.AddonManifest
 import com.music.laya.data.sources.addon.AddonNotFound
 import com.music.laya.data.sources.addon.AddonStream
 import com.music.laya.data.sources.addon.AddonTrack
-import com.music.laya.playback.StreamContainer
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.withContext
-import java.util.Collections
-import java.util.Locale
 
 /**
  * A [MusicSource] backed by one addon server the user pointed at.
@@ -55,11 +54,21 @@ class AddonSource(
      * Bounded and cleared wholesale rather than pruned: it is an optimisation
      * on both counts, and a miss costs a field of metadata, not a track.
      */
-    private val rows = Collections.synchronizedMap(
-        object : LinkedHashMap<String, AddonTrack>(64, 0.75f, true) {
-            override fun removeEldestEntry(eldest: Map.Entry<String, AddonTrack>) = size > MAX_ROWS
-        },
-    )
+    private val rowsLock = SynchronizedObject()
+    private val rows = LinkedHashMap<String, AddonTrack>()
+
+    private fun remember(track: AddonTrack) {
+        synchronized(rowsLock) {
+            rows.remove(track.id)
+            rows[track.id] = track
+            if (rows.size > MAX_ROWS) rows.remove(rows.keys.first())
+        }
+    }
+
+    /** Least-recently-used order: a row read is a row kept. */
+    private fun row(id: String): AddonTrack? = synchronized(rowsLock) {
+        rows.remove(id)?.also { rows[id] = it }
+    }
 
     // ── Manifest policy ───────────────────────────────────────────────────
 
@@ -105,7 +114,7 @@ class AddonSource(
      * of retrying fixes, and so is a rejection; anything else is a server
      * having a bad minute and is worth trying again on the next track.
      */
-    override suspend fun health(): SourceHealth = withContext(Dispatchers.IO) {
+    override suspend fun health(): SourceHealth = withContext(ioDispatcher) {
         if (config.baseUrl.isBlank()) {
             return@withContext SourceHealth.Rejected("An addon URL is required")
         }
@@ -188,7 +197,7 @@ class AddonSource(
         waitForAll: Boolean,
         request: StreamRequest?,
     ): List<Song> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             if (query.isBlank()) return@withContext emptyList()
             if (!admitted("a search")) return@withContext emptyList()
             val tier = request?.tier ?: AddonClient.TIER_LOSSLESS
@@ -200,7 +209,7 @@ class AddonSource(
                 .filter { it.id.isNotBlank() && it.title.isNotBlank() }
                 .take(limit)
                 .map { track ->
-                    rows[track.id] = track
+                    remember(track)
                     Song(
                         videoId = SourceRegistry.trackKey(config.id, track.id),
                         title = track.title,
@@ -208,7 +217,7 @@ class AddonSource(
                         albumName = track.album.ifBlank { null },
                         thumbnailUrl = track.artwork,
                         durationText = track.durationSec?.let {
-                            "${it / 60}:${"%02d".format(Locale.ROOT, it % 60)}"
+                            "${it / 60}:${(it % 60).toString().padStart(2, '0')}"
                         },
                         // Atmos is read before the tier label and not from it.
                         // Tidal publishes its immersive rows as
@@ -217,9 +226,9 @@ class AddonSource(
                         // for *below* every stereo row — see
                         // [AddonTrack.isDolbyAtmos].
                         sourceQuality = if (track.isDolbyAtmos) {
-                            ModuleSource.DOLBY
+                            SourceTiers.DOLBY
                         } else {
-                            ModuleSource.qualityTier("${track.audioQuality} ${track.format}")
+                            SourceTiers.qualityTier("${track.audioQuality} ${track.format}")
                         },
                         sourceHiRes = !track.isDolbyAtmos && track.isHiRes,
                     )
@@ -242,7 +251,7 @@ class AddonSource(
      * addon thinks best.
      */
     suspend fun stream(trackId: String, request: StreamRequest, stereoOnly: Boolean): SourceStream? =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             if (!admitted("a stream")) return@withContext null
             val tier = request.tier
             val result = client.stream(trackId, tier, stereoOnly)
@@ -297,7 +306,7 @@ class AddonSource(
      * is otherwise unplayable here for no good reason.
      */
     private fun fromRow(trackId: String, tier: String): SourceStream? {
-        val row = rows[trackId] ?: return null
+        val row = row(trackId) ?: return null
         val url = row.streamURL?.ifBlank { null } ?: return null
         TrackLog.d(TAG, "${config.displayName}: using the search row's own URL for $trackId")
         return openable(url, AddonStream(url = url, format = row.format), trackId, tier)
@@ -319,7 +328,7 @@ class AddonSource(
      *    fall back to and refusing is what lets another source be heard.
      */
     private fun openable(url: String, answer: AddonStream, trackId: String, tier: String): SourceStream? {
-        if (ModuleSource.malformed(url)) {
+        if (SourceTiers.malformed(url)) {
             TrackLog.w(
                 TAG,
                 "${config.displayName}: malformed URL for $trackId; skipping it — ${url.take(120)}",
@@ -335,8 +344,8 @@ class AddonSource(
         }
 
         val format = formatOf(answer, url, tier)
-        val playsAtmos = DeviceCodecs.playsDolbyAtmos
-        if (ModuleSource.unplayable(format, atmosAllowed = playsAtmos && AppSettings.dolbyAtmos.value)) {
+        val playsAtmos = SourceRegistry.host.playsDolbyAtmos
+        if (SourceTiers.unplayable(format, atmosAllowed = playsAtmos && AppSettings.dolbyAtmos.value)) {
             val why = if (playsAtmos) {
                 "which is switched off in Settings"
             } else {
@@ -354,12 +363,21 @@ class AddonSource(
         // at `/dash/{id}` — is the exact shape that reaches a progressive
         // extractor and fails as an unreadable container. The addon told us
         // what it is; the player only needed to be passed it on.
-        answer.transport?.let { StreamContainer.declare(url, it) }
+        answer.transport?.let { transport ->
+            if (!SourceRegistry.host.acceptTransport(url, transport)) {
+                TrackLog.w(TAG, "${config.displayName}: $trackId is a $transport manifest, which this player can't open — passing")
+                return null
+            }
+        }
+        if (!SourceRegistry.host.canDecode(format.codec)) {
+            TrackLog.w(TAG, "${config.displayName}: $trackId is ${format.summary}, which this player can't decode — passing")
+            return null
+        }
 
         return SourceStream(
             url = url,
             format = format,
-            durationSec = rows[trackId]?.durationSec,
+            durationSec = row(trackId)?.durationSec,
             // Served from the addon's own host, the stream is gated the same way
             // its API is — so it is asked for with the same agent. A CDN the
             // addon hands off to is left with the player's own, as before.
@@ -385,14 +403,14 @@ class AddonSource(
         val codec = answer.statedCodec?.takeIf { it in AUDIO_CODECS }
             ?: answer.statedContainer?.takeIf { it in SELF_DESCRIBING_CONTAINERS }
             ?: answer.mimeType?.substringAfterLast('/')?.substringBefore(';')?.trim()
-                ?.lowercase(Locale.ROOT)?.takeIf { it in AUDIO_CODECS }
+                ?.lowercase()?.takeIf { it in AUDIO_CODECS }
             ?: if (answer.isDolbyAtmos) {
                 "eac3-joc"
-            } else if (ModuleSource.qualityTier(answer.qualityText) == ModuleSource.LOSSLESS) {
+            } else if (SourceTiers.qualityTier(answer.qualityText) == SourceTiers.LOSSLESS) {
                 "flac"
             } else {
                 url.substringBefore('?').substringAfterLast('.')
-                    .lowercase(Locale.ROOT).takeIf { it in AUDIO_CODECS }
+                    .lowercase().takeIf { it in AUDIO_CODECS }
             }
 
         // The tier's own published meaning is the last resort and only for
@@ -419,12 +437,12 @@ class AddonSource(
             is StreamRequest.Lossless -> AddonClient.TIER_LOSSLESS
             is StreamRequest.Best -> AddonClient.TIER_HIGH
             is StreamRequest.Capped ->
-                if (maxKbps <= ModuleSource.LOW_CEILING_KBPS) AddonClient.TIER_LOW else AddonClient.TIER_HIGH
+                if (maxKbps <= SourceTiers.LOW_CEILING_KBPS) AddonClient.TIER_LOW else AddonClient.TIER_HIGH
         }
 
     /** Dropped along with the source it belongs to — see [SourceRegistry.publish]. */
     fun release() {
-        rows.clear()
+        synchronized(rowsLock) { rows.clear() }
         client.clear()
     }
 

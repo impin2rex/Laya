@@ -1,10 +1,5 @@
 package com.music.laya.data.sources
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.net.Uri
-import android.util.Log
-import com.music.laya.auth.EncryptedPrefs
 import com.music.laya.data.TrackLog
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.permits
@@ -13,14 +8,12 @@ import com.music.laya.data.sources.addon.AddonException
 import com.music.laya.data.sources.addon.DetectedFormat
 import com.music.laya.data.sources.addon.SourceFormats
 import com.music.laya.data.settings.AudioQuality
-import com.music.laya.playback.audio.LosslessOutput
 import kotlinx.coroutines.flow.MutableStateFlow
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
-import java.util.UUID
+import kotlin.uuid.Uuid
 
 /**
  * One configured source: which protocol, which index.
@@ -31,7 +24,7 @@ import java.util.UUID
  */
 @Serializable
 data class SourceConfig(
-    val id: String = UUID.randomUUID().toString(),
+    val id: String = Uuid.random().toString(),
     val kind: SourceKind,
     /** What the user called it. Blank falls back to the server's host, or the kind's own label. */
     val label: String = "",
@@ -59,14 +52,14 @@ data class SourceConfig(
         get() = false
 
     /** The two manifest switches, without the parts of the config the user set. */
-    internal fun withPolicyOf(other: SourceConfig) =
+    fun withPolicyOf(other: SourceConfig) =
         copy(allowDownloads = other.allowDownloads, checkValidLossless = other.checkValidLossless)
 
     /** What the sources screen and the player show. Never blank. */
     val displayName: String
         get() = label.ifBlank {
             baseUrl.takeIf { it.isNotBlank() }
-                ?.let { runCatching { Uri.parse(it).host }.getOrNull() }
+                ?.let { parseHttpUrl(it)?.host }
                 ?: kind.label
         }
 
@@ -90,7 +83,13 @@ object SourceRegistry {
 
     private const val TAG = "Laya"
 
-    private lateinit var prefs: SharedPreferences
+    /** The platform's answers; [init] installs the real one. */
+    var host: SourcesHost = object : SourcesHost {
+        override var storedSources: String? = null
+        override var jioSaavnOptInDone = false
+    }
+
+    private var initialised = false
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
@@ -106,13 +105,14 @@ object SourceRegistry {
      */
     private var instances: Map<String, MusicSource> = emptyMap()
 
-    fun init(context: Context) {
-        // Same repair and degradation as AuthStore; see EncryptedPrefs.
-        prefs = EncryptedPrefs.open(context, "laya_sources", "laya_sources_plain")
+    fun init(host: SourcesHost) {
+        this.host = host
+        initialised = true
 
-        val stored = prefs.getString(KEY_SOURCES, null)?.let(::decodeStored) ?: emptyList()
-        val jioOptInMigrationDone = prefs.getBoolean(KEY_JIOSAAVN_OPT_IN_V1, false)
+        val stored = host.storedSources?.let(::decodeStored) ?: emptyList()
+        val jioOptInMigrationDone = host.jioSaavnOptInDone
         val after = sourcesForInit(stored, forceJioSaavnOff = !jioOptInMigrationDone)
+            .filter { host.supports(it.kind) }
 
         // Publish state and the migration marker in one preferences edit. If a
         // process dies after recording the marker but before recording the
@@ -120,10 +120,8 @@ object SourceRegistry {
         // opt-out had already happened and silently restore the old on state.
         publish(after, persist = false)
         if (after != stored || !jioOptInMigrationDone) {
-            prefs.edit()
-                .putString(KEY_SOURCES, json.encodeToString(ListSerializer(SourceConfig.serializer()), after))
-                .putBoolean(KEY_JIOSAAVN_OPT_IN_V1, true)
-                .apply()
+            host.storedSources = json.encodeToString(ListSerializer(SourceConfig.serializer()), after)
+            host.jioSaavnOptInDone = true
         }
     }
 
@@ -135,7 +133,7 @@ object SourceRegistry {
      * Once the marker is written, a user who deliberately enables JioSaavn is
      * left enabled on subsequent launches.
      */
-    internal fun sourcesForInit(
+    fun sourcesForInit(
         stored: List<SourceConfig>,
         forceJioSaavnOff: Boolean,
     ): List<SourceConfig> {
@@ -225,7 +223,7 @@ object SourceRegistry {
     }
 
     /** The common eligibility gate used by playback and download source walks. */
-    internal fun enabledConfigs(configs: List<SourceConfig>): List<SourceConfig> =
+    fun enabledConfigs(configs: List<SourceConfig>): List<SourceConfig> =
         configs.filter { it.enabled && it.isComplete }
 
     /**
@@ -343,10 +341,10 @@ object SourceRegistry {
         // the instance it already had, rather than being replaced by an
         // identical-but-cold one every time an unrelated row is toggled.
         val previous = instances
-        instances = next.associate { config ->
+        instances = next.mapNotNull { config ->
             val existing = previous[config.id]?.takeIf { it.configuredBy(config) }
-            config.id to (existing ?: build(config))
-        }
+            (existing ?: build(config))?.let { config.id to it }
+        }.toMap()
         // Whatever the rebuild above left behind, told so. An addon that was
         // edited or removed is holding a manifest, a set of search answers and
         // a handful of stream URLs that all describe the server it used to
@@ -357,10 +355,8 @@ object SourceRegistry {
         previous.values.filterNot { it in instances.values }
             .filterIsInstance<AddonSource>()
             .forEach { it.release() }
-        if (persist && ::prefs.isInitialized) {
-            prefs.edit()
-                .putString(KEY_SOURCES, json.encodeToString(ListSerializer(SourceConfig.serializer()), next))
-                .apply()
+        if (persist && initialised) {
+            host.storedSources = json.encodeToString(ListSerializer(SourceConfig.serializer()), next)
         }
     }
 
@@ -440,10 +436,11 @@ object SourceRegistry {
      */
     private fun canonicalUrl(raw: String): String {
         val trimmed = raw.trim().trimEnd('/')
-        val parsed = trimmed.toHttpUrlOrNull() ?: return trimmed
+        val parsed = parseHttpUrl(trimmed) ?: return trimmed
         val path = parsed.encodedPath.trimEnd('/')
-        val query = parsed.encodedQuery?.let { "?$it" }.orEmpty()
-        return "${parsed.scheme}://${parsed.host}${if (parsed.port != defaultPort(parsed.scheme)) ":${parsed.port}" else ""}$path$query"
+        val query = parsed.encodedQuery.takeIf { it.isNotEmpty() }?.let { "?$it" }.orEmpty()
+        val scheme = parsed.protocol.name.lowercase()
+        return "$scheme://${parsed.host.lowercase()}${if (parsed.port != defaultPort(scheme)) ":${parsed.port}" else ""}$path$query"
     }
 
     private fun defaultPort(scheme: String) = if (scheme == "https") 443 else 80
@@ -457,15 +454,15 @@ object SourceRegistry {
      * old address, which is precisely the state the user is in the middle of
      * correcting.
      */
-    suspend fun probeCandidate(config: SourceConfig): SourceHealth = build(config).health()
+    suspend fun probeCandidate(config: SourceConfig): SourceHealth =
+        build(config)?.health() ?: SourceHealth.Rejected("This kind of source isn't available on this device")
 
-    private fun build(config: SourceConfig): MusicSource = when (config.kind) {
+    private fun build(config: SourceConfig): MusicSource? = when (config.kind) {
         SourceKind.ADDON -> AddonSource(config)
-        // Same protocol, same implementation — the kinds differ only in rank.
-        SourceKind.CUSTOM_MODULE -> ModuleSource(config)
-        SourceKind.MODULE -> ModuleSource(config)
-        SourceKind.JIOSAAVN -> JioSaavnSource(config)
         SourceKind.YOUTUBE -> YouTubeSource(config)
+        // Modules (CUSTOM_MODULE and MODULE share an implementation — they differ only in rank) and
+        // JioSaavn are the platform's to build, or to decline.
+        else -> if (host.supports(config.kind)) host.build(config) else null
     }
 
     /**
@@ -478,7 +475,7 @@ object SourceRegistry {
         this is ConfigBacked && this.config.withPolicyOf(config) == config
 
     /** Implemented by sources that carry their [SourceConfig], so [publish] can tell a real edit from a no-op. */
-    internal interface ConfigBacked {
+    interface ConfigBacked {
         val config: SourceConfig
     }
 
@@ -499,21 +496,8 @@ object SourceRegistry {
     /** The `(configId, trackId)` inside a [trackKey], or null if this is an ordinary YouTube id. */
     fun parseTrackKey(key: String): Pair<String, String>? = SourceTrackKeys.parse(key)
 
-    /** The playback URI for a source-backed track; [PlaybackService] resolves it at open time. */
-    fun trackUri(configId: String, trackId: String): String =
-        Uri.Builder()
-            .scheme("laya")
-            .authority("source")
-            .appendQueryParameter("s", configId)
-            .appendQueryParameter("t", trackId)
-            .build()
-            .toString()
-
     private val BUILT_IN_KINDS = listOf(SourceKind.JIOSAAVN, SourceKind.YOUTUBE)
 
-    private const val KEY_SOURCES = "sources"
-    /** One-shot migration: existing users must explicitly opt in again. */
-    private const val KEY_JIOSAAVN_OPT_IN_V1 = "jiosaavn_opt_in_v1"
     private const val PREFIX = "src:"
     private const val SEPARATOR = "::"
 }

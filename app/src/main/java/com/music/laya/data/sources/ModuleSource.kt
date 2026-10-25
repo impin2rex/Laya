@@ -503,16 +503,16 @@ class ModuleSource(
          * no Dolby decoder that track is YouTube's until the module is fixed.
          */
         internal fun unplayable(format: StreamFormat, atmosAllowed: Boolean): Boolean =
-            format.isDolbyAtmos && !atmosAllowed
+            SourceTiers.unplayable(format, atmosAllowed)
 
         /**
          * The three tiers every compatible module speaks, whatever it
          * calls them on the way out: `LOSSLESS`, `FLAC 16-bit / 44.1kHz` and
          * `hires-96` are one tier; `320kbps` and `HIGH` are another.
          */
-        const val LOSSLESS = "LOSSLESS"
-        const val HIGH = "HIGH"
-        const val LOW = "LOW"
+        const val LOSSLESS = SourceTiers.LOSSLESS
+        const val HIGH = SourceTiers.HIGH
+        const val LOW = SourceTiers.LOW
 
         /**
          * A row that is the immersive mix, whatever bitrate label it carries.
@@ -526,10 +526,10 @@ class ModuleSource(
          * place that decides — [SourceResolver.preferred][com.music.laya.data.sources.SourceResolver]
          * — ask the listener's preference instead of a number.
          */
-        const val DOLBY = "DOLBY"
+        const val DOLBY = SourceTiers.DOLBY
 
         /** Worst to best, so a row's best available tier can be picked out by index. */
-        val TIERS = listOf(LOW, HIGH, LOSSLESS)
+        val TIERS = SourceTiers.TIERS
 
         /**
          * Which tier a module's free-text quality label describes, or null
@@ -538,24 +538,10 @@ class ModuleSource(
          * Order matters: `FLAC 16-bit / 44.1kHz` contains a bit depth *and* a
          * codec, and it is the codec that settles it.
          */
-        fun qualityTier(label: String): String? {
-            val text = label.uppercase(Locale.ROOT)
-            return when {
-                text.isBlank() -> null
-                LOSSLESS_HINTS.any { it in text } -> LOSSLESS
-                LOW_HINTS.any { it in text } -> LOW
-                HIGH_HINTS.any { it in text } -> HIGH
-                else -> null
-            }
-        }
-
-        private val LOSSLESS_HINTS =
-            listOf("LOSSLESS", "FLAC", "ALAC", "HI-RES", "HI_RES", "HIRES", "24-BIT", "16-BIT", "WAV")
-        private val LOW_HINTS = listOf("LOW", "128", "96KBPS", "64")
-        private val HIGH_HINTS = listOf("HIGH", "320", "MP3", "AAC", "M4A", "OPUS", "OGG")
+        fun qualityTier(label: String): String? = SourceTiers.qualityTier(label)
 
         /** Below this, a capped connection is better served by the module's own small tier. */
-        const val LOW_CEILING_KBPS = 128
+        const val LOW_CEILING_KBPS = SourceTiers.LOW_CEILING_KBPS
 
         private val AUDIO_EXTENSIONS =
             setOf("flac", "alac", "wav", "aiff", "mp3", "m4a", "aac", "ogg", "opus", "webm")

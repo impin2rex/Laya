@@ -1,11 +1,12 @@
 package com.music.laya.data.sources.module
 
+import com.music.laya.platform.ConcurrentMap
+import com.music.laya.platform.currentTimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * One in-flight-or-recent answer per key, shared by everyone who asks for it.
@@ -53,12 +54,12 @@ import java.util.concurrent.ConcurrentHashMap
  * not a failure: "this catalogue does not have that recording" is a real answer,
  * and re-asking for it is exactly the waste this exists to stop.
  */
-internal class SharedCalls<T>(
+class SharedCalls<T>(
     private val ttlMs: Long,
     private val scope: CoroutineScope,
     /** Where a reuse is reported, so a log still shows one line per question asked. */
     private val log: (String) -> Unit = {},
-    private val now: () -> Long = System::currentTimeMillis,
+    private val now: () -> Long = ::currentTimeMillis,
 ) {
 
     /**
@@ -70,7 +71,7 @@ internal class SharedCalls<T>(
      */
     private class Pending<T>(val work: Deferred<Result<T>>, val startedAtMs: Long)
 
-    private val entries = ConcurrentHashMap<String, Pending<T>>()
+    private val entries = ConcurrentMap<String, Pending<T>>()
 
     /**
      * Held across the lookup *and* the insert. Two coroutines missing together
@@ -94,7 +95,7 @@ internal class SharedCalls<T>(
         return entry.work.await().also { result ->
             // By identity, so a retry that has already replaced this entry is
             // not thrown away along with the failure it replaced.
-            if (result.isFailure) entries.remove(key, entry)
+            if (result.isFailure) removeIfSame(key, entry)
         }
     }
 
@@ -112,11 +113,21 @@ internal class SharedCalls<T>(
      * else.
      */
     fun clearCompleted() {
-        entries.entries.removeIf { !it.value.work.isActive }
+        removeWhere { !it.work.isActive }
     }
 
     /** For tests and diagnostics: how many answers are being held. */
-    internal fun size() = entries.size
+    fun size() = entries.size
+
+    // ponytail: check-then-remove isn't atomic like ConcurrentHashMap.remove(k, v); the worst case drops a
+    // just-replaced entry, which only costs one repeated call.
+    private fun removeIfSame(key: String, entry: Pending<T>) {
+        if (entries[key] === entry) entries.remove(key)
+    }
+
+    private fun removeWhere(drop: (Pending<T>) -> Boolean) {
+        entries.keys.toList().forEach { key -> entries[key]?.takeIf(drop)?.let { removeIfSame(key, it) } }
+    }
 
     private fun prune() {
         val at = now()
@@ -124,12 +135,12 @@ internal class SharedCalls<T>(
         // dropping it here would not cancel it, only hide it from the next
         // caller — who would then start a second copy of work already in
         // flight, which is the one thing this class exists to prevent.
-        entries.entries.removeIf { !it.value.work.isActive && at - it.value.startedAtMs >= ttlMs }
+        removeWhere { !it.work.isActive && at - it.startedAtMs >= ttlMs }
         if (entries.size >= MAX_ENTRIES) {
             entries.entries
                 .filterNot { it.value.work.isActive }
                 .minByOrNull { it.value.startedAtMs }
-                ?.let { entries.remove(it.key, it.value) }
+                ?.let { removeIfSame(it.key, it.value) }
         }
     }
 

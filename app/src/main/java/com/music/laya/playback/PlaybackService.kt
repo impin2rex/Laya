@@ -135,6 +135,8 @@ import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.EqualizerMode
 import com.music.laya.data.settings.OutputPcmMode
 import com.music.laya.data.sources.SourceResolver
+import com.music.laya.data.sources.resolve
+import com.music.laya.data.sources.targetIn
 import com.music.laya.data.sources.SourceStream
 import com.music.laya.data.sources.StreamFormat
 import com.music.laya.data.sources.TrackMatcher

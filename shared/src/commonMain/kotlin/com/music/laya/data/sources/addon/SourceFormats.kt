@@ -1,14 +1,14 @@
 package com.music.laya.data.sources.addon
 
-import com.music.laya.data.Http
 import com.music.laya.data.TrackLog
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.data.sources.parseHttpUrl
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.Request
 
 /**
  * What kind of thing is on the end of a URL somebody pasted.
@@ -75,10 +75,10 @@ object SourceFormats {
      *     guessed, still works, and there is no honest reason to turn it away
      *     over a missing description of something that demonstrably functions.
      */
-    suspend fun identify(rawUrl: String, userAgent: String = ""): Result<DetectedFormat> = withContext(Dispatchers.IO) {
+    suspend fun identify(rawUrl: String, userAgent: String = ""): Result<DetectedFormat> = withContext(ioDispatcher) {
         val agent = userAgent.trim().ifBlank { AddonClient.DEFAULT_USER_AGENT }
         val url = rawUrl.trim().trimEnd('/')
-        if (url.toHttpUrlOrNull() == null) {
+        if (parseHttpUrl(url) == null) {
             return@withContext Result.success(
                 DetectedFormat.Unsupported("That is not a web address Laya can open"),
             )
@@ -203,24 +203,21 @@ object SourceFormats {
      */
     private fun synthesised(base: String) = AddonManifest(
         id = base,
-        name = base.toHttpUrlOrNull()?.host.orEmpty().ifBlank { base },
+        name = parseHttpUrl(base)?.host.orEmpty().ifBlank { base },
         resources = listOf("search", "stream"),
     )
 
     /** One GET, as plain as it gets: this runs before anything is configured. */
     private suspend fun fetch(url: String, userAgent: String): Result<String> = runCatching {
-        val request = Request.Builder().url(url)
-            .header("Accept", "application/json")
-            .header("User-Agent", userAgent)
-            .build()
-        Http.client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                if (response.code >= 500) throw AddonUnavailable("HTTP ${response.code}")
-                throw AddonException("HTTP ${response.code}")
-            }
-            response.body.string().takeIf { it.isNotBlank() }
-                ?: throw AddonException("Empty response")
+        val response = NetHttp.execute(
+            HttpRequest(url, headers = mapOf("Accept" to "application/json", "User-Agent" to userAgent)),
+        )
+        if (!response.isSuccessful) {
+            if (response.code >= 500) throw AddonUnavailable("HTTP ${response.code}")
+            throw AddonException("HTTP ${response.code}")
         }
+        response.text().takeIf { it.isNotBlank() }
+            ?: throw AddonException("Empty response")
     }.onFailure {
         TrackLog.d(TAG, "identify(${AddonClient.redact(url)}) failed: ${it.message}")
     }

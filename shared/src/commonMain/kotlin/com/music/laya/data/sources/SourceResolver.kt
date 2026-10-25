@@ -1,7 +1,5 @@
 package com.music.laya.data.sources
 
-import android.net.Uri
-import android.util.Log
 import com.music.laya.data.TrackLog
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
@@ -16,7 +14,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
@@ -111,22 +109,6 @@ object SourceResolver {
     }
 
     /**
-     * @param uri a `laya://source?...` URI as built by [SourceRegistry.trackUri].
-     * @return the stream, or null when nothing enabled could serve the track.
-     */
-    suspend fun resolve(uri: Uri, late: CompletableDeferred<SourceStream?>? = null): SourceStream? {
-        val configId = uri.getQueryParameter("s") ?: return null.also { late?.complete(null) }
-        val trackId = uri.getQueryParameter("t") ?: return null.also { late?.complete(null) }
-        return resolve(
-            configId = configId,
-            trackId = trackId,
-            target = targetIn(uri),
-            pickedMix = uri.getQueryParameter(MIX_PARAM),
-            late = late,
-        )
-    }
-
-    /**
      * `&mix=` on an addon row's playback URI: which mix the row itself was,
      * [MIX_ATMOS] or [MIX_STEREO] as its search answer tagged it, or [MIX_ANY]
      * when it said neither.
@@ -143,27 +125,6 @@ object SourceResolver {
     const val MIX_STEREO = "stereo"
     const val MIX_ATMOS = "atmos"
     const val MIX_ANY = "any"
-
-    /** Whether [uri] is an addon row played as itself — see [MIX_PARAM]. */
-    fun isPickedAddonRow(uri: Uri): Boolean =
-        uri.authority == "source" && uri.getQueryParameter(MIX_PARAM) != null
-
-    /**
-     * The recording a playback URI describes, for matching it elsewhere.
-     *
-     * Title, artist and runtime ride in the URI because they are what a
-     * cross-source match is made on, and the resolver runs on ExoPlayer's
-     * loader thread with nothing but a DataSpec in hand — see
-     * [toMediaItem][com.music.laya.playback.toMediaItem].
-     */
-    fun targetIn(uri: Uri) = TrackMatcher.Target(
-        title = uri.getQueryParameter("n").orEmpty(),
-        artist = uri.getQueryParameter("a").orEmpty(),
-        durationSec = uri.getQueryParameter("d")?.toIntOrNull(),
-        album = uri.getQueryParameter("l"),
-        isExplicit = uri.getQueryParameter("e")?.let { it == "1" },
-        isVideo = uri.getQueryParameter("m") == "1",
-    )
 
     /**
      * @param target is what a cross-source match is made on. Without it the
@@ -256,7 +217,7 @@ object SourceResolver {
         request: StreamRequest,
         late: CompletableDeferred<SourceStream?>,
     ) {
-        val job = CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+        val job = CoroutineScope(SupervisorJob() + ioDispatcher).launch {
             val found = runCatching {
                 bestAcross(sources, target, request) { _, stream ->
                     stream.format.isLossless == true || stream.format.isDolbyAtmos
@@ -819,7 +780,7 @@ object SourceResolver {
      * [streamBest]'s [statesNothingLossy] allowance, deliberately: playback can
      * hand an undescribed URL to the decoder and let it work the codec out.
      */
-    internal fun beatsYouTubeAac(candidate: StreamFormat): Boolean =
+    fun beatsYouTubeAac(candidate: StreamFormat): Boolean =
         (candidate.kbps ?: 0) > YOUTUBE_BEST_AAC_KBPS
 
     /**
@@ -835,7 +796,7 @@ object SourceResolver {
      * narrow enough to be codec-sensitive would be a margin that buys a seam
      * in the audio for nothing. 160 to 320 clears it; 128 to 192 does not.
      */
-    internal fun worthSwapping(candidate: StreamFormat, playing: StreamFormat?): Boolean {
+    fun worthSwapping(candidate: StreamFormat, playing: StreamFormat?): Boolean {
         // Never away from an immersive mix. A FLAC is a better *copy* and a
         // worse *mix* once Atmos is what the listener chose, and cutting one in
         // over the other mid-song is a downgrade dressed as an upgrade.
@@ -944,7 +905,7 @@ object SourceResolver {
      * @return the winning source alongside its stream, so callers can name it in
      *   a log line without searching the list again.
      */
-    internal suspend fun bestAcross(
+    suspend fun bestAcross(
         sources: List<MusicSource>,
         target: TrackMatcher.Target,
         request: StreamRequest,
@@ -963,7 +924,7 @@ object SourceResolver {
         // returns, and anything still running on it would never run again.
         // Otherwise the caller's own dispatcher, as before.
         val context = currentCoroutineContext().minusKey(Job) + searches
-        val scope = CoroutineScope(if (late != null) context + Dispatchers.IO else context)
+        val scope = CoroutineScope(if (late != null) context + ioDispatcher else context)
         val running: MutableList<Deferred<Pair<MusicSource, SourceStream?>>> = sources
             .map { source ->
                 scope.async {
@@ -1176,7 +1137,7 @@ object SourceResolver {
      *     reason to prefer one copy of a recording over another; it is not a
      *     reason to play a different recording.
      */
-    internal fun preferred(
+    fun preferred(
         matches: List<Song>,
         target: TrackMatcher.Target,
         wantsLossless: Boolean,
@@ -1191,25 +1152,25 @@ object SourceResolver {
         // — picking the row *is* the only way to hear it. Ordering is enough;
         // [streamBest] stops at the first row that answers, and an Atmos
         // answer on a device that cannot play it was already refused upstream
-        // by [ModuleSource.unplayable].
+        // by [SourceTiers.unplayable].
         if (atmosWanted()) {
-            val immersiveFirst = eligible.sortedByDescending { it.sourceQuality == ModuleSource.DOLBY }
-            if (immersiveFirst.firstOrNull()?.sourceQuality == ModuleSource.DOLBY) return immersiveFirst
+            val immersiveFirst = eligible.sortedByDescending { it.sourceQuality == SourceTiers.DOLBY }
+            if (immersiveFirst.firstOrNull()?.sourceQuality == SourceTiers.DOLBY) return immersiveFirst
         }
         if (!wantsLossless) return eligible
         // Stable, so the confidence order [TrackMatcher.ranked] produced
         // survives inside each tier.
-        return eligible.sortedByDescending { it.sourceQuality == ModuleSource.LOSSLESS }
+        return eligible.sortedByDescending { it.sourceQuality == SourceTiers.LOSSLESS }
     }
 
     /**
      * Whether an immersive mix is worth preferring right now — the same two
-     * gates the playback side enforces in [ModuleSource.unplayable] and the
+     * gates the playback side enforces in [SourceTiers.unplayable] and the
      * addon path sends its `?atmos=` hint on, asked in the one place that
      * chooses between rows.
      */
     private fun atmosWanted(): Boolean =
-        DeviceCodecs.playsDolbyAtmos && AppSettings.dolbyAtmos.value
+        SourceRegistry.host.playsDolbyAtmos && AppSettings.dolbyAtmos.value
 
     private suspend fun streamBest(
         source: MusicSource,
@@ -1272,7 +1233,7 @@ object SourceResolver {
      * better; that one asks whether the difference is worth a break in the
      * audio, which is a much higher bar and only meaningful mid-playback.
      */
-    internal fun isBetter(candidate: StreamFormat, current: StreamFormat?): Boolean {
+    fun isBetter(candidate: StreamFormat, current: StreamFormat?): Boolean {
         if (current == null) return true
         // Immersive first, and ahead of lossless rather than behind it. This
         // used to sit *after* the lossless test, which made it unreachable in
@@ -1282,7 +1243,7 @@ object SourceResolver {
         // as the FLAC no matter what the Atmos setting said — and worse, a
         // mid-playback upgrade would cut the FLAC in over an Atmos stream
         // already playing. Anything immersive that reaches here has already
-        // cleared [ModuleSource.unplayable], so it is a mix this device and
+        // cleared [SourceTiers.unplayable], so it is a mix this device and
         // this listener both want.
         if (candidate.isDolbyAtmos != current.isDolbyAtmos) return candidate.isDolbyAtmos
         if (candidate.isLossless != current.isLossless) return candidate.isLossless == true
@@ -1318,7 +1279,7 @@ object SourceResolver {
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        TrackLog.w(TAG, "${source.displayName} failed: ${e.javaClass.simpleName}: ${e.message}")
+        TrackLog.w(TAG, "${source.displayName} failed: ${e::class.simpleName}: ${e.message}")
         null
     }
 

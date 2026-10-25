@@ -1,21 +1,23 @@
 package com.music.laya.data.sources.addon
 
-import com.music.laya.data.Http
 import com.music.laya.data.TrackLog
 import com.music.laya.data.settings.AppSettings
-import com.music.laya.data.sources.DeviceCodecs
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.ioDispatcher
+import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.parseHttpUrl
 import com.music.laya.data.sources.module.SharedCalls
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.concurrent.Volatile
 import kotlinx.serialization.json.Json
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.util.concurrent.TimeUnit
+import io.ktor.http.URLBuilder
+import io.ktor.http.appendPathSegments
 
 /**
  * One addon server, and every question this app knows how to ask it.
@@ -43,8 +45,8 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
 
     /** Whether [url] is on this addon's own server rather than somewhere it hands off to. */
     fun ownsHost(url: String): Boolean {
-        val host = url.toHttpUrlOrNull()?.host ?: return false
-        return host.equals(baseUrl.toHttpUrlOrNull()?.host, ignoreCase = true)
+        val host = parseHttpUrl(url)?.host ?: return false
+        return host.equals(parseHttpUrl(baseUrl)?.host, ignoreCase = true)
     }
 
     private val json = Json {
@@ -54,7 +56,7 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
         coerceInputValues = true
     }
 
-    private val calls = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val calls = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     private val manifests = SharedCalls<AddonManifest>(MANIFEST_TTL_MS, calls, ::logReuse)
     private val searches = SharedCalls<AddonSearchResponse>(SEARCH_TTL_MS, calls, ::logReuse)
@@ -237,7 +239,7 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
                     ?: ATMOS_NEVER
             }
         } else {
-            atmosHint()?.let { params.putIfAbsent(ATMOS_KEY, it) }
+            atmosHint()?.let { if (ATMOS_KEY !in params) params[ATMOS_KEY] = it }
         }
         return params
     }
@@ -275,7 +277,7 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
      * nothing on the IO thread it already runs on.
      */
     private fun atmosHint(): String? {
-        val wanted = DeviceCodecs.playsDolbyAtmos && AppSettings.dolbyAtmos.value
+        val wanted = SourceRegistry.host.playsDolbyAtmos && AppSettings.dolbyAtmos.value
         return if (wanted) ATMOS_AUTO else null
     }
 
@@ -304,11 +306,11 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
 
     /** `{base}/{segments…}?{params}`, with every part properly encoded. */
     private fun endpoint(segments: List<String>, params: Map<String, String>): String {
-        val base = baseUrl.toHttpUrlOrNull()
+        val base = parseHttpUrl(baseUrl)
             ?: throw AddonException("That is not a usable address")
-        val builder = base.newBuilder()
-        segments.forEach(builder::addPathSegment)
-        params.forEach { (key, value) -> builder.addQueryParameter(key, value) }
+        val builder = URLBuilder(base)
+        builder.appendPathSegments(segments, encodeSlash = true)
+        params.forEach { (key, value) -> builder.parameters.append(key, value) }
         return builder.build().toString()
     }
 
@@ -338,20 +340,22 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
      * is precisely the miss the caller is equipped to handle and not something
      * to log as a fault.
      */
-    private suspend fun body(url: String): String = withContext(Dispatchers.IO) {
+    private suspend fun body(url: String): String = withContext(ioDispatcher) {
         var attempt = 0
         while (true) {
-            (quietUntilMs - System.currentTimeMillis()).takeIf { it > 0 }?.let { delay(it) }
+            (quietUntilMs - currentTimeMillis()).takeIf { it > 0 }?.let { delay(it) }
 
-            val request = Request.Builder().url(url)
-                .header("Accept", "application/json")
-                .header("User-Agent", userAgent)
-                .build()
-
-            val wait = client.newCall(request).execute().use { response ->
+            val response = NetHttp.execute(
+                HttpRequest(
+                    url = url,
+                    headers = mapOf("Accept" to "application/json", "User-Agent" to userAgent),
+                    callTimeoutMs = CALL_TIMEOUT_MS,
+                ),
+            )
+            val wait = response.let {
                 when {
                     response.isSuccessful ->
-                        return@withContext response.body.string().takeIf { it.isNotBlank() }
+                        return@withContext response.text().takeIf { it.isNotBlank() }
                             ?: throw AddonException("Empty response")
                     response.code == 404 -> throw AddonNotFound()
                     // A 5xx is a server having a bad minute and will be tried
@@ -367,7 +371,7 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
                     else -> retryAfterMs(response.header("Retry-After"), attempt)
                 }
             }
-            quietUntilMs = System.currentTimeMillis() + wait
+            quietUntilMs = currentTimeMillis() + wait
             attempt++
         }
         // Unreachable: every path out of the loop returns or throws.
@@ -475,7 +479,7 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
          * and it is not the secret.
          */
         fun redact(url: String): String =
-            url.toHttpUrlOrNull()?.let { "${it.scheme}://${it.host}/***" } ?: "***"
+            parseHttpUrl(url)?.let { "${it.protocol.name}://${it.host}/***" } ?: "***"
 
         /**
          * How long a manifest is trusted.
@@ -506,7 +510,7 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
         private const val BACKOFF_CAP_MS = 8_000L
 
         /** What an addon is asked with when its config names no agent of its own. */
-        val DEFAULT_USER_AGENT = "Laya/v${com.music.laya.BuildConfig.VERSION_NAME}"
+        val DEFAULT_USER_AGENT: String get() = "Laya/v${SourceRegistry.host.appVersion}"
 
         /**
          * What [probeSearch] asks for. Deliberately an ordinary word rather
@@ -517,21 +521,12 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
         private const val PROBE_QUERY = "music"
 
         /**
-         * The shared client, with a ceiling on the whole call.
-         *
-         * Derived from [Http.client] rather than built beside it, so the
-         * connection pool, dispatcher and DNS stay shared with the rest of the
-         * app. What is added is [OkHttpClient.Builder.callTimeout]: the base
-         * client bounds each *read*, which a server dribbling a byte at a time
-         * never trips, and an addon doing that would otherwise hold a
-         * source-resolution slot indefinitely. The spec asks addons to answer
-         * search in under five seconds and streams in under three.
+         * A ceiling on the whole call: the base client bounds each *read*, which a server dribbling
+         * a byte at a time never trips, and an addon doing that would otherwise hold a
+         * source-resolution slot indefinitely. The spec asks addons to answer search in under
+         * five seconds and streams in under three.
          */
-        private val client: OkHttpClient by lazy {
-            Http.client.newBuilder()
-                .callTimeout(20, TimeUnit.SECONDS)
-                .build()
-        }
+        private const val CALL_TIMEOUT_MS = 20_000L
     }
 }
 
