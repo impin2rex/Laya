@@ -10,6 +10,22 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     let proxyURL: URL
     var onHTTPError: ((Int) -> Void)?
     private(set) var reportedHTTPError = false
+    /// The stream's size once a response has stated it (or the caller knew it).
+    var streamLength: Int64? { knownLength }
+    /// FLAC's STREAMINFO as read from the bytes actually served, set when the first chunk lands.
+    private(set) var flacInfo: FlacInfo?
+
+    struct FlacInfo { let sampleRate: Int; let channels: Int; let bitDepth: Int; let totalSamples: Int64 }
+
+    /// "fLaC" + metadata header + STREAMINFO: rate (20 bits), channels-1 (3), bits-1 (5), samples (36).
+    static func parseFlac(_ data: Data) -> FlacInfo? {
+        let b = [UInt8](data.prefix(26))
+        guard b.count >= 26, b[0] == 0x66, b[1] == 0x4C, b[2] == 0x61, b[3] == 0x43 else { return nil }
+        let rate = Int(b[18]) << 12 | Int(b[19]) << 4 | Int(b[20]) >> 4
+        let samples = Int64(b[21] & 0x0F) << 32 | Int64(b[22]) << 24 | Int64(b[23]) << 16 | Int64(b[24]) << 8 | Int64(b[25])
+        return FlacInfo(sampleRate: rate, channels: Int((b[20] >> 1) & 7) + 1,
+                        bitDepth: Int((b[20] & 1) << 4 | b[21] >> 4) + 1, totalSamples: samples)
+    }
 
     private let source: URL
     private let headers: [String: String]
@@ -136,6 +152,7 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
                     self.tasks.removeValue(forKey: key)
                     return
                 }
+                if start == 0, self.flacInfo == nil { self.flacInfo = Self.parseFlac(data) }
                 if self.knownLength == nil, let total = Self.totalLength(http) {
                     self.knownLength = total
                     loadingRequest.contentInformationRequest?.contentLength = total

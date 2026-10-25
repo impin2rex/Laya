@@ -148,6 +148,7 @@ import com.music.laya.ui.screens.SourcesPage
 import com.music.laya.ui.screens.ListenTogetherScreen
 import com.music.laya.data.listentogether.JamInviteLink
 import com.music.laya.data.sources.AddonSource
+import com.music.laya.data.sources.SourceKind
 import com.music.laya.data.sources.SourceRegistry
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
@@ -544,11 +545,18 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val env = NSProcessInfo.processInfo.environment
         if (env.keys.any { it.toString().startsWith("LAYA_") }) AppSettings.setOnboardingComplete() // hooks skip the intro
         if (env["LAYA_NERD"] != null) AppSettings.setShowNerdStats(true)
-        (env["LAYA_ADDON"] as? String)?.let { url ->
+        // LAYA_ADDON=jiosaavn switches the built-in JioSaavn source on and plays from it.
+        if (env["LAYA_ADDON"] == "jiosaavn") SourceRegistry.configs.value.firstOrNull { it.kind == SourceKind.JIOSAAVN }?.let { SourceRegistry.setEnabled(it.id, true) }
+        (env["LAYA_ADDON"] as? String)?.takeIf { it != "jiosaavn" }?.let { url ->
             if (SourceRegistry.duplicateOf(url) == null) SourceRegistry.identify(url).getOrNull()?.let(SourceRegistry::add)
         }
+        if (env["LAYA_ADDON"] == "jiosaavn") (env["LAYA_ADDON_PLAY"] as? String)?.let { q ->
+            SourceRegistry.active().firstOrNull { it.kind == SourceKind.JIOSAAVN }?.search(q, limit = 5)?.let { if (it.isNotEmpty()) player.play(it, 0) }
+            return@LaunchedEffect
+        }
         (env["LAYA_ADDON_PLAY"] as? String)?.let { q ->
-            SourceRegistry.active().filterIsInstance<AddonSource>().firstOrNull()?.search(q, limit = 20)
+            val wanted = (env["LAYA_ADDON"] as? String)?.let { SourceRegistry.duplicateOf(it)?.id }
+            SourceRegistry.active().filterIsInstance<AddonSource>().let { l -> l.firstOrNull { it.configId == wanted } ?: l.firstOrNull() }?.search(q, limit = 20)
                 ?.let { if (it.isNotEmpty()) player.play(it, 0) }
         }
     }

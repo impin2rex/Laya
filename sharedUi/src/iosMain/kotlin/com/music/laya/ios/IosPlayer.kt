@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.music.laya.data.NerdStats
 import com.music.laya.data.TelemetryProvenance
+import com.music.laya.data.TrackLog
+import io.ktor.http.Url
 import com.music.laya.data.listentogether.PartyTrack
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.playback.toQueueSong
@@ -107,6 +109,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private var upgradeJob: Job? = null
     private var autoplayJob: Job? = null
     private var preloaded = -1
+    /** Tracks whose current stream came from a source above YouTube, so a failure can fall back once. */
+    private val offSite = mutableSetOf<String>()
     /** What [resolveInto] last handed the engine for each track, so Karaoke can decode the same bytes. */
     private val streams = mutableMapOf<String, KaraokeSource>()
     /** Entry ids of the upcoming tracks as they were before Shuffle, so turning it off can restore them. */
@@ -429,6 +433,14 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     /** Gives the engine [o] and records what it is, for Karaoke and the nerd stats. */
     private fun hand(song: Song, o: Opened, next: Boolean) {
         streams[song.videoId] = KaraokeSource(o.url, o.headers, o.mime, o.length)
+        if (o.sourceName != "YouTube") offSite += song.videoId else offSite -= song.videoId
+        // Host only: addon URLs carry the owner's token in the path or query.
+        TrackLog.d(
+            "Laya",
+            "iOS player ${if (next) "queued" else "opened"} via ${o.sourceName} (${runCatching { Url(o.url).host }.getOrDefault("?")}) " +
+                "mime=${o.mime} declared=${o.format?.summary ?: "nothing"} ua=${if (o.headers.containsKey("User-Agent")) "custom" else "default"}",
+            about = song.videoId,
+        )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
         if (next) engine.setNext(o.url, o.headers, o.mime, o.length, CHUNK_BYTES)
@@ -459,6 +471,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         val song = queue.getOrNull(i) ?: return
         index = i
         NerdStats.onTrackTransition(song.videoId)
+        TrackLog.onTrackStarted(song.videoId)
         pendingMs = null
         isLoading = true
         durationMs = 0
@@ -517,8 +530,11 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         val id = song?.videoId ?: return
         val lossless = NerdStats.isLosslessMime(mimeType)
         // The resolver's figure first (as Android); AVFoundation's estimate off a half-loaded stream only as a fallback.
+        // A lossless source states no bitrate worth trusting; the engine's figure (bytes over runtime) is the measured one.
         val (kbps, provenance) = NerdStats.sourceBitrate(id) { bitrateKbps.takeIf { it > 0 } }
+            ?: bitrateKbps.takeIf { it > 0 && lossless }?.let { it to TelemetryProvenance.MEASURED }
             ?: (null to TelemetryProvenance.UNKNOWN)
+        println("IosPlayer: decoder reports $mimeType ${sampleRateHz}Hz ${channels}ch ${bitDepth}-bit ${bitrateKbps}kbps; source said ${NerdStats.declaredFormat(id)?.summary ?: "nothing"}")
         NerdStats.publish(
             NerdStats.Snapshot(
                 mimeType = mimeType,
@@ -528,6 +544,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                 bitDepth = bitDepth.takeIf { lossless && it > 0 },
                 sourceName = NerdStats.exactSourceFor(id) ?: "YouTube",
                 bitrateProvenance = provenance,
+                claimed = NerdStats.declaredFormat(id),
                 mediaId = id,
             ),
             NerdStats.currentGeneration,
@@ -554,8 +571,25 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     override fun onError(message: String, httpStatus: Int) {
-        isLoading = false
         println("IosPlayer: $message ($httpStatus)")
+        val failed = song
+        // Android's PlaybackFallback: a source that failed after being picked is not asked again, YouTube plays instead.
+        if (failed == null || !offSite.remove(failed.videoId)) { isLoading = false; return }
+        val via = NerdStats.exactSourceFor(failed.videoId) ?: "source"
+        TrackLog.w("Laya", "$via failed to play: $message ($httpStatus), falling back to YouTube", about = failed.videoId)
+        NerdStats.clearDeclared(failed.videoId)
+        val at = position.positionMs
+        upgradeJob?.cancel()
+        startJob = scope.launch {
+            runCatching {
+                val id = withContext(ioDispatcher) { youtubeSeedFor(failed) } ?: error("no YouTube match for ${failed.title}")
+                val o = withContext(ioDispatcher) { youtube(id) }
+                if (song?.videoId != failed.videoId) return@launch
+                hand(failed, o, next = false)
+                if (at > 0) engine.seekTo(at)
+                preResolveNext()
+            }.onFailure { isLoading = false; println("IosPlayer: YouTube fallback failed: ${it.message ?: it}") }
+        }
     }
 
     override fun onVolumeChanged(level: Float) { IosVolume.level.value = level }

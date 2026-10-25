@@ -378,13 +378,22 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         case kAudioFormatMPEGLayer3: mime = "audio/mpeg"
         default: mime = nil
         }
-        listener?.onAudioFormat(
-            mimeType: mime,
-            sampleRateHz: Int32(asbd.mSampleRate),
-            channels: Int32(asbd.mChannelsPerFrame),
-            bitDepth: Int32(asbd.mBitsPerChannel),
-            bitrateKbps: Int32(track.estimatedDataRate / 1000)
-        )
+        var rate = Int32(asbd.mSampleRate), channels = Int32(asbd.mChannelsPerFrame), bits = Int32(asbd.mBitsPerChannel)
+        var kbps = Int32(track.estimatedDataRate / 1000)
+        let loader = loaders[ObjectIdentifier(item)]
+        if let flac = loader?.flacInfo {
+            // The decoder's description of FLAC carries no depth; the file's own STREAMINFO does.
+            rate = Int32(flac.sampleRate); channels = Int32(flac.channels); bits = Int32(flac.bitDepth)
+        } else if mime == "audio/alac" {
+            // ALAC states the source depth in the format flags (1=16, 2=20, 3=24, 4=32).
+            bits = [1: 16, 2: 20, 3: 24, 4: 32][Int32(asbd.mFormatFlags)] ?? 0
+        }
+        // Lossless average bitrate = bytes served over runtime, measured here rather than claimed by an addon.
+        if let length = loader?.streamLength {
+            let seconds = loader?.flacInfo.map { Double($0.totalSamples) / Double(max($0.sampleRate, 1)) } ?? item.duration.seconds
+            if seconds.isFinite, seconds > 0 { kbps = Int32(Double(length) * 8 / seconds / 1000) }
+        }
+        listener?.onAudioFormat(mimeType: mime, sampleRateHz: rate, channels: channels, bitDepth: bits, bitrateKbps: kbps)
     }
 
     private func currentItemChanged(from old: AVPlayerItem?) {

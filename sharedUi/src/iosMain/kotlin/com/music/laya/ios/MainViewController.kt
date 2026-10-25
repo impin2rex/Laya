@@ -64,6 +64,11 @@ fun MainViewController(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit)
     IosParty.install()
     com.music.laya.ui.screens.PartyPlatform.host = IosPartyPlatform
     SourceRegistry.init(IosSourcesHost)
+    // Names only, in the order they are asked: addon addresses carry their owner's token.
+    TrackLog.sourcesLine = {
+        "sources: " + SourceRegistry.active().joinToString(" > ") { it.displayName }.ifEmpty { "none" } +
+            " substitution=${com.music.laya.data.sources.SourceResolver.canSubstituteForYouTube()}"
+    }
     DetailExtras.host = IosDetailHost
     IosSpotify.restore()
     com.music.laya.playback.smart.AnalysisLog.install { m, e -> println("Analysis: $m ${e ?: ""}") }

@@ -246,6 +246,7 @@ object TrackLog {
     private fun NerdStats.Snapshot?.describe(): String {
         if (this == null) return "nothing reported"
         val measured = listOfNotNull(
+            sourceName?.let { "via $it" },
             mimeType,
             bitDepth?.let { "$it-bit" },
             bitrateKbps?.let { "$it kbps" },
