@@ -510,4 +510,5 @@
     <string name="spotify_import_unmatched">ไม่พบเพลง %1$d เพลงบน YouTube Music</string>
     <string name="spotify_import_empty_playlist">ไม่มีเพลงในเพลย์ลิสต์นี้</string>
     <string name="spotify_import_local_fallback">สร้างบน YouTube Music ไม่สำเร็จ จึงบันทึก ‘%1$s’ ไว้ในเครื่องนี้แทน</string>
+    <string name="search_source_addons">แอดออน</string>
 </resources>

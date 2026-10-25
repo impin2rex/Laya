@@ -511,4 +511,5 @@
     <string name="spotify_import_unmatched">%1$d שירים לא נמצאו ב-YouTube Music</string>
     <string name="spotify_import_empty_playlist">אין שירים בפלייליסט זה</string>
     <string name="spotify_import_local_fallback">לא ניתן היה ליצור אותה ב-YouTube Music, ולכן „%1$s” נשמרה במכשיר זה.</string>
+    <string name="search_source_addons">תוספים</string>
 </resources>

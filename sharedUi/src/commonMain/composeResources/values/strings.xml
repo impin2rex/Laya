@@ -518,4 +518,6 @@
     <string name="spotify_import_unmatched">%1$d songs weren\'t found on YouTube Music</string>
     <string name="spotify_import_empty_playlist">No songs in this playlist</string>
     <string name="spotify_import_local_fallback">Couldn\'t create it on YouTube Music, so \'%1$s\' was saved on this device instead.</string>
+    <string name="search_source_addons">Addons</string>
+    <string name="search_source_youtube">YouTube</string>
 </resources>
