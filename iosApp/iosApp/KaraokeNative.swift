@@ -62,8 +62,8 @@ private final class OrtModelRun: NSObject, KaraokeModelRun {
 final class PcmReader: NSObject, KaraokePcmSource {
     private let rate: Double
     private let channels: Int
-    private let asset: AVURLAsset
-    private let loader: ChunkedResourceLoader?
+    private var asset: AVURLAsset?
+    private var loader: ChunkedResourceLoader?
     private var reader: AVAssetReader?
     private var output: AVAssetReaderTrackOutput?
     private var pending: [Float] = []
@@ -81,13 +81,13 @@ final class PcmReader: NSObject, KaraokePcmSource {
             let l = ChunkedResourceLoader(source: source, headers: headers, mimeType: mimeType,
                                           knownLength: contentLength > 0 ? contentLength : nil, chunkBytes: max(64 * 1024, chunkBytes))
             asset = AVURLAsset(url: l.proxyURL)
-            asset.resourceLoader.setDelegate(l, queue: l.queue)
+            asset?.resourceLoader.setDelegate(l, queue: l.queue)
             loader = l
         }
-        let seconds = asset.duration.seconds
+        let seconds = asset?.duration.seconds ?? .nan
         durationFrames = seconds.isFinite ? Int64(seconds * rate) : -1
         super.init()
-        if !start(at: 0) { return nil }
+        if !start(at: 0) { close(); return nil }
     }
 
     private func start(at frame: Int64) -> Bool {
@@ -96,7 +96,7 @@ final class PcmReader: NSObject, KaraokePcmSource {
         output = nil
         pending = []
         pendingPos = 0
-        guard let track = asset.tracks(withMediaType: .audio).first, let r = try? AVAssetReader(asset: asset) else { return false }
+        guard let asset, let track = asset.tracks(withMediaType: .audio).first, let r = try? AVAssetReader(asset: asset) else { return false }
         let o = AVAssetReaderTrackOutput(track: track, outputSettings: [
             AVFormatIDKey: kAudioFormatLinearPCM,
             AVSampleRateKey: rate,
@@ -137,8 +137,13 @@ final class PcmReader: NSObject, KaraokePcmSource {
     func seek(frame: Int64) -> Int64 { start(at: frame) ? frame : -1 }
 
     func close() {
+        // Each AVURLAsset / AVAssetReader holds a mediaplaybackd XPC connection until freed: release them now, not at a K/N GC.
         reader?.cancelReading()
         reader = nil
+        output = nil
+        asset?.cancelLoading()
+        asset = nil
         loader?.cancelAll()
+        loader = nil
     }
 }
