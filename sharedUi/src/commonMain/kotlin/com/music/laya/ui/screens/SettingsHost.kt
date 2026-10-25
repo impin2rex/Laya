@@ -40,6 +40,8 @@ interface SettingsHost {
     val hasEngineOptions: Boolean get() = true
     /** false hides just the Wi-Fi / mobile-data streaming-quality rows, which are what addons are asked at. */
     val hasQualityOptions: Boolean get() = hasEngineOptions
+    /** false hides the Liquid Glass switch: it gates Android's own nav bar, which iOS replaces with the always-glass GlassNavBar. */
+    val hasLiquidGlassOption: Boolean get() = true
     val appIconRow: (@Composable () -> Unit)? get() = null
 
     @Composable fun versionName(): String = ""

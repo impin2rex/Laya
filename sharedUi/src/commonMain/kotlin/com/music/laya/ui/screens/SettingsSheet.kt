@@ -760,7 +760,7 @@ fun SettingsScreen(
                 )
             }
             val liquidGlassTitle = stringResource(Res.string.liquid_glass)
-            row(liquidGlassTitle, "glass", "blur") {
+            row(liquidGlassTitle, "glass", "blur", available = host.hasLiquidGlassOption) {
                 SettingsRow(
                     icon = Icons.Rounded.AutoAwesome,
                     title = liquidGlassTitle,
