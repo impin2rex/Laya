@@ -57,6 +57,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
     IosSpotify.restore()
+    com.music.laya.playback.smart.AnalysisLog.install { m, e -> println("Analysis: $m ${e ?: ""}") }
     IosAuth.restore() // Keychain session -> Innertube, before the first request
     AppUi.install(IosAppUiHost)
     SettingsExtras.host = IosSettingsHost

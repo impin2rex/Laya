@@ -19,13 +19,14 @@ import kotlinx.cinterop.set
 @OptIn(ExperimentalForeignApi::class)
 object IosDsp {
     private val reverb = ReverbProcessor()
-    private val karaoke = KaraokeProcessor(Karaoke::reportUnavailable)
+    private val karaoke = KaraokeProcessor(Karaoke::reportUnavailable, Karaoke::reportNeural)
 
     @kotlin.concurrent.Volatile
     private var resetPending = false
     private var samples = FloatArray(0)
     private var rate = 0
     private var channels = 0
+    private var frameAt = Long.MIN_VALUE
 
     /** Whether the tap needs to call [process]: on, or off with a tail / crossfade still running. */
     val active: Boolean get() = reverb.isEnabled || reverb.isActive || karaoke.isEnabled || karaoke.isActive
@@ -54,9 +55,20 @@ object IosDsp {
         val n = frames * channels
         val s = samples
         if (n == 0 || n > s.size) return
-        if (resetPending) { resetPending = false; karaoke.reset(); reverb.reset() }
+        if (resetPending) { resetPending = false; karaoke.reset(); reverb.reset(); frameAt = Long.MIN_VALUE }
+        // AVPlayer's tap timestamps wander by a block or two, which the stems read as a seek and
+        // realign on. Counted from the first block instead, like Android's sink position; only a
+        // jump of over a second (a seek or loop that skipped reset()) re-reads the tap's clock.
+        val time = if (mediaTimeUs == Long.MIN_VALUE || rate <= 0) {
+            frameAt = Long.MIN_VALUE
+            mediaTimeUs
+        } else {
+            val tapFrame = mediaTimeUs * rate / 1_000_000
+            if (frameAt == Long.MIN_VALUE || kotlin.math.abs(tapFrame - frameAt) > rate) frameAt = tapFrame
+            (frameAt * 1_000_000 / rate).also { frameAt += frames }
+        }
         for (i in 0 until n) s[i] = data[i]
-        karaoke.process(s, n, mediaTimeUs)
+        karaoke.process(s, n, time)
         reverb.process(s, n)
         for (i in 0 until n) data[i] = s[i]
     }

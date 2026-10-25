@@ -41,12 +41,13 @@ private final class OrtModelRun: NSObject, KaraokeModelRun {
 
     func run(input: UnsafeMutableRawPointer, output: UnsafeMutableRawPointer) -> Bool {
         do {
-            // Both tensors wrap Kotlin's pinned arrays in place.
-            let inValue = try ORTValue(tensorData: NSMutableData(bytesNoCopy: input, length: Self.bytes, freeWhenDone: false),
+            // NSMutableData may copy even with bytesNoCopy, so a pre-bound output tensor can be written
+            // somewhere Kotlin never sees (the vocal came back silent). ORT returns its own output; copy it back.
+            let inValue = try ORTValue(tensorData: NSMutableData(bytes: input, length: Self.bytes),
                                        elementType: .float, shape: Self.shape)
-            let outValue = try ORTValue(tensorData: NSMutableData(bytesNoCopy: output, length: Self.bytes, freeWhenDone: false),
-                                        elementType: .float, shape: Self.shape)
-            try session.run(withInputs: [inputName: inValue], outputs: [outputName: outValue], runOptions: nil)
+            let outputs = try session.run(withInputs: [inputName: inValue], outputNames: [outputName], runOptions: nil)
+            guard let result = try outputs[outputName]?.tensorData(), result.length >= Self.bytes else { return false }
+            memcpy(output, result.bytes, Self.bytes)
             return true
         } catch {
             print("Karaoke: inference failed: \(error)")
