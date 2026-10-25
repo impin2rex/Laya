@@ -66,27 +66,31 @@ interface AimedFilters : TransitionFilters {
  * One deck's end of a transition, for a player that filters each track in its own audio path
  * (iOS): only the calls addressed to [side] reach [dsp], the other side's are somebody else's.
  */
-class DeckFilters(private val dsp: TransitionFilterDsp, private val side: Side) : AimedFilters {
+class DeckFilters(var dsp: TransitionFilterDsp?, private val side: Side) : AimedFilters {
     enum class Side { INCOMING, OUTGOING }
 
     override var aimIncoming = true
     override var aimOutgoing = true
 
     override fun incoming(lowPassHz: Float, highPassHz: Float) {
-        if (aimIncoming && side == Side.INCOMING) dsp.setCutoffs(lowPassHz, highPassHz)
+        if (aimIncoming && side == Side.INCOMING) dsp?.setCutoffs(lowPassHz, highPassHz)
     }
 
     override fun outgoing(lowPassHz: Float, highPassHz: Float) {
-        if (aimOutgoing && side == Side.OUTGOING) dsp.setCutoffs(lowPassHz, highPassHz)
+        if (aimOutgoing && side == Side.OUTGOING) dsp?.setCutoffs(lowPassHz, highPassHz)
     }
 
     override fun outgoingEcho(delaySeconds: Float, send: Float, dry: Float) {
-        if (aimOutgoing && side == Side.OUTGOING) dsp.setEcho(delaySeconds, send, dry)
+        if (aimOutgoing && side == Side.OUTGOING) dsp?.setEcho(delaySeconds, send, dry)
     }
 
-    override fun open() = dsp.open()
+    override fun open() {
+        dsp?.open()
+    }
 
-    override fun parkEchoes() = dsp.parkEcho()
+    override fun parkEchoes() {
+        dsp?.parkEcho()
+    }
 }
 
 /** Equal-power pair: [riseGain]² + [fallGain]² = 1, so a blend of two tracks never dips. */

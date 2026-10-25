@@ -28,8 +28,6 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
-import kotlin.math.ceil
-import kotlin.math.floor
 
 /** The linear-frequency STFT front end open-unmix was trained on. */
 object VocalSpectrogram {
@@ -182,7 +180,10 @@ class VocalTracker(
                     // per call — when the only thing read from it is a band
                     // average.
                     val target = (outputs.get(0) as OnnxTensor).floatBuffer
-                    val curve = reduceToBandCurve(backing.asFloatBuffer(), target, bins, spectrogram.frames)
+                    val mixView = backing.asFloatBuffer()
+                    val curve = VocalModel.reduceToBandCurve(
+                        { mixView.get(it) }, { target.get(it) }, spectrogram.frames,
+                    )
                     AnalysisLog.warn("vocal mask ${spectrogram.frames} frames in " +
                             "${System.currentTimeMillis() - started}ms",
                     )
@@ -216,48 +217,6 @@ class VocalTracker(
         }
     }
 
-    /**
-     * Averages `mask = target / (mix + eps)` across a frequency band, then across channels.
-     *
-     * Band-averaging rather than a full per-bin mask: the only consumer is a single number per
-     * instant (how vocal this moment is), so per-bin resolution would be work with no reader.
-     * Only the frames carrying real audio are reduced; the padded tail's mask is meaningless and
-     * folding it in would drag every short window toward silence.
-     */
-    private fun reduceToBandCurve(
-        mix: FloatBuffer,
-        target: FloatBuffer,
-        bins: Int,
-        usableFrames: Int,
-    ): FloatArray {
-        val lowBin = floor(LOW_HZ * VocalSpectrogram.fftSize / VocalSpectrogram.sampleRate)
-            .toInt().coerceAtLeast(0)
-        val highBin = ceil(HIGH_HZ * VocalSpectrogram.fftSize / VocalSpectrogram.sampleRate)
-            .toInt().coerceAtMost(bins - 1)
-        if (highBin <= lowBin || usableFrames <= 0) return FloatArray(0)
-
-        val curve = FloatArray(usableFrames)
-        for (frame in 0 until usableFrames) {
-            var sum = 0.0
-            var count = 0
-            for (channel in 0 until VocalSpectrogram.CHANNELS) {
-                for (bin in lowBin..highBin) {
-                    // Both buffers carry the model's [1, 2, bins, FIXED_FRAMES]
-                    // layout, so one index reads the same cell of each. Absolute
-                    // get, so neither view's position matters.
-                    val index = (channel * bins + bin) * FIXED_FRAMES + frame
-                    val mixValue = mix.get(index)
-                    if (mixValue <= 1e-6f) continue
-                    val ratio = target.get(index) / mixValue
-                    sum += ratio.coerceIn(0f, 1f)
-                    count += 1
-                }
-            }
-            curve[frame] = if (count > 0) (sum / count).toFloat() else 0f
-        }
-        return curve
-    }
-
     fun release() {
         synchronized(lock) {
             runCatching { session?.close() }
@@ -272,9 +231,5 @@ class VocalTracker(
         const val MODEL_ASSET = "vocals_umxhq_int8.onnx"
         /** The model's fixed input width, ~22.8 s, chosen upstream to cover a transition overlap. */
         const val FIXED_FRAMES = 960
-
-        /** The band a vocal actually occupies; below and above it the mask says little. */
-        private const val LOW_HZ = 200.0
-        private const val HIGH_HZ = 4000.0
     }
 }

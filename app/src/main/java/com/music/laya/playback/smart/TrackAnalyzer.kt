@@ -1241,12 +1241,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
 
         val values = vocals.track(left, right, stereo.sampleRate) ?: return null
 
-        val mask = DoubleArray(curve.size) { NEUTRAL_VOCAL }
-        for (index in curve.indices) {
-            val frame = ((curve[index].time - actualStart) * VocalSpectrogram.frameRate).toInt()
-            if (frame in values.indices) mask[index] = values[frame].toDouble()
-        }
-        return mask
+        return VocalModel.maskOver(curve, values, actualStart)
     }
 
     /**
@@ -1254,16 +1249,8 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
      * which the caller answers by keeping the DSP heuristic rather than reporting a mask of
      * nothing but [NEUTRAL_VOCAL].
      */
-    private fun mergeMasks(size: Int, head: DoubleArray?, tail: DoubleArray?): List<Double>? {
-        if (size <= 0 || (head == null && tail == null)) return null
-        val merged = DoubleArray(size) { NEUTRAL_VOCAL }
-        for (source in listOfNotNull(head, tail)) {
-            for (index in merged.indices) {
-                if (index < source.size && source[index] != NEUTRAL_VOCAL) merged[index] = source[index]
-            }
-        }
-        return merged.toList()
-    }
+    private fun mergeMasks(size: Int, head: DoubleArray?, tail: DoubleArray?): List<Double>? =
+        VocalModel.mergeMasks(size, head, tail)
 
     /** Recorded ready-but-empty so a track that cannot be decoded is not retried every tick. */
     private fun empty(trackId: String, durationSeconds: Double) = TrackAnalysis(
@@ -1298,7 +1285,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
          * design, so absence of measurement is never mistaken for absence of a vocal, or for the
          * presence of one.
          */
-        const val NEUTRAL_VOCAL = 0.5
+        const val NEUTRAL_VOCAL = VocalModel.NEUTRAL_VOCAL
 
         /**
          * How much more than the average-bitrate estimate of the opening window

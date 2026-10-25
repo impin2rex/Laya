@@ -178,20 +178,21 @@ class TransitionFilterDsp {
     }
 
     /**
-     * Processes interleaved Float32 audio in [samples] in place: the filters, then the echo.
+     * Processes [frameCount] frames of interleaved Float32 audio in [samples], from frame
+     * [startFrame], in place: the filters, then the echo.
      * Preserves dynamic headroom without clamping to [-1.0f, +1.0f].
      */
-    fun process(samples: FloatArray, frameCount: Int) {
+    fun process(samples: FloatArray, frameCount: Int, startFrame: Int = 0) {
         if (frameCount == 0 || channelCount < 1 || sampleRate <= 0) return
-        filter(samples, frameCount)
-        if (echoEngaged) echo(samples, frameCount)
+        filter(samples, frameCount, startFrame)
+        if (echoEngaged) echo(samples, frameCount, startFrame)
     }
 
     /**
      * The filters alone, with no format guard — for a caller that has already checked its format.
      * False when they were parked and [samples] was left untouched.
      */
-    fun filter(samples: FloatArray, frameCount: Int): Boolean {
+    fun filter(samples: FloatArray, frameCount: Int, startFrame: Int = 0): Boolean {
         val targetLow = targetLowPassHz
         val targetHigh = targetHighPassHz
         val parked = targetLow >= OPEN_HZ && targetHigh <= OFF_HZ &&
@@ -203,7 +204,7 @@ class TransitionFilterDsp {
         filterStateDirty = true
 
         var remaining = frameCount
-        var frameOffset = 0
+        var frameOffset = startFrame
         while (remaining > 0) {
             val subBlock = min(remaining, GLIDE_FRAMES)
             currentLowPassHz = glide(currentLowPassHz, targetLow)
@@ -277,7 +278,7 @@ class TransitionFilterDsp {
      * One read, one write and two one-pole filters per sample, with the send and dry gains ramped
      * linearly across the block so a control tick is never heard as a step.
      */
-    private fun echo(samples: FloatArray, frameCount: Int) {
+    private fun echo(samples: FloatArray, frameCount: Int, startFrame: Int) {
         if (echoSeenGeneration != echoGeneration) startEcho()
         val channels = channelCount
         val delay = echoDelayFrames
@@ -292,7 +293,7 @@ class TransitionFilterDsp {
             // No ring to run: honour the dry gain alone, so the track still leaves.
             for (f in 0 until frameCount) {
                 dry += dryStep
-                val base = f * channels
+                val base = (startFrame + f) * channels
                 for (c in 0 until channels) samples[base + c] *= dry
             }
             echoSend = targetSend
@@ -307,7 +308,7 @@ class TransitionFilterDsp {
         for (f in 0 until frameCount) {
             send += sendStep
             dry += dryStep
-            val base = f * channels
+            val base = (startFrame + f) * channels
             val ringBase = position * channels
             for (c in 0 until channels) {
                 val input = samples[base + c]

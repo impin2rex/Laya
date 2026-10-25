@@ -2,6 +2,7 @@ import AVFoundation
 import Foundation
 import LayaKit
 import MediaToolbox
+import QuartzCore
 
 /// Target curve shared by every item's tap. Plain pointers, no locks: the audio
 /// thread only reads, and a torn read moves one 64-frame glide target a hair.
@@ -13,15 +14,17 @@ enum EqualizerTuning {
     static let kinds = [1, 0, 0, 0, 0, 0, 2, 1, 0, 2]
     static let frequenciesHz: [Float] = [60, 150, 400, 1_000, 2_500, 6_000, 14_000, 250, 1_000, 4_000]
     static var eqOn = false
-    /// Reverb or karaoke (IosDsp) is on.
+    /// Reverb, karaoke or widening (IosDeck) is on.
     static var dsp = false
+    /// A crossfade is planned: every item needs its tap, which renders the blend's fader and filters.
+    static var fades = false
     static var skipSilence = false
     /// Whether the player is currently racing through silence; toggled from the audio thread.
     static var skipping = false
     static var onSkipping: ((Bool) -> Void)?
-    /// The item whose tap runs IosDsp and skip-silence. IosDsp has one state, so while two decks overlap only the current track gets it.
+    /// The playing item, the only one skip-silence listens to (each tap runs its own deck's chain).
     static var dspKey: UnsafeRawPointer?
-    static var wanted: Bool { eqOn || dsp || skipSilence }
+    static var wanted: Bool { eqOn || dsp || skipSilence || fades }
 
     static func set(gains: [Float], qs: [Float], preampDb: Float, balance: Float) {
         for i in 0..<slots { values[i] = gains[i]; values[slots + i] = qs[i] }
@@ -44,6 +47,8 @@ final class EqualizerTap {
     private static let silentLevel: Float = 0.03
 
     private let key: UnsafeRawPointer
+    /// This item's own chain (karaoke, widening, reverb, transition), so two tracks overlapping never share a stateful processor.
+    private let deck: IosDeck
     private var scratch: UnsafeMutablePointer<Float>?
     private var quietFrames = 0
 
@@ -66,9 +71,15 @@ final class EqualizerTap {
     private var state = [Float](repeating: 0, count: maxChannels * n * 2)
     private var channelGain = [Float](repeating: 1, count: maxChannels)
 
-    init(key: UnsafeRawPointer) { self.key = key }
+    init(key: UnsafeRawPointer) {
+        self.key = key
+        deck = IosDsp.shared.acquire(key: Int64(Int(bitPattern: key)))
+    }
 
-    deinit { scratch?.deallocate() }
+    deinit {
+        IosDsp.shared.release(deck: deck)
+        scratch?.deallocate()
+    }
 
     func prepare(_ format: AudioStreamBasicDescription, maxFrames: Int) {
         sampleRate = Float(format.mSampleRate)
@@ -79,7 +90,7 @@ final class EqualizerTap {
         scratch?.deallocate()
         scratch = isFloat ? .allocate(capacity: maxFrames * channels) : nil
         if isFloat {
-            IosDsp.shared.prepare(sampleRate: Int32(format.mSampleRate), channelCount: Int32(channels), maxFrames: Int32(maxFrames))
+            deck.prepare(sampleRate: Int32(format.mSampleRate), channelCount: Int32(channels), maxFrames: Int32(maxFrames))
         }
     }
 
@@ -101,13 +112,22 @@ final class EqualizerTap {
         }
     }
 
-    func process(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int, mediaTimeUs: Int64) {
+    /// `mediaSec` is where the block sits in its track (NaN when unknown) and `hostSec` when the tap ran; the transition
+    /// reads its progress off the first, the phase lock compares decks on the second.
+    func process(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int, mediaSec: Double, hostSec: Double) {
         guard isFloat, frames > 0 else { return }
         let current = EqualizerTuning.dspKey == key
         if current && EqualizerTuning.skipSilence { listen(buffers, frames: frames) }
-        // Karaoke's centre-cancel needs the untouched stereo image, so it runs before the EQ's balance (as on Android).
-        if current && IosDsp.shared.active { runDsp(buffers, frames: frames, mediaTimeUs: mediaTimeUs) }
+        // Android's order: karaoke and widening, then the equaliser, then reverb and the transition (fader and filters last).
+        // Karaoke's centre-cancel needs the untouched stereo image, so it runs before the EQ's balance.
+        if deck.wantsPre() {
+            let us = mediaSec.isNaN ? Int64.min : Int64(mediaSec * 1_000_000)
+            interleaved(buffers, frames: frames) { deck.processPre(data: $0, frames: Int32(frames), mediaTimeUs: us) }
+        }
         equalize(buffers, frames: frames)
+        if deck.wantsPost() {
+            interleaved(buffers, frames: frames) { deck.processPost(data: $0, frames: Int32(frames), mediaSec: mediaSec, hostSec: hostSec) }
+        }
     }
 
     /// Skip silence. ponytail: AVPlayer taps can't drop frames, so a run of silence longer than a
@@ -127,11 +147,11 @@ final class EqualizerTap {
         }
     }
 
-    /// Karaoke and reverb live in Kotlin (IosDsp) on interleaved samples.
-    private func runDsp(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int, mediaTimeUs: Int64) {
-        let dsp = IosDsp.shared
+    /// The Kotlin chain works on interleaved samples: lend it the buffer itself when it is, else a scratch copy.
+    private func interleaved(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int,
+                             _ body: (UnsafeMutablePointer<Float>) -> Void) {
         if isInterleaved {
-            if let data = buffers.first?.mData?.assumingMemoryBound(to: Float.self) { dsp.process(data: data, frames: Int32(frames), mediaTimeUs: mediaTimeUs) }
+            if let data = buffers.first?.mData?.assumingMemoryBound(to: Float.self) { body(data) }
             return
         }
         guard let scratch, buffers.count >= channels else { return }
@@ -139,7 +159,7 @@ final class EqualizerTap {
             guard let src = buffers[c].mData?.assumingMemoryBound(to: Float.self) else { return }
             for f in 0..<frames { scratch[f * channels + c] = src[f] }
         }
-        dsp.process(data: scratch, frames: Int32(frames), mediaTimeUs: mediaTimeUs)
+        body(scratch)
         for c in 0..<channels {
             let dst = buffers[c].mData!.assumingMemoryBound(to: Float.self)
             for f in 0..<frames { dst[f] = scratch[f * channels + c] }
@@ -256,11 +276,12 @@ final class EqualizerTap {
             process: { tap, frames, _, bufferList, framesOut, flagsOut in
                 var range = CMTimeRange()
                 guard MTAudioProcessingTapGetSourceAudio(tap, frames, bufferList, flagsOut, &range, framesOut) == noErr else { return }
-                // Where this block sits in the track, which lines Karaoke's neural vocal up with it.
-                let us = range.start.isNumeric ? Int64(range.start.seconds * 1_000_000) : Int64.min
+                // Where this block sits in the track: lines Karaoke's neural vocal up with it and times the blend.
+                let seconds = range.start.isNumeric ? range.start.seconds : Double.nan
                 Unmanaged<EqualizerTap>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
                     .takeUnretainedValue()
-                    .process(UnsafeMutableAudioBufferListPointer(bufferList), frames: Int(framesOut.pointee), mediaTimeUs: us)
+                    .process(UnsafeMutableAudioBufferListPointer(bufferList), frames: Int(framesOut.pointee),
+                             mediaSec: seconds, hostSec: CACurrentMediaTime())
             }
         )
         guard let out = adopt(create(MTAudioProcessingTapCreate, &callbacks)) else {

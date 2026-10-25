@@ -21,6 +21,7 @@ import com.music.laya.data.settings.TransitionWindow
 import com.music.laya.playback.smart.AnalysisSource
 import com.music.laya.playback.smart.AutomixAnalyzer
 import com.music.laya.playback.smart.CrossfadeMode
+import com.music.laya.playback.smart.TrackAnalysis
 import com.music.laya.playback.smart.TransitionTrackInfo
 import com.music.laya.playback.smart.planTransition
 import com.music.laya.data.sources.SourceKind
@@ -194,13 +195,29 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private fun syncTransition() {
         val off = IosCast.active || ListenTogether.state.value.inParty || sleepAfterTrack || autoNext() == index
         when {
-            off -> engine.setTransition(-1, 0, 0, 1f, 1f)
+            off -> noTransition()
             AppSettings.smartFadeEnabled.value -> automix(position.positionMs)
-            else -> engine.setTransition(-1, AppSettings.crossfadeSeconds.value * 1000L, 0, 1f, 1f)
+            else -> {
+                // Android's classic crossfade: the shared renderer at its defaults (equal power, nothing filtered).
+                val fadeMs = AppSettings.crossfadeSeconds.value * 1000L
+                val next = queue.getOrNull(autoNext())
+                IosTransition.setPlan(
+                    if (fadeMs <= 0) null else IosTransitionPlan(
+                        source = null, cueSec = 0.0, inRate = 1.0, outRate = 1.0, beatMs = 0, startMs = -1, fadeMs = fadeMs,
+                        outAnalysis = TrackAnalysis(), inAnalysis = TrackAnalysis(), inDurationSec = next?.let(::secondsOf) ?: 0.0,
+                    ),
+                )
+                engine.setTransition(-1, fadeMs, 0, 1f, 1f)
+            }
         }
     }
 
-    // ---- Automix (Android's CrossfadeController.considerSmartTransition, minus the filter / bass-swap rendering) ----
+    private fun noTransition() {
+        IosTransition.setPlan(null)
+        engine.setTransition(-1, 0, 0, 1f, 1f)
+    }
+
+    // ---- Automix (Android's CrossfadeController.considerSmartTransition; the blend itself is rendered by IosTransition) ----
 
     private val analyzer = AutomixAnalyzer(scope, CHUNK_BYTES)
     private var lastVerdict = ""
@@ -222,7 +239,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         val dur = durationMs.takeIf { it > 0 } ?: return
         if (next == null || cur.isVideoOrigin || next.isVideoOrigin) {
             AppSettings.smartTransitionWindow.value = null
-            engine.setTransition(-1, 0, 0, 1f, 1f)
+            noTransition()
             return
         }
         source(cur)?.let { analyzer.request(cur.videoId, it, dur / 1000.0) }
@@ -251,7 +268,14 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         AppSettings.smartTransitionWindow.value = if (!plan.blocked && plan.markerVisible && state.current in measured && state.next in measured) {
             TransitionWindow((plan.transitionStart * 1000.0 / dur).toFloat().coerceIn(0f, 1f), (plan.transitionEnd * 1000.0 / dur).toFloat().coerceIn(0f, 1f))
         } else null
-        if (plan.blocked || plan.fadeMs <= 0) return engine.setTransition(-1, 0, 0, 1f, 1f)
+        if (plan.blocked || plan.fadeMs <= 0) return noTransition()
+        IosTransition.setPlan(
+            IosTransitionPlan(
+                source = plan, cueSec = plan.incomingCueTime, inRate = plan.incomingPlaybackRate, outRate = plan.outgoingPlaybackRate,
+                beatMs = (plan.beatSeconds * 1000).toLong(), startMs = (plan.transitionStart * 1000).toLong(), fadeMs = plan.fadeMs,
+                outAnalysis = a, inAnalysis = b, inDurationSec = secondsOf(next),
+            ),
+        )
         engine.setTransition(
             (plan.transitionStart * 1000).toLong(), plan.fadeMs, (plan.incomingCueTime * 1000).toLong(),
             plan.incomingPlaybackRate.toFloat(), plan.outgoingPlaybackRate.toFloat(),

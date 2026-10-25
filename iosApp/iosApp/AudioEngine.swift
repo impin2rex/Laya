@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import MediaPlayer
+import QuartzCore
 import LayaKit
 import UIKit
 
@@ -195,9 +196,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     func stop() {
         for deck in [player, idle] { deck.pause(); deck.removeAllItems(); deck.volume = 1 }
         fade = nil
+        easing = false
+        IosTransition.shared.end()
         parked = false
         fadeSkipped = false
         transition = Transition()
+        EqualizerTuning.fades = false
         updateFadeTimer()
         statusObservation = nil
         currentItem = nil
@@ -212,8 +216,17 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Play at the chosen speed (play() alone would reset the rate to 1).
     private func go() {
         player.play()
-        player.rate = skipping ? speed * 4 : speed
-        if fade != nil { idle.play(); idle.rate = speed }
+        player.rate = deckRate(player)
+        if fade != nil { idle.play(); idle.rate = deckRate(idle) }
+    }
+
+    /// What a deck should run at: the listener's speed, with the blend's tempo match on the decks it applies to.
+    private func deckRate(_ deck: AVQueuePlayer) -> Float {
+        if let f = fade {
+            if deck === f.inn { return f.inSpeed }
+            if deck === f.out && f.swapped == false { return speed * transition.outRate }
+        }
+        return skipping ? speed * 4 : speed
     }
 
     func setSpeed(speed: Float) {
@@ -391,6 +404,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func becomeCurrent(_ item: AVPlayerItem) {
         currentItem = item
         EqualizerTuning.dspKey = UnsafeRawPointer(Unmanaged.passUnretained(item).toOpaque())
+        IosDsp.shared.setCurrent(key: Self.key(of: item))
         seekingToMs = nil
         // .initial: a queued item is usually ready before it becomes current.
         statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
@@ -504,14 +518,17 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private struct Transition { var startMs: Int64 = -1; var fadeMs: Int64 = 0; var cueMs: Int64 = 0; var rate: Float = 1; var outRate: Float = 1 }
 
-    /// One fade in flight. `out` is the deck the track is leaving on, `inn` the deck it arrives on.
+    /// One fade in flight. `out` is the deck the track is leaving on, `inn` the deck it arrives on. Neither deck's volume
+    /// is touched: each deck's tap (EqualizerTap -> IosDeck) renders its side of the blend (fader, filters, echo) from
+    /// the shared TransitionRender, sample by sample, and this class only decides when it starts, hands off and ends.
     private final class Fade {
         let out: AVQueuePlayer, inn: AVQueuePlayer, item: AVPlayerItem, oldItem: AVPlayerItem?
         let start: Double, length: Double
         var swapped = false
-        var lastLog = -1.0
-        init(out: AVQueuePlayer, inn: AVQueuePlayer, item: AVPlayerItem, oldItem: AVPlayerItem?, start: Double, length: Double) {
-            self.out = out; self.inn = inn; self.item = item; self.oldItem = oldItem; self.start = start; self.length = length
+        /// The incoming deck's speed now (the listener's, times the beatmatch stretch, times any phase-lock nudge).
+        var inSpeed: Float
+        init(out: AVQueuePlayer, inn: AVQueuePlayer, item: AVPlayerItem, oldItem: AVPlayerItem?, start: Double, length: Double, inSpeed: Float) {
+            self.out = out; self.inn = inn; self.item = item; self.oldItem = oldItem; self.start = start; self.length = length; self.inSpeed = inSpeed
         }
     }
 
@@ -523,10 +540,23 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private var fadeSkipped = false
     private var fade: Fade?
     private var fadeTimer: Timer?
+    /// The playing track was sped up for a blend that has not (yet) come; the speed it has been brought to, if so.
+    private var rampedSpeed: Float?
+    /// A stretched track walking back to the listener's speed, a step per beat, after a blend that never came.
+    private var easing = false
+    private var easeItem: AVPlayerItem?
+
+    private static func key(of item: AVPlayerItem) -> Int64 { Int64(Int(bitPattern: Unmanaged.passUnretained(item).toOpaque())) }
 
     func setTransition(startMs: Int64, fadeMs: Int64, cueMs: Int64, rate: Float, outRate: Float) {
         onMain {
             self.transition = Transition(startMs: startMs, fadeMs: max(0, fadeMs), cueMs: max(0, cueMs), rate: rate, outRate: outRate)
+            // A blend renders through the taps, so every item needs one.
+            let fades = fadeMs > 0
+            if fades != EqualizerTuning.fades {
+                EqualizerTuning.fades = fades
+                if fades { [self.currentItem, self.nextItem].forEach { $0.map(EqualizerTap.attach) } }
+            }
             self.placeNext()
         }
     }
@@ -536,7 +566,6 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         if fade == nil && transition.fadeMs > 0 && !fadeSkipped {
             idle.removeAllItems()
             idle.insert(item, after: nil)
-            idle.volume = 0
             idle.pause()
             parked = true
             parkedCueMs = -1
@@ -566,9 +595,9 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         updateFadeTimer()
     }
 
-    /// A 50 Hz timer only while a fade is armed or running.
+    /// A 50 Hz timer only while a fade is armed or running (or a tempo is easing back).
     private func updateFadeTimer() {
-        let need = fade != nil || (parked && nextItem != nil)
+        let need = fade != nil || (parked && nextItem != nil) || easing
         if need && fadeTimer == nil {
             let timer = Timer(timeInterval: 0.02, repeats: true) { [weak self] _ in self?.fadeTick() }
             RunLoop.main.add(timer, forMode: .common)
@@ -581,43 +610,63 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func fadeTick() {
         if let f = fade { return driveFade(f) }
+        if easing { easeTick() }
         guard parked, !fadeSkipped, let item = nextItem, let current = currentItem,
               player.timeControlStatus == .playing else { return }
         let duration = streamDuration(of: current)
         guard duration.isFinite, duration > 0 else { return }
+        // The playing track climbs to the incoming tempo over its last beats, a step per beat (Android's rampOutgoing).
+        let position = player.currentTime().seconds
+        let step = IosTransition.shared.rampRate(outPositionMs: Int64(position * 1000), speed: speed)
+        if !step.isNaN {
+            player.rate = step
+            rampedSpeed = step
+            print(String(format: "Transition: ramp -> %.4f at %.2fs", step, position))
+        }
         // An Automix plan states its own window; a plain fade is kept to a third of the track and ends with it.
         let planned = transition.startMs >= 0
         let length = planned ? Double(transition.fadeMs) / 1000 : min(Double(transition.fadeMs) / 1000, duration / 3)
         let start = planned ? Double(transition.startMs) / 1000 : duration - length
-        let position = player.currentTime().seconds
         guard position >= start else { return }
         if position - start > 1 { // arrived late (a seek into the window): no fade for this pair
             fadeSkipped = true
             print("Crossfade: window missed (at \(position)s, due \(start)s); gapless")
-            return
+            return abandonRamp()
         }
         guard item.status == .readyToPlay else { return } // still loading; the window allows a second of grace
+        // The blend starts on the incoming tempo, however the ramp went.
+        IosTransition.shared.finishRamp()
+        let nowMs = Int64(CACurrentMediaTime() * 1000)
+        guard IosTransition.shared.begin(outKey: Self.key(of: current), inKey: Self.key(of: item), startSec: start,
+                                         fadeSec: length, outDurationSec: duration, nowMs: nowMs) else {
+            fadeSkipped = true // a deck without its tap cannot be blended: join gaplessly
+            return abandonRamp()
+        }
         let deck = idle
-        deck.volume = 0
-        deck.rate = speed * transition.rate
+        let inSpeed = speed * transition.rate
+        deck.rate = inSpeed
         if transition.outRate != 1 { player.rate = speed * transition.outRate }
-        fade = Fade(out: player, inn: deck, item: item, oldItem: current, start: position, length: length)
-        print("Crossfade: begin out=\(position)s len=\(length)s cue=\(transition.cueMs)ms rate=\(transition.rate)")
+        rampedSpeed = nil
+        fade = Fade(out: player, inn: deck, item: item, oldItem: current, start: position, length: length, inSpeed: inSpeed)
+        print("Crossfade: begin out=\(position)s len=\(length)s cue=\(transition.cueMs)ms rate=\(transition.rate)/\(transition.outRate)")
     }
 
     private func driveFade(_ f: Fade) {
-        var p = f.length > 0 ? (f.out.currentTime().seconds - f.start) / f.length : 1
-        if f.out.currentItem == nil { p = 1 }
-        p = min(max(p, 0), 1)
-        // Equal power: sin² + cos² = 1, so the blend holds its loudness (Android's curve).
-        f.out.volume = Float(cos(p * .pi / 2))
-        f.inn.volume = Float(sin(p * .pi / 2))
-        if p - f.lastLog >= 0.1 || p == 1 {
-            f.lastLog = p
-            print(String(format: "Crossfade: p=%.2f out=%.3f in=%.3f", p, f.out.volume, f.inn.volume))
+        let host = CACurrentMediaTime()
+        let outEnded = f.out.currentItem == nil
+        let outPos = f.out.currentTime().seconds
+        let verdict = IosTransition.shared.drive(
+            nowMs: Int64(host * 1000), hostSec: host,
+            outPosSec: outEnded ? .infinity : outPos, inPosSec: f.inn.currentTime().seconds,
+            outPlaying: f.out.timeControlStatus == .playing, inPlaying: f.inn.timeControlStatus == .playing, speed: speed)
+        let nudge = IosTransition.shared.inSpeed
+        if !nudge.isNaN {
+            f.inSpeed = nudge
+            f.inn.rate = nudge
         }
-        if !f.swapped && p >= 0.5 { swapDecks(f) }
-        if p >= 1 { finishFade(f) }
+        // Verdict bits: 1 = the session moves to the incoming track (Android's HANDOFF_AT), 2 = the blend has run its course.
+        if verdict & 1 != 0 && !f.swapped { swapDecks(f) }
+        if verdict & 2 != 0 || outEnded { finishFade(f) }
     }
 
     /// Halfway, where the two are equally loud: the incoming track becomes the current one for everything else (Android's HANDOFF_AT).
@@ -636,13 +685,13 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func finishFade(_ f: Fade) {
         if !f.swapped { swapDecks(f) }
+        IosTransition.shared.end()
         f.out.pause()
         f.out.removeAllItems()
-        f.out.volume = 1
-        f.inn.volume = 1
         if let old = f.oldItem { dropItem(old) }
         fade = nil
-        player.rate = skipping ? speed * 4 : speed // the tempo match (if any) ends with the blend
+        // The blend's tempo match ends with it, as Android's finish() puts the incoming player back on the listener's speed.
+        player.rate = skipping ? speed * 4 : speed
         placeNext()
         reportProgress()
         updateNowPlayingTiming()
@@ -653,24 +702,54 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func handOverNow() {
         guard let item = nextItem else { return }
         let deck = idle
-        deck.volume = 1
         deck.rate = speed
-        let f = Fade(out: player, inn: deck, item: item, oldItem: nil, start: 0, length: 0)
+        let f = Fade(out: player, inn: deck, item: item, oldItem: nil, start: 0, length: 0, inSpeed: speed)
         fade = f
         finishFade(f)
     }
 
     /// A seek or a skip while a fade runs: before the swap the incoming track goes back to waiting; after, the fade is cut short.
     private func cancelFade() {
-        guard let f = fade else { return }
+        guard let f = fade else { return abandonRamp() }
         if f.swapped { return finishFade(f) }
+        IosTransition.shared.end()
         f.inn.pause()
-        f.inn.volume = 0
-        f.out.volume = 1
         parkedCueMs = -1
         fadeSkipped = true
         fade = nil
         placeNext()
+        abandonRamp()
+    }
+
+    /// The playing track was sped up for a blend that is not coming: walk it back a step per beat (Android's beginEase).
+    private func abandonRamp() {
+        guard let ramped = rampedSpeed else { return }
+        rampedSpeed = nil
+        let plan = IosTransition.shared
+        let rate = Double(ramped / speed)
+        if plan.beginEase(rate: rate, analysis: plan.outAnalysis, positionMs: Int64(player.currentTime().seconds * 1000)) {
+            easing = true
+            easeItem = player.currentItem
+            updateFadeTimer()
+        } else {
+            applyRate()
+        }
+    }
+
+    private func easeTick() {
+        let pos = Int64(player.currentTime().seconds * 1000)
+        if easeItem !== player.currentItem || IosTransition.shared.easeLost(positionMs: pos) { return endEase() }
+        let next = IosTransition.shared.easeStep(positionMs: pos, speed: speed)
+        if next.isNaN { return }
+        if next < 0 { return endEase() } // arrived
+        player.rate = next
+    }
+
+    private func endEase() {
+        easing = false
+        easeItem = nil
+        applyRate()
+        updateFadeTimer()
     }
 
     // MARK: - Now Playing timing
