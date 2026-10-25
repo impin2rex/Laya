@@ -668,6 +668,31 @@ private fun ServerConnectionLine(connection: ServerConnectionState) {
     }
 }
 
+/** The party server's round-trip time for a page's top bar, as Android shows it beside the Listen together title. */
+@Composable
+fun PartyPing(modifier: Modifier = Modifier) {
+    val state by ListenTogether.serverConnectionState.collectAsStateWithLifecycle()
+    val (text, color) = when (val s = state) {
+        is ServerConnectionState.CustomFallback ->
+            stringResource(Res.string.listen_together_ping, s.latencyMs) to MaterialTheme.colorScheme.error
+        is ServerConnectionState.CustomOnline ->
+            stringResource(Res.string.listen_together_ping, s.latencyMs) to MaterialTheme.colorScheme.onSurface
+        is ServerConnectionState.DefaultOnline ->
+            stringResource(Res.string.listen_together_ping, s.latencyMs) to MaterialTheme.colorScheme.onSurface
+        ServerConnectionState.Checking ->
+            stringResource(Res.string.listen_together_server_checking) to MaterialTheme.colorScheme.onSurfaceVariant
+        ServerConnectionState.Offline ->
+            "—" to MaterialTheme.colorScheme.error
+    }
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        if (state is ServerConnectionState.CustomFallback) {
+            Icon(Icons.Rounded.CloudOff, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+        }
+        Text(text, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1)
+    }
+}
+
 /**
  * How long the newly made party sits on screen before the invite rises over it.
  *

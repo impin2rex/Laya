@@ -4,6 +4,8 @@
     <string name="analysis_in_progress">analysing…</string>
     <string name="analysis_refining">analysed, refining…</string>
     <string name="audio_output">Audio output</string>
+    <string name="audio_output_bluetooth_airplay">Bluetooth &amp; AirPlay devices</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">Choose AirPods, speakers or an AirPlay receiver</string>
     <string name="audio_output_playing">Playing here</string>
     <string name="audio_pipeline">Audio Pipeline</string>
     <string name="automix_analysis_status">Automix · this song: %1$s · next: %2$s</string>
@@ -599,6 +601,7 @@
     <string name="listen_together_scan_qr">Scan QR code</string>
     <string name="listen_together_scan_qr_subtitle">Let friends scan this to join.</string>
     <string name="listen_together_server">Party server</string>
+    <string name="listen_together_ping">%1$d ms</string>
     <string name="listen_together_server_checking">Checking…</string>
     <string name="listen_together_server_offline">Can’t be reached right now</string>
     <string name="listen_together_server_online">Online · %1$d ms</string>

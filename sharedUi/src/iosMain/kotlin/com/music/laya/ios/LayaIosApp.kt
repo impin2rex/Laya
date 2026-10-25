@@ -148,6 +148,7 @@ import com.music.laya.ui.screens.EqualizerScreen
 import com.music.laya.ui.screens.SettingsScreen
 import com.music.laya.ui.screens.SourcesPage
 import com.music.laya.ui.screens.ListenTogetherScreen
+import com.music.laya.ui.screens.PartyPing
 import com.music.laya.data.listentogether.JamInviteLink
 import com.music.laya.data.sources.AddonSource
 import com.music.laya.data.sources.SourceKind
@@ -979,6 +980,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     modifier = Modifier.align(Alignment.TopStart).then(if (onDetail) Modifier.windowInsetsPadding(WindowInsets.statusBars) else Modifier).padding(8.dp)
                                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
                                 ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+                                if (stack.last() === IosPage.ListenTogether) {
+                                    PartyPing(Modifier.align(Alignment.TopEnd).padding(top = 24.dp, end = 20.dp))
+                                }
                             }
                         }
                     }
