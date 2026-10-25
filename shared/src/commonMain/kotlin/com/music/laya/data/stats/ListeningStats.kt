@@ -132,11 +132,10 @@ object ListeningStats {
      * watching the track rather than here — see [ListeningRecorder], which holds
      * the same threshold the scrobbler uses.
      */
-    fun record(song: Song, playedMs: Long, countsAsPlay: Boolean) {
+    fun record(song: Song, playedMs: Long, countsAsPlay: Boolean, now: Long = currentTimeMillis()) {
         if (!ready) return
         if (playedMs <= 0 && !countsAsPlay) return
         if (song.videoId.isBlank()) return
-        val now = currentTimeMillis()
         val at = CivilDate.ofEpochMillis(now)
         val hour = ((now + localOffsetMillis(now)).mod(86_400_000L) / 3_600_000L).toInt()
         val dayKey = at.toString()

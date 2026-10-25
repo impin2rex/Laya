@@ -30,6 +30,9 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- Replay and lyrics cards: "Save" adds the picture to the photo library (add-only, nothing is read). -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Laya saves your Replay and lyrics cards to your photo library when you tap Save.</string>
 	<!-- Google Cast discovery: the default media receiver's id is CC1AD845 (CastOptionsProvider on Android). -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Laya finds Chromecasts and Google Cast speakers on your Wi-Fi so you can play music on them.</string>

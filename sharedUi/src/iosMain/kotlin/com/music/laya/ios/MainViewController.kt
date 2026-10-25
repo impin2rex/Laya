@@ -13,6 +13,8 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.svg.SvgDecoder
 import com.music.laya.ui.screens.DetailExtras
 import com.music.laya.data.DebugLog
+import com.music.laya.data.stats.ArtistFacts
+import com.music.laya.data.stats.ListeningStats
 import com.music.laya.data.TrackLog
 import com.music.laya.data.innertube.InnerTubeXResolver
 import com.music.laya.data.lyrics.LyricsTranslation
@@ -60,6 +62,9 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
+    // The device's own listening record (Replay), under Application Support the way Android keeps it in filesDir.
+    ListeningStats.init(dir.toPath() / ListeningStats.DIRECTORY)
+    ArtistFacts.init(dir.toPath() / ArtistFacts.FILE_NAME)
     watchIosConnection()
     IosParty.install()
     com.music.laya.ui.screens.PartyPlatform.host = IosPartyPlatform

@@ -25,3 +25,6 @@ actual fun displayLanguageName(code: String, inTag: String): String =
     NSLocale(localeIdentifier = inTag).displayNameForKey(NSLocaleIdentifier, code) ?: code
 
 actual fun decimalSeparator(): Char = NSLocale.currentLocale.decimalSeparator.firstOrNull() ?: '.'
+
+actual fun monthName(month: Int): String =
+    (platform.Foundation.NSDateFormatter().monthSymbols.getOrNull(month - 1) as? String) ?: month.toString()

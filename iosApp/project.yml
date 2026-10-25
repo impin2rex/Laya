@@ -35,6 +35,7 @@ targets:
         product: onnxruntime
       - framework: Vendor/GoogleCast.xcframework
         embed: true
+      - sdk: Photos.framework
     settings:
       base:
         # Checked-in plist; XcodeGen's `info:` key would overwrite it.
