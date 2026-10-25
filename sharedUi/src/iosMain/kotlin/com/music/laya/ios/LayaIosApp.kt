@@ -336,6 +336,19 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         LikeState.set(id, next)
         scope.launch { YtMusicRepository.rate(id, next).onFailure { LikeState.set(id, previous) } }
     }
+    fun isDisliked(id: String) = likes[id] == LikeStatus.DISLIKE
+    fun toggleDislike(id: String) {
+        val previous = likes[id] ?: LikeStatus.INDIFFERENT
+        val next = if (previous == LikeStatus.DISLIKE) LikeStatus.INDIFFERENT else LikeStatus.DISLIKE
+        LikeState.set(id, next)
+        scope.launch { YtMusicRepository.rate(id, next).onFailure { LikeState.set(id, previous) } }
+        // Android skips ahead when the playing track is the one just disliked.
+        if (next == LikeStatus.DISLIKE && player.song?.videoId == id) player.next()
+    }
+    var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    var infoTarget by remember { mutableStateOf<Song?>(null) }
+    var sleepPicker by remember { mutableStateOf(false) }
+    var testSheet by remember { mutableStateOf<String?>(null) } // only set by the LAYA_OPEN=player-output|pipeline hook
     // A track's own rating comes from its menu data; the playing track and the long-pressed one are looked up.
     LaunchedEffect(player.song?.videoId, signedIn) {
         val id = player.song?.videoId ?: return@LaunchedEffect
@@ -558,6 +571,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val what = NSProcessInfo.processInfo.environment["LAYA_OPEN"] as? String ?: return@LaunchedEffect
         when {
             what == "player" -> { kotlinx.coroutines.delay(12_000); nowPlayingOpen = true }
+            // player-menu | player-sleep | player-info | player-output | player-pipeline: the player with that sheet raised.
+            what.startsWith("player-") -> {
+                kotlinx.coroutines.delay(12_000); if (!what.endsWith("output") && !what.endsWith("pipeline")) nowPlayingOpen = true; kotlinx.coroutines.delay(2_000)
+                when (what.removePrefix("player-")) {
+                    "menu" -> menuSong = player.song
+                    "sleep" -> sleepPicker = true
+                    "info" -> infoTarget = player.song
+                    "output" -> testSheet = "output"
+                    "pipeline" -> testSheet = "pipeline"
+                }
+            }
             what == "settings" -> stack = stack + IosPage.Settings
             what == "search" -> tab = 3
             what == "sources" -> stack = stack + IosPage.Sources
@@ -596,7 +620,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     val noPadding = PaddingValues(bottom = barHeight)
                     Box(Modifier.fillMaxSize().layerBackdrop(appBackdrop).nestedScroll(navBarScroll)) {
-                        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
+                        // A detail page draws its own header up under the status bar (as Android's edge to edge does), so only the other pages are inset here.
+                        val onDetail = stack.lastOrNull() is IosPage.Detail
+                        Box(Modifier.fillMaxSize().then(if (onDetail) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars))) {
                             val top = stack.lastOrNull()
                             when (if (top == null) tab else -1) {
                             -1 -> {
@@ -900,7 +926,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             } else {
                                 IconButton(
                                     onClick = { stack = stack.dropLast(1) },
-                                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                                    modifier = Modifier.align(Alignment.TopStart).then(if (onDetail) Modifier.windowInsetsPadding(WindowInsets.statusBars) else Modifier).padding(8.dp)
                                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
                                 ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
                             }
@@ -949,7 +975,25 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             onOpenArtist = { openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
                             liked = if (signedIn) isLiked(m.videoId) else null,
                             onToggleLike = { toggleLike(m.videoId) },
+                            disliked = if (signedIn) isDisliked(m.videoId) else null,
+                            onToggleDislike = { toggleDislike(m.videoId) },
+                            onAddToPlaylist = if (signedIn) ({ playlistTarget = m }) else null,
+                            onSongInfo = { infoTarget = m },
+                            // Android: sleep timer and Copy log are the player menu's own rows.
+                            sleepStatus = player.sleepMinutes?.let { "$it min" } ?: if (player.sleepAfterTrack) "End of track" else null,
+                            onSleepTimer = if (nowPlayingOpen) ({ sleepPicker = true }) else null,
+                            onCopyLog = if (nowPlayingOpen) ({
+                                scope.launch { IosPlayerHost.showMessage("Copied ${copyTrackLog(m)} log lines") }
+                            }) else null,
                         )
+                    }
+                    playlistTarget?.let { IosPlaylistPicker(it, onDismiss = { playlistTarget = null }, notify = IosPlayerHost::showMessage) }
+                    infoTarget?.let { IosSongInfoDialog(it, onDismiss = { infoTarget = null }) }
+                    if (sleepPicker) IosSleepTimerDialog(player, onDismiss = { sleepPicker = false })
+                    testSheet?.let { which ->
+                        val haze = remember { dev.chrisbanes.haze.HazeState() }
+                        if (which == "output") com.music.laya.ui.player.AudioOutputSheet(haze, null, { testSheet = null }, { testSheet = "pipeline" }, {})
+                        else IosAudioPipeline(haze) { testSheet = null }
                     }
 
                     if (nowPlayingOpen && song != null) {
