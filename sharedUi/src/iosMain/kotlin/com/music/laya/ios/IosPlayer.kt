@@ -14,6 +14,7 @@ import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.playback.toQueueSong
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.PlaybackTracker
+import com.music.laya.data.innertube.PlayerClient
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
@@ -65,8 +66,8 @@ import platform.Foundation.NSDate
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
 
-// 1 MiB, same as Android's STREAM_CHUNK_BYTES: googlevideo refuses/throttles larger ranges for some clients.
-private const val CHUNK_BYTES = 1024L * 1024
+/** Android's rule: googlevideo in bounded ranges (it throttles one long read), any other host in one open request. */
+private fun chunkBytesFor(url: String) = PlayerClient.rangeBytesFor(url)
 /** Retries of one broken track before it is left paused for the listener; reset by a different track or a quiet minute. */
 private const val MAX_RECOVERIES = 3
 
@@ -224,7 +225,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     // ---- Automix (Android's CrossfadeController.considerSmartTransition; the blend itself is rendered by IosTransition) ----
 
-    private val analyzer = AutomixAnalyzer(scope, CHUNK_BYTES)
+    private val analyzer = AutomixAnalyzer(scope, ::chunkBytesFor)
     private var lastVerdict = ""
 
     private fun source(s: Song) = streams[s.videoId]?.let { AnalysisSource(it.url, it.headers, it.mime, it.length) }
@@ -576,8 +577,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
-        if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, CHUNK_BYTES) } // plan first: the engine parks the track by it
-        else engine.play(o.url, o.headers, o.mime, o.length, CHUNK_BYTES)
+        if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
+        else engine.play(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
     }
 
     /**
@@ -647,7 +648,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         IosDsp.bindStems(
             if (source == null || native == null || !(Karaoke.enabled.value || Karaoke.warm.value)) null
             else KaraokeStems.forTrack(id, id) {
-                native.openPcm(source.url, source.headers, source.mime, source.length, CHUNK_BYTES)?.let(::IosPcmStream)
+                native.openPcm(source.url, source.headers, source.mime, source.length, chunkBytesFor(source.url))?.let(::IosPcmStream)
             },
         )
     }

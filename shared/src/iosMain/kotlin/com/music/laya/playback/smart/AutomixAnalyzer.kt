@@ -26,7 +26,7 @@ class AnalysisSource(val url: String, val headers: Map<String, String>, val mime
  * whole-track pass (features over the whole track, beat grid over its head and tail windows).
  */
 @OptIn(ExperimentalForeignApi::class, ExperimentalCoroutinesApi::class)
-class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytes: Long) {
+class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesFor: (String) -> Long) {
     private val store = AnalysisStore {
         (NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, true).first() as String).toPath()
     }
@@ -72,7 +72,7 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytes:
 
     private fun analyze(trackId: String, s: AnalysisSource, knownDuration: Double): TrackAnalysis {
         val native = IosAutomix.native ?: return failed(trackId, knownDuration)
-        val pcm = native.decode(s.url, s.headers, s.mime, s.length, chunkBytes) ?: return failed(trackId, knownDuration)
+        val pcm = native.decode(s.url, s.headers, s.mime, s.length, chunkBytesFor(s.url)) ?: return failed(trackId, knownDuration)
         try {
             val rate = AutomixNative.DECODE_RATE
             val seconds = pcm.frames / rate
@@ -145,7 +145,7 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytes:
         val started = Clock.System.now()
         val vocal = native.vocalBands(
             native.vocalModelPath(), AppSettings.automixPerformanceMode.value.inferenceThreads, s.url, s.headers, s.mime,
-            s.length, chunkBytes, start, seconds, low, high,
+            s.length, chunkBytesFor(s.url), start, seconds, low, high,
         ) ?: return null
         val mix = FloatArray(vocal.count)
         val target = FloatArray(vocal.count)

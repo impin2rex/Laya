@@ -32,7 +32,7 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     let mimeType: String
     private(set) var knownLength: Int64?
     private let chunkBytes: Int64
-    private let session: URLSession
+    private var session: URLSession!
     private var tasks: [ObjectIdentifier: URLSessionDataTask] = [:]
     private var cancelled: Set<ObjectIdentifier> = []
     /// Set once the session is invalidated; creating a task after that throws.
@@ -47,20 +47,24 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         var components = URLComponents(url: source, resolvingAgainstBaseURL: false)!
         components.scheme = ChunkedResourceLoader.scheme
         self.proxyURL = components.url!
+        super.init()
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 20
         config.httpMaximumConnectionsPerHost = 2
-        self.session = URLSession(configuration: config)
-        super.init()
+        // Delegate callbacks (the streaming path) run on the loader's own serial queue, like everything else here.
+        let callbacks = OperationQueue()
+        callbacks.underlyingQueue = queue
+        callbacks.maxConcurrentOperationCount = 1
+        self.session = URLSession(configuration: config, delegate: self, delegateQueue: callbacks)
     }
+
+    /// The file's last byte has been handed to AVPlayer: whatever it still waits for after this does not exist.
+    private(set) var deliveredEnd = false
 
     /// googlevideo states the track's length in seconds as `dur=`. AVFoundation misreads some of
     /// those fragmented MP4s (itag 140 from the VISIONOS client: 215.7 s reported as 431.5 s, even
     /// from a local file, while AudioToolbox agrees with `dur`), so this is the length to show.
     /// Addon streams carry none.
-    /// The file's last byte has been handed to AVPlayer: whatever it still waits for after this does not exist.
-    private(set) var deliveredEnd = false
-
     var durationHint: Double? {
         URLComponents(url: source, resolvingAgainstBaseURL: false)?
             .queryItems?.first { $0.name == "dur" }?.value.flatMap(Double.init)
@@ -120,6 +124,7 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     /// A chunk that fails for a passing reason (dropped connection, timeout, 5xx, 429) is asked
     /// again before the item is failed: one bad range must not end the whole track.
     private static let retryDelays: [Double] = [0.5, 1, 2, 4]
+    private static let throttleDelays: [Double] = [1, 2, 4, 8, 16]
     /// Test hook (env only): this many requests past the first 2 MB fail, as a dropped connection or as LAYA_FAIL_STATUS.
     private static var injectedFailures = Int(ProcessInfo.processInfo.environment["LAYA_FAIL_RANGE"] ?? "") ?? 0
     private static let injectedStatus = Int(ProcessInfo.processInfo.environment["LAYA_FAIL_STATUS"] ?? "")
@@ -134,6 +139,7 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     }
 
     private func fetch(_ loadingRequest: AVAssetResourceLoadingRequest, from start: Int64, end: Int64, attempt: Int = 0) {
+        if streaming { return stream(loadingRequest, from: start, end: end, attempt: attempt) }
         let key = ObjectIdentifier(loadingRequest)
         if invalidated || cancelled.contains(key) || loadingRequest.isCancelled { return }
         if start > end {
@@ -208,6 +214,69 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         task.resume()
     }
 
+    // MARK: - Streaming (any host but googlevideo)
+
+    /// PlayerClient.rangeBytesFor gives no bound for hosts other than googlevideo: as Android's DataSource, one open
+    /// request per loading request, handed to AVPlayer as bytes arrive. Chunking those hosts in 1 MiB requests drew
+    /// HTTP 429 from addon CDNs (tracks.monochrome.st), failing starts, seeks and endings.
+    private var streaming: Bool { chunkBytes >= Int64.max / 2 }
+
+    private final class Stream {
+        let request: AVAssetResourceLoadingRequest
+        let key: ObjectIdentifier
+        /// Next byte AVPlayer gets; [end] inclusive (Int64.max - 1 = to the end of the file).
+        var next: Int64
+        let end: Int64
+        let attempt: Int
+        let from: Int64
+        /// A 200 to a ranged ask is the whole file: bytes before [from] are dropped.
+        var skip: Int64 = 0
+        var head = Data()
+        init(request: AVAssetResourceLoadingRequest, key: ObjectIdentifier, from: Int64, end: Int64, attempt: Int) {
+            self.request = request; self.key = key; self.next = from; self.from = from; self.end = end; self.attempt = attempt
+        }
+    }
+
+    private var streams: [Int: Stream] = [:]
+
+    private func stream(_ lr: AVAssetResourceLoadingRequest, from start: Int64, end: Int64, attempt: Int) {
+        let key = ObjectIdentifier(lr)
+        if invalidated || cancelled.contains(key) || lr.isCancelled { return }
+        if start > end {
+            lr.finishLoading()
+            tasks.removeValue(forKey: key)
+            return
+        }
+        var request = URLRequest(url: source)
+        request.setValue(end >= Int64.max - 1 ? "bytes=\(start)-" : "bytes=\(start)-\(end)", forHTTPHeaderField: "Range")
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
+        let task = session.dataTask(with: request)
+        streams[task.taskIdentifier] = Stream(request: lr, key: key, from: start, end: end, attempt: attempt)
+        tasks[key] = task
+        task.resume()
+    }
+
+    /// Asks again from where [s] stopped. Attempts count only failures without progress, so a long stream may drop and
+    /// resume more than once; 429 waits at least as long as the server's Retry-After.
+    private func resume(_ s: Stream, retryAfter: Double = 0, throttled: Bool = false) -> Bool {
+        let attempt = s.next > s.from ? 0 : s.attempt
+        // A rate limiter (Cloudflare's 429 on addon CDNs) needs longer than a dropped connection: about 30 s in all.
+        let delays = throttled ? Self.throttleDelays : Self.retryDelays
+        guard attempt < delays.count else { return false }
+        let delay = max(delays[attempt], retryAfter)
+        print("Loader: stream at \(s.next) broke, resuming in \(delay)s (try \(attempt + 1))")
+        queue.asyncAfter(deadline: .now() + delay) {
+            self.stream(s.request, from: s.next, end: s.end, attempt: attempt + 1)
+        }
+        return true
+    }
+
+    private func close(_ s: Stream, _ task: URLSessionTask, error: Error? = nil) {
+        streams[task.taskIdentifier] = nil
+        tasks.removeValue(forKey: s.key)
+        task.cancel()
+        if let error { s.request.finishLoading(with: error) } else { s.request.finishLoading() }
+    }
     /// "bytes 0-1023/4567890" → 4567890
     private static func totalLength(_ response: HTTPURLResponse?) -> Int64? {
         guard let range = response?.value(forHTTPHeaderField: "Content-Range"),
@@ -227,5 +296,77 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         case "audio/aiff", "audio/x-aiff": return AVFileType.aiff.rawValue
         default: return AVFileType.m4a.rawValue
         }
+    }
+}
+
+extension ChunkedResourceLoader: URLSessionDataDelegate {
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        guard let s = streams[dataTask.taskIdentifier] else { return completionHandler(.cancel) }
+        let http = response as? HTTPURLResponse
+        let status = http?.statusCode ?? 0
+        guard (200...299).contains(status) else {
+            completionHandler(.cancel)
+            streams[dataTask.taskIdentifier] = nil
+            print("Loader: stream at \(s.next) answered HTTP \(status)")
+            if status == 429 || status >= 500 || status == 0,
+               resume(s, retryAfter: http?.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init) ?? 0, throttled: status == 429) { return }
+            if [403, 404, 410].contains(status), !reportedHTTPError {
+                reportedHTTPError = true
+                onHTTPError?(status)
+            }
+            tasks.removeValue(forKey: s.key)
+            s.request.finishLoading(with: NSError(domain: "BitChord", code: status, userInfo: [NSLocalizedDescriptionKey: "HTTP \(status)"]))
+            return
+        }
+        if status == 200 { s.skip = s.next } // the host ignored Range
+        if knownLength == nil {
+            knownLength = Self.totalLength(http) ?? (status == 200 && response.expectedContentLength > 0 ? response.expectedContentLength : nil)
+        }
+        if let length = knownLength { s.request.contentInformationRequest?.contentLength = length }
+        if s.request.dataRequest == nil { // only the type-and-length ask
+            completionHandler(.cancel)
+            return close(s, dataTask)
+        }
+        completionHandler(.allow)
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        guard let s = streams[dataTask.taskIdentifier] else { return }
+        if cancelled.contains(s.key) || s.request.isCancelled {
+            streams[dataTask.taskIdentifier] = nil
+            return dataTask.cancel()
+        }
+        var chunk = data
+        if s.skip > 0 {
+            let drop = Int(min(s.skip, Int64(chunk.count)))
+            chunk = chunk.subdata(in: drop..<chunk.count)
+            s.skip -= Int64(drop)
+            if chunk.isEmpty { return }
+        }
+        let room = s.end - s.next + 1
+        if Int64(chunk.count) > room { chunk = chunk.prefix(Int(room)) }
+        if flacInfo == nil, s.next == Int64(s.head.count), s.head.count < 26 {
+            s.head.append(chunk.prefix(26 - s.head.count))
+            if s.head.count >= 26 { flacInfo = Self.parseFlac(s.head) }
+        }
+        s.request.dataRequest?.respond(with: chunk)
+        s.next += Int64(chunk.count)
+        if let length = knownLength, s.next >= length { deliveredEnd = true }
+        if s.next > s.end { close(s, dataTask) }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let s = streams.removeValue(forKey: task.taskIdentifier) else { return }
+        if cancelled.contains(s.key) || s.request.isCancelled { return }
+        let short = knownLength.map { s.next < min(s.end + 1, $0) } ?? false
+        if let error, (error as NSError).code == NSURLErrorCancelled { return }
+        if error != nil || short {
+            if resume(s) { return }
+            tasks.removeValue(forKey: s.key)
+            return s.request.finishLoading(with: error ?? NSError(domain: NSURLErrorDomain, code: NSURLErrorNetworkConnectionLost))
+        }
+        tasks.removeValue(forKey: s.key)
+        s.request.finishLoading()
     }
 }

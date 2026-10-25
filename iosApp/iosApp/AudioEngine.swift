@@ -139,10 +139,32 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func setNextOnMain(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
         if let f = fade, !f.swapped { return } // ponytail: a queue edit mid-fade keeps the track already fading in
-        clearNext()
-        guard currentItem != nil,
-              let item = makeItem(url: url, headers: headers, mimeType: mimeType,
-                                  contentLength: contentLength, chunkBytes: chunkBytes) else { return }
+        clearNextOnMain()
+        guard currentItem != nil else { return }
+        pendingNext = PendingNext(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes)
+        materializeNextIfDue()
+    }
+
+    private struct PendingNext { let url: String; let headers: [String: String]; let mimeType: String; let contentLength: Int64; let chunkBytes: Int64 }
+
+    /// The next track, held until the current one nears its end. AVQueuePlayer starts loading a queued item at once,
+    /// so a track queued at the start of the current one opened a second connection to the same host for minutes;
+    /// addon CDNs answer that with HTTP 429. Android's player likewise loads the next item only near the end.
+    private var pendingNext: PendingNext?
+
+    private func materializeNextIfDue(force: Bool = false) {
+        guard let p = pendingNext, let current = currentItem else { return }
+        if !force {
+            let duration = exactDuration(of: current) ?? streamDuration(of: current)
+            let position = current.currentTime().seconds
+            guard current.status == .readyToPlay, duration.isFinite, duration > 0, position.isFinite else { return }
+            // Early enough for the blend's window when one is planned, and for the item to buffer before it is needed.
+            let lead = max(45, transition.startMs >= 0 ? duration - Double(transition.startMs) / 1000 + 20 : Double(transition.fadeMs) / 1000 + 25)
+            guard duration - position <= lead else { return }
+        }
+        pendingNext = nil
+        guard let item = makeItem(url: p.url, headers: p.headers, mimeType: p.mimeType,
+                                  contentLength: p.contentLength, chunkBytes: p.chunkBytes) else { return }
         nextItem = item
         fadeSkipped = false
         place(item)
@@ -153,6 +175,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func clearNextOnMain() {
         if let f = fade, !f.swapped { return }
+        pendingNext = nil
         guard let item = nextItem else { return }
         nextItem = nil
         if parked { idle.removeAllItems(); parked = false } else { player.remove(item) }
@@ -202,6 +225,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     func stop() {
+        pendingNext = nil
         for deck in [player, idle] { deck.pause(); deck.removeAllItems(); deck.volume = 1 }
         fade = nil
         easing = false
@@ -423,6 +447,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// clock has reached its end but that AVPlayer never ends (it misjudged the length and waits for bytes that don't
     /// exist, or keeps replaying its tail) is ended here. Any source; the stated length (dur=) is handled in reportProgress.
     private func checkStuckEnd() {
+        materializeNextIfDue()
         guard let item = player.currentItem, item === currentItem, seekingToMs == nil, fade == nil,
               player.timeControlStatus != .paused else { stuckAt = -1; lastWatchedPosition = -1; return }
         let position = player.currentTime().seconds
@@ -462,7 +487,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// [item] has played the whole of its stated length: on to the queued track as a natural end would.
     private func endByHint(_ item: AVPlayerItem) {
         guard item === currentItem, fade == nil else { return }
-        print("AudioEngine: track over at \(item.currentTime().seconds)s (parked=\(parked), next=\(nextItem != nil))")
+        print("AudioEngine: track over at \(item.currentTime().seconds)s (parked=\(parked), next=\(nextItem != nil), held=\(pendingNext != nil))")
+        materializeNextIfDue(force: true)
         if parked { return handOverNow() }
         if let next = nextItem, player.items().contains(next) { return player.advanceToNextItem() }
         player.pause()
@@ -638,6 +664,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     func setTransition(startMs: Int64, fadeMs: Int64, cueMs: Int64, rate: Float, outRate: Float) {
         onMain {
             self.transition = Transition(startMs: startMs, fadeMs: max(0, fadeMs), cueMs: max(0, cueMs), rate: rate, outRate: outRate)
+            self.materializeNextIfDue()
             // A blend renders through the taps, so every item needs one.
             let fades = fadeMs > 0
             if fades != EqualizerTuning.fades {
