@@ -38,6 +38,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
@@ -87,6 +88,19 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     val song: Song? get() = queue.getOrNull(index)
     val hasNext get() = manualNext() >= 0
     val hasPrevious get() = index > 0
+
+    /** Sleep timer, as Android's SleepTimer: a minutes preset (null = off) or "pause when this track ends". */
+    var sleepMinutes by mutableStateOf<Int?>(null); private set
+    var sleepAfterTrack by mutableStateOf(false); private set
+    private var sleepJob: Job? = null
+
+    fun startSleep(minutes: Int) {
+        cancelSleep()
+        sleepMinutes = minutes
+        sleepJob = scope.launch { delay(minutes * 60_000L); cancelSleep(); engine.pause() }
+    }
+    fun startSleepAfterTrack() { cancelSleep(); sleepAfterTrack = true }
+    fun cancelSleep() { sleepJob?.cancel(); sleepJob = null; sleepMinutes = null; sleepAfterTrack = false }
 
     private var startJob: Job? = null
     private var nextJob: Job? = null
@@ -518,15 +532,18 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             ),
             NerdStats.currentGeneration,
         )
+        IosPlayerHost.outputFormat.value = com.music.laya.ui.player.OutputFormatUi(outputSummary(), (outputRateHz() ?: 0) > 48_000)
     }
 
     override fun onEnded() {
+        if (sleepAfterTrack) { cancelSleep(); isPlaying = false; return }
         autoNext().let { if (it >= 0) start(it) else isPlaying = false }
         party.onLocalIntent()
     }
 
     override fun onAdvancedToNext() {
         index = preloaded
+        if (sleepAfterTrack) { cancelSleep(); engine.pause() }
         NerdStats.onTrackTransition(song?.videoId)
         position.report(0)
         IosPlayerStore.saveQueue(queue, index)

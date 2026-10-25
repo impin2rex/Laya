@@ -274,6 +274,15 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         return AVAudioSession.sharedInstance().outputVolume
     }
 
+    /// [name, portType (AVAudioSession.Port raw value), sampleRateHz, outputChannels, ioBufferMs] of the current route's first output; the Kotlin bindings don't expose these.
+    func outputRoute() -> [String] {
+        let session = AVAudioSession.sharedInstance()
+        let port = session.currentRoute.outputs.first
+        return [port?.portName ?? "", port?.portType.rawValue ?? "",
+                String(Int(session.sampleRate)), String(session.outputNumberOfChannels),
+                String(Int(session.ioBufferDuration * 1000))]
+    }
+
     func setSystemVolume(level: Float) {
         // The slider only exists once the view is in a window.
         if volumeView.superview == nil {

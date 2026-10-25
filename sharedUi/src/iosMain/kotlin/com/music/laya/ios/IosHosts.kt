@@ -61,12 +61,13 @@ internal object IosPlayerHost : PlayerHost {
     override val volume = IosVolume
 
     @Composable
-    override fun rememberAudioOutputs(): List<AudioOutputDevice> = emptyList()
+    override fun rememberAudioOutputs(): List<AudioOutputDevice> = rememberCurrentOutputs()
 
     @Composable
     override fun rememberOutputPicker(onOpen: () -> Unit): () -> Unit = onOpen
 
-    override fun selectAudioOutput(id: Int?) = Unit
+    // iOS cannot switch routes itself or list idle ones: tapping the current route opens the system picker (Bluetooth, AirPlay, speaker).
+    override fun selectAudioOutput(id: Int?) = showRoutePicker()
     override val outputFormat = MutableStateFlow(OutputFormatUi())
     override val party = IosParty.ui
 
@@ -89,7 +90,7 @@ internal object IosPlayerHost : PlayerHost {
     override fun showMessage(message: String) { messages.value = message }
 
     @Composable
-    override fun AudioPipelineDialog(hazeState: HazeState, isPlaying: Boolean, onDismiss: () -> Unit) = Unit
+    override fun AudioPipelineDialog(hazeState: HazeState, isPlaying: Boolean, onDismiss: () -> Unit) = IosAudioPipeline(hazeState, onDismiss)
 }
 
 private object IosPlayerSettings : PlayerSettingsSource {

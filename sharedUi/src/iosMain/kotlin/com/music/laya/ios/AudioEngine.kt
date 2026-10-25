@@ -34,6 +34,9 @@ interface AudioEngine {
     /** The system output volume, 0..1. iOS only lets an app set it through a (hidden) MPVolumeView slider. */
     fun systemVolume(): Float
     fun setSystemVolume(level: Float)
+
+    /** [portName, portType, sampleRateHz, outputChannels, ioBufferMs] of the audio session's current output route. */
+    fun outputRoute(): List<String>
 }
 
 interface AudioEngineListener {

@@ -21,7 +21,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.ThumbDown
+import androidx.compose.material.icons.rounded.ThumbDownOffAlt
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Person
@@ -207,6 +213,15 @@ internal fun IosSongMenu(
     /** Null hides the row (signed out). */
     liked: Boolean? = null,
     onToggleLike: () -> Unit = {},
+    /** Null hides the row (signed out). */
+    disliked: Boolean? = null,
+    onToggleDislike: () -> Unit = {},
+    onAddToPlaylist: (() -> Unit)? = null,
+    onSongInfo: (() -> Unit)? = null,
+    /** Player-only rows, like Android's showSleepTimer / onCopyLog; null hides them. */
+    sleepStatus: String? = null,
+    onSleepTimer: (() -> Unit)? = null,
+    onCopyLog: (() -> Unit)? = null,
 ) {
     @Composable
     fun Action(icon: ImageVector, label: String, onClick: () -> Unit) = ListItem(
@@ -215,19 +230,24 @@ internal fun IosSongMenu(
         colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         modifier = Modifier.clickable { onDismiss(); onClick() },
     )
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.navigationBarsPadding()) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState())) {
             ListItem(
                 headlineContent = { Text(song.title, maxLines = 1) },
                 supportingContent = { Text(song.artist, maxLines = 1) },
                 colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
             )
             liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) "Remove from liked" else "Like", onToggleLike) }
+            disliked?.let { Action(if (it) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt, if (it) "Undo dislike" else "Dislike", onToggleDislike) }
+            onAddToPlaylist?.let { Action(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist", it) }
             Action(Icons.AutoMirrored.Rounded.PlaylistPlay, "Play next", onPlayNext)
             Action(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue", onAddToQueue)
             song.albumId?.let { id -> Action(Icons.Rounded.Album, "Open album") { onOpenAlbum(id) } }
             song.artistId?.let { id -> Action(Icons.Rounded.Person, "Open artist") { onOpenArtist(id) } }
+            onSongInfo?.let { Action(Icons.Rounded.Info, "Song info", it) }
+            onSleepTimer?.let { Action(Icons.Rounded.Bedtime, sleepStatus?.let { s -> "Sleep timer · $s" } ?: "Sleep timer", it) }
             Action(Icons.Rounded.Share, "Share") { shareText("https://music.youtube.com/watch?v=${song.videoId}") }
+            onCopyLog?.let { Action(Icons.Rounded.BugReport, "Copy log", it) }
         }
     }
 }

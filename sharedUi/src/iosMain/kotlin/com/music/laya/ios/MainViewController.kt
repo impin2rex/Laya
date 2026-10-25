@@ -71,6 +71,7 @@ fun MainViewController(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit)
     AppUi.install(IosAppUiHost)
     SettingsExtras.host = IosSettingsHost
     PlayerPlatform.install(IosPlayerHost)
+    IosRoute.engine = engine
     // Same bundled SF Pro Display Android installs in LayaApplication; read up front so the theme sees it on first composition.
     SFProDisplay = FontFamily(
         mapOf(400 to "regular", 500 to "medium", 600 to "semibold", 700 to "bold", 800 to "heavy").map { (w, n) ->
