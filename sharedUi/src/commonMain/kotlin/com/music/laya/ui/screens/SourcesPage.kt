@@ -2,6 +2,12 @@ package com.music.laya.ui.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +46,7 @@ import com.music.laya.data.sources.SourceConfig
 import com.music.laya.data.sources.SourceHealth
 import com.music.laya.data.sources.SourceKind
 import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.addon.AddonClient
 import com.music.laya.platform.ioDispatcher
 import com.music.laya.sharedui.resources.*
 import com.music.laya.ui.components.PillTextField
@@ -49,8 +56,9 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * The Sources page: the addons the user added, in the order they are asked, then YouTube. The
- * shared counterpart of the Sources group on Android's SourcesScreen, minus drag-to-reorder, the
- * remote-library sections and the lossless-output gate, none of which exist off Android yet.
+ * shared counterpart of the Sources group on Android's SourcesScreen, minus the remote-library
+ * sections and the lossless-output gate, which don't exist off Android yet. Addons reorder with
+ * arrows (a drag handle needs the Android-only reorderable list).
  */
 @Composable
 fun SourcesPage(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
@@ -79,7 +87,15 @@ fun SourcesPage(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
     val ceiling = if (metered == true) cellularQuality else wifiQuality
     val cappedByQuality = ceiling != AudioQuality.LOSSLESS
     val anyLosslessSource = configs.any { it.enabled && it.isComplete && it.kind.canServeLossless }
-    val ordered = configs.filter { it.kind.isUserAdded } + configs.filterNot { it.kind.isUserAdded }.sortedBy { it.kind.rank }
+    val addons = configs.filter { it.kind.isUserAdded }
+    val ordered = addons + configs.filterNot { it.kind.isUserAdded }.sortedBy { it.kind.rank }
+    fun move(config: SourceConfig, by: Int) {
+        val ids = addons.map { it.id }.toMutableList()
+        val at = ids.indexOf(config.id)
+        if (at + by !in ids.indices) return
+        ids.add(at + by, ids.removeAt(at))
+        SourceRegistry.reorderAddons(ids)
+    }
 
     Column(
         modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(contentPadding),
@@ -126,7 +142,16 @@ fun SourcesPage(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        } else {
+                        } else Row {
+                            if (config.kind.isUserAdded && addons.size > 1) {
+                                val at = addons.indexOfFirst { it.id == config.id }
+                                IconButton(onClick = { move(config, -1) }, enabled = at > 0, modifier = Modifier.size(36.dp)) {
+                                    Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(Res.string.drag_to_reorder))
+                                }
+                                IconButton(onClick = { move(config, 1) }, enabled = at < addons.lastIndex, modifier = Modifier.size(36.dp)) {
+                                    Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(Res.string.drag_to_reorder))
+                                }
+                            }
                             Switch(
                                 checked = config.enabled,
                                 onCheckedChange = { SourceRegistry.setEnabled(config.id, it) },
@@ -184,6 +209,7 @@ private fun AddonEditor(config: SourceConfig, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     val isNew = SourceRegistry.config(config.id) == null
     var baseUrl by remember { mutableStateOf(config.baseUrl) }
+    var userAgent by remember { mutableStateOf(config.userAgent) }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
 
@@ -195,7 +221,7 @@ private fun AddonEditor(config: SourceConfig, onDismiss: () -> Unit) {
         busy = true
         status = null
         scope.launch {
-            val identified = runCatching { SourceRegistry.identify(baseUrl.trim(), config.takeUnless { isNew }, config.userAgent) }
+            val identified = runCatching { SourceRegistry.identify(baseUrl.trim(), config.takeUnless { isNew }, userAgent) }
                 .getOrElse { Result.failure(it) }
             val found = identified.getOrNull()
             if (found == null) {
@@ -242,6 +268,13 @@ private fun AddonEditor(config: SourceConfig, onDismiss: () -> Unit) {
                     placeholder = "https://my-addon.example.com",
                     enabled = !busy,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                )
+                PillTextField(
+                    value = userAgent,
+                    onValueChange = { userAgent = it; status = null }, // a new agent is a new question
+                    placeholder = AddonClient.DEFAULT_USER_AGENT,
+                    enabled = !busy,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
                 TextButton(onClick = { run(thenSave = false) }, enabled = baseUrl.isNotBlank() && !busy) {
                     Text(stringResource(if (busy) Res.string.testing else Res.string.test))

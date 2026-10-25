@@ -545,6 +545,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val env = NSProcessInfo.processInfo.environment
         if (env.keys.any { it.toString().startsWith("LAYA_") }) AppSettings.setOnboardingComplete() // hooks skip the intro
         if (env["LAYA_NERD"] != null) AppSettings.setShowNerdStats(true)
+        // LAYA_REORDER=1 moves the first addon down one place; LAYA_UA=<agent> sets the first addon's custom User-Agent.
+        SourceRegistry.configs.value.filter { it.kind == SourceKind.ADDON }.let { addons ->
+            if (env["LAYA_REORDER"] != null && addons.size > 1) SourceRegistry.reorderAddons(addons.map { it.id }.let { it.drop(1) + it.take(1) })
+            (env["LAYA_UA"] as? String)?.let { ua -> addons.firstOrNull()?.let { SourceRegistry.update(it.copy(userAgent = ua)) } }
+        }
         // LAYA_ADDON=jiosaavn switches the built-in JioSaavn source on and plays from it.
         if (env["LAYA_ADDON"] == "jiosaavn") SourceRegistry.configs.value.firstOrNull { it.kind == SourceKind.JIOSAAVN }?.let { SourceRegistry.setEnabled(it.id, true) }
         (env["LAYA_ADDON"] as? String)?.takeIf { it != "jiosaavn" }?.let { url ->
