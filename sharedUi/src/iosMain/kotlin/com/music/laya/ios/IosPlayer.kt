@@ -111,13 +111,13 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         listOf("UIApplicationWillResignActiveNotification", "UIApplicationDidEnterBackgroundNotification").forEach {
             NSNotificationCenter.defaultCenter.addObserverForName(it, null, NSOperationQueue.mainQueue) { _ -> saveState() }
         }
-        scope.launch { AppSettings.spatialAudio.collect { engine.setSpatialAudio(it) } }
+        scope.launch { AppSettings.spatialAudio.collect { IosDsp.setSpatial(it) } }
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
         scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
         scope.launch { combine(Karaoke.enabled, Karaoke.level) { on, l -> on to l }.collect { (on, l) -> IosDsp.setKaraoke(on, l) } }
         scope.launch { combine(Karaoke.enabled, Karaoke.warm) { on, warm -> on || warm }.distinctUntilChanged().collect { bindKaraoke() } }
         scope.launch {
-            combine(AppSettings.reverbEnabled, Karaoke.enabled, AppSettings.skipSilence) { r, k, s -> (r || k) to s }
+            combine(AppSettings.reverbEnabled, Karaoke.enabled, AppSettings.spatialAudio, AppSettings.skipSilence) { r, k, sp, s -> (r || k || sp) to s }
                 .distinctUntilChanged().collect { (dsp, silence) -> engine.setEffects(dsp, silence) }
         }
         scope.launch {

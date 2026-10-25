@@ -24,11 +24,8 @@ interface AudioEngine {
     /** The equaliser curve, one entry per EqLayout slot (the slot shapes and centres are fixed on both sides). */
     fun setEqualizer(gainsDb: List<Float>, qs: List<Float>, preampDb: Float, balance: Float)
 
-    /** Which effects need the audio tap: reverb / karaoke ([IosDsp]), and skip silence (Swift measures and speeds through the gap). */
+    /** Which effects need the audio tap: reverb / karaoke / spatial widening ([IosDsp]), and skip silence (Swift measures and speeds through the gap). */
     fun setEffects(dsp: Boolean, skipSilence: Boolean)
-
-    /** Settings > Spatial audio: let the system spatialize stereo / multichannel (AVPlayerItem.allowedAudioSpatializationFormats). */
-    fun setSpatialAudio(on: Boolean)
 
     fun setNowPlaying(title: String, artist: String, album: String?, artworkUrl: String?)
     fun setQueueCapabilities(hasNext: Boolean, hasPrevious: Boolean)

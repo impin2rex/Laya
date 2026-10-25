@@ -319,21 +319,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         return item
     }
 
-    private var spatial = false
-
-    /// "Spatial audio" setting: lets AirPods / the system spatialize stereo and multichannel, or keeps the mix as is.
-    func setSpatialAudio(on: Bool) {
-        spatial = on
-        [currentItem, nextItem].forEach { $0.map(applySpatial) }
-    }
-
-    private func applySpatial(_ item: AVPlayerItem) {
-        item.allowedAudioSpatializationFormats = spatial ? .monoStereoAndMultichannel : []
-    }
-
     private func prepare(_ item: AVPlayerItem) {
         item.audioTimePitchAlgorithm = .spectral
-        applySpatial(item)
         if EqualizerTuning.wanted { EqualizerTap.attach(to: item) }
     }
 
