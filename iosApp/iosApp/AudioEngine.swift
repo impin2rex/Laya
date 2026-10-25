@@ -413,10 +413,15 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         }
     }
 
+    /// The stream's stated length when it has one (see ChunkedResourceLoader.durationHint), else AVFoundation's.
+    private func streamDuration(of item: AVPlayerItem) -> Double {
+        loaders[ObjectIdentifier(item)]?.durationHint ?? item.duration.seconds
+    }
+
     private func reportProgress() {
         guard let item = player.currentItem else { return }
         let position = seekingToMs.map { Double($0) / 1000 } ?? player.currentTime().seconds
-        let duration = item.duration.seconds
+        let duration = streamDuration(of: item)
         let isPlaying = player.timeControlStatus == .playing
         let isBuffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
         wasPlaying = isPlaying || isBuffering
@@ -435,7 +440,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func updateNowPlayingTiming() {
         guard !nowPlaying.isEmpty else { return }
         let position = seekingToMs.map { Double($0) / 1000 } ?? player.currentTime().seconds
-        if let duration = player.currentItem?.duration.seconds, duration.isFinite {
+        if let item = player.currentItem, case let duration = streamDuration(of: item), duration.isFinite {
             nowPlaying[MPMediaItemPropertyPlaybackDuration] = duration
         }
         nowPlaying[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position.isFinite ? position : 0

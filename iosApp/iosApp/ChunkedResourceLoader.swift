@@ -38,6 +38,15 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         super.init()
     }
 
+    /// googlevideo states the track's length in seconds as `dur=`. AVFoundation misreads some of
+    /// those fragmented MP4s (itag 140 from the VISIONOS client: 215.7 s reported as 431.5 s, even
+    /// from a local file, while AudioToolbox agrees with `dur`), so this is the length to show.
+    /// Addon streams carry none.
+    var durationHint: Double? {
+        URLComponents(url: source, resolvingAgainstBaseURL: false)?
+            .queryItems?.first { $0.name == "dur" }?.value.flatMap(Double.init)
+    }
+
     func cancelAll() {
         queue.async {
             self.invalidated = true
