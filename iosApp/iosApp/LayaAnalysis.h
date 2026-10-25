@@ -12,6 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// The Beat This! log-mel spectrogram of mono 22,050 Hz PCM: `frames` x 128 floats, row-major.
 + (nullable NSData *)beatSpectrogram:(const float *)samples count:(NSInteger)count frames:(NSInteger *)frames;
 
+/// open-unmix's linear STFT magnitudes of planar stereo 44,100 Hz PCM: [channel][bin][frame] floats, `frames` of them.
++ (nullable NSData *)vocalSpectrogramLeft:(const float *)left right:(const float *)right count:(NSInteger)count frames:(NSInteger *)frames;
+
 @end
 
 NS_ASSUME_NONNULL_END

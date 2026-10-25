@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import okio.Path.Companion.toPath
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
@@ -85,7 +86,14 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytes:
             val tailStart = maxOf(0.0, seconds - window)
             val tail = if (tailStart > window / 2) grid(pcm, tailStart, seconds) else null
             val leading = tail ?: head
-            println("Automix: analysed $trackId bpm=${leading?.bpm ?: features.bpm} conf=${leading?.beatConfidence ?: features.beatConfidence} contentEnd=${features.contentEndTime}")
+            // The open-unmix vocal mask over the same head and tail windows (Android's TrackAnalyzer.region): the model
+            // reads at most VocalModel.maxRegionSeconds of each, so it stands in for the DSP heuristic only there.
+            val headMask = vocalMask(s, features, 0.0, minOf(window, seconds))
+            val tailMask = if (tailStart > window / 2) vocalMask(s, features, tailStart, seconds) else null
+            println(
+                "Automix: analysed $trackId bpm=${leading?.bpm ?: features.bpm} conf=${leading?.beatConfidence ?: features.beatConfidence} " +
+                    "contentEnd=${features.contentEndTime} vocalMask=${if (headMask != null || tailMask != null) "model" else "dsp"}",
+            )
             return TrackAnalysis(
                 status = TrackAnalysis.STATUS_READY,
                 trackId = trackId,
@@ -109,13 +117,34 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytes:
                 mixOutCandidates = features.mixOutCandidates,
                 energyCurve = features.energyCurve,
                 lowEnergyCurve = features.lowEnergyCurve,
-                // ponytail: the DSP vocal heuristic only; the open-unmix vocal model is not ported, so vocal-clash avoidance is coarser than Android's.
-                vocalActivityMask = features.vocalActivityMask,
+                // The model's mask where it ran, the DSP heuristic's where it didn't, as Android does.
+                vocalActivityMask = VocalModel.mergeMasks(features.energyCurve.size, headMask, tailMask) ?: features.vocalActivityMask,
                 vocalProbability = features.vocalProbability,
             ).also { store.save(trackId, it) }
         } finally {
             pcm.close()
         }
+    }
+
+    /** open-unmix's vocal activity over one region of the track, filled onto the energy curve; null where it didn't run. */
+    private fun vocalMask(s: AnalysisSource, features: TrackFeatureSet, start: Double, end: Double): DoubleArray? {
+        val native = IosAutomix.native ?: return null
+        val curve = features.energyCurve
+        val seconds = minOf(VocalModel.maxRegionSeconds, end - start)
+        if (curve.isEmpty() || seconds < 1.0) return null
+        val low = VocalModel.lowBin
+        val high = VocalModel.highBin
+        val started = Clock.System.now()
+        val vocal = native.vocalBands(
+            native.vocalModelPath(), AppSettings.automixPerformanceMode.value.inferenceThreads, s.url, s.headers, s.mime,
+            s.length, chunkBytes, start, seconds, low, high,
+        ) ?: return null
+        val mix = FloatArray(vocal.count)
+        val target = FloatArray(vocal.count)
+        mix.usePinned { m -> target.usePinned { t -> vocal.copy(m.addressOf(0), t.addressOf(0)) } }
+        val values = VocalModel.reduceToBandCurve({ mix[it] }, { target[it] }, vocal.frames, firstBin = low, storedBins = high - low + 1)
+        println("Automix: vocal mask ${vocal.frames} frames from ${start}s in ${(Clock.System.now() - started).inWholeMilliseconds}ms")
+        return VocalModel.maskOver(curve, values, start)
     }
 
     private fun grid(pcm: AutomixPcm, fromSeconds: Double, toSeconds: Double): BeatTracker.Grid? {

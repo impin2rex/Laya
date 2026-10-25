@@ -6,6 +6,7 @@
 #include "analyzer/audio_analysis.h"
 #include "analyzer/mel_spectrogram.h"
 #include "analyzer/resampler.h"
+#include "analyzer/vocal_spectrogram.h"
 
 // The analyzer's own rate (see TrackFeatures.nativeSampleRate in analysis_jni.cpp).
 static const double kAnalysisRate = 11025.0;
@@ -128,6 +129,15 @@ void AppendField(std::string& out, const char* name, double value, bool first = 
   const std::vector<float> input(samples, samples + count);
   const laya::smart::BeatSpectrogram s =
       laya::smart::ComputeBeatSpectrogram(input, laya::smart::kBeatSpectrogramSampleRate);
+  if (s.values.empty()) return nil;
+  *frames = (NSInteger)s.frames;
+  return [NSData dataWithBytes:s.values.data() length:s.values.size() * sizeof(float)];
+}
+
++ (nullable NSData *)vocalSpectrogramLeft:(const float *)left right:(const float *)right count:(NSInteger)count frames:(NSInteger *)frames {
+  if (count <= 0) return nil;
+  const std::vector<std::vector<float>> channels = {std::vector<float>(left, left + count), std::vector<float>(right, right + count)};
+  const laya::smart::VocalSpectrogram s = laya::smart::ComputeVocalSpectrogram(channels, laya::smart::kVocalSpectrogramSampleRate);
   if (s.values.empty()) return nil;
   *frames = (NSInteger)s.frames;
   return [NSData dataWithBytes:s.values.data() length:s.values.size() * sizeof(float)];

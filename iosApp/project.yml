@@ -25,8 +25,11 @@ targets:
       # Automix's beat model, and the C++ analyzer Android and the desktop compile behind JNI.
       - path: ../app/src/main/assets/beat_this_int8.onnx
         buildPhase: resources
+      # The vocal-activity model Automix plans vocal rides with, and its STFT front end.
+      - path: ../app/src/main/assets/vocals_umxhq_int8.onnx
+        buildPhase: resources
       - path: ../native/analyzer
-        includes: [audio_analysis.cpp, tempo_analysis.cpp, resampler.cpp, mel_spectrogram.cpp]
+        includes: [audio_analysis.cpp, tempo_analysis.cpp, resampler.cpp, mel_spectrogram.cpp, vocal_spectrogram.cpp]
     dependencies:
       - package: onnxruntime
         product: onnxruntime

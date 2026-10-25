@@ -20,6 +20,20 @@ interface AutomixNative {
     /** Where the bundled beat model lives on disk. */
     fun modelPath(): String
 
+    /** Where the bundled open-unmix vocal model lives on disk. */
+    fun vocalModelPath(): String
+
+    /**
+     * open-unmix over [seconds] of the track from [startSec], decoded as 44.1 kHz stereo: the STFT front end, then the
+     * model, handing back only the vocal band's bins ([firstBin] through [lastBin]) of the mix and of the model's vocal
+     * estimate, in the `[channel][bin][VocalModel.FIXED_FRAMES]` layout [VocalModel.reduceToBandCurve] reads. Null when
+     * the region can't be decoded or the model is missing.
+     */
+    fun vocalBands(
+        modelPath: String, threads: Int, url: String, headers: Map<String, String>, mimeType: String,
+        contentLength: Long, chunkBytes: Long, startSec: Double, seconds: Double, firstBin: Int, lastBin: Int,
+    ): AutomixVocal?
+
     companion object { const val DECODE_RATE = 22_050.0 }
 }
 
@@ -37,6 +51,14 @@ interface AutomixPcm {
 interface AutomixLogits {
     val frames: Int
     fun copy(beat: CPointer<FloatVar>, downbeat: CPointer<FloatVar>)
+}
+
+/** One region's vocal-band tensors; [frames] of the model's fixed width carry audio. */
+@OptIn(ExperimentalForeignApi::class)
+interface AutomixVocal {
+    val frames: Int
+    val count: Int
+    fun copy(mix: CPointer<FloatVar>, target: CPointer<FloatVar>)
 }
 
 object IosAutomix {
