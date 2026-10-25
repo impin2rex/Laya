@@ -209,9 +209,9 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             return
         }
         let time = CMTime(value: positionMs, timescale: 1000)
-        // A little tolerance lets AVPlayer land on the nearest audio packet
-        // instead of decoding up to an exact sample — much faster over the network.
-        let tolerance = CMTime(value: 250, timescale: 1000)
+        // Exact, as ExoPlayer seeks. With any tolerance AVPlayer may place a FLAC with no SEEKTABLE (most addon and
+        // downloaded files) by a byte estimate and still report the asked-for time: audio and lyrics land off.
+        let tolerance = CMTime.zero
         seekingToMs = positionMs
         lastWatchedPosition = -1 // a seek back is not the tail replaying
         IosDsp.shared.reset()
