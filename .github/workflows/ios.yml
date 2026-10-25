@@ -2,13 +2,7 @@ name: iOS IPA
 
 on:
   push:
-    branches: [feat/ios]
-    paths:
-      - 'iosApp/**'
-      - 'shared/**'
-      - 'sharedUi/**'
-      - '.github/workflows/ios.yml'
-    # A release tag also builds the IPA and attaches it to the release that release.yml drafts.
+    # A release tag builds the IPA and attaches it to the release that release.yml drafts.
     # Separate from release.yml so the 20+ minute iOS build never holds up the other platforms.
     tags: ["v*.*.*"]
   workflow_dispatch:
