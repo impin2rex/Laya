@@ -58,6 +58,9 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     /// those fragmented MP4s (itag 140 from the VISIONOS client: 215.7 s reported as 431.5 s, even
     /// from a local file, while AudioToolbox agrees with `dur`), so this is the length to show.
     /// Addon streams carry none.
+    /// The file's last byte has been handed to AVPlayer: whatever it still waits for after this does not exist.
+    private(set) var deliveredEnd = false
+
     var durationHint: Double? {
         URLComponents(url: source, resolvingAgainstBaseURL: false)?
             .queryItems?.first { $0.name == "dur" }?.value.flatMap(Double.init)
@@ -192,6 +195,7 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
                 loadingRequest.dataRequest?.respond(with: data)
                 let next = start + Int64(data.count)
                 let finalEnd = min(end, (self.knownLength ?? Int64.max) - 1)
+                if let length = self.knownLength, next >= length { self.deliveredEnd = true }
                 if data.isEmpty || next > finalEnd {
                     loadingRequest.finishLoading()
                     self.tasks.removeValue(forKey: key)

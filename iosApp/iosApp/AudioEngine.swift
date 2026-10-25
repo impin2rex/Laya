@@ -33,6 +33,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private var nextItem: AVPlayerItem?
     /// Items already reported as failed, so the status, the notification and the loader don't report one failure three times.
     private var failedItems = Set<ObjectIdentifier>()
+    /// Where the clock last stood still, and since when (see reportProgress).
+    private var stuckAt: Double = -1
+    private var stuckSince: CFTimeInterval = 0
+    private var lastWatchedPosition: Double = -1
 
     private var statusObservation: NSKeyValueObservation?
     private var notificationTokens: [NSObjectProtocol] = []
@@ -58,6 +62,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
         observeSystemEvents()
         configureRemoteCommands()
+        let watchdog = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in self?.checkStuckEnd() }
+        RunLoop.main.add(watchdog, forMode: .common)
     }
 
     private func observeDeck(_ deck: AVQueuePlayer) {
@@ -183,6 +189,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         // instead of decoding up to an exact sample — much faster over the network.
         let tolerance = CMTime(value: 250, timescale: 1000)
         seekingToMs = positionMs
+        lastWatchedPosition = -1 // a seek back is not the tail replaying
         IosDsp.shared.reset()
         reportProgress()
         player.seek(to: time, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
@@ -399,15 +406,47 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         !atStatedEnd(item) && (item.status == .failed || item.error != nil || failedItems.contains(ObjectIdentifier(item)))
     }
 
-    /// Within the last seconds of the length the stream states (only googlevideo URLs state one).
+    /// Within the last seconds of the length the stream states (only googlevideo URLs state one), or, for any source,
+    /// with the whole file already delivered: a failure or stall then can only be the end of the audio.
     private func atStatedEnd(_ item: AVPlayerItem) -> Bool {
-        guard let hint = loaders[ObjectIdentifier(item)]?.durationHint, hint > 0 else { return false }
-        return item.currentTime().seconds >= hint - 3
+        guard let loader = loaders[ObjectIdentifier(item)] else { return false }
+        if let hint = loader.durationHint, hint > 0 { return item.currentTime().seconds >= hint - 3 }
+        return loader.deliveredEnd && item.currentTime().seconds > 0
+    }
+
+    /// Twice a second, independent of the periodic observer (which goes quiet when playback stalls): a track whose
+    /// clock has reached its end but that AVPlayer never ends (it misjudged the length and waits for bytes that don't
+    /// exist, or keeps replaying its tail) is ended here. Any source; the stated length (dur=) is handled in reportProgress.
+    private func checkStuckEnd() {
+        guard let item = player.currentItem, item === currentItem, seekingToMs == nil, fade == nil,
+              player.timeControlStatus != .paused else { stuckAt = -1; lastWatchedPosition = -1; return }
+        let position = player.currentTime().seconds
+        let duration = streamDuration(of: item)
+        guard position.isFinite, duration.isFinite, duration > 0 else { return }
+        let delivered = loaders[ObjectIdentifier(item)]?.deliveredEnd ?? item.asset is AVURLAsset
+        // The tail replaying: the clock jumping back near the end with nobody seeking.
+        let replaying = delivered && lastWatchedPosition >= duration - 10 && position < lastWatchedPosition - 0.5
+        lastWatchedPosition = position
+        if replaying {
+            print("AudioEngine: tail replaying (back to \(position)s of \(duration)s); ending the track")
+            stuckAt = -1
+            return endByHint(item)
+        }
+        let overrun = position >= duration + 1
+        let atEnd = delivered && position >= duration - 2
+        guard overrun || atEnd else { stuckAt = -1; return }
+        if overrun || (abs(position - stuckAt) <= 0.05 && CACurrentMediaTime() - stuckSince > 1.5) {
+            print("AudioEngine: \(overrun ? "past" : "stuck at") the end (\(position)s of \(duration)s, \(player.timeControlStatus.rawValue)); ending the track")
+            stuckAt = -1
+            return endByHint(item)
+        }
+        if abs(position - stuckAt) > 0.05 { stuckAt = position; stuckSince = CACurrentMediaTime() }
     }
 
     /// [item] has played the whole of its stated length: on to the queued track as a natural end would.
     private func endByHint(_ item: AVPlayerItem) {
         guard item === currentItem, fade == nil else { return }
+        print("AudioEngine: track over at \(item.currentTime().seconds)s (parked=\(parked), next=\(nextItem != nil))")
         if parked { return handOverNow() }
         if let next = nextItem, player.items().contains(next) { return player.advanceToNextItem() }
         player.pause()
@@ -424,6 +463,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Point the status observation and the end/fail notifications at [item].
     private func becomeCurrent(_ item: AVPlayerItem) {
         currentItem = item
+        lastWatchedPosition = -1
+        stuckAt = -1
         EqualizerTuning.dspKey = UnsafeRawPointer(Unmanaged.passUnretained(item).toOpaque())
         IosDsp.shared.setCurrent(key: Self.key(of: item))
         seekingToMs = nil
@@ -482,6 +523,9 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func currentItemChanged(from old: AVPlayerItem?) {
         let now = player.currentItem
+        if old !== now {
+            print("AudioEngine: item changed (old at \(old?.currentTime().seconds ?? -1)s status=\(old?.status.rawValue ?? -1) err=\(old?.error?.localizedDescription ?? "-"), next=\(now === nextItem), parked=\(parked))")
+        }
         if let old, old !== now, old === currentItem, hasFailed(old) {
             // The queue moved past a track that broke rather than ended. Undo that and let Kotlin recover it.
             cancelFade()
