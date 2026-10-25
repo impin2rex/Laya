@@ -74,8 +74,10 @@ import platform.posix.memcpy
  */
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 private class CanvasPlayer(url: String) {
-    private val player = AVQueuePlayer().apply { muted = true; preventsDisplaySleepDuringVideoPlayback = false }
-    private val looper = AVPlayerLooper.playerLooperWithPlayer(player, AVPlayerItem.playerItemWithURL(NSURL.URLWithString(url)!!).apply { preferredMaximumResolution = CGSizeMake(1280.0, 1280.0) })
+    // Dropped on release: each AVPlayer holds a connection to mediaplaybackd until the ObjC object goes, and a K/N
+    // wrapper is only freed by a later GC. One clip per song piling up crashed the media server ("too many clients").
+    private var player: AVQueuePlayer? = AVQueuePlayer().apply { muted = true; preventsDisplaySleepDuringVideoPlayback = false }
+    private var looper: AVPlayerLooper? = AVPlayerLooper.playerLooperWithPlayer(player!!, AVPlayerItem.playerItemWithURL(NSURL.URLWithString(url)!!).apply { preferredMaximumResolution = CGSizeMake(1280.0, 1280.0) })
     private var item: AVPlayerItem? = null
     private var output: AVPlayerItemVideoOutput? = null
     private var image: Image? = null
@@ -86,7 +88,7 @@ private class CanvasPlayer(url: String) {
     var mode = CanvasContentMode.CROP
     var alignTop = false
 
-    fun play(on: Boolean) = if (on) player.play() else player.pause()
+    fun play(on: Boolean) { if (on) player?.play() else player?.pause() }
 
     /** AVPlayerLooper swaps items each loop; an output belongs to one item, so re-attach on change. */
     private fun outputFor(cur: AVPlayerItem): AVPlayerItemVideoOutput? {
@@ -112,7 +114,7 @@ private class CanvasPlayer(url: String) {
 
     /** The newest decoded frame, or null when nothing new arrived since the last call. */
     fun nextFrame(): ImageBitmap? {
-        val cur = player.currentItem ?: return null
+        val cur = player?.currentItem ?: return null
         val o = outputFor(cur) ?: return null
         val t = o.itemTimeForHostTime(CACurrentMediaTime())
         if (!o.hasNewPixelBufferForItemTime(t)) return null
@@ -160,11 +162,16 @@ private class CanvasPlayer(url: String) {
     }
 
     fun release() {
-        looper.disableLooping()
-        player.pause()
+        looper?.disableLooping()
+        player?.pause()
         output?.let { item?.removeOutput(it) }
-        player.removeAllItems()
+        player?.removeAllItems()
         image?.close()
+        image = null
+        output = null
+        item = null
+        looper = null
+        player = null
     }
 }
 
