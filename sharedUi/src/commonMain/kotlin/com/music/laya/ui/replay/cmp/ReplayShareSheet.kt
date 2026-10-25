@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,8 +47,7 @@ import coil3.compose.LocalPlatformContext
 import com.music.laya.data.stats.ReplaySummary
 import com.music.laya.sharedui.resources.*
 import com.music.laya.ui.share.LocalImageSharer
-import com.music.laya.ui.share.Pen
-import com.music.laya.ui.theme.SFProDisplay
+import com.music.laya.ui.share.rememberPen
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -71,8 +69,7 @@ fun ReplayShareSheet(
     val context = LocalPlatformContext.current
     val sharer = LocalImageSharer.current
     val scope = rememberCoroutineScope()
-    val measurer = rememberTextMeasurer()
-    val pen = remember(measurer) { Pen(measurer, SFProDisplay) }
+    val pen = rememberPen()
     val logo = painterResource(Res.drawable.ic_logo)
     var poster by remember { mutableStateOf<ImageBitmap?>(null) }
     var failed by remember { mutableStateOf(false) }

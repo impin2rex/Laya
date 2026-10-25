@@ -269,3 +269,13 @@ internal fun DrawScope.brandMark(pen: Pen, painter: Painter?, right: Float, base
     text(pen, "Laya", right, baseline, brand)
     logo(painter, right - pen.width("Laya", brand) - 20f, baseline)
 }
+
+/** A [Pen] measuring at one pixel per sp: the cards are laid out in 1080-wide pixels, not screen density. */
+@Composable
+internal fun rememberPen(): Pen {
+    val resolver = androidx.compose.ui.platform.LocalFontFamilyResolver.current
+    val family = com.music.laya.ui.theme.SFProDisplay
+    return androidx.compose.runtime.remember(resolver, family) {
+        Pen(TextMeasurer(resolver, Density(1f), LayoutDirection.Ltr), family)
+    }
+}

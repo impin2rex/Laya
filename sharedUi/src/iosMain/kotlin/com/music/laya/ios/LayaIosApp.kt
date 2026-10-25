@@ -639,13 +639,14 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             what == "player" -> { kotlinx.coroutines.delay(12_000); nowPlayingOpen = true }
             // player-menu | player-sleep | player-info | player-output | player-pipeline: the player with that sheet raised.
             what.startsWith("player-") -> {
-                kotlinx.coroutines.delay(12_000); if (!what.endsWith("output") && !what.endsWith("pipeline")) nowPlayingOpen = true; kotlinx.coroutines.delay(2_000)
+                kotlinx.coroutines.delay(12_000); if (!what.endsWith("output") && !what.endsWith("pipeline") && !what.endsWith("share")) nowPlayingOpen = true; kotlinx.coroutines.delay(2_000)
                 when (what.removePrefix("player-")) {
                     "menu" -> menuSong = player.song
                     "sleep" -> sleepPicker = true
                     "info" -> infoTarget = player.song
                     "output" -> testSheet = "output"
                     "pipeline" -> testSheet = "pipeline"
+                    "share" -> testSheet = "lyrics"
                 }
             }
             what == "settings" -> stack = stack + IosPage.Settings
@@ -666,6 +667,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             }
             what == "downloads" -> stack = stack + IosPage.Detail(IosDownloads.page())
             what == "search" -> tab = 3
+            what == "library" -> tab = 2
             what == "sources" -> stack = stack + IosPage.Sources
             what == "party" -> stack = stack + IosPage.ListenTogether
             what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
@@ -1121,7 +1123,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     if (sleepPicker) IosSleepTimerDialog(player, onDismiss = { sleepPicker = false })
                     testSheet?.let { which ->
                         val haze = remember { dev.chrisbanes.haze.HazeState() }
-                        if (which == "output") com.music.laya.ui.player.AudioOutputSheet(haze, null, { testSheet = null }, { testSheet = "pipeline" }, {})
+                        if (which == "lyrics") com.music.laya.ui.player.LyricsShareSheetContent(haze, request = com.music.laya.ui.player.LyricsShareRequest(
+                            song = Song(videoId = "dQw4w9WgXcQ", title = "Never Gonna Give You Up", artist = "Rick Astley", thumbnailUrl = null, fromAutoplay = false),
+                            artworkUrl = "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+                            lines = listOf(
+                                com.music.laya.ui.player.LyricsShareLine("Never gonna give you up", null),
+                                com.music.laya.ui.player.LyricsShareLine("Never gonna let you down", "Nunca te voy a abandonar"),
+                                com.music.laya.ui.player.LyricsShareLine("", null, isGap = true),
+                                com.music.laya.ui.player.LyricsShareLine("Never gonna run around and desert you", null),
+                            ),
+                        ), onDismiss = { testSheet = null })
+                        else if (which == "output") com.music.laya.ui.player.AudioOutputSheet(haze, null, { testSheet = null }, { testSheet = "pipeline" }, {})
                         else IosAudioPipeline(haze) { testSheet = null }
                     }
 
