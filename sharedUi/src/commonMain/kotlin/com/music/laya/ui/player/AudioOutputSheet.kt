@@ -112,11 +112,17 @@ internal fun AudioOutputSheet(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             outputs.forEach { device ->
-                OutputRow(
-                    device = device,
-                    accountName = accountName,
-                    onSelect = { PlayerPlatform.host.selectAudioOutput(device.id) },
-                )
+                // iOS can't switch outputs from code: an idle row hands its tap to the system route picker.
+                Box(Modifier.fillMaxWidth()) {
+                    OutputRow(
+                        device = device,
+                        accountName = accountName,
+                        onSelect = { PlayerPlatform.host.selectAudioOutput(device.id) },
+                    )
+                    if (PlayerPlatform.host.hasRoutePicker && !device.isActive) {
+                        PlayerPlatform.host.RoutePickerOverlay(Modifier.matchParentSize())
+                    }
+                }
             }
             if (PlayerPlatform.host.hasRoutePicker) RoutePickerRow()
             // One more place to send the music, listed with the others. The

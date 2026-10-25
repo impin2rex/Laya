@@ -55,7 +55,9 @@ private fun currentOutputs(): List<AudioOutputDevice> {
         else -> AudioOutputKind.PHONE
     }
     // The built-in speaker is named "Speaker"; blank lets the drawer say "This phone".
-    return listOf(AudioOutputDevice(0, if (kind == AudioOutputKind.PHONE) "" else r.name, kind, isActive = true))
+    if (kind == AudioOutputKind.PHONE) return listOf(AudioOutputDevice(0, "", kind, isActive = true))
+    // As Android: the phone stays listed, unticked, above the output that is playing.
+    return listOf(AudioOutputDevice(1, "", AudioOutputKind.PHONE, isActive = false), AudioOutputDevice(0, r.name, kind, isActive = true))
 }
 
 /** The route, kept current while composed. */
@@ -125,7 +127,7 @@ internal fun IosAudioPipeline(hazeState: HazeState, onDismiss: () -> Unit) {
             Line("I/O rate", if (inRate != null && outRate != null) "${rateText(inRate)} → ${rateText(outRate)}" else none)
         }
         Section("Output device") {
-            Line("Device name", outputs.firstOrNull()?.let { it.name.ifBlank { "iPhone Speaker" } } ?: none)
+            Line("Device name", outputs.firstOrNull { it.isActive }?.let { it.name.ifBlank { "iPhone Speaker" } } ?: none)
             Line("Route", route?.portType?.ifBlank { null } ?: none)
             Line("Sample rate", outRate?.let(::rateText) ?: none)
             Line("Channels", route?.channels?.takeIf { it > 0 }?.toString() ?: none)
