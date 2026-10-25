@@ -13,6 +13,7 @@ import com.music.laya.data.listentogether.PartyTrack
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.playback.toQueueSong
 import com.music.laya.data.YtMusicRepository
+import com.music.laya.data.innertube.PlaybackTracker
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
@@ -600,6 +601,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private fun start(i: Int, fromMs: Long = 0) {
         val song = queue.getOrNull(i) ?: return
         ListeningRecorder.onStopped() // as PlaybackService on a transition: repeat-one's second pass must not continue the first
+        // YouTube history: close the outgoing play. A retry of the same track mid-way (recover) is not a new play.
+        if (fromMs == 0L || song.videoId != this.song?.videoId) { PlaybackTracker.onTrackChanged(trackedSec); trackedSec = 0 }
         index = i
         NerdStats.onTrackTransition(song.videoId)
         TrackLog.onTrackStarted(song.videoId)
@@ -780,6 +783,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private var lastListenTickAt = 0L
+    /** Last position reported to PlaybackTracker, which closes a play out on it. */
+    private var trackedSec = 0L
 
     /** PlaybackService's sampler: a tick every PROGRESS_SAMPLE_MS while audio plays, and a stop the moment it does not. */
     private fun recordListening(playing: Boolean, durationMs: Long) {
@@ -791,6 +796,12 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         if (now - lastListenTickAt < LISTEN_SAMPLE_MS) return
         lastListenTickAt = now
         song?.let { ListeningRecorder.onSample(it, durationMs) }
+        // The account's history (PlaybackService's sampler): registers the play once audible, then reports watch time.
+        song?.videoId?.let { id ->
+            trackedSec = position.positionMs / 1000
+            PlaybackTracker.onPlaying(id)
+            PlaybackTracker.onProgress(id, trackedSec)
+        }
     }
 
     override fun onAudioFormat(mimeType: String?, sampleRateHz: Int, channels: Int, bitDepth: Int, bitrateKbps: Int) {
@@ -821,14 +832,16 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     override fun onEnded() {
         if (IosCast.active) return
-        if (sleepAfterTrack) { cancelSleep(); isPlaying = false; return }
-        autoNext().let { if (it >= 0) start(it) else isPlaying = false }
+        if (sleepAfterTrack) { cancelSleep(); isPlaying = false; PlaybackTracker.onPlaybackFinished(trackedSec); return }
+        autoNext().let { if (it >= 0) start(it) else { isPlaying = false; PlaybackTracker.onPlaybackFinished(trackedSec) } }
         party.onLocalIntent()
     }
 
     override fun onAdvancedToNext() {
         if (IosCast.active) return
         ListeningRecorder.onStopped()
+        PlaybackTracker.onTrackChanged(trackedSec)
+        trackedSec = 0
         index = preloaded
         if (sleepAfterTrack) { cancelSleep(); engine.pause() }
         NerdStats.onTrackTransition(song?.videoId)

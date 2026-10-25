@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
@@ -80,6 +81,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.InnertubeParser
+import com.music.laya.data.innertube.PlaybackTracker
+import kotlinx.coroutines.flow.drop
 import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsRepository
 import com.music.laya.data.lyrics.LyricsSource
@@ -310,6 +313,12 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
     LaunchedEffect(Unit) { launch { loadExplore() }; loadHome() }
+    // Recents is the account's history: each play YouTube registers makes it stale (MainViewModel's homeStale).
+    LaunchedEffect(Unit) {
+        PlaybackTracker.registeredPlays.drop(1).collect {
+            if (signedIn) YtMusicRepository.homeRecentlyPlayed().onSuccess { shelf -> shelf?.let { publishHome(listOf(it), prepend = true) } }
+        }
+    }
 
     // Library: same calls MainViewModel.fetchLibrary makes (liked songs beyond page one are synced into LikeState).
     var library by remember { mutableStateOf<UiState<LibraryPage>>(UiState.Loading) }
@@ -705,7 +714,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     val noPadding = PaddingValues(bottom = barHeight)
                     Box(Modifier.fillMaxSize().layerBackdrop(appBackdrop).nestedScroll(navBarScroll)) {
                         // A detail page draws its own header up under the status bar (as Android's edge to edge does), so only the other pages are inset here.
-                        val onDetail = stack.lastOrNull() is IosPage.Detail
+                        // Pages that draw behind the status bar themselves (Android's edge-to-edge detail and Replay).
+                        val onDetail = stack.lastOrNull() is IosPage.Detail || stack.lastOrNull() === IosPage.Replay
                         Box(Modifier.fillMaxSize().then(if (onDetail) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars))) {
                             val top = stack.lastOrNull()
                             when (if (top == null) tab else -1) {
@@ -776,7 +786,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                             if (id != null) openDetail(id, title, artist.orEmpty(), art, BrowseType.ALBUM)
                                         },
                                         onShare = { replaySharePage = null; showReplayShare = true },
-                                        contentPadding = PaddingValues(top = 8.dp, bottom = barHeight),
+                                        contentPadding = PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp, bottom = barHeight),
                                         landingPage = replayLandingPage,
                                     )
                                     IosPage.Settings -> SettingsScreen(
@@ -1059,6 +1069,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
                                 if (stack.last() === IosPage.ListenTogether) {
                                     PartyPing(Modifier.align(Alignment.TopEnd).padding(top = 24.dp, end = 20.dp))
+                                }
+                                if (stack.last() === IosPage.Replay) { // Android's Replay keeps the account in its top bar
+                                    Box(Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(top = 8.dp, end = 8.dp)) {
+                                        IosTopPill(account = account, onHistory = null, onAccount = { stack = stack + IosPage.Settings })
+                                    }
                                 }
                             }
                         }
