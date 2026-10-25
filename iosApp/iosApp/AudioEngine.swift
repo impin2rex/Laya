@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 import Foundation
 import MediaPlayer
 import QuartzCore
@@ -396,6 +397,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         // the real end arrives as a failure. That is the track ending, not breaking: move on rather than retry it.
         if atStatedEnd(item) { return endByHint(item) }
         guard failedItems.insert(ObjectIdentifier(item)).inserted else { return }
+        let ns = item.error as NSError?
+        let under = ns?.userInfo[NSUnderlyingErrorKey] as? NSError
+        let loader = loaders[ObjectIdentifier(item)]
+        print("AudioEngine: item failed (free \(os_proc_available_memory() / 1_048_576) MB): \(message) [\(ns?.domain ?? "-") \(ns?.code ?? 0) / \(under?.domain ?? "-") \(under?.code ?? 0)] length=\(loader?.knownLength.map(String.init) ?? "?") mime=\(loader?.mimeType ?? "?") log=\(item.errorLog()?.events.last.map { "\($0.errorStatusCode) \($0.errorDomain) \($0.errorComment ?? "")" } ?? "-")")
         cancelFade()
         clearNextOnMain()
         player.pause()
@@ -432,7 +437,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             stuckAt = -1
             return endByHint(item)
         }
-        let overrun = position >= duration + 1
+        // Past the end only by a length the stream states exactly (dur=, or FLAC's STREAMINFO); AVFoundation's own
+        // estimate can be short or long, so it never cuts a track by itself.
+        let exact = exactDuration(of: item)
+        let overrun = exact.map { position >= $0 - 0.05 } ?? false
         let atEnd = delivered && position >= duration - 2
         guard overrun || atEnd else { stuckAt = -1; return }
         if overrun || (abs(position - stuckAt) <= 0.05 && CACurrentMediaTime() - stuckSince > 1.5) {
@@ -441,6 +449,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             return endByHint(item)
         }
         if abs(position - stuckAt) > 0.05 { stuckAt = position; stuckSince = CACurrentMediaTime() }
+    }
+
+    /// The track's length as its source states it, when one does: googlevideo's dur=, or a FLAC's STREAMINFO.
+    private func exactDuration(of item: AVPlayerItem) -> Double? {
+        guard let loader = loaders[ObjectIdentifier(item)] else { return nil }
+        if let hint = loader.durationHint, hint > 0 { return hint }
+        if let f = loader.flacInfo, f.totalSamples > 0, f.sampleRate > 0 { return Double(f.totalSamples) / Double(f.sampleRate) }
+        return nil
     }
 
     /// [item] has played the whole of its stated length: on to the queued track as a natural end would.
@@ -573,7 +589,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         // Past the stated end and still "playing" or waiting for bytes that don't exist (the doubled length above):
         // the track is over. Not while seeking, or while a blend owns the hand-over.
         if let hint = loaders[ObjectIdentifier(item)]?.durationHint, seekingToMs == nil, fade == nil,
-           position >= hint + 0.5, isPlaying || isBuffering {
+           position >= hint - 0.05, isPlaying || isBuffering {
             return endByHint(item)
         }
         wasPlaying = isPlaying || isBuffering

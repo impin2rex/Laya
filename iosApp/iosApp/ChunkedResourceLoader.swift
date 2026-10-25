@@ -29,8 +29,8 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
 
     private let source: URL
     private let headers: [String: String]
-    private let mimeType: String
-    private var knownLength: Int64?
+    let mimeType: String
+    private(set) var knownLength: Int64?
     private let chunkBytes: Int64
     private let session: URLSession
     private var tasks: [ObjectIdentifier: URLSessionDataTask] = [:]
