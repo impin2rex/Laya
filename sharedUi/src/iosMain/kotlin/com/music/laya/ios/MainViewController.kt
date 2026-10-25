@@ -55,6 +55,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     )
     KaraokeModel.install { NSBundle.mainBundle.pathForResource("UVR_MDXNET_9482", "onnx")!! }
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
+    KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
     IosSpotify.restore()
     com.music.laya.playback.smart.AnalysisLog.install { m, e -> println("Analysis: $m ${e ?: ""}") }

@@ -106,6 +106,14 @@ object KaraokeStems {
     @Volatile
     private var running: Pair<TrackStems, Int>? = null
 
+    /**
+     * Set where the sink's clock is the decoder's own sample position (iOS's audio tap), so
+     * the sink-to-stems offset can't change within a song: a seek then keeps the alignment
+     * instead of measuring it again, and already-separated audio is used at once.
+     */
+    @Volatile
+    var exactClock: Boolean = false
+
     /** How many threads inference may take; a few big cores, not the whole phone. */
     var inferenceThreads: Int = (cpuCount() / 2).coerceIn(2, 4)
 
@@ -337,6 +345,7 @@ class TrackStems internal constructor(
     }
 
     override fun realign() {
+        if (KaraokeStems.exactClock && aligned) return
         if (aligned) lastOffset = offset
         captureWanted = if (lastOffset != Long.MIN_VALUE) FAST_CAPTURE_FRAMES else CAPTURE_FRAMES
         aligned = false

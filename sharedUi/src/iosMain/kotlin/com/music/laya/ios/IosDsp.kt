@@ -19,7 +19,13 @@ import kotlinx.cinterop.set
 @OptIn(ExperimentalForeignApi::class)
 object IosDsp {
     private val reverb = ReverbProcessor()
-    private val karaoke = KaraokeProcessor(Karaoke::reportUnavailable, Karaoke::reportNeural)
+    private val karaoke = KaraokeProcessor(
+        Karaoke::reportUnavailable,
+        Karaoke::reportNeural,
+        // The spectral estimate covers while the model catches up (a seek, or switching on),
+        // rather than the vocal leaking for those seconds.
+        holdSeconds = 0,
+    )
 
     @kotlin.concurrent.Volatile
     private var resetPending = false
