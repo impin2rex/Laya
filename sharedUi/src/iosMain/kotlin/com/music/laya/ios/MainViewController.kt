@@ -62,6 +62,7 @@ fun MainViewController(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit)
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
     watchIosConnection()
     IosParty.install()
+    com.music.laya.ui.screens.PartyPlatform.host = IosPartyPlatform
     SourceRegistry.init(IosSourcesHost)
     DetailExtras.host = IosDetailHost
     IosSpotify.restore()

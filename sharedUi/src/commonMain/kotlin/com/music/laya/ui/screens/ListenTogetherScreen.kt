@@ -1,8 +1,9 @@
 package com.music.laya.ui.screens
 
-import android.content.Intent
-import android.text.format.DateFormat
-import android.widget.Toast
+import com.music.laya.sharedui.resources.*
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.StringResource
+import com.music.laya.ui.player.PlayerPlatform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -71,10 +72,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -88,7 +85,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.music.laya.R
 import com.music.laya.data.listentogether.JamInviteLink
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.listentogether.PartyActivity
@@ -98,16 +94,16 @@ import com.music.laya.data.listentogether.ServerUrlError
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-internal fun ServerUrlError.toMessageRes(): Int = when (this) {
-    ServerUrlError.Whitespace -> R.string.listen_together_err_whitespace
-    ServerUrlError.InvalidScheme -> R.string.listen_together_invalid_server_url
-    ServerUrlError.InvalidHost -> R.string.listen_together_invalid_server_url
-    ServerUrlError.InvalidPort -> R.string.listen_together_err_invalid_port
-    ServerUrlError.InvalidPath -> R.string.listen_together_err_invalid_path
-    ServerUrlError.HasPath -> R.string.listen_together_err_no_path
-    ServerUrlError.HasQuery -> R.string.listen_together_err_no_query
-    ServerUrlError.HasFragment -> R.string.listen_together_err_no_fragment
-    ServerUrlError.Malformed -> R.string.listen_together_invalid_server_url
+internal fun ServerUrlError.toMessageRes(): StringResource = when (this) {
+    ServerUrlError.Whitespace -> Res.string.listen_together_err_whitespace
+    ServerUrlError.InvalidScheme -> Res.string.listen_together_invalid_server_url
+    ServerUrlError.InvalidHost -> Res.string.listen_together_invalid_server_url
+    ServerUrlError.InvalidPort -> Res.string.listen_together_err_invalid_port
+    ServerUrlError.InvalidPath -> Res.string.listen_together_err_invalid_path
+    ServerUrlError.HasPath -> Res.string.listen_together_err_no_path
+    ServerUrlError.HasQuery -> Res.string.listen_together_err_no_query
+    ServerUrlError.HasFragment -> Res.string.listen_together_err_no_fragment
+    ServerUrlError.Malformed -> Res.string.listen_together_invalid_server_url
 }
 
 /**
@@ -143,11 +139,13 @@ fun ListenTogetherScreen(
     onEditServer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
-    fun copyCode(code: String?) = scope.launch {
-        clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText(null, code.orEmpty())))
+    val platform = PartyPlatform.host
+    val share = platform.rememberShare()
+    val copiedMessage = stringResource(Res.string.copy_code)
+    fun copyCode(code: String?) {
+        platform.copyText(code.orEmpty())
+        PlayerPlatform.host.showMessage(copiedMessage)
     }
 
     val state by ListenTogether.state.collectAsStateWithLifecycle()
@@ -202,22 +200,10 @@ fun ListenTogetherScreen(
     }
 
     /** The system chooser, with the link and the spoken-aloud code together. */
-    val shareInvite: () -> Unit = {
-        state.code?.let { partyCode ->
-            val message = inviteLinkFor(partyCode) +
-                System.lineSeparator() + System.lineSeparator() +
-                context.getString(R.string.listen_together_share_text, partyCode)
-            context.startActivity(
-                Intent.createChooser(
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, message)
-                    },
-                    null,
-                ),
-            )
-        }
+    val shareMessage = state.code?.let { partyCode ->
+        inviteLinkFor(partyCode) + "\n\n" + stringResource(Res.string.listen_together_share_text, partyCode)
     }
+    val shareInvite: () -> Unit = { shareMessage?.let(share) }
 
     /**
      * Looks a party up and puts its faces on screen, rather than joining it.
@@ -290,9 +276,9 @@ fun ListenTogetherScreen(
                 Text(
                     stringResource(
                         if (isSwitchToOfficial) {
-                            R.string.listen_together_official_server_dialog_title
+                            Res.string.listen_together_official_server_dialog_title
                         } else {
-                            R.string.listen_together_custom_server_dialog_title
+                            Res.string.listen_together_custom_server_dialog_title
                         }
                     ),
                     style = MaterialTheme.typography.titleLarge,
@@ -301,10 +287,10 @@ fun ListenTogetherScreen(
             text = {
                 Text(
                     if (isSwitchToOfficial) {
-                        stringResource(R.string.listen_together_official_server_dialog_message, codeToJoin)
+                        stringResource(Res.string.listen_together_official_server_dialog_message, codeToJoin)
                     } else {
                         stringResource(
-                            R.string.listen_together_custom_server_dialog_message,
+                            Res.string.listen_together_custom_server_dialog_message,
                             serverToSet,
                             codeToJoin,
                         )
@@ -326,7 +312,7 @@ fun ListenTogetherScreen(
                     },
                 ) {
                     Text(
-                        stringResource(R.string.listen_together_custom_server_switch_and_join),
+                        stringResource(Res.string.listen_together_custom_server_switch_and_join),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                     )
@@ -339,7 +325,7 @@ fun ListenTogetherScreen(
                         onInviteHandled()
                     },
                 ) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(Res.string.cancel))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -461,14 +447,7 @@ fun ListenTogetherScreen(
                         sheet = null
                         shareInvite()
                     },
-                    onCopyCode = {
-                        copyCode(state.code)
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.copy_code),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    },
+                    onCopyCode = { copyCode(state.code) },
                 )
             }
         }
@@ -481,18 +460,18 @@ fun ListenTogetherScreen(
             .padding(contentPadding),
     ) {
         Text(
-            text = stringResource(R.string.listen_together),
+            text = stringResource(Res.string.listen_together),
             style = MaterialTheme.typography.displayLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 14.dp),
         )
 
         if (!signedIn) {
-            SettingsGroup(footer = stringResource(R.string.listen_together_sign_in_footer)) {
+            SettingsGroup(footer = stringResource(Res.string.listen_together_sign_in_footer)) {
                 SettingsRow(
                     icon = Icons.AutoMirrored.Rounded.Login,
-                    title = stringResource(R.string.sign_in),
-                    subtitle = stringResource(R.string.not_signed_in),
+                    title = stringResource(Res.string.sign_in),
+                    subtitle = stringResource(Res.string.not_signed_in),
                     onClick = onSignIn,
                 )
             }
@@ -557,16 +536,16 @@ fun ListenTogetherScreen(
         // when the page is scrolled away from. Behind a row there is nothing
         // half-typed to explain — the same shape as the ListenBrainz token.
         SettingsGroup(
-            header = stringResource(R.string.listen_together_custom_server),
-            footer = stringResource(R.string.listen_together_custom_server_footer),
+            header = stringResource(Res.string.listen_together_custom_server),
+            footer = stringResource(Res.string.listen_together_custom_server_footer),
         ) {
             SettingsRow(
                 icon = Icons.Rounded.Dns,
-                title = stringResource(R.string.listen_together_custom_server),
+                title = stringResource(Res.string.listen_together_custom_server),
                 subtitleContent = {
                     Text(
                         text = customServer.ifBlank {
-                            stringResource(R.string.listen_together_using_default)
+                            stringResource(Res.string.listen_together_using_default)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -616,20 +595,20 @@ private fun ServerHealthRow(
                 ListenTogether.Health.OFFLINE -> Icons.Rounded.CloudOff
                 else -> Icons.Rounded.Cloud
             },
-            title = stringResource(R.string.listen_together_server),
+            title = stringResource(Res.string.listen_together_server),
             subtitle = when (status.health) {
                 ListenTogether.Health.ONLINE ->
                     if (status.isFallback) {
-                        stringResource(R.string.listen_together_server_online_fallback, status.latencyMs)
+                        stringResource(Res.string.listen_together_server_online_fallback, status.latencyMs)
                     } else {
-                        stringResource(R.string.listen_together_server_online, status.latencyMs)
+                        stringResource(Res.string.listen_together_server_online, status.latencyMs)
                     }
                 ListenTogether.Health.OFFLINE ->
-                    stringResource(R.string.listen_together_server_offline)
+                    stringResource(Res.string.listen_together_server_offline)
                 ListenTogether.Health.CHECKING ->
-                    stringResource(R.string.listen_together_server_checking)
+                    stringResource(Res.string.listen_together_server_checking)
                 ListenTogether.Health.UNKNOWN ->
-                    stringResource(R.string.listen_together_server_unknown)
+                    stringResource(Res.string.listen_together_server_unknown)
             },
             trailing = if (status.health == ListenTogether.Health.CHECKING) ({ Spinner() }) else null,
             onClick = onRecheck,
@@ -652,22 +631,22 @@ private fun ServerConnectionLine(connection: ServerConnectionState) {
         ServerConnectionState.Checking -> Triple(
             null,
             MaterialTheme.colorScheme.onSurfaceVariant,
-            stringResource(R.string.listen_together_server_checking),
+            stringResource(Res.string.listen_together_server_checking),
         )
         is ServerConnectionState.CustomOnline -> Triple(
             Icons.Rounded.CloudDone,
             MaterialTheme.colorScheme.primary,
-            stringResource(R.string.listen_together_status_custom_online, connection.latencyMs),
+            stringResource(Res.string.listen_together_status_custom_online, connection.latencyMs),
         )
         is ServerConnectionState.CustomFallback -> Triple(
             Icons.Rounded.CloudOff,
             MaterialTheme.colorScheme.error,
-            stringResource(R.string.listen_together_status_custom_fallback, connection.latencyMs),
+            stringResource(Res.string.listen_together_status_custom_fallback, connection.latencyMs),
         )
         ServerConnectionState.Offline -> Triple(
             Icons.Rounded.CloudOff,
             MaterialTheme.colorScheme.error,
-            stringResource(R.string.listen_together_status_all_offline),
+            stringResource(Res.string.listen_together_status_all_offline),
         )
         // Nothing to say: the row above already reads "using the built-in one".
         is ServerConnectionState.DefaultOnline -> return
@@ -706,7 +685,7 @@ internal val CODE_CELL_SHAPE = RoundedCornerShape(12.dp)
  * A code that gets read out loud and typed in by somebody else is a sequence of
  * characters, not a word. Six cells say so without a hint line: they show how
  * many are wanted, which one is being typed, and how far in the reading has
- * got — see [listen_together_code_footer][R.string.listen_together_code_footer]
+ * got — see [listen_together_code_footer][Res.string.listen_together_code_footer]
  * for why the alphabet avoids O and I.
  *
  * One [BasicTextField] underneath, not six. Six fields means six focus targets
@@ -851,8 +830,8 @@ private fun InAParty(
     onKick: (String) -> Unit,
 ) {
     SettingsGroup(
-        header = stringResource(R.string.listen_together_code),
-        footer = stringResource(R.string.listen_together_code_footer),
+        header = stringResource(Res.string.listen_together_code),
+        footer = stringResource(Res.string.listen_together_code_footer),
     ) {
         Text(
             text = state.code.orEmpty(),
@@ -869,13 +848,13 @@ private fun InAParty(
         RowDivider()
         SettingsRow(
             icon = Icons.Rounded.ContentCopy,
-            title = stringResource(R.string.copy_code),
+            title = stringResource(Res.string.copy_code),
             onClick = onCopy,
         )
         RowDivider()
         SettingsRow(
             icon = Icons.Rounded.Share,
-            title = stringResource(R.string.share),
+            title = stringResource(Res.string.share),
             onClick = onShare,
         )
     }
@@ -884,11 +863,11 @@ private fun InAParty(
 
     SettingsGroup(
         header = stringResource(
-            R.string.listen_together_listening,
+            Res.string.listen_together_listening,
             state.members.size,
             state.maxMembers,
         ),
-        footer = stringResource(R.string.listen_together_members_footer, state.maxMembers),
+        footer = stringResource(Res.string.listen_together_members_footer, state.maxMembers),
     ) {
         if (state.you?.isHost == true) {
             Row(
@@ -897,11 +876,11 @@ private fun InAParty(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        stringResource(R.string.listen_together_party_size),
+                        stringResource(Res.string.listen_together_party_size),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    Text(stringResource(R.string.listen_together_host_controls), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(Res.string.listen_together_host_controls), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TextButton(onClick = { onSetCapacity(state.maxMembers - 1) }, enabled = state.maxMembers > maxOf(2, state.members.size)) { Text("−", color = MaterialTheme.colorScheme.onSurface) }
                 Text("${state.maxMembers}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(28.dp), textAlign = TextAlign.Center)
@@ -910,8 +889,8 @@ private fun InAParty(
             RowDivider()
             SettingsRow(
                 icon = Icons.Rounded.Lock,
-                title = stringResource(R.string.listen_together_host_only),
-                subtitle = stringResource(R.string.listen_together_host_only_subtitle),
+                title = stringResource(Res.string.listen_together_host_only),
+                subtitle = stringResource(Res.string.listen_together_host_only_subtitle),
                 trailing = {
                     Switch(
                         checked = state.hostOnlyControl,
@@ -935,8 +914,8 @@ private fun InAParty(
     SettingsGroup {
         SettingsRow(
             icon = Icons.AutoMirrored.Rounded.Logout,
-            title = stringResource(R.string.listen_together_leave),
-            subtitle = stringResource(R.string.listen_together_leave_subtitle),
+            title = stringResource(Res.string.listen_together_leave),
+            subtitle = stringResource(Res.string.listen_together_leave_subtitle),
             onClick = onLeave,
         )
     }
@@ -967,9 +946,9 @@ private fun NowPlayingInTheParty(state: ListenTogether.State) {
     // a composable call belongs at a composable call site rather than buried
     // inside the string building below it.
     val connection = connectionLine(state)
-    val nothingPlaying = stringResource(R.string.listen_together_nothing_playing)
+    val nothingPlaying = stringResource(Res.string.listen_together_nothing_playing)
 
-    SettingsGroup(header = stringResource(R.string.listen_together_now_playing)) {
+    SettingsGroup(header = stringResource(Res.string.listen_together_now_playing)) {
         SettingsRow(
             icon = Icons.Rounded.MusicNote,
             title = track?.title?.takeIf { it.isNotBlank() } ?: nothingPlaying,
@@ -998,12 +977,12 @@ private fun NowPlayingInTheParty(state: ListenTogether.State) {
 @Composable
 private fun connectionLine(state: ListenTogether.State): String = when {
     state.connection != ListenTogether.Connection.LIVE ->
-        stringResource(R.string.listen_together_reconnecting)
+        stringResource(Res.string.listen_together_reconnecting)
     // Live, but the clock has not been measured yet — so the position above is
     // the server's last word on it rather than this device's own reckoning, and
     // saying so is more use than a spinner.
-    !state.clockSynced -> stringResource(R.string.listen_together_syncing_clock)
-    else -> stringResource(R.string.listen_together_in_sync, state.roundTripMs)
+    !state.clockSynced -> stringResource(Res.string.listen_together_syncing_clock)
+    else -> stringResource(Res.string.listen_together_in_sync, state.roundTripMs)
 }
 
 /**
@@ -1072,7 +1051,7 @@ private fun MemberRow(member: PartyMember, isYou: Boolean, canKick: Boolean = fa
                 )
                 if (isYou) {
                     Spacer(Modifier.width(8.dp))
-                    Badge(stringResource(R.string.listen_together_you))
+                    Badge(stringResource(Res.string.listen_together_you))
                 }
             }
             // "Away" rather than "offline": the slot is still theirs, and the
@@ -1080,7 +1059,7 @@ private fun MemberRow(member: PartyMember, isYou: Boolean, canKick: Boolean = fa
             // locked screen does not read to everyone else as leaving.
             if (!member.connected) {
                 Text(
-                    text = stringResource(R.string.listen_together_away),
+                    text = stringResource(Res.string.listen_together_away),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1088,9 +1067,9 @@ private fun MemberRow(member: PartyMember, isYou: Boolean, canKick: Boolean = fa
         }
         if (member.isHost) {
             Spacer(Modifier.width(8.dp))
-            Badge(stringResource(R.string.listen_together_host))
+            Badge(stringResource(Res.string.listen_together_host))
         } else if (canKick) {
-            TextButton(onClick = onKick) { Text(stringResource(R.string.listen_together_remove)) }
+            TextButton(onClick = onKick) { Text(stringResource(Res.string.listen_together_remove)) }
         }
     }
 }
@@ -1099,8 +1078,8 @@ private fun MemberRow(member: PartyMember, isYou: Boolean, canKick: Boolean = fa
 private fun PartyActivityList(entries: List<PartyActivity>) {
     if (entries.isEmpty()) return
     SettingsGroup(
-        header = stringResource(R.string.listen_together_activity),
-        footer = stringResource(R.string.listen_together_activity_footer),
+        header = stringResource(Res.string.listen_together_activity),
+        footer = stringResource(Res.string.listen_together_activity_footer),
     ) {
         val logScroll = rememberScrollState()
         Column(
@@ -1112,7 +1091,7 @@ private fun PartyActivityList(entries: List<PartyActivity>) {
                 .padding(horizontal = ROW_INSET, vertical = 8.dp),
         ) {
             entries.forEach { entry ->
-                val timestamp = DateFormat.format("HH:mm:ss", entry.atMs)
+                val timestamp = PartyPlatform.host.formatTime(entry.atMs)
                 Text(
                     text = "[$timestamp] ${entry.by}: ${entry.detail.ifBlank { entry.action }}",
                     style = MaterialTheme.typography.bodySmall,
@@ -1138,5 +1117,5 @@ private fun elapsed(ms: Long): String {
     val total = (ms / 1000).coerceAtLeast(0)
     val minutes = total / 60
     val seconds = total % 60
-    return "%d:%02d".format(minutes, seconds)
+    return "$minutes:${seconds.toString().padStart(2, '0')}"
 }

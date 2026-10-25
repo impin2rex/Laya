@@ -1,5 +1,7 @@
 package com.music.laya.ui.screens
 
+import com.music.laya.sharedui.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -41,7 +43,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,11 +50,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.music.laya.R
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.listentogether.PartyPreview
 import com.music.laya.ui.components.PillTextField
-import com.music.laya.ui.components.QrCode
 
 /**
  * Which of the party sheets is up, if any.
@@ -208,7 +207,7 @@ internal fun PartyLanding(
         GlowingAvatar(url = avatarUrl)
         Spacer(Modifier.height(20.dp))
         Text(
-            text = stringResource(R.string.listen_together_landing_title),
+            text = stringResource(Res.string.listen_together_landing_title),
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 30.sp,
@@ -218,7 +217,7 @@ internal fun PartyLanding(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.listen_together_landing_subtitle),
+            text = stringResource(Res.string.listen_together_landing_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -231,7 +230,7 @@ internal fun PartyLanding(
             modifier = Modifier.fillMaxWidth().height(52.dp),
         ) {
             Text(
-                text = stringResource(R.string.listen_together_create_action),
+                text = stringResource(Res.string.listen_together_create_action),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -243,7 +242,7 @@ internal fun PartyLanding(
             modifier = Modifier.fillMaxWidth().height(48.dp),
         ) {
             Text(
-                text = stringResource(R.string.listen_together_join_existing),
+                text = stringResource(Res.string.listen_together_join_existing),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -319,8 +318,8 @@ internal fun CreatePartySheet(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         SheetHeader(
-            title = stringResource(R.string.listen_together_create),
-            subtitle = stringResource(R.string.listen_together_create_sheet_subtitle),
+            title = stringResource(Res.string.listen_together_create),
+            subtitle = stringResource(Res.string.listen_together_create_sheet_subtitle),
         )
         Spacer(Modifier.height(22.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -329,7 +328,7 @@ internal fun CreatePartySheet(
             PillTextField(
                 value = nickname,
                 onValueChange = onNicknameChange,
-                placeholder = stringResource(R.string.listen_together_nickname_hint),
+                placeholder = stringResource(Res.string.listen_together_nickname_hint),
                 container = MaterialTheme.colorScheme.surfaceVariant,
                 enabled = enabled,
                 keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
@@ -342,12 +341,12 @@ internal fun CreatePartySheet(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    stringResource(R.string.listen_together_party_size),
+                    stringResource(Res.string.listen_together_party_size),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    stringResource(R.string.listen_together_party_size_subtitle),
+                    stringResource(Res.string.listen_together_party_size_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -375,7 +374,7 @@ internal fun CreatePartySheet(
         ) {
             Text(
                 text = stringResource(
-                    if (busy) R.string.listen_together_creating else R.string.listen_together_create_action,
+                    if (busy) Res.string.listen_together_creating else Res.string.listen_together_create_action,
                 ),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -440,8 +439,8 @@ internal fun JoinPartySheet(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         SheetHeader(
-            title = stringResource(R.string.listen_together_join),
-            subtitle = stringResource(R.string.listen_together_code_hint),
+            title = stringResource(Res.string.listen_together_join),
+            subtitle = stringResource(Res.string.listen_together_code_hint),
         )
         Spacer(Modifier.height(22.dp))
         PartyCodeField(
@@ -459,7 +458,7 @@ internal fun JoinPartySheet(
         ) {
             Text(
                 text = stringResource(
-                    if (busy) R.string.listen_together_joining else R.string.listen_together_join_action,
+                    if (busy) Res.string.listen_together_joining else Res.string.listen_together_join_action,
                 ),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -562,8 +561,8 @@ internal fun JoinConfirmSheet(
         Spacer(Modifier.height(18.dp))
         Text(
             text = preview.hostName.takeIf { it.isNotBlank() }
-                ?.let { stringResource(R.string.listen_together_join_question, it) }
-                ?: stringResource(R.string.listen_together_join_question_unnamed),
+                ?.let { stringResource(Res.string.listen_together_join_question, it) }
+                ?: stringResource(Res.string.listen_together_join_question_unnamed),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -586,7 +585,7 @@ internal fun JoinConfirmSheet(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     text = stringResource(
-                        R.string.listen_together_listening,
+                        Res.string.listen_together_listening,
                         preview.memberCount,
                         preview.maxMembers,
                     ),
@@ -602,7 +601,7 @@ internal fun JoinConfirmSheet(
             PillTextField(
                 value = nickname,
                 onValueChange = onNicknameChange,
-                placeholder = stringResource(R.string.listen_together_nickname_hint),
+                placeholder = stringResource(Res.string.listen_together_nickname_hint),
                 container = MaterialTheme.colorScheme.surfaceVariant,
                 enabled = !busy,
                 keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
@@ -618,9 +617,9 @@ internal fun JoinConfirmSheet(
             Text(
                 text = stringResource(
                     when {
-                        preview.isFull -> R.string.listen_together_full
-                        busy -> R.string.listen_together_joining
-                        else -> R.string.listen_together_join_action
+                        preview.isFull -> Res.string.listen_together_full
+                        busy -> Res.string.listen_together_joining
+                        else -> Res.string.listen_together_join_action
                     },
                 ),
                 style = MaterialTheme.typography.titleMedium,
@@ -634,14 +633,14 @@ internal fun JoinConfirmSheet(
             modifier = Modifier.fillMaxWidth().height(48.dp),
         ) {
             Text(
-                text = stringResource(R.string.listen_together_not_now),
+                text = stringResource(Res.string.listen_together_not_now),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            text = stringResource(R.string.listen_together_preview_footer),
+            text = stringResource(Res.string.listen_together_preview_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -669,7 +668,7 @@ internal fun InviteSheet(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        SheetHeader(title = stringResource(R.string.listen_together_invite_title))
+        SheetHeader(title = stringResource(Res.string.listen_together_invite_title))
         Spacer(Modifier.height(20.dp))
         Button(
             onClick = onShareLink,
@@ -679,7 +678,7 @@ internal fun InviteSheet(
             Icon(Icons.Rounded.Link, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             Text(
-                text = stringResource(R.string.listen_together_share_link),
+                text = stringResource(Res.string.listen_together_share_link),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -691,13 +690,13 @@ internal fun InviteSheet(
         ) {
             Column(Modifier.weight(1f).padding(end = 16.dp)) {
                 Text(
-                    text = stringResource(R.string.listen_together_scan_qr),
+                    text = stringResource(Res.string.listen_together_scan_qr),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = stringResource(R.string.listen_together_scan_qr_subtitle),
+                    text = stringResource(Res.string.listen_together_scan_qr_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -721,7 +720,7 @@ internal fun InviteSheet(
                     )
                 }
             }
-            QrCode(content = link, size = 132.dp)
+            PartyPlatform.host.QrCode(content = link, size = 132.dp)
         }
         Spacer(Modifier.height(16.dp))
     }

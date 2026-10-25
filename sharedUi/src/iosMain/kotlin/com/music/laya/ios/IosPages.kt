@@ -95,6 +95,7 @@ internal sealed interface IosPage {
     data object Spotify : IosPage
     data object Equalizer : IosPage
     data object Sources : IosPage
+    data object ListenTogether : IosPage
     class History(val songs: UiState<List<Song>>) : IosPage
     class ShowAll(val shelf: HomeShelf) : IosPage
 }
@@ -232,7 +233,7 @@ internal fun IosSongMenu(
 }
 
 /** The system share sheet, presented from whatever view controller is on top. */
-private fun shareText(text: String) {
+internal fun shareText(text: String) {
     var top = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return
     while (true) top = top.presentedViewController ?: break
     top.presentViewController(UIActivityViewController(listOf(text), null), true, null)

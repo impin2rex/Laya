@@ -79,6 +79,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // The song being sung, separated: one at a time, in the cache, cleared at launch.
         com.music.laya.playback.karaoke.KaraokeStems.install(java.io.File(cacheDir, "karaoke").toOkioPath())
         PlayerPlatform.install(AndroidPlayerHost(this))
+        com.music.laya.ui.screens.PartyPlatform.host = com.music.laya.ui.AndroidPartyPlatform(this)
         com.music.laya.ui.AppUi.install(com.music.laya.ui.AndroidAppUiHost)
         com.music.laya.ui.screens.DetailExtras.host = com.music.laya.ui.AndroidDetailHost
         com.music.laya.ui.AndroidSettingsHost.install(this)

@@ -145,6 +145,8 @@ import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.ui.screens.EqualizerScreen
 import com.music.laya.ui.screens.SettingsScreen
 import com.music.laya.ui.screens.SourcesPage
+import com.music.laya.ui.screens.ListenTogetherScreen
+import com.music.laya.data.listentogether.JamInviteLink
 import com.music.laya.data.sources.AddonSource
 import com.music.laya.data.sources.SourceRegistry
 import kotlinx.coroutines.async
@@ -213,6 +215,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     var showSpotifyLogin by remember { mutableStateOf(false) }
     var showSpotifyImport by remember { mutableStateOf(false) }
     var editingSignatureApi by remember { mutableStateOf(false) }
+    var editingPartyServer by remember { mutableStateOf(false) }
+    val invite by JamInviteLink.pending.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     val message by IosPlayerHost.messages.collectAsState()
     LaunchedEffect(message) {
@@ -544,6 +548,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             ?.let { if (it.isNotEmpty()) player.play(it, 0) }
     }
 
+    // A tapped invite link opens the Listen Together page, which asks before joining.
+    LaunchedEffect(invite) {
+        if (invite != null && stack.lastOrNull() !== IosPage.ListenTogether) stack = stack + IosPage.ListenTogether
+    }
+
     // Test hook: SIMCTL_CHILD_LAYA_OPEN=player | settings | search | artist:<name> opens that screen.
     LaunchedEffect(Unit) {
         val what = NSProcessInfo.processInfo.environment["LAYA_OPEN"] as? String ?: return@LaunchedEffect
@@ -552,6 +561,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             what == "settings" -> stack = stack + IosPage.Settings
             what == "search" -> tab = 3
             what == "sources" -> stack = stack + IosPage.Sources
+            what == "party" -> stack = stack + IosPage.ListenTogether
             what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
                 ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
                 ?.let { openDetail(it.browseId, it.title, it.subtitle, it.thumbnailUrl, it.type) }
@@ -645,6 +655,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         // Opens the account page; Last.fm / Spotify / Discord live behind it on Android (5e).
                                         onEqualizer = { stack = stack + IosPage.Equalizer },
                                         onSources = { stack = stack + IosPage.Sources },
+                                        onListenTogether = { stack = stack + IosPage.ListenTogether },
                                         onAccountScrobbling = { stack = stack + IosPage.Account },
                                         onSpotifyCanvasAuth = { stack = stack + IosPage.Account },
                                         onEditSignatureApi = { editingSignatureApi = true },
@@ -654,6 +665,15 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         onOpenLogin = { showSpotifyLogin = true },
                                         onOpenTokenSetup = null,
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                    )
+                                    IosPage.ListenTogether -> ListenTogetherScreen(
+                                        signedIn = signedIn,
+                                        inviteCode = invite?.code,
+                                        inviteServer = invite?.serverUrl,
+                                        onInviteHandled = JamInviteLink::handled,
+                                        onSignIn = { showLogin = true },
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                        onEditServer = { editingPartyServer = true },
                                     )
                                     IosPage.Sources -> SourcesPage(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
@@ -1027,7 +1047,10 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                             (id ?: song.artistId)?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
                                         },
                                         onOpenPlaybackSource = {},
-                                        onListenTogether = {},
+                                        onListenTogether = {
+                                            sheetMotion.close()
+                                            if (stack.lastOrNull() !== IosPage.ListenTogether) stack = stack + IosPage.ListenTogether
+                                        },
                                         lyrics = lyrics,
                                         lyricsSource = lyricsSource,
                                         lyricsProviderStates = providerStates,
@@ -1052,6 +1075,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         },
                         onDismiss = { showSpotifyImport = false },
                     )
+                    if (editingPartyServer) IosPartyServerEditor(onDismiss = { editingPartyServer = false })
                     if (editingSignatureApi) IosSignatureApiEditor(onDismiss = { editingSignatureApi = false })
                 }
             }
