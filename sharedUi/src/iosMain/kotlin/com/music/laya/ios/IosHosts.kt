@@ -73,6 +73,10 @@ internal object IosPlayerHost : PlayerHost {
     override fun selectAudioOutput(id: Int?) = showRoutePicker()
     override val outputFormat = MutableStateFlow(OutputFormatUi())
     override val party = IosParty.ui
+    override val castState = IosCast.ui
+
+    @Composable
+    override fun CastDialog(hazeState: HazeState, onDismiss: () -> Unit) = IosCastDialog(hazeState, onDismiss)
 
     override suspend fun translateLyrics(trackId: String, lines: List<LyricLine>, targetLanguageTag: String) =
         when (val result = LyricsTranslation.translate(trackId, lines, targetLanguageTag)) {

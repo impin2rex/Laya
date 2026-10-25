@@ -61,6 +61,9 @@ private const val MAX_AUTOPLAY = 10
 /** How long a source ranked above YouTube gets before a track starts on YouTube regardless (Android's SUBSTITUTE_TIMEOUT_MS). */
 private const val SUBSTITUTE_TIMEOUT_MS = 20_000L
 
+/** Tracks kept queued on the receiver after the playing one (Android CastPlayback.AHEAD), so it moves on alone with the phone asleep. */
+private const val CAST_AHEAD = 3
+
 /** What [IosPlayer.open] hands the engine, and what the source said about it. */
 private class Opened(
     val url: String,
@@ -99,7 +102,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun startSleep(minutes: Int) {
         cancelSleep()
         sleepMinutes = minutes
-        sleepJob = scope.launch { delay(minutes * 60_000L); cancelSleep(); engine.pause() }
+        sleepJob = scope.launch { delay(minutes * 60_000L); cancelSleep(); pauseOut() }
     }
     fun startSleepAfterTrack() { cancelSleep(); sleepAfterTrack = true }
     fun cancelSleep() { sleepJob?.cancel(); sleepJob = null; sleepMinutes = null; sleepAfterTrack = false }
@@ -122,6 +125,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     init {
         engine.setListener(this)
+        IosCast.player = this
         IosVolume.level.value = engine.systemVolume()
         IosVolume.setter = engine::setSystemVolume
         IosPlayerStore.load()?.let { s ->
@@ -200,7 +204,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun togglePlayPause() {
         if (party.handleLockedPlayPause()) return
         val at = pendingMs
-        if (at != null) start(index, at) else if (isPlaying) engine.pause() else engine.resume()
+        if (at != null) start(index, at) else if (isPlaying) pauseOut() else resumeOut()
         party.onLocalIntent()
     }
 
@@ -210,6 +214,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     private fun rawSeek(ms: Long) {
         if (pendingMs != null) { pendingMs = ms; position.seeks++; position.report(ms); return }
+        if (IosCast.active) { castSeekAt = NSDate().timeIntervalSinceReferenceDate; IosCast.native?.seekTo(ms) } else
         engine.seekTo(ms)
         position.seeks++
         position.report(ms)
@@ -286,8 +291,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     // ---- Listen Together: the party's writes to the engine, which are never intents ----
 
-    internal fun partyPause() = engine.pause()
-    internal fun partyResume() { if (pendingMs != null) start(index, pendingMs ?: 0) else engine.resume() }
+    internal fun partyPause() = pauseOut()
+    internal fun partyResume() { if (pendingMs != null) start(index, pendingMs ?: 0) else resumeOut() }
     internal fun partySeek(ms: Long) = rawSeek(ms)
 
     /** Puts the party's running order on this device and starts the track at [at]. */
@@ -489,6 +494,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         nextJob?.cancel()
         upgradeJob?.cancel()
         startJob?.cancel()
+        if (IosCast.active) return castLoad(song, fromMs, play = true)
         startJob = scope.launch {
             runCatching { resolveInto(song, next = false) }
                 .onFailure { isLoading = false; println("IosPlayer: ${it.message ?: it}") }
@@ -518,13 +524,124 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     /** Resolves the following track now so the engine can start it gaplessly. */
     private fun preResolveNext() {
+        if (IosCast.active) return castReconcile()
         nextJob?.cancel()
         preloaded = autoNext()
         val upcoming = queue.getOrNull(preloaded) ?: return engine.clearNext()
         nextJob = scope.launch { runCatching { resolveInto(upcoming, next = true) } }
     }
 
+    // ---- Cast (Android's CastPlayback): this queue stays, the receiver owns the clock ----
+
+    private fun pauseOut() = if (IosCast.active) IosCast.native?.pause() else engine.pause()
+    private fun resumeOut() = if (IosCast.active) IosCast.native?.play() else engine.resume()
+
+    /** The track whose load the receiver has not answered yet; its status, not the old one's, is believed meanwhile. */
+    private var castLoading: String? = null
+    private var castSeekAt = 0.0
+    private var castReconcileJob: Job? = null
+
+    /** What the receiver can open by itself, or null (with a notice) for a local file or a source that needs headers. */
+    private suspend fun castItem(s: Song, patient: Boolean): CastItem? {
+        val o = withContext(ioDispatcher) { runCatching { open(s, patient) }.getOrNull() }
+        if (o == null || o.sourceName == "Downloaded" || (o.sourceName != "YouTube" && o.headers.isNotEmpty())) return null
+        return CastItem(o.url, o.mime, s.videoId, s.title, s.artist, s.albumName, s.thumbnailUrl?.takeIf { it.startsWith("http") })
+    }
+
+    private fun castLoad(s: Song, at: Long, play: Boolean) {
+        val native = IosCast.native ?: return
+        castLoading = s.videoId
+        isLoading = true
+        position.report(at)
+        pendingMs = null
+        if (play && at == 0L && native.jumpTo(s.videoId)) { announce(); castReconcile(); return } // already queued there: instant
+        startJob = scope.launch {
+            val item = castItem(s, patient = false)
+            if (item == null || !IosCast.active || song?.videoId != s.videoId) {
+                if (item == null) { IosPlayerHost.showMessage("This track can't be cast"); castLoading = null; isLoading = false }
+                return@launch
+            }
+            native.load(item, at, play)
+            announce()
+        }
+    }
+
+    internal fun castBegan(resumed: Boolean) {
+        val s = song ?: return
+        val playing = isPlaying
+        val at = pendingMs ?: position.positionMs
+        engine.pause()
+        IosVolume.setter = { IosCast.native?.setVolume(it) }
+        // A session that outlived the app and is already on this track keeps going instead of restarting.
+        if (resumed && IosCast.native?.currentMediaId() == s.videoId) { pendingMs = null; castReconcile() } else castLoad(s, at, play = playing)
+    }
+
+    /** The receiver let go: its place comes back to the phone, paused unless the listener chose "Stop casting" while it played. */
+    internal fun castEnded(resumeHere: Boolean) {
+        castLoading = null
+        IosVolume.setter = engine::setSystemVolume
+        IosVolume.level.value = engine.systemVolume()
+        val at = position.positionMs
+        val was = isPlaying
+        isPlaying = false
+        isLoading = false
+        if (song == null) return
+        if (resumeHere && was) start(index, at) else pendingMs = at
+    }
+
+    internal fun castStatus(mediaId: String?, positionMs: Long, durationMs: Long, state: Int) {
+        val loading = castLoading
+        if (loading != null) {
+            if (state == 5) { castLoading = null; isLoading = false; IosPlayerHost.showMessage("This track can't be cast"); return }
+            if (mediaId != loading || state !in 1..2) return
+            castLoading = null
+            castReconcile()
+        } else if (mediaId != null && mediaId != song?.videoId) { // the receiver moved on by itself, or its own remote did
+            val to = queue.indices.filter { queue[it].videoId == mediaId }.minByOrNull { kotlin.math.abs(it - index) } ?: return
+            index = to
+            NerdStats.onTrackTransition(mediaId)
+            IosPlayerStore.saveQueue(queue, index)
+            announce()
+            castReconcile()
+            topUpAutoplay()
+            party.onLocalIntent()
+        }
+        isPlaying = state == 1
+        isLoading = state == 3
+        if (durationMs > 0) this.durationMs = durationMs
+        // A seek is asked now and answered a moment later; until then the receiver's clock still reads the old place.
+        if (NSDate().timeIntervalSinceReferenceDate - castSeekAt > 1.5) position.report(positionMs)
+        if (state == 4) autoNext().let { if (it >= 0) start(it) else isPlaying = false } // ran out of the few tracks it holds
+        if (!isPlaying && song != null) saveState()
+    }
+
+    /** Makes the receiver's queue after the playing track match the next few of ours (Android's reconcileOnce). */
+    private fun castReconcile() {
+        castReconcileJob?.cancel()
+        castReconcileJob = scope.launch {
+            delay(300) // let the receiver's own status catch up with whatever just changed it
+            val native = IosCast.native ?: return@launch
+            if (castLoading != null || !IosCast.active) return@launch
+            val want = if (AppSettings.repeatMode.value == RepeatModes.ONE) emptyList() else queue.drop(index + 1).take(CAST_AHEAD)
+            val have = native.aheadIds()
+            var keep = 0
+            while (keep < have.size && keep < want.size && have[keep] == want[keep].videoId) keep++
+            if (keep == have.size && keep == want.size) return@launch
+            if (keep < have.size) native.trimAhead(keep)
+            val playing = song?.videoId
+            for (next in want.drop(keep)) {
+                val item = castItem(next, patient = true) ?: break
+                if (!IosCast.active || song?.videoId != playing) return@launch
+                native.append(item)
+            }
+        }
+    }
+
     override fun onProgress(positionMs: Long, durationMs: Long, isPlaying: Boolean, isBuffering: Boolean) {
+        if (IosCast.active) { // the receiver owns the clock; a lock-screen Play that woke this engine goes to it instead
+            if (isPlaying) { engine.pause(); IosCast.native?.play() }
+            return
+        }
         position.report(positionMs)
         this.durationMs = durationMs
         this.isPlaying = isPlaying
@@ -561,12 +678,14 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     override fun onEnded() {
+        if (IosCast.active) return
         if (sleepAfterTrack) { cancelSleep(); isPlaying = false; return }
         autoNext().let { if (it >= 0) start(it) else isPlaying = false }
         party.onLocalIntent()
     }
 
     override fun onAdvancedToNext() {
+        if (IosCast.active) return
         index = preloaded
         if (sleepAfterTrack) { cancelSleep(); engine.pause() }
         NerdStats.onTrackTransition(song?.videoId)
@@ -600,7 +719,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         }
     }
 
-    override fun onVolumeChanged(level: Float) { IosVolume.level.value = level }
+    override fun onVolumeChanged(level: Float) { if (!IosCast.active) IosVolume.level.value = level }
     override fun onRemoteNext() = next()
     override fun onRemotePrevious() = previous()
 }

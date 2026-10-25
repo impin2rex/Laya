@@ -3,6 +3,8 @@ name: iosApp
 options:
   deploymentTarget:
     iOS: "16.0"
+  # Google Cast has no Swift package: fetch the official, checksummed xcframework into Vendor/ (run from iosApp/).
+  preGenCommand: sh scripts/fetch-cast-sdk.sh
 settings:
   base:
     MARKETING_VERSION: "0.0.1"
@@ -23,6 +25,8 @@ targets:
     dependencies:
       - package: onnxruntime
         product: onnxruntime
+      - framework: Vendor/GoogleCast.xcframework
+        embed: true
     settings:
       base:
         # Checked-in plist; XcodeGen's `info:` key would overwrite it.

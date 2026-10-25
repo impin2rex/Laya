@@ -30,6 +30,14 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- Google Cast discovery: the default media receiver's id is CC1AD845 (CastOptionsProvider on Android). -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Laya finds Chromecasts and Google Cast speakers on your Wi-Fi so you can play music on them.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_googlecast._tcp</string>
+		<string>_CC1AD845._googlecast._tcp</string>
+	</array>
 	<!-- laya://party/<CODE> invites; the https invite links need an associated domain the party server would have to host. -->
 	<key>CFBundleURLTypes</key>
 	<array>

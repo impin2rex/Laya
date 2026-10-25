@@ -35,7 +35,7 @@ import com.music.laya.data.settings.AppSettingsHost
 import com.russhwolf.settings.NSUserDefaultsSettings
 
 /** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]; [onStatusBarLight] tells the host VC which status bar icon colour the screen needs. */
-fun MainViewController(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit): UIViewController {
+fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: (Boolean) -> Unit): UIViewController {
     // Not NSLog: Kotlin strings passed through its C varargs crash (EXC_BAD_ACCESS).
     DebugLog.sink = DebugLog.Sink { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
     TrackLog.echo = { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
@@ -77,6 +77,7 @@ fun MainViewController(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit)
     SettingsExtras.host = IosSettingsHost
     PlayerPlatform.install(IosPlayerHost)
     IosRoute.engine = engine
+    IosCast.install(cast)
     // Same bundled SF Pro Display Android installs in LayaApplication; read up front so the theme sees it on first composition.
     SFProDisplay = FontFamily(
         mapOf(400 to "regular", 500 to "medium", 600 to "semibold", 700 to "bold", 800 to "heavy").map { (w, n) ->

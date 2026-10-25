@@ -6,8 +6,12 @@ struct iOSApp: App {
     /// One engine for the app's lifetime; Kotlin drives it.
     static let audioEngine = AVAudioEngineImpl()
 
+    /// Google Cast; created at launch because the SDK wants its context set up early.
+    static let castNative = CastNativeImpl()
+
     init() {
         IosKaraoke.shared.native = KaraokeNativeImpl()
+        _ = iOSApp.castNative // statics are lazy
     }
 
     var body: some Scene {
@@ -21,7 +25,7 @@ struct iOSApp: App {
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let host = StatusBarHost()
-        host.embed(MainViewControllerKt.MainViewController(engine: iOSApp.audioEngine, onStatusBarLight: { light in
+        host.embed(MainViewControllerKt.MainViewController(engine: iOSApp.audioEngine, cast: iOSApp.castNative, onStatusBarLight: { light in
             host.light = light.boolValue
         }))
         return host
