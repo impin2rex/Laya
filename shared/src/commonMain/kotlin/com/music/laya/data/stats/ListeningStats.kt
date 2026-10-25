@@ -1,8 +1,10 @@
 package com.music.laya.data.stats
 
-import android.content.Context
-import android.util.Log
+import com.music.laya.data.DebugLog
 import com.music.laya.data.model.Song
+import com.music.laya.platform.currentTimeMillis
+import com.music.laya.platform.ioDispatcher
+import com.music.laya.platform.localOffsetMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -12,12 +14,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.File
-import java.time.Instant
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.ZoneId
-import java.util.Locale
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import okio.FileSystem
+import okio.Path
+import kotlin.concurrent.Volatile
 
 /**
  * What this device has listened to, kept on this device.
@@ -55,7 +56,9 @@ import java.util.Locale
  */
 object ListeningStats {
 
-    private lateinit var directory: File
+    private lateinit var directory: Path
+
+    private val fs get() = FileSystem.SYSTEM
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -72,7 +75,7 @@ object ListeningStats {
      */
     private var open: OpenBucket? = null
 
-    private val lock = Any()
+    private val lock = SynchronizedObject()
 
     /** Set when [open] has changes not yet on disk. */
     private var dirty = false
@@ -85,7 +88,7 @@ object ListeningStats {
      * them so a flush and a month rollover cannot be halfway into the same file
      * at once.
      */
-    private val writer = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val writer = CoroutineScope(SupervisorJob() + ioDispatcher)
     private val writeLock = Mutex()
 
     /**
@@ -102,17 +105,18 @@ object ListeningStats {
         val period: ReplayPeriod,
         val version: Long,
         val facts: Int,
-        val day: LocalDate,
+        val day: CivilDate,
         val summary: ReplaySummary,
     )
 
-    fun init(context: Context) {
-        directory = File(context.filesDir, DIRECTORY)
+    /** [directory] is where the month files live: `filesDir/listening` on Android, Application Support on iOS. */
+    fun init(directory: Path) {
+        this.directory = directory
         // Opening a month means reading and parsing it, and the first thing to
         // ask for one is the playback sampler — on the main thread, a few
         // seconds into the first track. Done here instead, it has happened long
         // before anything is playing.
-        writer.launch { synchronized(lock) { bucketFor(YearMonth.now()) } }
+        writer.launch { synchronized(lock) { bucketFor(CivilMonth.of(CivilDate.today())) } }
     }
 
     private val ready: Boolean get() = this::directory.isInitialized
@@ -132,11 +136,12 @@ object ListeningStats {
         if (!ready) return
         if (playedMs <= 0 && !countsAsPlay) return
         if (song.videoId.isBlank()) return
-        val now = System.currentTimeMillis()
-        val at = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault())
-        val dayKey = "${at.year}-${"%02d".format(at.monthValue)}-${"%02d".format(at.dayOfMonth)}"
+        val now = currentTimeMillis()
+        val at = CivilDate.ofEpochMillis(now)
+        val hour = ((now + localOffsetMillis(now)).mod(86_400_000L) / 3_600_000L).toInt()
+        val dayKey = at.toString()
         synchronized(lock) {
-            val bucket = bucketFor(YearMonth.from(at))
+            val bucket = bucketFor(CivilMonth.of(at))
             val track = bucket.tracks.getOrPut(song.videoId) {
                 TrackEntry(
                     id = song.videoId,
@@ -160,12 +165,12 @@ object ListeningStats {
             if (countsAsPlay) track.plays++
 
             // Day-level sub-bucket for the track.
-            val trackDay = bucket.trackDays.computeIfAbsent(dayKey) { DayStats() }
+            val trackDay = bucket.trackDays.getOrPut(dayKey) { DayStats() }
             trackDay.ms += playedMs
             if (countsAsPlay) trackDay.plays++
 
             // Also populate per-entity days map so weekRange() can read it.
-            track.days.computeIfAbsent(dayKey) { DayStats() }.also { d ->
+            track.days.getOrPut(dayKey) { DayStats() }.also { d ->
                 d.ms += playedMs
                 if (countsAsPlay) d.plays++
             }
@@ -187,7 +192,7 @@ object ListeningStats {
                 // "Cheema Y & Gur Sidhu" gets a picture of nobody and a genre of
                 // nothing.
                 ArtistFacts.noticed(name)
-                val artist = bucket.artists.getOrPut(name.lowercase(Locale.ROOT)) {
+                val artist = bucket.artists.getOrPut(name.lowercase()) {
                     NameEntry(name = name, art = song.thumbnailUrl)
                 }
                 artist.ms += playedMs
@@ -195,12 +200,12 @@ object ListeningStats {
                 if (artist.id == null) artist.id = song.artistId
 
                 // Day-level sub-bucket for the artist.
-                val artistDay = bucket.artistDays.computeIfAbsent(dayKey) { DayStats() }
+                val artistDay = bucket.artistDays.getOrPut(dayKey) { DayStats() }
                 artistDay.ms += playedMs
                 if (countsAsPlay) artistDay.plays++
 
                 // Also populate per-entity days map so weekRange() can read it.
-                artist.days.computeIfAbsent(dayKey) { DayStats() }.also { d ->
+                artist.days.getOrPut(dayKey) { DayStats() }.also { d ->
                     d.ms += playedMs
                     if (countsAsPlay) d.plays++
                 }
@@ -218,19 +223,19 @@ object ListeningStats {
                 if (album.id == null) album.id = song.albumId
 
                 // Day-level sub-bucket for the album.
-                val albumDay = bucket.albumDays.computeIfAbsent(dayKey) { DayStats() }
+                val albumDay = bucket.albumDays.getOrPut(dayKey) { DayStats() }
                 albumDay.ms += playedMs
                 if (countsAsPlay) albumDay.plays++
 
                 // Also populate per-entity days map so weekRange() can read it.
-                album.days.computeIfAbsent(dayKey) { DayStats() }.also { d ->
+                album.days.getOrPut(dayKey) { DayStats() }.also { d ->
                     d.ms += playedMs
                     if (countsAsPlay) d.plays++
                 }
             }
 
-            bucket.hours[at.hour] += playedMs
-            val day = at.dayOfMonth
+            bucket.hours[hour] += playedMs
+            val day = at.day
             bucket.days[day] = (bucket.days[day] ?: 0L) + playedMs
             dirty = true
         }
@@ -277,21 +282,18 @@ object ListeningStats {
      */
     private suspend fun write(key: String, snapshot: StoredBucket) = writeLock.withLock {
         runCatching {
-            directory.mkdirs()
-            val file = File(directory, "$key.json")
-            val temporary = File(directory, "$key.json.tmp")
-            temporary.writeText(json.encodeToString(StoredBucket.serializer(), snapshot))
-            if (!temporary.renameTo(file)) {
-                // renameTo will not replace on some filesystems; the delete is
-                // the only thing standing between that and a .tmp per flush.
-                if (file.delete() && temporary.renameTo(file)) Unit else temporary.delete()
-            }
+            fs.createDirectories(directory)
+            val file = directory / "$key.json"
+            val temporary = directory / "$key.json.tmp"
+            fs.write(temporary) { writeUtf8(json.encodeToString(StoredBucket.serializer(), snapshot)) }
+            // atomicMove replaces an existing file on both JVM and Darwin.
+            fs.atomicMove(temporary, file)
             version++
-        }.onFailure { Log.w(TAG, "Could not write listening bucket $key", it) }
+        }.onFailure { DebugLog.w(TAG, "Could not write listening bucket $key", it) }
     }
 
     /** The bucket for [month], loading or creating it and retiring the last one. */
-    private fun bucketFor(month: YearMonth): OpenBucket {
+    private fun bucketFor(month: CivilMonth): OpenBucket {
         val key = month.toString()
         open?.takeIf { it.key == key }?.let { return it }
         // The month rolled over mid-session. Whatever the last one still held
@@ -316,9 +318,9 @@ object ListeningStats {
      * files, and the one being written to is flushed first so that the page
      * agrees with what has just been playing.
      */
-    suspend fun summary(period: ReplayPeriod): ReplaySummary = withContext(Dispatchers.IO) {
+    suspend fun summary(period: ReplayPeriod): ReplaySummary = withContext(ioDispatcher) {
         flushAndAwait()
-        val today = LocalDate.now()
+        val today = CivilDate.today()
         val facts = ArtistFacts.revision.value
         // Every input to the merge, so the cache cannot be stale: which months
         // are on disk and what is in them ([version]), what is known about the
@@ -352,20 +354,20 @@ object ListeningStats {
     }
 
     /** Every month with a file, oldest first. */
-    fun months(): List<YearMonth> {
+    fun months(): List<CivilMonth> {
         if (!ready) return emptyList()
-        val files = directory.listFiles() ?: return emptyList()
+        val files = fs.listOrNull(directory) ?: return emptyList()
         return files.mapNotNull { file ->
             file.name.removeSuffix(".json").takeIf { it != file.name }
-                ?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
+                ?.let { CivilMonth.parse(it) }
         }.sorted()
     }
 
     private fun read(key: String): StoredBucket? {
-        val file = File(directory, "$key.json")
-        if (!file.exists()) return null
-        return runCatching { json.decodeFromString(StoredBucket.serializer(), file.readText()) }
-            .onFailure { Log.w(TAG, "Discarding unreadable listening bucket $key", it) }
+        val file = directory / "$key.json"
+        if (!fs.exists(file)) return null
+        return runCatching { json.decodeFromString(StoredBucket.serializer(), fs.read(file) { readUtf8() }) }
+            .onFailure { DebugLog.w(TAG, "Discarding unreadable listening bucket $key", it) }
             .getOrNull()
     }
 
@@ -383,7 +385,7 @@ object ListeningStats {
         val existing = months()
         if (existing.size > KEEP_MONTHS) {
             existing.take(existing.size - KEEP_MONTHS).forEach {
-                File(directory, "$it.json").delete()
+                fs.delete(directory / "$it.json")
             }
         }
         val bucket = open ?: return
@@ -446,17 +448,18 @@ object ListeningStats {
         synchronized(lock) {
             open = null
             dirty = false
-            directory.listFiles()?.forEach { it.delete() }
-            directory.mkdirs()
+            fs.listOrNull(directory)?.forEach { fs.delete(it) }
+            fs.createDirectories(directory)
             version++
             cached = null
             buckets.forEach { bucket ->
-                val key = runCatching { YearMonth.parse(bucket.month).toString() }.getOrNull()
+                val key = CivilMonth.parse(bucket.month)?.toString()
                     ?: return@forEach
                 runCatching {
-                    File(directory, "$key.json")
-                        .writeText(json.encodeToString(StoredBucket.serializer(), bucket))
-                }.onFailure { Log.w(TAG, "Could not import bucket $key", it) }
+                    fs.write(directory / "$key.json") {
+                        writeUtf8(json.encodeToString(StoredBucket.serializer(), bucket))
+                    }
+                }.onFailure { DebugLog.w(TAG, "Could not import bucket $key", it) }
             }
         }
     }
@@ -504,7 +507,7 @@ object ListeningStats {
                 // instead of sitting beside them forever.
                 artists = stored.artists
                     .map { it.copy(name = primaryArtist(it.name) ?: it.name) }
-                    .mergedBy(LinkedHashMap()) { it.name.lowercase(Locale.ROOT) },
+                    .mergedBy(LinkedHashMap()) { it.name.lowercase() },
                 albums = stored.albums.mergedBy(LinkedHashMap()) { albumKey(it.name, it.sub.orEmpty()) },
                 hours = LongArray(24) { stored.hours.getOrElse(it) { 0L } },
                 days = stored.days.toMutableMap(),
@@ -532,19 +535,19 @@ object ListeningStats {
 
         fun add(bucket: StoredBucket) {
             bucket.tracks.forEach { entry ->
-                tracks.merge(entry.id, entry.copy()) { a, b -> a.also { it.absorb(b) } }
+                tracks.mergeWith(entry.id, entry.copy()) { a, b -> a.also { it.absorb(b) } }
             }
             bucket.artists.forEach { entry ->
                 val lead = entry.copy(name = primaryArtist(entry.name) ?: entry.name)
-                artists.merge(lead.name.lowercase(Locale.ROOT), lead) { a, b -> a.also { it.absorb(b) } }
+                artists.mergeWith(lead.name.lowercase(), lead) { a, b -> a.also { it.absorb(b) } }
             }
             bucket.albums.forEach { entry ->
                 val key = albumKey(entry.name, entry.sub.orEmpty())
-                albums.merge(key, entry.copy()) { a, b -> a.also { it.absorb(b) } }
+                albums.mergeWith(key, entry.copy()) { a, b -> a.also { it.absorb(b) } }
             }
             repeat(24) { hours[it] += bucket.hours.getOrElse(it) { 0L } }
             bucket.days.forEach { (day, ms) ->
-                val date = "${bucket.month}-%02d".format(day)
+                val date = "${bucket.month}-${two(day)}"
                 days[date] = (days[date] ?: 0L) + ms
             }
             if (earliest == null || bucket.month < earliest!!) earliest = bucket.month
@@ -553,35 +556,36 @@ object ListeningStats {
         /** Add all day-level sub-buckets for weekly queries. */
         fun addDaySubs(bucket: StoredBucket) {
             bucket.trackDays?.forEach { (dateStr, stats) ->
-                trackDays.merge(dateStr, stats) { a, b -> DayStats(a.ms + b.ms, a.plays + b.plays) }
+                trackDays.mergeWith(dateStr, stats) { a, b -> DayStats(a.ms + b.ms, a.plays + b.plays) }
             }
             bucket.artistDays?.forEach { (dateStr, stats) ->
-                artistDays.merge(dateStr, stats) { a, b -> DayStats(a.ms + b.ms, a.plays + b.plays) }
+                artistDays.mergeWith(dateStr, stats) { a, b -> DayStats(a.ms + b.ms, a.plays + b.plays) }
             }
             bucket.albumDays?.forEach { (dateStr, stats) ->
-                albumDays.merge(dateStr, stats) { a, b -> DayStats(a.ms + b.ms, a.plays + b.plays) }
+                albumDays.mergeWith(dateStr, stats) { a, b -> DayStats(a.ms + b.ms, a.plays + b.plays) }
             }
         }
 
         /** Add only the days that fall within [range], keyed as "YYYY-MM-DD". */
-        fun add(bucket: StoredBucket, range: Pair<LocalDate, LocalDate>) {
+        fun add(bucket: StoredBucket, range: Pair<CivilDate, CivilDate>) {
             // Merge entity-level data (tracks/artists/albums) so weekRange() can read them.
             bucket.tracks.forEach { entry ->
-                tracks.merge(entry.id, entry.copy()) { a, b -> a.also { it.absorb(b) } }
+                tracks.mergeWith(entry.id, entry.copy()) { a, b -> a.also { it.absorb(b) } }
             }
             bucket.artists.forEach { entry ->
                 val lead = entry.copy(name = primaryArtist(entry.name) ?: entry.name)
-                artists.merge(lead.name.lowercase(Locale.ROOT), lead) { a, b -> a.also { it.absorb(b) } }
+                artists.mergeWith(lead.name.lowercase(), lead) { a, b -> a.also { it.absorb(b) } }
             }
             bucket.albums.forEach { entry ->
                 val key = albumKey(entry.name, entry.sub.orEmpty())
-                albums.merge(key, entry.copy()) { a, b -> a.also { it.absorb(b) } }
+                albums.mergeWith(key, entry.copy()) { a, b -> a.also { it.absorb(b) } }
             }
             // Merge day-level sub-buckets for the flat days map and cross-month totals.
             addDaySubs(bucket)
             bucket.days.forEach { (day, ms) ->
-                val candidate = "${bucket.month}-%02d".format(day)
-                val date = runCatching { LocalDate.parse(candidate.replace("-", "/")) }.getOrNull()
+                val candidate = "${bucket.month}-${two(day)}"
+                // ponytail: "/" never parses, so a week's busiest day stays empty - kept as Android has always behaved.
+                val date = CivilDate.parse(candidate.replace("-", "/"))
                     ?: return@forEach
                 if (date >= range.first && date <= range.second) {
                     days[candidate] = (days[candidate] ?: 0L) + ms
@@ -589,7 +593,7 @@ object ListeningStats {
             }
         }
 
-        fun toSummary(period: ReplayPeriod, today: LocalDate): ReplaySummary {
+        fun toSummary(period: ReplayPeriod, today: CivilDate): ReplaySummary {
             // For weekly mode, compute per-entity totals from day-level sub-buckets.
             val weekRange = if (period.needsDayFilter()) period.range(today) else null
 
@@ -764,7 +768,7 @@ object ListeningStats {
      * treated as a binary by every tool that looked at it.
      */
     private fun albumKey(name: String, artist: String): String =
-        name.lowercase(Locale.ROOT) + ALBUM_KEY_SEPARATOR + artist.lowercase(Locale.ROOT)
+        name.lowercase() + ALBUM_KEY_SEPARATOR + artist.lowercase()
 
     /** @see albumKey */
     private val ALBUM_KEY_SEPARATOR = Char(UNIT_SEPARATOR).toString()
@@ -813,7 +817,7 @@ object ListeningStats {
     )
 
     private const val TAG = "LayaListening"
-    private const val DIRECTORY = "listening"
+    const val DIRECTORY ="listening"
 
     /** How far down the artist chart a page opening will send lookups for. */
     private const val ARTISTS_TO_RESOLVE = 15
@@ -863,7 +867,7 @@ data class TrackEntry(
         // Merge per-day sub-buckets.
         if (other.days.isNotEmpty()) {
             other.days.forEach { (dateKey, stats) ->
-                days.computeIfAbsent(dateKey) { DayStats() }.also { existing ->
+                days.getOrPut(dateKey) { DayStats() }.also { existing ->
                     existing.ms += stats.ms
                     existing.plays += stats.plays
                 }
@@ -872,12 +876,12 @@ data class TrackEntry(
     }
 
     /** Sum ms/plays for days that fall within [range]. Falls back to full totals if .days is empty. */
-    fun weekRange(range: Pair<LocalDate, LocalDate>): Pair<Long, Int> {
+    fun weekRange(range: Pair<CivilDate, CivilDate>): Pair<Long, Int> {
         var totalMs = 0L
         var totalPlays = 0
         if (days.isNotEmpty()) {
             for ((dateStr, stats) in days) {
-                val date = runCatching { LocalDate.parse(dateStr) }.getOrNull() ?: continue
+                val date = CivilDate.parse(dateStr) ?: continue
                 if (date >= range.first && date <= range.second) {
                     totalMs += stats.ms
                     totalPlays += stats.plays
@@ -924,7 +928,7 @@ data class NameEntry(
         // Merge per-day sub-buckets.
         if (other.days.isNotEmpty()) {
             other.days.forEach { (dateKey, stats) ->
-                days.computeIfAbsent(dateKey) { DayStats() }.also { existing ->
+                days.getOrPut(dateKey) { DayStats() }.also { existing ->
                     existing.ms += stats.ms
                     existing.plays += stats.plays
                 }
@@ -933,12 +937,12 @@ data class NameEntry(
     }
 
     /** Sum ms/plays for days that fall within [range]. Falls back to full totals if .days is empty. */
-    fun weekRange(range: Pair<LocalDate, LocalDate>): Pair<Long, Int> {
+    fun weekRange(range: Pair<CivilDate, CivilDate>): Pair<Long, Int> {
         var totalMs = 0L
         var totalPlays = 0
         if (days.isNotEmpty()) {
             for ((dateStr, stats) in days) {
-                val date = runCatching { LocalDate.parse(dateStr) }.getOrNull() ?: continue
+                val date = CivilDate.parse(dateStr) ?: continue
                 if (date >= range.first && date <= range.second) {
                     totalMs += stats.ms
                     totalPlays += stats.plays
@@ -994,27 +998,25 @@ enum class ReplayPeriod(val chip: String) {
     ;
 
     /** The inclusive date range this period covers. Null for ALL_TIME. */
-    fun range(today: LocalDate): Pair<LocalDate, LocalDate>? = when (this) {
+    fun range(today: CivilDate): Pair<CivilDate, CivilDate>? = when (this) {
         THIS_WEEK -> {
-            val start = today.with(java.time.DayOfWeek.MONDAY)
-            start to today
+            today.mondayOfWeek() to today
         }
         THIS_MONTH -> {
-            val ym = YearMonth.from(today)
+            val ym = CivilMonth.of(today)
             ym.atDay(1) to ym.atEndOfMonth()
         }
-        THIS_YEAR -> LocalDate.of(today.year, 1, 1) to LocalDate.of(today.year, 12, 31)
+        THIS_YEAR -> CivilDate(today.year, 1, 1) to CivilDate(today.year, 12, 31)
         ALL_TIME -> null
     }
 
-    fun covers(month: YearMonth, today: LocalDate): Boolean = when (this) {
+    fun covers(month: CivilMonth, today: CivilDate): Boolean = when (this) {
         THIS_WEEK -> {
-            val range = month.atDay(1)..month.atEndOfMonth()
-            val weekStart = today.with(java.time.DayOfWeek.MONDAY)
+            val weekStart = today.mondayOfWeek()
             val weekEnd = today
-            !(weekEnd < range.start || weekStart > range.endInclusive)
+            !(weekEnd < month.atDay(1) || weekStart > month.atEndOfMonth())
         }
-        THIS_MONTH -> month == YearMonth.from(today)
+        THIS_MONTH -> month == CivilMonth.of(today)
         THIS_YEAR -> month.year == today.year
         ALL_TIME -> true
     }
@@ -1022,14 +1024,18 @@ enum class ReplayPeriod(val chip: String) {
     /** Whether this period needs day-level filtering (week spans potentially multiple months). */
     fun needsDayFilter(): Boolean = this == THIS_WEEK
 
-    fun label(today: LocalDate): String = when (this) {
+    fun label(today: CivilDate): String = when (this) {
         THIS_WEEK -> "This week"
-        THIS_MONTH -> YearMonth.from(today).month.name.lowercase(Locale.ROOT)
-            .replaceFirstChar { it.uppercase(Locale.ROOT) } + " ${today.year}"
+        THIS_MONTH -> ENGLISH_MONTHS[today.month - 1] + " ${today.year}"
         THIS_YEAR -> today.year.toString()
         ALL_TIME -> "All time"
     }
 }
+
+private val ENGLISH_MONTHS = listOf(
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+)
 
 /**
  * Everything the Replay page and the stories draw, worked out once.
@@ -1077,4 +1083,10 @@ data class ReplaySummary(
         .filter { it.value > 0 }
         .maxByOrNull { it.value }
         ?.index
+}
+
+/** [Map.merge] is JVM-only: put [value], or fold it into what [key] already holds. */
+private inline fun <K, V> MutableMap<K, V>.mergeWith(key: K, value: V, combine: (V, V) -> V) {
+    val existing = this[key]
+    this[key] = if (existing == null) value else combine(existing, value)
 }

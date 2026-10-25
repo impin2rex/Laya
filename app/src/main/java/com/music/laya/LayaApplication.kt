@@ -45,8 +45,8 @@ import com.music.laya.data.settings.init
 import com.music.laya.data.settings.SearchHistory
 import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.sources.AndroidSourcesHost
-import com.music.laya.data.stats.ArtistFacts
-import com.music.laya.data.stats.ListeningStats
+import com.music.laya.data.stats.initArtistFacts
+import com.music.laya.data.stats.initListening
 import com.music.laya.download.Downloads
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -174,9 +174,9 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // The device's own listening record. Opened here rather than in
         // PlaybackService because the Replay page reads it from the UI side and
         // both live in this process — one owner, one directory.
-        ListeningStats.init(this)
+        initListening(this)
         // After AppSettings, whose switch decides whether half of it runs.
-        ArtistFacts.init(this)
+        initArtistFacts(this)
         // One cache directory can only be opened once per process, and
         // PlaybackService shares this one — so it's opened here, not there.
         AudioCache.init(this)
