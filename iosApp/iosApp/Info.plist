@@ -30,6 +30,18 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- laya://party/<CODE> invites; the https invite links need an associated domain the party server would have to host. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.music.laya.party</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>laya</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

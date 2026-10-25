@@ -13,6 +13,7 @@ struct iOSApp: App {
     var body: some Scene {
         WindowGroup {
             ComposeView().ignoresSafeArea()
+                .onOpenURL { url in _ = IosPartyKt.handleInviteUrl(url: url.absoluteString) }
         }
     }
 }
