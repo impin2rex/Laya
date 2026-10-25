@@ -70,6 +70,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     init {
         engine.setListener(this)
+        IosVolume.level.value = engine.systemVolume()
+        IosVolume.setter = engine::setSystemVolume
         IosPlayerStore.load()?.let { s ->
             queue = s.songs; index = s.index; pendingMs = s.positionMs; durationMs = s.durationMs
             position.report(s.positionMs)
@@ -79,6 +81,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         listOf("UIApplicationWillResignActiveNotification", "UIApplicationDidEnterBackgroundNotification").forEach {
             NSNotificationCenter.defaultCenter.addObserverForName(it, null, NSOperationQueue.mainQueue) { _ -> saveState() }
         }
+        scope.launch { AppSettings.spatialAudio.collect { engine.setSpatialAudio(it) } }
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
         scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
         scope.launch { combine(Karaoke.enabled, Karaoke.level) { on, l -> on to l }.collect { (on, l) -> IosDsp.setKaraoke(on, l) } }
@@ -321,6 +324,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         println("IosPlayer: $message ($httpStatus)")
     }
 
+    override fun onVolumeChanged(level: Float) { IosVolume.level.value = level }
     override fun onRemoteNext() = next()
     override fun onRemotePrevious() = previous()
 }

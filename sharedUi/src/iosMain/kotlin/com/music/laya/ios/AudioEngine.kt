@@ -27,9 +27,16 @@ interface AudioEngine {
     /** Which effects need the audio tap: reverb / karaoke ([IosDsp]), and skip silence (Swift measures and speeds through the gap). */
     fun setEffects(dsp: Boolean, skipSilence: Boolean)
 
+    /** Settings > Spatial audio: let the system spatialize stereo / multichannel (AVPlayerItem.allowedAudioSpatializationFormats). */
+    fun setSpatialAudio(on: Boolean)
+
     fun setNowPlaying(title: String, artist: String, album: String?, artworkUrl: String?)
     fun setQueueCapabilities(hasNext: Boolean, hasPrevious: Boolean)
     fun setListener(listener: AudioEngineListener?)
+
+    /** The system output volume, 0..1. iOS only lets an app set it through a (hidden) MPVolumeView slider. */
+    fun systemVolume(): Float
+    fun setSystemVolume(level: Float)
 }
 
 interface AudioEngineListener {
@@ -40,6 +47,8 @@ interface AudioEngineListener {
 
     /** [httpStatus] is the googlevideo status that caused it, or 0 when it was not an HTTP refusal. */
     fun onError(message: String, httpStatus: Int)
+    /** Hardware keys, Control Center or our own slider moved the system volume. */
+    fun onVolumeChanged(level: Float)
     fun onRemoteNext()
     fun onRemotePrevious()
 }

@@ -256,6 +256,33 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         center.previousTrackCommand.isEnabled = hasPrevious
     }
 
+    // MARK: - System volume
+
+    private var volumeObservation: NSKeyValueObservation?
+    private lazy var volumeView: MPVolumeView = {
+        let v = MPVolumeView(frame: CGRect(x: -2000, y: -2000, width: 100, height: 40)) // offscreen: only its slider is used
+        v.alpha = 0.01
+        return v
+    }()
+
+    func systemVolume() -> Float {
+        if volumeObservation == nil {
+            volumeObservation = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.new]) { [weak self] _, change in
+                DispatchQueue.main.async { self?.listener?.onVolumeChanged(level: change.newValue ?? 1) }
+            }
+        }
+        return AVAudioSession.sharedInstance().outputVolume
+    }
+
+    func setSystemVolume(level: Float) {
+        // The slider only exists once the view is in a window.
+        if volumeView.superview == nil {
+            let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+            (scene?.windows.first(where: \.isKeyWindow) ?? scene?.windows.first)?.addSubview(volumeView)
+        }
+        (volumeView.subviews.first { $0 is UISlider } as? UISlider)?.value = level
+    }
+
     // MARK: - Items
 
     private func makeItem(url: String, headers: [String: String], mimeType: String,
@@ -292,8 +319,21 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         return item
     }
 
+    private var spatial = false
+
+    /// "Spatial audio" setting: lets AirPods / the system spatialize stereo and multichannel, or keeps the mix as is.
+    func setSpatialAudio(on: Bool) {
+        spatial = on
+        [currentItem, nextItem].forEach { $0.map(applySpatial) }
+    }
+
+    private func applySpatial(_ item: AVPlayerItem) {
+        item.allowedAudioSpatializationFormats = spatial ? .monoStereoAndMultichannel : []
+    }
+
     private func prepare(_ item: AVPlayerItem) {
         item.audioTimePitchAlgorithm = .spectral
+        applySpatial(item)
         if EqualizerTuning.wanted { EqualizerTap.attach(to: item) }
     }
 
