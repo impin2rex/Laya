@@ -57,7 +57,7 @@ class JioSaavnSource(
                 durationText = raw.moreInfo.duration.toIntOrNull()?.let { seconds ->
                     val m = seconds / 60
                     val s = seconds % 60
-                    String.format("%d:%02d", m, s)
+                    "$m:${s.toString().padStart(2, '0')}"
                 },
                 sourceQuality = "HIGH",
                 isExplicit = raw.isExplicit,
