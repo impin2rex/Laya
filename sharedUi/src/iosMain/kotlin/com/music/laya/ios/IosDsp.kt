@@ -196,6 +196,7 @@ class IosDeck internal constructor() {
         val render = live.renderFor(mine)
         if (side != mine) {
             side = mine
+            lastMediaSec = Double.NaN; lastHostSec = Double.NaN // a previous blend's last block is not this one's clock
             live.filtersFor(mine).dsp = filter
             filter.open()
             filter.parkEcho()

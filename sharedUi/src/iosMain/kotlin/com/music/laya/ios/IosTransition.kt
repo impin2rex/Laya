@@ -64,6 +64,8 @@ object IosTransition {
     private val ease = TempoEase()
     private var handedOff = false
     private var nextLog = 0.0
+    private var startLogged = false
+    private var beganAt = 0.0
 
     /** The incoming speed [drive] wants set, absolute (the listener's speed included), or NaN to leave it. */
     var inSpeed = Float.NaN
@@ -122,6 +124,8 @@ object IosTransition {
         curInSpeed = Float.NaN
         lock.start(nowMs)
         nextLog = 0.0
+        startLogged = false
+        beganAt = nowMs / 1000.0
         live = Live(p, outKey, inKey, startSec, span, wallSpanIn, outDurationSec)
         val r = live!!.outRender
         println(
@@ -174,20 +178,33 @@ object IosTransition {
         if (progress >= 1.0 && tailDone) verdict = verdict or DONE
 
         inSpeed = Float.NaN
-        if (r.phaseLock && verdict and DONE == 0) {
-            val p = l.plan
-            val out = IosDsp.deck(l.outKey)
-            val inn = IosDsp.deck(l.inKey)
-            if (p != null && out != null && inn != null) {
-                val outSpeed = speed * p.outRate
-                val inCur = if (curInSpeed.isNaN()) speed * p.inRate else curInSpeed.toDouble()
-                // Both read at one host time, from what each tap last produced: the same pipeline stage on either
-                // deck, so the start latency of the incoming player cancels instead of reading as phase error.
-                val error = lock.error(
-                    p.outAnalysis, out.mediaAt(hostSec, outSpeed.toDouble()),
-                    p.inAnalysis, inn.mediaAt(hostSec, inCur),
-                    p.inRate / p.outRate,
-                )
+        // The phase error is measured whenever there are grids to measure (the planner leaves the nudge itself off, as
+        // Android's does, so it only moves the speed when [TransitionRender.phaseLock] says so).
+        val p = l.plan
+        val out = IosDsp.deck(l.outKey)
+        val inn = IosDsp.deck(l.inKey)
+        var error = Double.NaN
+        if (!startLogged && p != null && out != null && inn != null && !inn.lastMediaSec.isNaN() && !out.lastMediaSec.isNaN()) {
+            startLogged = true
+            // Where each deck was when the incoming one first sounded: it should be at its cue as the outgoing is at the start.
+            val atIn = inn.lastHostSec
+            println(
+                "Transition: incoming first block ${fmt((atIn - beganAt) * 1000)}ms after begin at media ${fmt(inn.lastMediaSec)}s " +
+                    "(cue ${fmt(p.cueSec)}s, ${fmt((inn.lastMediaSec - p.cueSec) * 1000)}ms late); outgoing then at " +
+                    "${fmt(out.mediaAt(atIn, speed * p.outRate))}s (start ${fmt(l.startSec)}s)",
+            )
+        }
+        if (p != null && p.beatMs > 0 && out != null && inn != null && verdict and DONE == 0) {
+            val outSpeed = speed * p.outRate
+            val inCur = if (curInSpeed.isNaN()) speed * p.inRate else curInSpeed.toDouble()
+            // Both read at one host time, from what each tap last produced: the same pipeline stage on either
+            // deck, so the start latency of the incoming player cancels instead of reading as phase error.
+            error = lock.error(
+                p.outAnalysis, out.mediaAt(hostSec, outSpeed.toDouble()),
+                p.inAnalysis, inn.mediaAt(hostSec, inCur),
+                p.inRate / p.outRate,
+            )
+            if (r.phaseLock) {
                 val s = lock.update(
                     nowMs, progress.toFloat(), outPlaying, inPlaying,
                     base = (speed * p.inRate).toFloat(), incomingPlaybackRate = p.inRate, errorSeconds = error,
@@ -200,26 +217,26 @@ object IosTransition {
                             "(nudging=${lock.nudging})",
                     )
                 }
-                if (hostSec >= nextLog) {
-                    nextLog = hostSec + LOG_EVERY_SEC
-                    println(logLine(l, progress, error))
-                }
             }
-        } else if (hostSec >= nextLog) {
+        }
+        if (hostSec >= nextLog) {
             nextLog = hostSec + LOG_EVERY_SEC
-            println(logLine(l, progress, Double.NaN))
+            println(logLine(l, progress, error, hostSec, outPosSec, inPosSec, speed))
         }
         return verdict
     }
 
-    private fun logLine(l: Live, progress: Double, error: Double): String {
+    private fun logLine(l: Live, progress: Double, error: Double, hostSec: Double, outPos: Double, inPos: Double, speed: Float): String {
         val out = IosDsp.deck(l.outKey)
         val inn = IosDsp.deck(l.inKey)
         fun side(d: IosDeck?) = if (d == null) "-" else
             "lp=${fmt(d.lastLowPassHz.toDouble())} hp=${fmt(d.lastHighPassHz.toDouble())} g=${fmt(d.lastGain.toDouble())}" +
                 (if (d.lastEcho) " echo" else "")
-        return "Transition: p=${fmt(progress)} out[${side(out)}] in[${side(inn)}] " +
-            "speed in=${fmt(curInSpeed.toDouble())} phaseErr=${if (error.isNaN()) "n/a" else fmt(error * 1000) + "ms"}"
+        // How far each tap runs ahead of what is audible: its last block's media time carried to now, minus the deck's playhead.
+        val leadOut = out?.mediaAt(hostSec, (speed * (l.plan?.outRate ?: 1.0))) ?.minus(outPos) ?: Double.NaN
+        val leadIn = inn?.mediaAt(hostSec, (speed * (l.plan?.inRate ?: 1.0)))?.minus(inPos) ?: Double.NaN
+        return "Transition: p=${fmt(progress)} lead out=${fmt(leadOut * 1000)}ms in=${fmt(leadIn * 1000)}ms out[${side(out)}] in[${side(inn)}] " +
+            "speed in=${if (curInSpeed.isNaN()) "n/a" else fmt(curInSpeed.toDouble())} phaseErr=${if (error.isNaN()) "n/a" else fmt(error * 1000) + "ms"}"
     }
 
     // ---- After the blend: the tempo ease on a track that was stretched for a blend that never came ----
