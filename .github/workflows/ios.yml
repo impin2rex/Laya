@@ -8,7 +8,13 @@ on:
       - 'shared/**'
       - 'sharedUi/**'
       - '.github/workflows/ios.yml'
+    # A release tag also builds the IPA and attaches it to the release that release.yml drafts.
+    # Separate from release.yml so the 20+ minute iOS build never holds up the other platforms.
+    tags: ["v*.*.*"]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 concurrency:
   group: ios-${{ github.ref }}
@@ -17,15 +23,25 @@ concurrency:
 jobs:
   build-ipa:
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 150
     env:
       # Runner has an Android SDK; point at nothing so settings.gradle.kts only configures KMP modules.
       ANDROID_HOME: /nonexistent
       ANDROID_SDK_ROOT: /nonexistent
+      SIGNATURE_API_URL: ${{ secrets.SIGNATURE_API_URL }}
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+
+    - name: Work out the version
+      id: version
+      run: |
+        if [ "${{ github.ref_type }}" = "tag" ]; then
+          echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        else
+          echo "value=$(sed -n 's/^ *MARKETING_VERSION: *"\(.*\)"/\1/p' iosApp/project.yml)" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -57,6 +73,7 @@ jobs:
           -sdk iphoneos \
           -destination 'generic/platform=iOS' \
           -derivedDataPath build/dd \
+          MARKETING_VERSION=${{ steps.version.outputs.value }} \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
@@ -67,7 +84,7 @@ jobs:
       run: |
         APP=build/dd/Build/Products/Release-iphoneos/Laya.app
         find "$APP" -type d -empty -delete
-        # Embedded frameworks (ONNX Runtime) are signed before the bundle that contains them.
+        # Embedded frameworks (ONNX Runtime, Google Cast) are signed before the bundle that contains them.
         for f in "$APP"/Frameworks/*.framework; do [ -e "$f" ] && codesign --force --sign - --timestamp=none "$f"; done
         codesign --force --sign - --timestamp=none --generate-entitlement-der "$APP"
         codesign --verify --strict --verbose=2 "$APP"
@@ -76,10 +93,29 @@ jobs:
       run: |
         mkdir -p build/ipa/Payload
         cp -R build/dd/Build/Products/Release-iphoneos/Laya.app build/ipa/Payload/
-        cd build/ipa && zip -qry ../Laya.ipa Payload
+        cd build/ipa && zip -qry "../Laya-${{ steps.version.outputs.value }}-ios.ipa" Payload
 
     - uses: actions/upload-artifact@v4
       with:
         name: Laya-ipa
-        path: build/Laya.ipa
+        path: build/Laya-*-ios.ipa
         retention-days: 30
+
+    # release.yml creates the (draft) release when its own jobs finish, which may be after this one.
+    # Wait for it rather than create a second release for the same tag.
+    - name: Attach to the release
+      if: github.ref_type == 'tag'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        tag="${GITHUB_REF_NAME}"
+        for i in $(seq 1 90); do
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" build/Laya-*-ios.ipa --clobber --repo "$GITHUB_REPOSITORY"
+            exit 0
+          fi
+          echo "Release $tag not there yet ($i/90); waiting"
+          sleep 60
+        done
+        echo "::error::No release for $tag after 90 minutes; the IPA is in this run's artifacts"
+        exit 1

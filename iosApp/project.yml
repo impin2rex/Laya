@@ -7,8 +7,9 @@ options:
   preGenCommand: sh scripts/fetch-cast-sdk.sh
 settings:
   base:
-    MARKETING_VERSION: "0.0.1"
-    CURRENT_PROJECT_VERSION: "1"
+    # A tag build overrides this with the tag's version (.github/workflows/ios.yml).
+    MARKETING_VERSION: "1.9.1"
+    CURRENT_PROJECT_VERSION: "32"
 packages:
   onnxruntime:
     url: https://github.com/microsoft/onnxruntime-swift-package-manager
