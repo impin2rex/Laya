@@ -76,7 +76,16 @@ import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.HomeShelf
 import com.music.laya.data.model.LikeStatus
 import com.music.laya.data.model.MoodGenreSection
+import com.music.laya.data.model.EntityType
 import com.music.laya.data.model.SearchFilter
+import com.music.laya.data.model.SearchHistoryEntity
+import com.music.laya.data.model.toSong
+import com.music.laya.ui.screens.SegmentedControl
+import com.music.laya.sharedui.resources.library
+import com.music.laya.sharedui.resources.search_source_addons
+import com.music.laya.sharedui.resources.search_source_youtube
+import org.jetbrains.compose.resources.stringResource
+import kotlinx.coroutines.delay
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.ShelfItem
 import com.music.laya.data.model.Song
@@ -338,12 +347,69 @@ fun LayaIosApp(engine: AudioEngine) {
     var query by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(SearchFilter.ALL) }
     var results by remember { mutableStateOf<UiState<List<SearchResult>>?>(null) }
-    suspend fun search() {
+    var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var typeahead by remember { mutableStateOf<List<SearchResult>>(emptyList()) }
+    var searchSubmitted by remember { mutableStateOf(false) }
+    var searchSource by remember { mutableIntStateOf(0) } // 0 YouTube, 1 Library, 2 Addons
+    var searchContinuation by remember { mutableStateOf<String?>(null) }
+    var searchLoadingMore by remember { mutableStateOf(false) }
+    val searchHistory by IosSearchHistory.recent.collectAsState()
+    suspend fun search(anonymous: Boolean = true) {
         if (query.isBlank()) return
+        searchSubmitted = true
+        suggestions = emptyList(); typeahead = emptyList()
+        searchContinuation = null
         results = UiState.Loading
-        results = YtMusicRepository.searchPage(query, filter).fold({ UiState.Success(it.rows) }, { UiState.Error(it.message ?: "Error") })
+        results = YtMusicRepository.searchPage(query, filter, anonymous).fold(
+            { searchContinuation = it.continuation; UiState.Success(it.rows) },
+            { UiState.Error(it.message ?: "Error") },
+        )
     }
-    // ponytail: first page only (no loadMore), no history/suggestions yet.
+    fun onQueryChange(value: String) {
+        query = value
+        searchSubmitted = false
+        if (value.isBlank()) { suggestions = emptyList(); typeahead = emptyList(); results = null }
+    }
+    fun searchFor(term: String) { query = term; scope.launch { search() } }
+    // Typing: completions (led by the raw text) and live media, debounced; cancelled by the next keystroke or a submit.
+    LaunchedEffect(query, searchSubmitted, searchSource) {
+        if (searchSubmitted || searchSource != 0 || query.isBlank()) return@LaunchedEffect
+        delay(200)
+        val input = query
+        coroutineScope {
+            launch {
+                YtMusicRepository.searchSuggestions(input).getOrNull()?.let { fetched ->
+                    if (!searchSubmitted && query == input) {
+                        suggestions = listOf(input) + fetched.filterNot { it.equals(input, ignoreCase = true) }
+                    }
+                }
+            }
+            launch {
+                YtMusicRepository.searchTypeahead(input).getOrNull()?.let { page ->
+                    if (!searchSubmitted && query == input) typeahead = page.rows.take(4)
+                }
+            }
+        }
+    }
+    fun loadMoreSearch() {
+        val token = searchContinuation ?: return
+        if (searchLoadingMore) return
+        searchLoadingMore = true
+        scope.launch {
+            val f = filter
+            YtMusicRepository.searchContinuation(token, f).onSuccess { page ->
+                if (f == filter) {
+                    val current = (results as? UiState.Success)?.data.orEmpty()
+                    results = UiState.Success(current + page.rows)
+                    searchContinuation = page.continuation
+                }
+            }
+            searchLoadingMore = false
+        }
+    }
+    fun recordSong(song: Song) = IosSearchHistory.record(
+        SearchHistoryEntity(song.videoId, song.title, song.artist, song.thumbnailUrl, EntityType.TRACK),
+    )
 
     // Lyrics for the playing song, once its duration is known.
     val song = player.song
@@ -608,32 +674,74 @@ fun LayaIosApp(engine: AudioEngine) {
                             )
                             else -> SearchScreen(
                                 query = query,
-                                onQueryChange = { query = it },
+                                onQueryChange = ::onQueryChange,
                                 filter = filter,
                                 currentSong = song,
                                 isPlaying = player.isPlaying,
                                 onFilterChange = { filter = it; scope.launch { search() } },
                                 results = results,
-                                loadingMore = false,
-                                onLoadMore = {},
+                                loadingMore = searchLoadingMore,
+                                onLoadMore = ::loadMoreSearch,
                                 listState = searchList,
                                 scrollResetTrigger = 0,
                                 focusRequested = false,
                                 onFocusHandled = {},
-                                onSongClick = { songs, i -> player.play(songs, i) },
+                                onSongClick = { songs, i ->
+                                    songs.getOrNull(i)?.let(::recordSong)
+                                    player.play(songs, i)
+                                },
                                 onSongLongPress = { menuSong = it },
                                 onSongSwipe = ::swipe,
-                                onTopResultPlay = { player.play(listOf(it), 0) },
-                                onTopResultPlaylist = {},
-                                onBrowseClick = { openDetail(it.browseId, it.title, it.subtitle, it.thumbnailUrl, it.type) },
-                                history = emptyList(),
-                                suggestions = emptyList(),
-                                typeaheadResults = emptyList(),
-                                onSubmit = { scope.launch { search() } },
-                                onSuggestionClick = { query = it; scope.launch { search() } },
-                                onHistoryClick = {},
-                                onHistoryRemove = {},
-                                onHistoryClear = {},
+                                onTopResultPlay = { recordSong(it); player.play(listOf(it), 0) },
+                                onTopResultPlaylist = { recordSong(it); menuSong = it },
+                                onBrowseClick = {
+                                    IosSearchHistory.record(SearchHistoryEntity(
+                                        it.browseId, it.title, it.subtitle, it.thumbnailUrl,
+                                        when (it.type) {
+                                            BrowseType.ALBUM -> EntityType.ALBUM
+                                            BrowseType.ARTIST -> EntityType.ARTIST
+                                            BrowseType.PLAYLIST -> EntityType.PLAYLIST
+                                            else -> EntityType.TRACK
+                                        },
+                                    ))
+                                    openDetail(it.browseId, it.title, it.subtitle, it.thumbnailUrl, it.type)
+                                },
+                                history = searchHistory,
+                                suggestions = suggestions,
+                                typeaheadResults = typeahead,
+                                onSubmit = { scope.launch { search(anonymous = false) } },
+                                onSuggestionClick = ::searchFor,
+                                onHistoryClick = { e ->
+                                    val s = e.toSong()
+                                    when {
+                                        s != null -> player.play(listOf(s), 0)
+                                        e.id.startsWith("q:") -> searchFor(e.title)
+                                        else -> openDetail(e.id, e.title, e.subtitle, e.artworkUrl)
+                                    }
+                                },
+                                onHistoryRemove = IosSearchHistory::remove,
+                                onHistoryClear = IosSearchHistory::clear,
+                                onTypeaheadLongPress = { menuSong = it },
+                                sourceSwitcher = {
+                                    SegmentedControl(
+                                        options = listOf(
+                                            stringResource(Res.string.search_source_youtube),
+                                            stringResource(Res.string.library),
+                                            stringResource(Res.string.search_source_addons),
+                                        ),
+                                        selectedIndex = searchSource,
+                                        onSelect = {
+                                            searchSource = it
+                                            suggestions = emptyList(); typeahead = emptyList()
+                                            if (it == 0 && query.isNotBlank()) scope.launch { search() }
+                                        },
+                                    )
+                                },
+                                // No Local Music folder or addons on iOS yet: both sources answer "nothing", as Android does with none.
+                                searchingLibrary = searchSource == 1,
+                                libraryResults = if (query.isBlank()) null else UiState.Success(emptyList()),
+                                searchingAddons = searchSource == 2,
+                                addonResults = if (searchSubmitted) UiState.Success(emptyList()) else null,
                                 contentPadding = noPadding,
                                 // Below the floating account pill, as Android leaves room for its top bar.
                                 topPadding = com.music.laya.ui.components.topBarContentPadding(),

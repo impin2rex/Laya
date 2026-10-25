@@ -510,4 +510,5 @@
     <string name="spotify_import_unmatched">%1$d 曲が YouTube Music で見つかりませんでした</string>
     <string name="spotify_import_empty_playlist">このプレイリストに曲はありません</string>
     <string name="spotify_import_local_fallback">YouTube Music に作成できなかったため、「%1$s」をこの端末に保存しました。</string>
+    <string name="search_source_addons">アドオン</string>
 </resources>

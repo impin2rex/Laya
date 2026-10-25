@@ -510,4 +510,5 @@
     <string name="spotify_import_unmatched">%1$d lagu tidak ditemukan di YouTube Music</string>
     <string name="spotify_import_empty_playlist">Tidak ada lagu di playlist ini</string>
     <string name="spotify_import_local_fallback">Tidak bisa dibuat di YouTube Music, jadi ‘%1$s’ disimpan di perangkat ini.</string>
+    <string name="search_source_addons">Addon</string>
 </resources>

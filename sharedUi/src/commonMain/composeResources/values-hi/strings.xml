@@ -511,4 +511,5 @@
     <string name="spotify_import_unmatched">%1$d गाने YouTube Music पर नहीं मिले</string>
     <string name="spotify_import_empty_playlist">इस प्लेलिस्ट में कोई गाना नहीं</string>
     <string name="spotify_import_local_fallback">इसे YouTube Music पर नहीं बनाया जा सका, इसलिए ‘%1$s’ इस डिवाइस पर सहेज ली गई.</string>
+    <string name="search_source_addons">ऐडऑन</string>
 </resources>

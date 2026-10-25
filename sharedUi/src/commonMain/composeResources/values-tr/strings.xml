@@ -511,4 +511,5 @@
     <string name="spotify_import_unmatched">%1$d şarkı YouTube Music’de bulunamadı</string>
     <string name="spotify_import_empty_playlist">Bu çalma listesinde şarkı yok</string>
     <string name="spotify_import_local_fallback">YouTube Music’de oluşturulamadı, bu yüzden ‘%1$s’ bu cihaza kaydedildi.</string>
+    <string name="search_source_addons">Eklentiler</string>
 </resources>

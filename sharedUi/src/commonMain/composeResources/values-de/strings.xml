@@ -511,4 +511,5 @@
     <string name="spotify_import_unmatched">%1$d Titel wurden auf YouTube Music nicht gefunden</string>
     <string name="spotify_import_empty_playlist">Keine Titel in dieser Playlist</string>
     <string name="spotify_import_local_fallback">Konnte sie nicht auf YouTube Music anlegen, darum wurde „%1$s“ auf diesem Gerät gespeichert.</string>
+    <string name="search_source_addons">Addons</string>
 </resources>
