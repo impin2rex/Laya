@@ -219,6 +219,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         player.seek(to: time, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
             guard let self else { return }
             if self.seekingToMs == positionMs { self.seekingToMs = nil }
+            print("AudioEngine: seek landed requested=\(Double(positionMs) / 1000)s currentTime=\(self.player.currentTime().seconds)s")
             self.reportProgress()
             self.updateNowPlayingTiming()
         }

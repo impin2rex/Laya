@@ -595,6 +595,20 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        val env = NSProcessInfo.processInfo.environment
+        // LAYA_SEEK_TEST=<seconds,seconds,...> seeks there in turn (12 s apart) once the track plays.
+        (env["LAYA_SEEK_TEST"] as? String)?.let { list ->
+            while (player.durationMs <= 0 || !player.isPlaying) kotlinx.coroutines.delay(500)
+            kotlinx.coroutines.delay(8_000)
+            list.split(',').mapNotNull { it.trim().toLongOrNull() }.forEach { s ->
+                println("LAYA_SEEK_TEST: seek to ${s}s")
+                player.seekTo(s * 1000)
+                kotlinx.coroutines.delay(12_000)
+            }
+        }
+    }
+
     // Test hook: `simctl launch` with SIMCTL_CHILD_LAYA_AUTOPLAY=<query> searches and plays the first hit.
     LaunchedEffect(Unit) {
         val q = NSProcessInfo.processInfo.environment["LAYA_AUTOPLAY"] as? String ?: return@LaunchedEffect
