@@ -547,6 +547,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val env = NSProcessInfo.processInfo.environment
         if (env.keys.any { it.toString().startsWith("LAYA_") }) AppSettings.setOnboardingComplete() // hooks skip the intro
         if (env["LAYA_NERD"] != null) AppSettings.setShowNerdStats(true)
+        (env["LAYA_CROSSFADE"] as? String)?.toIntOrNull()?.let(AppSettings::setCrossfadeSeconds)
+        if (env["LAYA_AUTOMIX"] != null) AppSettings.setSmartFadeEnabled(env["LAYA_AUTOMIX"] == "1")
         // LAYA_REORDER=1 moves the first addon down one place; LAYA_UA=<agent> sets the first addon's custom User-Agent.
         SourceRegistry.configs.value.filter { it.kind == SourceKind.ADDON }.let { addons ->
             if (env["LAYA_REORDER"] != null && addons.size > 1) SourceRegistry.reorderAddons(addons.map { it.id }.let { it.drop(1) + it.take(1) })
@@ -574,6 +576,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         YtMusicRepository.search(q, SearchFilter.SONGS).getOrNull()
             ?.mapNotNull { (it as? SearchResult.Track)?.song ?: (it as? SearchResult.TopTrack)?.song }
             ?.let { if (it.isNotEmpty()) player.play(it, 0) }
+        // LAYA_SEEK_END=<seconds> jumps that far from the end of the first track once it plays, to watch the transition.
+        (NSProcessInfo.processInfo.environment["LAYA_SEEK_END"] as? String)?.toLongOrNull()?.let { s ->
+            while (player.durationMs <= 0 || !player.isPlaying) kotlinx.coroutines.delay(500)
+            player.seekTo(player.durationMs - s * 1000)
+        }
     }
 
     // A tapped invite link opens the Listen Together page, which asks before joining.

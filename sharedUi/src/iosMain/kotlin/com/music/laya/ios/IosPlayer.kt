@@ -46,6 +46,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSDate
@@ -104,8 +105,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         sleepMinutes = minutes
         sleepJob = scope.launch { delay(minutes * 60_000L); cancelSleep(); pauseOut() }
     }
-    fun startSleepAfterTrack() { cancelSleep(); sleepAfterTrack = true }
-    fun cancelSleep() { sleepJob?.cancel(); sleepJob = null; sleepMinutes = null; sleepAfterTrack = false }
+    fun startSleepAfterTrack() { cancelSleep(); sleepAfterTrack = true; syncTransition() }
+    fun cancelSleep() { sleepJob?.cancel(); sleepJob = null; sleepMinutes = null; sleepAfterTrack = false; syncTransition() }
 
     private var startJob: Job? = null
     private var nextJob: Job? = null
@@ -140,6 +141,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         party.start()
         scope.launch { AppSettings.spatialAudio.collect { IosDsp.setSpatial(it) } }
         scope.launch { AppSettings.playbackSpeed.collect { engine.setSpeed(it) } }
+        scope.launch {
+            combine(AppSettings.crossfadeSeconds, AppSettings.repeatMode, ListenTogether.state.map { it.inParty }) { _, _, _ -> }
+                .collect { syncTransition() }
+        }
         scope.launch { combine(AppSettings.reverbEnabled, AppSettings.reverb) { on, r -> on to r }.collect { (on, r) -> IosDsp.setReverb(on, r) } }
         scope.launch { combine(Karaoke.enabled, Karaoke.level) { on, l -> on to l }.collect { (on, l) -> IosDsp.setKaraoke(on, l) } }
         scope.launch { combine(Karaoke.enabled, Karaoke.warm) { on, warm -> on || warm }.distinctUntilChanged().collect { bindKaraoke() } }
@@ -165,6 +170,17 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                 )
             }
         }
+    }
+
+    /**
+     * Tells the engine whether the queued track is joined by a crossfade, under Android's CrossfadeController rules:
+     * never in a party (each member would start the next song at its own moment), on Cast, on repeat-one (a track
+     * fading into itself), or with the sleep timer due at this track's end (the pause would land mid-fade).
+     * A skip or a seek is never a fade: they restart or cancel the engine's.
+     */
+    private fun syncTransition() {
+        val off = IosCast.active || ListenTogether.state.value.inParty || sleepAfterTrack || autoNext() == index
+        engine.setTransition(-1, if (off) 0 else AppSettings.crossfadeSeconds.value * 1000L, 0, 1f)
     }
 
     /** A host that holds the controls takes them from every listener: the call does nothing. */
@@ -456,7 +472,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
-        if (next) engine.setNext(o.url, o.headers, o.mime, o.length, CHUNK_BYTES)
+        if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, CHUNK_BYTES) } // plan first: the engine parks the track by it
         else engine.play(o.url, o.headers, o.mime, o.length, CHUNK_BYTES)
     }
 
@@ -571,6 +587,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         val playing = isPlaying
         val at = pendingMs ?: position.positionMs
         engine.pause()
+        syncTransition()
         IosVolume.setter = { IosCast.native?.setVolume(it) }
         // A session that outlived the app and is already on this track keeps going instead of restarting.
         if (resumed && IosCast.native?.currentMediaId() == s.videoId) { pendingMs = null; castReconcile() } else castLoad(s, at, play = playing)

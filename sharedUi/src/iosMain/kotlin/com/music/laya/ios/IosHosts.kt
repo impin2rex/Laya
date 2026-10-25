@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 /** Everything not overridden is hidden on iOS; Phase 5/6 fill in accounts, Listen Together, downloads. */
 internal object IosSettingsHost : SettingsHost {
     override val hasEngineOptions = false // the AVPlayer engine has none of these yet
+    override val hasCrossfade = true
     override val hasLiquidGlassOption = false
     override val party = IosParty.info
     override val hasDownloads = true

@@ -15,7 +15,9 @@ import UIKit
 ///   Siri, alarms), headphone unplug, and the lock screen / Control Center
 ///   Now Playing card with its remote commands.
 final class AVAudioEngineImpl: NSObject, AudioEngine {
+    /// Two decks: `player` is the one the app sees; `idle` holds the next track while a crossfade is armed or running.
     private var player = AVQueuePlayer()
+    private var idle = AVQueuePlayer()
     private weak var listener: AudioEngineListener?
 
     private var timeObservers: [(AVQueuePlayer, Any)] = []
@@ -49,6 +51,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         super.init()
         configureSession()
         observeDeck(player)
+        observeDeck(idle)
 
         observeSystemEvents()
         configureRemoteCommands()
@@ -91,11 +94,21 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     // MARK: - AudioEngine
 
+    /// Kotlin calls from its IO threads as well as main, and a deck's queue and the fade state below are main-only.
+    /// Every call goes through main's FIFO, so their order is kept.
+    private func onMain(_ body: @escaping () -> Void) {
+        if Thread.isMainThread { body() } else { DispatchQueue.main.async(execute: body) }
+    }
+
     func setListener(listener: AudioEngineListener?) {
         self.listener = listener
     }
 
     func play(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
+        onMain { self.playOnMain(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes) }
+    }
+
+    private func playOnMain(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
         stop()
         IosDsp.shared.reset()
         setSkipping(false)
@@ -111,19 +124,30 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     func setNext(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
+        onMain { self.setNextOnMain(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes) }
+    }
+
+    private func setNextOnMain(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
+        if let f = fade, !f.swapped { return } // ponytail: a queue edit mid-fade keeps the track already fading in
         clearNext()
         guard currentItem != nil,
               let item = makeItem(url: url, headers: headers, mimeType: mimeType,
                                   contentLength: contentLength, chunkBytes: chunkBytes) else { return }
         nextItem = item
-        player.insert(item, after: currentItem)
+        fadeSkipped = false
+        place(item)
+        updateFadeTimer()
     }
 
-    func clearNext() {
+    func clearNext() { onMain { self.clearNextOnMain() } }
+
+    private func clearNextOnMain() {
+        if let f = fade, !f.swapped { return }
         guard let item = nextItem else { return }
         nextItem = nil
-        player.remove(item)
+        if parked { idle.removeAllItems(); parked = false } else { player.remove(item) }
         dropItem(item)
+        updateFadeTimer()
     }
 
     private func dropItem(_ item: AVPlayerItem) {
@@ -133,6 +157,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     func pause() {
         pausedByInterruption = false
         player.pause()
+        if fade != nil { idle.pause() }
         reportProgress()
     }
 
@@ -142,7 +167,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         reportProgress()
     }
 
-    func seekTo(positionMs: Int64) {
+    func seekTo(positionMs: Int64) { onMain { self.seekOnMain(positionMs: positionMs) } }
+
+    private func seekOnMain(positionMs: Int64) {
+        cancelFade()
         guard let item = player.currentItem, item.status == .readyToPlay else {
             pendingSeekMs = positionMs
             return
@@ -163,8 +191,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     func stop() {
-        player.pause()
-        player.removeAllItems()
+        for deck in [player, idle] { deck.pause(); deck.removeAllItems(); deck.volume = 1 }
+        fade = nil
+        parked = false
+        fadeSkipped = false
+        transition = Transition()
+        updateFadeTimer()
         statusObservation = nil
         currentItem = nil
         nextItem = nil
@@ -179,6 +211,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func go() {
         player.play()
         player.rate = skipping ? speed * 4 : speed
+        if fade != nil { idle.play(); idle.rate = speed }
     }
 
     func setSpeed(speed: Float) {
@@ -316,6 +349,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         let item = AVPlayerItem(asset: asset)
         item.preferredForwardBufferDuration = 30
         prepare(item)
+        adopt(loader, for: item)
+        return item
+    }
+
+    private func adopt(_ loader: ChunkedResourceLoader, for item: AVPlayerItem) {
         loader.onHTTPError = { [weak self, weak item] status in
             DispatchQueue.main.async {
                 // Only the playing item's refusal is actionable; a queued one is
@@ -325,7 +363,6 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             }
         }
         loaders[ObjectIdentifier(item)] = loader
-        return item
     }
 
     private func prepare(_ item: AVPlayerItem) {
@@ -336,6 +373,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Point the status observation and the end/fail notifications at [item].
     private func becomeCurrent(_ item: AVPlayerItem) {
         currentItem = item
+        EqualizerTuning.dspKey = UnsafeRawPointer(Unmanaged.passUnretained(item).toOpaque())
         seekingToMs = nil
         // .initial: a queued item is usually ready before it becomes current.
         statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
@@ -404,6 +442,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         guard let now else {
             // Queue ran dry: the last item ended (or everything was removed by stop()).
             if old != nil && currentItem != nil {
+                if let f = fade { return finishFade(f) } // the track ran out under its own fade
+                if parked { return handOverNow() } // no fade happened: the parked track starts now
                 currentItem = nil
                 listener?.onEnded()
             }
@@ -436,6 +476,176 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             isPlaying: isPlaying,
             isBuffering: isBuffering
         )
+    }
+
+    // MARK: - Crossfade
+
+    private struct Transition { var startMs: Int64 = -1; var fadeMs: Int64 = 0; var cueMs: Int64 = 0; var rate: Float = 1 }
+
+    /// One fade in flight. `out` is the deck the track is leaving on, `inn` the deck it arrives on.
+    private final class Fade {
+        let out: AVQueuePlayer, inn: AVQueuePlayer, item: AVPlayerItem, oldItem: AVPlayerItem?
+        let start: Double, length: Double
+        var swapped = false
+        var lastLog = -1.0
+        init(out: AVQueuePlayer, inn: AVQueuePlayer, item: AVPlayerItem, oldItem: AVPlayerItem?, start: Double, length: Double) {
+            self.out = out; self.inn = inn; self.item = item; self.oldItem = oldItem; self.start = start; self.length = length
+        }
+    }
+
+    private var transition = Transition()
+    /// The queued next item waits paused on `idle`, cued, instead of behind the current one, so it can fade in.
+    private var parked = false
+    private var parkedCueMs: Int64 = -1
+    /// This pair missed its window (a seek, a slow load); it joins gaplessly instead.
+    private var fadeSkipped = false
+    private var fade: Fade?
+    private var fadeTimer: Timer?
+
+    func setTransition(startMs: Int64, fadeMs: Int64, cueMs: Int64, rate: Float) {
+        onMain {
+            self.transition = Transition(startMs: startMs, fadeMs: max(0, fadeMs), cueMs: max(0, cueMs), rate: rate)
+            self.placeNext()
+        }
+    }
+
+    /// Puts [item], which sits on no deck, where the plan needs it: parked on the idle deck for a fade, behind the current item otherwise.
+    private func place(_ item: AVPlayerItem) {
+        if fade == nil && transition.fadeMs > 0 && !fadeSkipped {
+            idle.removeAllItems()
+            idle.insert(item, after: nil)
+            idle.volume = 0
+            idle.pause()
+            parked = true
+            parkedCueMs = -1
+        } else {
+            player.insert(item, after: currentItem)
+            parked = false
+        }
+    }
+
+    /// Moves the queued next item to wherever the plan now wants it. A removed item cannot join another deck at once
+    /// (AVFoundation throws), so it goes as a fresh item over the same asset.
+    private func placeNext() {
+        guard fade == nil, let old = nextItem else { return updateFadeTimer() }
+        if (transition.fadeMs > 0 && !fadeSkipped) != parked {
+            if parked { idle.removeAllItems() } else { player.remove(old) }
+            let item = AVPlayerItem(asset: old.asset)
+            item.preferredForwardBufferDuration = old.preferredForwardBufferDuration
+            if let loader = loaders.removeValue(forKey: ObjectIdentifier(old)) { adopt(loader, for: item) }
+            prepare(item)
+            nextItem = item
+            place(item)
+        }
+        if parked && parkedCueMs != transition.cueMs {
+            parkedCueMs = transition.cueMs
+            idle.seek(to: CMTime(value: transition.cueMs, timescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+        updateFadeTimer()
+    }
+
+    /// A 50 Hz timer only while a fade is armed or running.
+    private func updateFadeTimer() {
+        let need = fade != nil || (parked && nextItem != nil)
+        if need && fadeTimer == nil {
+            let timer = Timer(timeInterval: 0.02, repeats: true) { [weak self] _ in self?.fadeTick() }
+            RunLoop.main.add(timer, forMode: .common)
+            fadeTimer = timer
+        } else if !need {
+            fadeTimer?.invalidate()
+            fadeTimer = nil
+        }
+    }
+
+    private func fadeTick() {
+        if let f = fade { return driveFade(f) }
+        guard parked, !fadeSkipped, let item = nextItem, let current = currentItem,
+              player.timeControlStatus == .playing else { return }
+        let duration = streamDuration(of: current)
+        guard duration.isFinite, duration > 0 else { return }
+        let length = min(Double(transition.fadeMs) / 1000, duration / 3)
+        let start = transition.startMs >= 0 ? Double(transition.startMs) / 1000 : duration - length
+        let position = player.currentTime().seconds
+        guard position >= start else { return }
+        if position - start > 1 { // arrived late (a seek into the window): no fade for this pair
+            fadeSkipped = true
+            print("Crossfade: window missed (at \(position)s, due \(start)s); gapless")
+            return
+        }
+        guard item.status == .readyToPlay else { return } // still loading; the window allows a second of grace
+        let deck = idle
+        deck.volume = 0
+        deck.rate = speed * transition.rate
+        fade = Fade(out: player, inn: deck, item: item, oldItem: current, start: position, length: length)
+        print("Crossfade: begin out=\(position)s len=\(length)s cue=\(transition.cueMs)ms rate=\(transition.rate)")
+    }
+
+    private func driveFade(_ f: Fade) {
+        var p = f.length > 0 ? (f.out.currentTime().seconds - f.start) / f.length : 1
+        if f.out.currentItem == nil { p = 1 }
+        p = min(max(p, 0), 1)
+        // Equal power: sin² + cos² = 1, so the blend holds its loudness (Android's curve).
+        f.out.volume = Float(cos(p * .pi / 2))
+        f.inn.volume = Float(sin(p * .pi / 2))
+        if p - f.lastLog >= 0.1 || p == 1 {
+            f.lastLog = p
+            print(String(format: "Crossfade: p=%.2f out=%.3f in=%.3f", p, f.out.volume, f.inn.volume))
+        }
+        if !f.swapped && p >= 0.5 { swapDecks(f) }
+        if p >= 1 { finishFade(f) }
+    }
+
+    /// Halfway, where the two are equally loud: the incoming track becomes the current one for everything else (Android's HANDOFF_AT).
+    private func swapDecks(_ f: Fade) {
+        f.swapped = true
+        player = f.inn
+        idle = f.out
+        nextItem = nil
+        parked = false
+        fadeSkipped = false
+        IosDsp.shared.reset()
+        setSkipping(false)
+        becomeCurrent(f.item)
+        listener?.onAdvancedToNext()
+    }
+
+    private func finishFade(_ f: Fade) {
+        if !f.swapped { swapDecks(f) }
+        f.out.pause()
+        f.out.removeAllItems()
+        f.out.volume = 1
+        f.inn.volume = 1
+        if let old = f.oldItem { dropItem(old) }
+        fade = nil
+        player.rate = skipping ? speed * 4 : speed // the tempo match (if any) ends with the blend
+        placeNext()
+        reportProgress()
+        updateNowPlayingTiming()
+        print("Crossfade: done")
+    }
+
+    /// Nothing faded: the parked track starts now, the old one having run out.
+    private func handOverNow() {
+        guard let item = nextItem else { return }
+        let deck = idle
+        deck.volume = 1
+        deck.rate = speed
+        let f = Fade(out: player, inn: deck, item: item, oldItem: nil, start: 0, length: 0)
+        fade = f
+        finishFade(f)
+    }
+
+    /// A seek or a skip while a fade runs: before the swap the incoming track goes back to waiting; after, the fade is cut short.
+    private func cancelFade() {
+        guard let f = fade else { return }
+        if f.swapped { return finishFade(f) }
+        f.inn.pause()
+        f.inn.volume = 0
+        f.out.volume = 1
+        parkedCueMs = -1
+        fadeSkipped = true
+        fade = nil
+        placeNext()
     }
 
     // MARK: - Now Playing timing

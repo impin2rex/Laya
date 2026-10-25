@@ -40,6 +40,10 @@ interface SettingsHost {
      * prefer music only, loudness, crossfade / automix, don't repeat, hide status bar, version alignment.
      */
     val hasEngineOptions: Boolean get() = true
+    /** false hides the crossfade slider; it follows [hasEngineOptions] unless a host has its own crossfade. */
+    val hasCrossfade: Boolean get() = hasEngineOptions
+    /** false hides the Automix switch and its performance picker. */
+    val hasAutomix: Boolean get() = hasEngineOptions
     /** false hides just the Wi-Fi / mobile-data streaming-quality rows, which are what addons are asked at. */
     val hasQualityOptions: Boolean get() = hasEngineOptions
     /** false hides the Liquid Glass switch: it gates Android's own nav bar, which iOS replaces with the always-glass GlassNavBar. */

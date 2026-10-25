@@ -19,6 +19,8 @@ enum EqualizerTuning {
     /// Whether the player is currently racing through silence; toggled from the audio thread.
     static var skipping = false
     static var onSkipping: ((Bool) -> Void)?
+    /// The item whose tap runs IosDsp and skip-silence. IosDsp has one state, so while two decks overlap only the current track gets it.
+    static var dspKey: UnsafeRawPointer?
     static var wanted: Bool { eqOn || dsp || skipSilence }
 
     static func set(gains: [Float], qs: [Float], preampDb: Float, balance: Float) {
@@ -41,6 +43,7 @@ final class EqualizerTap {
     /// Android's silence threshold (1024 of 32768) and minimum run (1 s).
     private static let silentLevel: Float = 0.03
 
+    private let key: UnsafeRawPointer
     private var scratch: UnsafeMutablePointer<Float>?
     private var quietFrames = 0
 
@@ -62,6 +65,8 @@ final class EqualizerTap {
     private var active = [Int](repeating: 0, count: n)
     private var state = [Float](repeating: 0, count: maxChannels * n * 2)
     private var channelGain = [Float](repeating: 1, count: maxChannels)
+
+    init(key: UnsafeRawPointer) { self.key = key }
 
     deinit { scratch?.deallocate() }
 
@@ -98,9 +103,10 @@ final class EqualizerTap {
 
     func process(_ buffers: UnsafeMutableAudioBufferListPointer, frames: Int, mediaTimeUs: Int64) {
         guard isFloat, frames > 0 else { return }
-        if EqualizerTuning.skipSilence { listen(buffers, frames: frames) }
+        let current = EqualizerTuning.dspKey == key
+        if current && EqualizerTuning.skipSilence { listen(buffers, frames: frames) }
         // Karaoke's centre-cancel needs the untouched stereo image, so it runs before the EQ's balance (as on Android).
-        if IosDsp.shared.active { runDsp(buffers, frames: frames, mediaTimeUs: mediaTimeUs) }
+        if current && IosDsp.shared.active { runDsp(buffers, frames: frames, mediaTimeUs: mediaTimeUs) }
         equalize(buffers, frames: frames)
     }
 
@@ -236,7 +242,7 @@ final class EqualizerTap {
 
     private static func install(on item: AVPlayerItem) {
         guard item.audioMix == nil, let track = item.asset.tracks(withMediaType: .audio).first else { return }
-        let tap = EqualizerTap()
+        let tap = EqualizerTap(key: UnsafeRawPointer(Unmanaged.passUnretained(item).toOpaque()))
         var callbacks = MTAudioProcessingTapCallbacks(
             version: kMTAudioProcessingTapCallbacksVersion_0,
             clientInfo: Unmanaged.passRetained(tap).toOpaque(),

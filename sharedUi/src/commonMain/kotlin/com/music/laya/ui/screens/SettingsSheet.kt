@@ -172,6 +172,8 @@ fun SettingsScreen(
     val host = SettingsExtras.host
     val engineOptions = host.hasEngineOptions
     val qualityOptions = host.hasQualityOptions
+    val crossfadeOption = host.hasCrossfade
+    val automixOption = host.hasAutomix
 
     val wifiQuality by AppSettings.audioQualityWifi.collectAsStateWithLifecycle()
     val cellularQuality by AppSettings.audioQualityCellular.collectAsStateWithLifecycle()
@@ -538,7 +540,7 @@ fun SettingsScreen(
             // than needing it set to anything first.
             if (!smartFade) {
                 val crossfadeTitle = stringResource(Res.string.crossfade)
-                row(crossfadeTitle, "fade", "gapless", available = engineOptions) {
+                row(crossfadeTitle, "fade", "gapless", available = crossfadeOption) {
                     SliderRow(
                         icon = Icons.Rounded.Waves,
                         title = crossfadeTitle,
@@ -552,7 +554,7 @@ fun SettingsScreen(
                 }
             }
             val automixTitle = stringResource(Res.string.automix)
-            row(automixTitle, "crossfade", "smart fade", "mix", available = engineOptions) {
+            row(automixTitle, "crossfade", "smart fade", "mix", available = automixOption) {
                 SettingsRow(
                     icon = Icons.Rounded.AutoAwesome,
                     title = automixTitle,
@@ -575,7 +577,7 @@ fun SettingsScreen(
                 )
             }
             val automixPerformanceTitle = stringResource(Res.string.automix_performance)
-            row(automixPerformanceTitle, "cpu", "battery", available = engineOptions) {
+            row(automixPerformanceTitle, "cpu", "battery", available = automixOption) {
                 SettingsRow(
                     icon = Icons.Rounded.Tune,
                     title = automixPerformanceTitle,

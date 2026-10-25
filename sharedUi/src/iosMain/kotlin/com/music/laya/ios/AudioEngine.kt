@@ -13,6 +13,13 @@ interface AudioEngine {
     fun setNext(url: String, headers: Map<String, String>, mimeType: String, contentLength: Long, chunkBytes: Long)
     fun clearNext()
 
+    /**
+     * How the queued next track follows the playing one: a crossfade of [fadeMs] (0 = plain gapless), starting when the
+     * playing track reaches [startMs] (-1 = so that it ends with the track; [fadeMs] is then kept to a third of it),
+     * with the next track cued to [cueMs] and played at [rate] times the chosen speed. Sticks until play() or stop().
+     */
+    fun setTransition(startMs: Long, fadeMs: Long, cueMs: Long, rate: Float)
+
     fun pause()
     fun resume()
     fun seekTo(positionMs: Long)
