@@ -2,9 +2,10 @@ package com.music.laya.data.innertube
 
 import com.music.laya.data.TrackLog
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.platform.ioDispatcher
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -83,7 +84,7 @@ object PlaybackTracker {
         var atrSent = false
     }
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val scope = CoroutineScope(ioDispatcher + SupervisorJob())
 
     private val _registeredPlays = MutableStateFlow(0)
 
