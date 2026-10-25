@@ -511,4 +511,8 @@
     <string name="spotify_import_empty_playlist">Tidak ada lagu di playlist ini</string>
     <string name="spotify_import_local_fallback">Tidak bisa dibuat di YouTube Music, jadi ‘%1$s’ disimpan di perangkat ini.</string>
     <string name="search_source_addons">Addon</string>
+    <string name="remove">Hapus</string>
+    <string name="save">Simpan</string>
+    <string name="artist_signatures_test_failed">Tidak dapat menjangkau API di URL tersebut</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

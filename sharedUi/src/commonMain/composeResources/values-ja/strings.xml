@@ -511,4 +511,8 @@
     <string name="spotify_import_empty_playlist">このプレイリストに曲はありません</string>
     <string name="spotify_import_local_fallback">YouTube Music に作成できなかったため、「%1$s」をこの端末に保存しました。</string>
     <string name="search_source_addons">アドオン</string>
+    <string name="remove">削除</string>
+    <string name="save">保存</string>
+    <string name="artist_signatures_test_failed">そのURLでAPIに到達できませんでした</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

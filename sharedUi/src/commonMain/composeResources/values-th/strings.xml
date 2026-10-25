@@ -511,4 +511,8 @@
     <string name="spotify_import_empty_playlist">ไม่มีเพลงในเพลย์ลิสต์นี้</string>
     <string name="spotify_import_local_fallback">สร้างบน YouTube Music ไม่สำเร็จ จึงบันทึก ‘%1$s’ ไว้ในเครื่องนี้แทน</string>
     <string name="search_source_addons">แอดออน</string>
+    <string name="remove">นำออก</string>
+    <string name="save">บันทึก</string>
+    <string name="artist_signatures_test_failed">ไม่สามารถเข้าถึง API ที่ URL นี้ได้</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

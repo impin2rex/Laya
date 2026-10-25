@@ -512,4 +512,8 @@
     <string name="spotify_import_empty_playlist">אין שירים בפלייליסט זה</string>
     <string name="spotify_import_local_fallback">לא ניתן היה ליצור אותה ב-YouTube Music, ולכן „%1$s” נשמרה במכשיר זה.</string>
     <string name="search_source_addons">תוספים</string>
+    <string name="remove">הסר</string>
+    <string name="save">שמירה</string>
+    <string name="artist_signatures_test_failed">לא ניתן היה להתחבר ל-API בכתובת זו</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

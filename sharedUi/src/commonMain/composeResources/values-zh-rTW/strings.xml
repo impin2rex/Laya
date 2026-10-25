@@ -511,4 +511,8 @@
     <string name="spotify_import_empty_playlist">此播放列表中沒有歌曲</string>
     <string name="spotify_import_local_fallback">無法在 YouTube Music 上建立，因此“%1$s”已儲存到本裝置。</string>
     <string name="search_source_addons">外掛</string>
+    <string name="remove">移除</string>
+    <string name="save">儲存</string>
+    <string name="artist_signatures_test_failed">無法連線至該網址的 API</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

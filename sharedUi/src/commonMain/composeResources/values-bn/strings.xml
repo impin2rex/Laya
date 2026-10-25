@@ -491,4 +491,8 @@
     <string name="spotify_import_empty_playlist">এই প্লেলিস্টে কোনো গান নেই</string>
     <string name="spotify_import_local_fallback">YouTube Music-এ বানানো গেল না, তাই \'%1$s\' এই ডিভাইসে সেভ করা হয়েছে।</string>
     <string name="search_source_addons">অ্যাডঅন</string>
+    <string name="remove">সরান</string>
+    <string name="save">সেভ করুন</string>
+    <string name="artist_signatures_test_failed">ওই URL-এ API-র সঙ্গে যোগাযোগ করা গেল না</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

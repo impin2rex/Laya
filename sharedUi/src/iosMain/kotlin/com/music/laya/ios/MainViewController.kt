@@ -10,6 +10,8 @@ import kotlinx.coroutines.runBlocking
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.svg.SvgDecoder
+import com.music.laya.ui.screens.DetailExtras
 import com.music.laya.data.DebugLog
 import com.music.laya.data.TrackLog
 import com.music.laya.data.innertube.InnerTubeXResolver
@@ -36,7 +38,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     // Not NSLog: Kotlin strings passed through its C varargs crash (EXC_BAD_ACCESS).
     DebugLog.sink = DebugLog.Sink { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
     TrackLog.echo = { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
-    SingletonImageLoader.setSafe { ctx -> ImageLoader.Builder(ctx).components { add(KtorNetworkFetcherFactory()) }.build() }
+    SingletonImageLoader.setSafe { ctx -> ImageLoader.Builder(ctx).components { add(KtorNetworkFetcherFactory()); add(SvgDecoder.Factory()) }.build() }
     val dir = NSFileManager.defaultManager
         .URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }
     LyricsTranslation.cacheDir = NSFileManager.defaultManager
@@ -56,7 +58,8 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     KaraokeModel.install { NSBundle.mainBundle.pathForResource("UVR_MDXNET_9482", "onnx")!! }
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
-    AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), AppSettingsHost())
+    AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
+    DetailExtras.host = IosDetailHost
     IosSpotify.restore()
     com.music.laya.playback.smart.AnalysisLog.install { m, e -> println("Analysis: $m ${e ?: ""}") }
     IosAuth.restore() // Keychain session -> Innertube, before the first request

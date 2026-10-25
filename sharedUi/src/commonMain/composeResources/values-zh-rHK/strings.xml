@@ -503,4 +503,6 @@
     <string name="spotify_import_unmatched">%1$d 首歌曲未在 YouTube Music 上找到</string>
     <string name="spotify_import_empty_playlist">此播放列表中沒有歌曲</string>
     <string name="spotify_import_local_fallback">無法在 YouTube Music 上建立，因此“%1$s”已儲存到本裝置。</string>
+    <string name="remove">移除</string>
+    <string name="save">儲存</string>
 </resources>

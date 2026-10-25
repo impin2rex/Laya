@@ -512,4 +512,8 @@
     <string name="spotify_import_empty_playlist">इस प्लेलिस्ट में कोई गाना नहीं</string>
     <string name="spotify_import_local_fallback">इसे YouTube Music पर नहीं बनाया जा सका, इसलिए ‘%1$s’ इस डिवाइस पर सहेज ली गई.</string>
     <string name="search_source_addons">ऐडऑन</string>
+    <string name="remove">हटाएं</string>
+    <string name="save">सेव करें</string>
+    <string name="artist_signatures_test_failed">उस URL पर API तक नहीं पहुंचा जा सका</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

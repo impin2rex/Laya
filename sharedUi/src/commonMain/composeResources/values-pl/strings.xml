@@ -514,4 +514,8 @@
     <string name="spotify_import_empty_playlist">Brak utworów w tej playliście</string>
     <string name="spotify_import_local_fallback">Nie udało się utworzyć jej w YouTube Music, więc „%1$s” zapisano na tym urządzeniu.</string>
     <string name="search_source_addons">Dodatki</string>
+    <string name="remove">Usuń</string>
+    <string name="save">Zapisz</string>
+    <string name="artist_signatures_test_failed">Nie można połączyć się z API pod tym adresem URL</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

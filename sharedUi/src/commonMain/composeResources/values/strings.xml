@@ -520,4 +520,8 @@
     <string name="spotify_import_local_fallback">Couldn\'t create it on YouTube Music, so \'%1$s\' was saved on this device instead.</string>
     <string name="search_source_addons">Addons</string>
     <string name="search_source_youtube">YouTube</string>
+    <string name="remove">Remove</string>
+    <string name="save">Save</string>
+    <string name="artist_signatures_test_failed">Could not reach the API at that URL</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

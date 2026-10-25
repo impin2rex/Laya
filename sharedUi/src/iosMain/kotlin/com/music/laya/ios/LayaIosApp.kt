@@ -183,6 +183,7 @@ fun LayaIosApp(engine: AudioEngine) {
     val spotifyConnected = AppSettings.spotifySpdcToken.collectAsState().value.isNotBlank()
     var showSpotifyLogin by remember { mutableStateOf(false) }
     var showSpotifyImport by remember { mutableStateOf(false) }
+    var editingSignatureApi by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val message by IosPlayerHost.messages.collectAsState()
     LaunchedEffect(message) {
@@ -558,6 +559,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                         onEqualizer = { stack = stack + IosPage.Equalizer },
                                         onAccountScrobbling = { stack = stack + IosPage.Account },
                                         onSpotifyCanvasAuth = { stack = stack + IosPage.Account },
+                                        onEditSignatureApi = { editingSignatureApi = true },
                                     )
                                     IosPage.Spotify -> SpotifyLibraryScreen(
                                         onOpenPlaylist = { openDetail(SPOTIFY_PAGE_PREFIX + it.id, it.name, it.owner ?: "Spotify", it.imageUrl, BrowseType.PLAYLIST) },
@@ -930,6 +932,7 @@ fun LayaIosApp(engine: AudioEngine) {
                         },
                         onDismiss = { showSpotifyImport = false },
                     )
+                    if (editingSignatureApi) IosSignatureApiEditor(onDismiss = { editingSignatureApi = false })
                 }
             }
         }

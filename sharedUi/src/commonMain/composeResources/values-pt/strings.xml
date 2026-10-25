@@ -512,4 +512,8 @@
     <string name="spotify_import_empty_playlist">Nenhuma música nesta playlist</string>
     <string name="spotify_import_local_fallback">Não foi possível criá-la no YouTube Music, então ‘%1$s’ foi salva neste dispositivo.</string>
     <string name="search_source_addons">Addons</string>
+    <string name="remove">Remover</string>
+    <string name="save">Salvar</string>
+    <string name="artist_signatures_test_failed">Não foi possível alcançar a API nesse URL</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

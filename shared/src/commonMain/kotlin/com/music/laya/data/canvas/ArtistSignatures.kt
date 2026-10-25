@@ -1,15 +1,29 @@
 package com.music.laya.data.canvas
 
 import com.music.laya.data.DebugLog as Log
-import com.music.laya.data.Http
-import kotlinx.coroutines.Dispatchers
+import com.music.laya.platform.HttpRequest
+import com.music.laya.platform.NetHttp
+import com.music.laya.platform.ioDispatcher
+import com.music.laya.platform.normalizeNfd
+import io.ktor.http.encodeURLParameter
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
-import okhttp3.Request
-import org.json.JSONObject
-import java.net.URLEncoder
-import java.util.Locale
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+
+data class ArtistSignature(
+    val imageUrl: String,
+    val aspect: Float,
+    /** Lowercased asset format (`svg`, `png`, ...); "" when unknown. */
+    val format: String = "",
+)
 
 /**
  * Name-keyed lookup against a custom base URL, mirroring
@@ -25,10 +39,12 @@ object ArtistSignatureRepository {
 
     private class Entry(val signature: ArtistSignature?)
 
-    private val cache = object : LinkedHashMap<String, Entry>(CACHE_SIZE, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>) =
-            size > CACHE_SIZE
-    }
+    // Insertion-ordered; reads re-insert so it stays least-recently-used.
+    private val cache = LinkedHashMap<String, Entry>()
+    private val guard = SynchronizedObject()
+
+    private fun lookupCached(key: String): Entry? =
+        synchronized(guard) { cache.remove(key)?.also { cache[key] = it } }
 
     private val _updates = MutableStateFlow(0)
 
@@ -56,42 +72,45 @@ object ArtistSignatureRepository {
     fun cached(artistName: String, baseUrl: String?): ArtistSignature? {
         if (baseUrl.isNullOrEmpty()) return null
         val key = cacheKey(artistName, baseUrl) ?: return null
-        return synchronized(cache) { cache[key] }?.signature
+        return lookupCached(key)?.signature
     }
 
     /** The best signature for [artistName], or null. Never throws. */
     suspend fun signatureFor(artistName: String, baseUrl: String?): ArtistSignature? {
         if (baseUrl.isNullOrEmpty()) return null
         val key = cacheKey(artistName, baseUrl) ?: return null
-        synchronized(cache) { cache[key] }?.let {
+        lookupCached(key)?.let {
             Log.d(TAG, "cache hit for $artistName: ${it.signature?.imageUrl}")
             return it.signature
         }
 
-        val entry = withContext(Dispatchers.IO) {
+        val entry = withContext(ioDispatcher) {
             runCatching { lookup(artistName, baseUrl) }
                 .onFailure { Log.d(TAG, "lookup failed for $artistName: $it") }
                 .getOrNull()
         } ?: return null
         Log.d(TAG, "settled for $artistName: ${entry.signature?.imageUrl}")
-        synchronized(cache) { cache[key] = entry }
+        synchronized(guard) {
+            cache.remove(key)
+            cache[key] = entry
+            if (cache.size > CACHE_SIZE) cache.remove(cache.keys.first())
+        }
         _updates.value++
         return entry.signature
     }
 
     /** Forgets everything, e.g. after the base URL changes. */
     fun clear() {
-        synchronized(cache) { cache.clear() }
+        synchronized(guard) { cache.clear() }
         _updates.value++
     }
 
     /** `true` when `GET base/v1/health` answers 2xx. Never throws. */
-    suspend fun checkHealth(baseUrl: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun checkHealth(baseUrl: String): Boolean = withContext(ioDispatcher) {
         runCatching {
             val base = normalizeBaseUrl(baseUrl)
             if (!isValidBaseUrl(base)) return@runCatching false
-            val request = Request.Builder().url("$base/v1/health").get().build()
-            Http.client.newCall(request).execute().use { it.isSuccessful }
+            NetHttp.execute(HttpRequest("$base/v1/health")).isSuccessful
         }.getOrDefault(false)
     }
 
@@ -104,7 +123,7 @@ object ArtistSignatureRepository {
     private fun lookup(artistName: String, baseUrl: String): Entry? {
         val base = normalizeBaseUrl(baseUrl)
         if (!isValidBaseUrl(base)) return Entry(null)
-        val url = "$base/v1/signatures?artist=${URLEncoder.encode(artistName, "UTF-8")}"
+        val url = "$base/v1/signatures?artist=${artistName.encodeURLParameter()}"
         val body = get(url) ?: return null
         return Entry(parse(body))
     }
@@ -121,14 +140,14 @@ object ArtistSignatureRepository {
      * are often fragments).
      */
     internal fun parse(body: String): ArtistSignature? {
-        val root = runCatching { JSONObject(body) }.getOrNull() ?: return null
-        if (!root.has("signatures") && root.has("matches")) return null
-        val signatures = root.optJSONArray("signatures") ?: return null
+        val root = runCatching { json.parseToJsonElement(body) as? JsonObject }.getOrNull() ?: return null
+        if ("signatures" !in root && "matches" in root) return null
+        val signatures = root["signatures"] as? JsonArray ?: return null
         var best: ArtistSignature? = null
         var bestScore = Int.MIN_VALUE
         var bestArea = -1L
-        for (i in 0 until signatures.length()) {
-            val sig = signatures.optJSONObject(i) ?: continue
+        for (element in signatures) {
+            val sig = element as? JsonObject ?: continue
             val url = extractUrl(sig) ?: continue
             val score = rank(sig, url)
             // Resolution only breaks ties: a larger raster of the same rank
@@ -147,16 +166,25 @@ object ArtistSignatureRepository {
         return best
     }
 
-    private fun extractFormat(sig: JSONObject, url: String): String {
-        sig.optJSONObject("asset")?.optString("format")?.lowercase(Locale.ROOT)
-            ?.takeIf { it.isNotBlank() }?.let { return it }
-        sig.optString("format").lowercase(Locale.ROOT)
-            .takeIf { it.isNotBlank() }?.let { return it }
-        return url.substringBefore('?').substringAfterLast('.', "").lowercase(Locale.ROOT)
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+
+    private fun JsonObject.str(key: String): String =
+        (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull.orEmpty()
+
+    private fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
+
+    private fun JsonObject.int(key: String): Int? =
+        (this[key] as? JsonPrimitive)?.let { it.doubleOrNull ?: it.contentOrNull?.toDoubleOrNull() }
+            ?.toInt()?.takeIf { it > 0 }
+
+    private fun extractFormat(sig: JsonObject, url: String): String {
+        sig.obj("asset")?.str("format")?.lowercase()?.takeIf { it.isNotBlank() }?.let { return it }
+        sig.str("format").lowercase().takeIf { it.isNotBlank() }?.let { return it }
+        return url.substringBefore('?').substringAfterLast('.', "").lowercase()
     }
 
-    private fun rank(sig: JSONObject, url: String): Int {
-        val status = sig.optJSONObject("license")?.optString("status").orEmpty().lowercase(Locale.ROOT)
+    private fun rank(sig: JsonObject, url: String): Int {
+        val status = sig.obj("license")?.str("status").orEmpty().lowercase()
         val license = when (status) {
             "known" -> 2
             "requires_review" -> 1
@@ -167,8 +195,7 @@ object ArtistSignatureRepository {
             "png" -> 1
             else -> 0
         }
-        val verification = sig.optString("verification").lowercase(Locale.ROOT)
-        val verificationScore = when (verification) {
+        val verificationScore = when (sig.str("verification").lowercase()) {
             "artist_verified" -> 3
             "verified" -> 2
             "unverified" -> 1
@@ -178,44 +205,34 @@ object ArtistSignatureRepository {
         return license * 1000 + formatScore * 100 + verificationScore * 10 + panoramic
     }
 
-    private fun extractUrl(sig: JSONObject): String? {
-        sig.optJSONObject("asset")?.optString("url")?.takeIf { it.startsWith("http") }?.let { return it }
+    private fun extractUrl(sig: JsonObject): String? {
+        sig.obj("asset")?.str("url")?.takeIf { it.startsWith("http") }?.let { return it }
         // Some builds serve the mirror as a bare string asset.
-        sig.optString("asset").takeIf { it.startsWith("http") }?.let { return it }
-        sig.optString("url").takeIf { it.startsWith("http") }?.let { return it }
-        sig.optString("original_url").takeIf { it.startsWith("http") }?.let { return it }
-        sig.optString("originalUrl").takeIf { it.startsWith("http") }?.let { return it }
+        for (key in listOf("asset", "url", "original_url", "originalUrl")) {
+            sig.str(key).takeIf { it.startsWith("http") }?.let { return it }
+        }
         return null
     }
 
-    private fun extractAspect(sig: JSONObject): Float {
-        val asset = sig.optJSONObject("asset")
-        val w = sig.optInt("width").takeIf { it > 0 }
-            ?: asset?.optInt("width")?.takeIf { it > 0 }
-        val h = sig.optInt("height").takeIf { it > 0 }
-            ?: asset?.optInt("height")?.takeIf { it > 0 }
-        return if (w != null && h != null && h > 0) w.toFloat() / h else 2.5f
+    private fun dims(sig: JsonObject): Pair<Int, Int>? {
+        val asset = sig.obj("asset")
+        val w = sig.int("width") ?: asset?.int("width") ?: return null
+        val h = sig.int("height") ?: asset?.int("height") ?: return null
+        return w to h
     }
 
-    private fun extractArea(sig: JSONObject): Long {
-        val asset = sig.optJSONObject("asset")
-        val w = sig.optInt("width").takeIf { it > 0 }
-            ?: asset?.optInt("width")?.takeIf { it > 0 } ?: return 0
-        val h = sig.optInt("height").takeIf { it > 0 }
-            ?: asset?.optInt("height")?.takeIf { it > 0 } ?: return 0
-        return w.toLong() * h
-    }
+    private fun extractAspect(sig: JsonObject): Float =
+        dims(sig)?.let { (w, h) -> w.toFloat() / h } ?: 2.5f
+
+    private fun extractArea(sig: JsonObject): Long =
+        dims(sig)?.let { (w, h) -> w.toLong() * h } ?: 0
 
     private fun get(url: String): String? {
-        val request = Request.Builder().url(url).get().build()
-        Http.client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return null
-            return response.body.string()
-        }
+        val response = NetHttp.execute(HttpRequest(url))
+        return if (response.isSuccessful) response.text() else null
     }
 
     /** Same folding as Apple's lookup: case, accents and punctuation don't identify. */
     private fun String.normalized(): String =
-        java.text.Normalizer.normalize(lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
-            .filter { it.isLetterOrDigit() }
+        normalizeNfd(lowercase()).filter { it.isLetterOrDigit() }
 }

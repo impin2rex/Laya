@@ -514,4 +514,8 @@
     <string name="spotify_import_empty_playlist">В этом плейлисте нет треков</string>
     <string name="spotify_import_local_fallback">Не удалось создать её на YouTube Music, поэтому «%1$s» сохранена на этом устройстве.</string>
     <string name="search_source_addons">Аддоны</string>
+    <string name="remove">Удалить</string>
+    <string name="save">Сохранить</string>
+    <string name="artist_signatures_test_failed">Не удалось связаться с API по этому URL</string>
+    <string name="artist_signatures_url_hint">https://signatures.example.com</string>
 </resources>

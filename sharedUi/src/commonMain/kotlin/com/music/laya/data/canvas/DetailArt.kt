@@ -28,10 +28,3 @@ data class AppleArtistArt(
 
 /** Apple's colours for this artist, in the form the palette takes. */
 fun AppleArtistArt.keyColors() = ArtworkKeyColors(Color(background), Color(accent))
-
-data class ArtistSignature(
-    val imageUrl: String,
-    val aspect: Float,
-    /** Lowercased asset format (`svg`, `png`, …); "" when unknown. */
-    val format: String = "",
-)
