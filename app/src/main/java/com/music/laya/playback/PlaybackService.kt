@@ -17,6 +17,7 @@ import android.os.SystemClock
 import com.music.laya.data.TelemetryProvenance
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.music.laya.playback.smart.TransitionFilters
 import com.music.laya.playback.audio.usb.UsbDirectManager
 import com.music.laya.playback.audio.usb.DirectUsbProbeResult
 import android.util.Log
