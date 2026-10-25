@@ -580,6 +580,12 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         // LAYA_SEEK_END=<seconds> jumps that far from the end of the first track once it plays, to watch the transition.
         (NSProcessInfo.processInfo.environment["LAYA_SEEK_END"] as? String)?.toLongOrNull()?.let { s ->
             while (player.durationMs <= 0 || !player.isPlaying) kotlinx.coroutines.delay(500)
+            // With Automix on, wait until both tracks of the pair are measured, so the jump lands on a planned blend.
+            if (AppSettings.smartFadeEnabled.value) {
+                val ready = setOf(com.music.laya.data.settings.TrackAnalysisState.ANALYSED, com.music.laya.data.settings.TrackAnalysisState.REFINING)
+                while (AppSettings.smartAnalysis.value.let { it.current !in ready || it.next !in ready }) kotlinx.coroutines.delay(2000)
+                println("LAYA_SEEK_END: both tracks analysed; jumping")
+            }
             player.seekTo(player.durationMs - s * 1000)
         }
     }
