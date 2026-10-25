@@ -14,6 +14,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.platform.LocalFocusManager
+import com.music.laya.data.settings.ThemeMode
+import com.music.laya.ui.components.SearchField
+import com.music.laya.sharedui.resources.search_hint
+import com.music.laya.sharedui.resources.search_library_hint
+import com.music.laya.sharedui.resources.search_addons_hint
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -167,7 +176,7 @@ private fun List<ShelfItem>.songs() = mapNotNull { it.toSong() }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LayaIosApp(engine: AudioEngine) {
+fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val scope = rememberCoroutineScope()
     val player = remember { IosPlayer(engine, scope) }
     var tab by remember { mutableIntStateOf(0) }
@@ -180,6 +189,19 @@ fun LayaIosApp(engine: AudioEngine) {
     val autoplay by AppSettings.autoplay.collectAsState()
     val onboardingComplete by AppSettings.onboardingComplete.collectAsState()
     val swipeNext by AppSettings.swipeToPlayNext.collectAsState()
+    val themeMode by AppSettings.themeMode.collectAsState()
+    val systemFont by AppSettings.systemFont.collectAsState()
+    val syncedLyrics by AppSettings.syncedLyrics.collectAsState()
+    val lyricsSourceSet by AppSettings.lyricsSources.collectAsState()
+    val darkTheme = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    // MainActivity's SystemBarIcons rule: dark glyphs only on the light theme, never over the player or the onboarding.
+    val lightStatusIcons = darkTheme || nowPlayingOpen || !onboardingComplete
+    LaunchedEffect(lightStatusIcons) { onStatusBarLight(lightStatusIcons) }
+    val focusManager = LocalFocusManager.current
     val playerDock = remember { PlayerDock() }
     val sheetMotion = remember { PlayerSheetMotion(scope, playerDock, { nowPlayingOpen }, { nowPlayingOpen = it }) }
     sheetMotion.windowInfo = LocalWindowInfo.current
@@ -461,7 +483,9 @@ fun LayaIosApp(engine: AudioEngine) {
         val sg = song ?: return
         val all = s == null
         scope.launch {
-            val sources = if (all) AppSettings.lyricsSources.value else setOf(s!!)
+            val sources = if (all) lyricsSourceSet.takeIf { syncedLyrics }.orEmpty() else setOf(s!!)
+            // Switched off (or every source unticked): nothing to look up, as MainViewModel.loadLyrics.
+            if (sources.isEmpty()) { lyrics = null; lyricsSource = null; lyricsChecked = true; return@launch }
             val found = LyricsRepository.lyrics(
                 sg.videoId, sg.title, sg.artist, player.durationMs, sg.albumName, sources,
                 if (all) AppSettings.lyricsSourceOrder.value else listOf(s!!), all && AppSettings.prioritizeSyllableSync.value,
@@ -484,7 +508,7 @@ fun LayaIosApp(engine: AudioEngine) {
             }
         }
     }
-    LaunchedEffect(song?.videoId, durationKnown) {
+    LaunchedEffect(song?.videoId, durationKnown, syncedLyrics, lyricsSourceSet) {
         if (song == null || !durationKnown) return@LaunchedEffect
         fetchProvider(null)
     }
@@ -520,12 +544,13 @@ fun LayaIosApp(engine: AudioEngine) {
             ?.let { if (it.isNotEmpty()) player.play(it, 0) }
     }
 
-    // Test hook: SIMCTL_CHILD_LAYA_OPEN=player | settings | artist:<name> opens that screen.
+    // Test hook: SIMCTL_CHILD_LAYA_OPEN=player | settings | search | artist:<name> opens that screen.
     LaunchedEffect(Unit) {
         val what = NSProcessInfo.processInfo.environment["LAYA_OPEN"] as? String ?: return@LaunchedEffect
         when {
             what == "player" -> { kotlinx.coroutines.delay(12_000); nowPlayingOpen = true }
             what == "settings" -> stack = stack + IosPage.Settings
+            what == "search" -> tab = 3
             what == "sources" -> stack = stack + IosPage.Sources
             what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
                 ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
@@ -552,7 +577,7 @@ fun LayaIosApp(engine: AudioEngine) {
     var barHeight by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
 
-    LayaTheme {
+    LayaTheme(darkTheme = darkTheme, systemFont = systemFont) {
         // The glass samples this layer; opaque like Android's, so it has something to blur.
         val windowBackground = MaterialTheme.colorScheme.background
         val appBackdrop = rememberLayerBackdrop(onDraw = remember(windowBackground) { { drawRect(windowBackground); drawContent() } })
@@ -755,14 +780,16 @@ fun LayaIosApp(engine: AudioEngine) {
                                 focusRequested = false,
                                 onFocusHandled = {},
                                 onSongClick = { songs, i ->
+                                    focusManager.clearFocus()
                                     songs.getOrNull(i)?.let(::recordSong)
                                     player.play(songs, i)
                                 },
                                 onSongLongPress = { menuSong = it },
                                 onSongSwipe = ::swipe,
-                                onTopResultPlay = { recordSong(it); player.play(listOf(it), 0) },
+                                onTopResultPlay = { focusManager.clearFocus(); recordSong(it); player.play(listOf(it), 0) },
                                 onTopResultPlaylist = { recordSong(it); menuSong = it },
                                 onBrowseClick = {
+                                    focusManager.clearFocus()
                                     IosSearchHistory.record(SearchHistoryEntity(
                                         it.browseId, it.title, it.subtitle, it.thumbnailUrl,
                                         when (it.type) {
@@ -780,6 +807,7 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onSubmit = { if (searchSource == 2) searchAddons() else scope.launch { search(anonymous = false) } },
                                 onSuggestionClick = ::searchFor,
                                 onHistoryClick = { e ->
+                                    focusManager.clearFocus()
                                     val s = e.toSong()
                                     when {
                                         s != null -> player.play(listOf(s), 0)
@@ -816,18 +844,39 @@ fun LayaIosApp(engine: AudioEngine) {
                                 onAddonHistoryRemove = IosSearchHistory::removeAddon,
                                 onAddonHistoryClear = IosSearchHistory::clearAddons,
                                 contentPadding = noPadding,
-                                // Below the floating account pill, as Android leaves room for its top bar.
-                                topPadding = com.music.laya.ui.components.topBarContentPadding(),
+                                // The field lives in the top row beside the avatar (below), as in Android's top bar.
+                                showField = false,
+                                topPadding = 60.dp,
                             )
                         }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = barHeight))
                             if (stack.isEmpty()) {
-                                IosTopPill(
-                                    account = account,
-                                    onHistory = if (tab == 2 && signedIn) ({ openHistory() }) else null,
-                                    onAccount = { stack = stack + IosPage.Settings },
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                )
+                                Row(
+                                    Modifier.align(Alignment.TopStart).fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (tab == 3) {
+                                        SearchField(
+                                            query = query,
+                                            onQueryChange = ::onQueryChange,
+                                            onSubmit = { if (searchSource == 2) searchAddons() else scope.launch { search(anonymous = false) } },
+                                            placeholder = stringResource(
+                                                when (searchSource) {
+                                                    1 -> Res.string.search_library_hint
+                                                    2 -> Res.string.search_addons_hint
+                                                    else -> Res.string.search_hint
+                                                },
+                                            ),
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                    } else Spacer(Modifier.weight(1f))
+                                    IosTopPill(
+                                        account = account,
+                                        onHistory = if (tab == 2 && signedIn) ({ openHistory() }) else null,
+                                        onAccount = { stack = stack + IosPage.Settings },
+                                    )
+                                }
                             } else {
                                 IconButton(
                                     onClick = { stack = stack.dropLast(1) },
@@ -840,7 +889,7 @@ fun LayaIosApp(engine: AudioEngine) {
                     GlassNavBar(
                         tabs = tabs,
                         selectedIndex = tab,
-                        onTabSelected = { tab = it; stack = emptyList() },
+                        onTabSelected = { focusManager.clearFocus(); tab = it; stack = emptyList() },
                         scrollConnection = navBarScroll,
                         song = song,
                         isPlaying = player.isPlaying,

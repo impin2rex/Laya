@@ -34,8 +34,8 @@ import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.settings.AppSettingsHost
 import com.russhwolf.settings.NSUserDefaultsSettings
 
-/** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]. */
-fun MainViewController(engine: AudioEngine): UIViewController {
+/** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]; [onStatusBarLight] tells the host VC which status bar icon colour the screen needs. */
+fun MainViewController(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit): UIViewController {
     // Not NSLog: Kotlin strings passed through its C varargs crash (EXC_BAD_ACCESS).
     DebugLog.sink = DebugLog.Sink { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
     TrackLog.echo = { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
@@ -60,6 +60,7 @@ fun MainViewController(engine: AudioEngine): UIViewController {
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
+    watchIosConnection()
     SourceRegistry.init(IosSourcesHost)
     DetailExtras.host = IosDetailHost
     IosSpotify.restore()
@@ -74,5 +75,5 @@ fun MainViewController(engine: AudioEngine): UIViewController {
             Font("sf_pro_display_$n", runBlocking { Res.readBytes("font/sf_pro_display_$n.otf") }, FontWeight(w))
         },
     )
-    return ComposeUIViewController { LayaIosApp(engine) }
+    return ComposeUIViewController { LayaIosApp(engine, onStatusBarLight) }
 }
