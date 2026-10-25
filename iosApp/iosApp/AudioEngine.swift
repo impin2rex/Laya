@@ -384,7 +384,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// (a skip nobody asked for), so the queue is held here and Kotlin decides: retry, or move on.
     /// A queued item's failure is left for when it becomes current.
     private func fail(_ item: AVPlayerItem, message: String, httpStatus: Int32) {
-        guard item === currentItem, failedItems.insert(ObjectIdentifier(item)).inserted else { return }
+        guard item === currentItem else { return }
+        // AVFoundation reads some fragmented MP4s as twice their length (see ChunkedResourceLoader.durationHint), so
+        // the real end arrives as a failure. That is the track ending, not breaking: move on rather than retry it.
+        if atStatedEnd(item) { return endByHint(item) }
+        guard failedItems.insert(ObjectIdentifier(item)).inserted else { return }
         cancelFade()
         clearNextOnMain()
         player.pause()
@@ -392,7 +396,24 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     private func hasFailed(_ item: AVPlayerItem) -> Bool {
-        item.status == .failed || item.error != nil || failedItems.contains(ObjectIdentifier(item))
+        !atStatedEnd(item) && (item.status == .failed || item.error != nil || failedItems.contains(ObjectIdentifier(item)))
+    }
+
+    /// Within the last seconds of the length the stream states (only googlevideo URLs state one).
+    private func atStatedEnd(_ item: AVPlayerItem) -> Bool {
+        guard let hint = loaders[ObjectIdentifier(item)]?.durationHint, hint > 0 else { return false }
+        return item.currentTime().seconds >= hint - 3
+    }
+
+    /// [item] has played the whole of its stated length: on to the queued track as a natural end would.
+    private func endByHint(_ item: AVPlayerItem) {
+        guard item === currentItem, fade == nil else { return }
+        if parked { return handOverNow() }
+        if let next = nextItem, player.items().contains(next) { return player.advanceToNextItem() }
+        player.pause()
+        currentItem = nil
+        dropItem(item)
+        listener?.onEnded()
     }
 
     private func prepare(_ item: AVPlayerItem) {
@@ -505,6 +526,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         let duration = streamDuration(of: item)
         let isPlaying = player.timeControlStatus == .playing
         let isBuffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+        // Past the stated end and still "playing" or waiting for bytes that don't exist (the doubled length above):
+        // the track is over. Not while seeking, or while a blend owns the hand-over.
+        if let hint = loaders[ObjectIdentifier(item)]?.durationHint, seekingToMs == nil, fade == nil,
+           position >= hint + 0.5, isPlaying || isBuffering {
+            return endByHint(item)
+        }
         wasPlaying = isPlaying || isBuffering
         listener?.onProgress(
             positionMs: position.isFinite ? Int64(position * 1000) : 0,

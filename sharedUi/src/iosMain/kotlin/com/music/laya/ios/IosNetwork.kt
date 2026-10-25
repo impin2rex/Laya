@@ -15,8 +15,10 @@ import platform.darwin.dispatch_get_main_queue
  * Feeds [AppSettings.meteredConnection] the way Android's ConnectivityManager callback does (null = offline,
  * true = cellular / Personal Hotspot), so [AppSettings.effectiveAudioQuality] picks the mobile-data ceiling there.
  */
+/** Held for the life of the app: a monitor nothing references stops reporting. */
+private val monitor = nw_path_monitor_create()
+
 internal fun watchIosConnection() {
-    val monitor = nw_path_monitor_create()
     nw_path_monitor_set_update_handler(monitor) { path ->
         val online = path != null && nw_path_get_status(path) == nw_path_status_satisfied
         AppSettings.meteredConnection.value = if (!online) null else nw_path_is_expensive(path)

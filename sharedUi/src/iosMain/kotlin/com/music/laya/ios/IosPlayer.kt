@@ -201,6 +201,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             off -> noTransition()
             AppSettings.smartFadeEnabled.value -> automix(position.positionMs)
             else -> {
+                AppSettings.smartTransitionWindow.value = null // Automix's seek-bar marker goes with it (CrossfadeController)
                 // Android's classic crossfade: the shared renderer at its defaults (equal power, nothing filtered).
                 val fadeMs = AppSettings.crossfadeSeconds.value * 1000L
                 val next = queue.getOrNull(autoNext())
@@ -216,6 +217,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun noTransition() {
+        AppSettings.smartTransitionWindow.value = null
         IosTransition.setPlan(null)
         engine.setTransition(-1, 0, 0, 1f, 1f)
     }
@@ -889,6 +891,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         if (recoverFor != failed.videoId || now - recoverAt > 60) { recoverFor = failed.videoId; recoverCount = 0 }
         recoverAt = now
         val at = pendingMs ?: position.positionMs
+        // A break in the last seconds is the end of the track (the engine says so too): retrying there replays the tail.
+        if (durationMs > 0 && at >= durationMs - 3_000) { TrackLog.d("Laya", "broke at the end ($reason); moving on", about = failed.videoId); return onEnded() }
         if (++recoverCount > MAX_RECOVERIES) {
             TrackLog.w("Laya", "gave up after $MAX_RECOVERIES retries: $reason", about = failed.videoId)
             isLoading = false
