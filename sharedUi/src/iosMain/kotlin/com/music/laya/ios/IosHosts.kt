@@ -24,6 +24,8 @@ import com.music.laya.ui.screens.SettingsHost
 import dev.chrisbanes.haze.HazeState
 import platform.Foundation.NSBundle
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 
 /** Everything not overridden is hidden on iOS; Phase 5/6 fill in accounts, Listen Together, downloads. */
 internal object IosSettingsHost : SettingsHost {
@@ -125,7 +127,9 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val lastPlayerScreen get() = AppSettings.lastPlayerScreen
     override val legacyMeshGradient get() = AppSettings.legacyMeshGradient
     override val lyricsBlur get() = AppSettings.lyricsBlur
-    override val lyricsOffsetMs get() = AppSettings.lyricsOffsetMs
+    /** The listener's offset plus the measured shift between the playing cut and YouTube's (see IosPlayer.alignLyrics). */
+    override val lyricsOffsetMs: StateFlow<Int> = kotlinx.coroutines.flow.combine(AppSettings.lyricsOffsetMs, IosLyricsAlign.offsetMs) { a, b -> a + b }
+        .stateIn(kotlinx.coroutines.MainScope(), kotlinx.coroutines.flow.SharingStarted.Eagerly, AppSettings.lyricsOffsetMs.value)
     override val lyricsSourceOrder get() = AppSettings.lyricsSourceOrder
     override val meteredConnection get() = AppSettings.meteredConnection
     override val preferUsbDac get() = AppSettings.preferUsbDac
@@ -145,6 +149,6 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val versionAlignmentInProgress get() = AppSettings.versionAlignmentInProgress
 
     override fun setLastPlayerScreen(value: LastPlayerScreen) = AppSettings.setLastPlayerScreen(value)
-    override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value)
+    override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value - IosLyricsAlign.offsetMs.value)
     override fun setReverbEnabled(value: Boolean) = AppSettings.setReverbEnabled(value)
 }

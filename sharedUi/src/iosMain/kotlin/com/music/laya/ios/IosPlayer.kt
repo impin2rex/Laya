@@ -53,6 +53,11 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
+import com.music.laya.playback.karaoke.KaraokeNative
+import com.music.laya.playback.smart.VersionAlignment
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
@@ -68,6 +73,35 @@ import platform.Foundation.NSOperationQueue
 
 /** Android's rule: googlevideo in bounded ranges (it throttles one long read), any other host in one open request. */
 private fun chunkBytesFor(url: String) = PlayerClient.rangeBytesFor(url)
+/** How far an addon copy of a YouTube track sits from the YouTube cut its lyrics are timed to; added to the listener's own lyrics offset. */
+internal object IosLyricsAlign {
+    val offsetMs = MutableStateFlow(0)
+}
+
+/** Seconds of each cut the version alignment compares (Android's AudioDecoder.decodeRegion reads the same 45). */
+private const val ALIGN_SECONDS = 45
+
+/** The first [ALIGN_SECONDS] of [src] as 44.1 kHz mono, or null when it can't be decoded. Blocks; worker threads only. */
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+private fun pcmHead(src: Opened, native: KaraokeNative): FloatArray? {
+    val pcm = native.openPcm(src.url, src.headers, src.mime, src.length, chunkBytesFor(src.url)) ?: return null
+    try {
+        val want = ALIGN_SECONDS * 44_100
+        val out = FloatArray(want)
+        val block = FloatArray(16_384 * 2)
+        var n = 0
+        while (n < want) {
+            val frames = block.usePinned { pcm.read(it.addressOf(0), minOf(16_384, want - n)) }
+            if (frames <= 0) break
+            for (i in 0 until frames) out[n + i] = (block[2 * i] + block[2 * i + 1]) / 2
+            n += frames
+        }
+        return if (n >= 5 * 44_100) out.copyOf(n) else null
+    } finally {
+        pcm.close()
+    }
+}
+
 /** Retries of one broken track before it is left paused for the listener; reset by a different track or a quiet minute. */
 private const val MAX_RECOVERIES = 3
 
@@ -577,8 +611,34 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
+        if (!next) alignLyrics(song, o)
         if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
         else engine.play(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
+    }
+
+    private var alignJob: Job? = null
+
+    /**
+     * Lyrics are timed to the YouTube cut. When another release plays instead (an addon's copy of a YouTube track),
+     * measure how far it sits from YouTube's with the shared Android alignment math and shift the lyrics by it.
+     * Both heads are read through PcmReader; the addon's comes from the StreamCache file the player already fills.
+     */
+    private fun alignLyrics(song: Song, o: Opened) {
+        alignJob?.cancel()
+        IosLyricsAlign.offsetMs.value = 0
+        val native = IosKaraoke.native ?: return
+        if (o.sourceName == "YouTube" || o.sourceName == "Downloaded" || SourceRegistry.parseTrackKey(song.videoId) != null) return
+        alignJob = scope.launch(ioDispatcher) {
+            val yt = runCatching { youtube(song.videoId) }.getOrNull() ?: return@launch
+            val ytPcm = pcmHead(yt, native) ?: return@launch println("IosPlayer: version alignment: no YouTube audio for ${song.title}")
+            val addonPcm = pcmHead(o, native) ?: return@launch println("IosPlayer: version alignment: no ${o.sourceName} audio for ${song.title}")
+            val a = VersionAlignment.align(ytPcm, 44_100.0, 0.0, addonPcm, 44_100.0, 0.0)
+            println("IosPlayer: version alignment ${o.sourceName} vs YouTube for ${song.title}: offset=${a.offsetMs} lag=${a.correlation.lagFrames} conf=${a.correlation.confidence} ${a.why ?: ""}")
+            if (this@IosPlayer.song?.videoId == song.videoId) {
+                IosLyricsAlign.offsetMs.value = a.offsetMs?.toInt() ?: 0
+                println("IosPlayer: lyrics offset applied ${IosLyricsAlign.offsetMs.value} ms")
+            }
+        }
     }
 
     /**
