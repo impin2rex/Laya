@@ -17,7 +17,7 @@
 
 <br/>
 
-[**Download**](#download) · [**Features**](#features) · [**Disclaimer**](#disclaimer)
+[**Download**](#download) · [**iPhone**](#install-on-iphone-with-sidestore) · [**Features**](#features) · [**Disclaimer**](#disclaimer)
 
 <br/>
 
@@ -88,13 +88,48 @@
 <h1><a id="download"></a>Download</h1>
 
 <a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
+<a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://api.jm26.net/badge?label=&icon=f17b&message=Android%20TV&color=000000&labelcolor=000000&fontcolor=white&autofontcolor=false&scale=20" alt="Android TV" height="55"/></a>
+<a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Wear%20OS-%234285F4.svg?style=for-the-badge&logo=wear-os&logoColor=white" alt="Available on Wear%20OS" height="55"/></a>
 <a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/windows/cozy.svg" alt="Download for Windows" height="55"/></a>
+<a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/macos/cozy.svg" alt="Download for macOS" height="55"/></a>
+<a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://api.jm26.net/badge?label=&icon=f17c&message=Linux&color=000000&labelcolor=000000&fontcolor=white&autofontcolor=false&scale=20" alt="Linux" height="55"/></a>
+<a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/ios/cozy.svg" alt="Download for iPhone" height="55"/></a>
 
-Grab the latest signed APK from the [Releases](https://github.com/impin2rex/Laya/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
+Grab the latest build for your device from the [Releases](https://github.com/impin2rex/Laya/releases) page.
 
-For the Windows and Linux desktop app, see [DESKTOP.md](DESKTOP.md).
+| Platform | File | Notes |
+|---|---|---|
+| Android | `Laya-<version>-android-<abi>.apk` | Sideloading requires enabling "Install unknown apps" for whichever app you download it with. |
+| Android TV | `Laya-<version>-android-tv-<abi>.apk` | Sideload with `adb install` or a file manager on the TV. |
+| Wear OS | `Laya-<version>-wear-os.apk` | Install over ADB / Wi-Fi debugging. |
+| Windows | `.exe`, `.msi`, portable `.zip` | Run the `.exe` installer, no admin rights needed. The `.zip` runs from any folder. |
+| macOS | `.dmg`, `.pkg` | `arm64` for Apple Silicon, `x64` for Intel. If macOS blocks it, run `xattr -cr /Applications/Laya.app`. |
+| Linux | `.AppImage`, `.deb`, `.rpm` | AppImage: `chmod +x` and run. Debian/Ubuntu: `sudo apt install ./Laya-*.deb`. Fedora: `sudo dnf install ./Laya-*.rpm`. |
+| iPhone | `Laya-<version>-ios.ipa` | Unsigned, install with [SideStore](#install-on-iphone-with-sidestore). Runs on iPad in iPhone compatibility mode. |
 
 </div>
+
+---
+
+<div align="center">
+
+<h1><a id="install-on-iphone-with-sidestore"></a>Install on iPhone with SideStore</h1>
+
+</div>
+
+The iOS build is an unsigned `.ipa`, so it has to be signed with your own Apple ID. [SideStore](https://sidestore.io) does this on the device and refreshes the app by itself, no computer needed after setup.
+
+1. **Set up SideStore** once by following the official guide at [docs.sidestore.io](https://docs.sidestore.io). It needs a computer for the first install, a free Apple ID, and a local VPN (LocalDevVPN / StosVPN) that SideStore uses to refresh apps.
+2. **Enable Developer Mode** on the device: Settings → Privacy & Security → Developer Mode → On, then restart.
+3. **Download the IPA** from [Releases](https://github.com/impin2rex/Laya/releases) straight onto the iPhone (`Laya-<version>-ios.ipa`).
+4. In SideStore open **My Apps**, tap **+**, and pick the downloaded IPA. Sign in with your Apple ID if asked and wait for the install to finish.
+5. Turn the VPN on and open **Laya** from the home screen. If iOS says the developer is untrusted, go to Settings → General → VPN & Device Management and trust your Apple ID.
+
+**Good to know**
+- A free Apple ID signs apps for **7 days**. SideStore refreshes Laya in the background while the VPN is on; you can also refresh by hand in My Apps.
+- A free account allows 3 active sideloaded apps and 10 App IDs per week. Laya plus its widgets use 2 App IDs.
+- To update, install the newer IPA over the old one. Your data stays.
+- Laya has iPhone widgets (iOS 17+). On iPad it runs as a scaled iPhone app.
 
 ---
 
