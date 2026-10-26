@@ -28,6 +28,14 @@ import com.music.laya.ui.player.AudioOutputDevice
 import com.music.laya.ui.player.AudioOutputKind
 import com.music.laya.ui.player.PlayerDrawer
 import dev.chrisbanes.haze.HazeState
+import platform.AVFAudio.AVAudioSessionPortAirPlay
+import platform.AVFAudio.AVAudioSessionPortBluetoothA2DP
+import platform.AVFAudio.AVAudioSessionPortBluetoothHFP
+import platform.AVFAudio.AVAudioSessionPortBluetoothLE
+import platform.AVFAudio.AVAudioSessionPortCarAudio
+import platform.AVFAudio.AVAudioSessionPortHDMI
+import platform.AVFAudio.AVAudioSessionPortHeadphones
+import platform.AVFAudio.AVAudioSessionPortUSBAudio
 import platform.AVKit.AVRoutePickerView
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
@@ -46,12 +54,14 @@ internal object IosRoute {
 /** iOS cannot list idle outputs, so the list is the one route in use (phone speaker, Bluetooth, AirPlay, ...). */
 private fun currentOutputs(): List<AudioOutputDevice> {
     val r = IosRoute.info() ?: return emptyList()
+    // The session's own constants: the raw values aren't the names (A2DP is "BluetoothA2DPOutput").
     val kind = when (r.portType) {
-        "BluetoothA2DP", "BluetoothHFP", "BluetoothLE", "AirPlay" -> AudioOutputKind.BLUETOOTH
-        "Headphones" -> AudioOutputKind.WIRED
-        "USBAudio" -> AudioOutputKind.USB
-        "HDMI" -> AudioOutputKind.HDMI
-        "CarAudio" -> AudioOutputKind.OTHER
+        AVAudioSessionPortBluetoothA2DP, AVAudioSessionPortBluetoothHFP, AVAudioSessionPortBluetoothLE,
+        AVAudioSessionPortAirPlay -> AudioOutputKind.BLUETOOTH
+        AVAudioSessionPortHeadphones -> AudioOutputKind.WIRED
+        AVAudioSessionPortUSBAudio -> AudioOutputKind.USB
+        AVAudioSessionPortHDMI -> AudioOutputKind.HDMI
+        AVAudioSessionPortCarAudio -> AudioOutputKind.OTHER
         else -> AudioOutputKind.PHONE
     }
     // The built-in speaker is named "Speaker"; blank lets the drawer say "This phone".
