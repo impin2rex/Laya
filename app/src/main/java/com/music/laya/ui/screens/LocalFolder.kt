@@ -111,7 +111,7 @@ class LocalFolder(
      */
     val state: LocalFolderState,
     /** The running order, from the top bar's sort menu. */
-    val sort: LocalMusicSort,
+    override val sort: LocalMusicSort,
     val viewType: LibraryViewType,
     /** Downloads only: the releases those files were asked for as — see [LocalGroups.albumsOf]. */
     val collections: List<DownloadedCollection> = emptyList(),
@@ -131,10 +131,40 @@ class LocalFolder(
      * cache. Set, it puts a download button on every row, Download all in the
      * header, and Download on the selection.
      */
-    val onDownload: ((List<Song>) -> Unit)? = null,
+    override val onDownload: ((List<Song>) -> Unit)? = null,
     /** Cached songs only: takes the selection out of the song cache. */
     val onRemoveFromCache: ((List<Song>) -> Unit)? = null,
-)
+) : DetailFolder {
+    override val selecting get() = state.selecting
+
+    override fun clearSelection() = state.clear()
+
+    @Composable
+    override fun rememberItems(
+        browseId: String,
+        rawSongs: List<Song>,
+        query: String,
+        queue: List<Song>,
+        palette: ArtworkPalette,
+        currentSong: Song?,
+        isPlaying: Boolean,
+        onSongClick: (List<Song>, Int) -> Unit,
+        onSongLongPress: (Song) -> Unit,
+        onSongSwipe: (Song) -> Unit,
+    ): LazyListScope.(Int) -> Unit {
+        val groups = rememberLocalFolderGroups(browseId, this, state.tab, rawSongs, query)
+        return { columns ->
+            localFolderItems(
+                this@LocalFolder, state, queue, groups, query, columns, palette,
+                currentSong, isPlaying, onSongClick, onSongLongPress, onSongSwipe,
+            )
+        }
+    }
+
+    @Composable
+    override fun SelectionBar(songs: List<Song>, modifier: Modifier) =
+        LocalFolderSelectionBar(this, state, songs, modifier)
+}
 
 enum class LocalFolderTab { SONGS, ARTISTS, ALBUMS }
 

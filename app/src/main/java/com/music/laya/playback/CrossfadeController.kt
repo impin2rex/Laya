@@ -15,7 +15,18 @@ import com.music.laya.data.settings.MixBlend
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TrackAnalysisState
 import com.music.laya.data.settings.TransitionWindow
+import com.music.laya.playback.smart.AimedFilters
+import com.music.laya.playback.smart.BeatPhase
 import com.music.laya.playback.smart.CrossfadeMode
+import com.music.laya.playback.smart.PhaseLock
+import com.music.laya.playback.smart.PositionClock
+import com.music.laya.playback.smart.TempoEase
+import com.music.laya.playback.smart.TempoRamp
+import com.music.laya.playback.smart.TransitionFilters
+import com.music.laya.playback.smart.TransitionRender
+import com.music.laya.playback.smart.fallGain
+import com.music.laya.playback.smart.headroomFor
+import com.music.laya.playback.smart.rampStepsFor
 import com.music.laya.playback.smart.FILTER_ECHO_AT
 import com.music.laya.playback.smart.FilterTransitionVariant
 import com.music.laya.playback.smart.TrackAnalysis
@@ -327,11 +338,56 @@ class CrossfadeController(
     /** How much faster the incoming timeline runs than the outgoing one through the blend. */
     private val mediaRatio: Double get() = incomingPlaybackRate / outgoingPlaybackRate
 
-    /** The outgoing speed-up ramp: steps in all, one beat of outgoing media each, from [rampStartMs]. */
-    private var rampSteps = 0
-    private var rampStepMs = 0L
-    private var rampStartMs = 0L
-    private var rampStep = 0
+    /** The outgoing speed-up ramp: steps in all, one beat of outgoing media each. */
+    private val ramp = TempoRamp()
+
+    /**
+     * [filters] addressed by track rather than by session role.
+     *
+     * The service wires [TransitionFilters.incoming] to the session player's
+     * sink and [TransitionFilters.outgoing] to the spare's, which describes the
+     * two tracks only once the handoff has moved the session. The handoff is
+     * halfway through the blend now, so for the first half the roles are the
+     * other way round, and each ride would otherwise be filtering the wrong
+     * song.
+     */
+    private val tracks = object : AimedFilters {
+        /**
+         * Which side a ride pass may aim. Both, unless [TransitionRender.rideFilters] is evaluating
+         * the style at two different points in the blend — one per side, because each side's
+         * filter runs its own distance ahead of the speaker.
+         */
+        override var aimIncoming = true
+        override var aimOutgoing = true
+
+        /** Unmasked and in session roles, as the ride's "open" always was. */
+        override fun open() = filters.open()
+
+        override fun incoming(lowPassHz: Float, highPassHz: Float) {
+            if (!aimIncoming) return
+            if (handedOff) filters.incoming(lowPassHz, highPassHz) else filters.outgoing(lowPassHz, highPassHz)
+        }
+
+        override fun outgoing(lowPassHz: Float, highPassHz: Float) {
+            if (!aimOutgoing) return
+            if (handedOff) filters.outgoing(lowPassHz, highPassHz) else filters.incoming(lowPassHz, highPassHz)
+        }
+
+        override fun incomingLeadMs(): Long =
+            if (handedOff) filters.incomingLeadMs() else filters.outgoingLeadMs()
+
+        override fun outgoingLeadMs(): Long =
+            if (handedOff) filters.outgoingLeadMs() else filters.incomingLeadMs()
+
+        override fun outgoingEcho(delaySeconds: Float, send: Float, dry: Float) {
+            if (!aimOutgoing) return
+            if (handedOff) {
+                filters.outgoingEcho(delaySeconds, send, dry)
+            } else {
+                filters.incomingEcho(delaySeconds, send, dry)
+            }
+        }
+    }
 
     /**
      * The style-specific half of the plan in flight — everything [rideFilters]
@@ -339,111 +395,7 @@ class CrossfadeController(
      * is recomputed every tick and a bass swap that moved to a different beat
      * halfway through the blend would be heard as the low end flapping.
      */
-    private var render = Render()
-
-    /**
-     * The style fields of a [com.music.laya.playback.smart.TransitionPlan],
-     * separated out so the standard (non-Smart) path can pass defaults without
-     * constructing a plan it never made.
-     *
-     * Every fraction the ride reads is resolved here, once per transition,
-     * rather than on each 30ms fade tick. With [advanced] off they come out as
-     * the classic constants; with it on and a trusted grid, each is moved onto
-     * the nearest beat or bar of the overlap, so the bass swap, the filters
-     * opening and the echo all land where a DJ would put them.
-     */
-    private class Render(
-        val style: TransitionStyle = TransitionStyle.EQUAL_POWER,
-        val bassSwap: Boolean = false,
-        bassSwapFraction: Double = 0.7,
-        val filterSweep: Double = 0.0,
-        val filterVariant: FilterTransitionVariant = FilterTransitionVariant.SWEEP,
-        val vocalOverlap: Double = 0.0,
-        /** Advanced Automix: DJ fader curves, moves on the beat, phase lock, tempo ease-back. */
-        val advanced: Boolean = false,
-        /** The overlap's length in outgoing beats; 0 when the grid is not trusted. */
-        beats: Double = 0.0,
-        lockPhase: Boolean = false,
-        /** The plan's echo time; 0 for no echo out. */
-        echoSeconds: Double = 0.0,
-    ) {
-        private val grid = if (advanced && beats >= 2.0) beats else 0.0
-        val clash = vocalOverlap.coerceIn(0.0, 1.0)
-
-        /** Echo the outgoing track out rather than fading or filtering it away. Needs the grid it repeats on. */
-        val echo = grid > 0 && echoSeconds > 0.0
-        val echoSecondsF = echoSeconds.toFloat()
-
-        /** How long the repeats ring after the dry signal goes, in ms. */
-        val echoTailMs = (echoTailSeconds(echoSeconds) * 1000).toFloat()
-
-        /** Hold the two beats in phase by nudging the incoming track's speed. */
-        val phaseLock = advanced && lockPhase
-
-        val swapAt = onBeat(bassSwapFraction.coerceIn(0.05, 0.95))
-
-        /** The low end changes hands over half a beat that ends on [swapAt]; classically, centred on it. */
-        val swapWidth = if (grid > 0) SWAP_BEATS / grid else 2 * BASS_SWAP_WIDTH
-        val swapFrom = if (grid > 0) swapAt - swapWidth else swapAt - BASS_SWAP_WIDTH
-        val entryOpenBy = onBar(
-            when (filterVariant) {
-                FilterTransitionVariant.SWEEP -> ENTRY_OPEN_BY
-                FilterTransitionVariant.BASS_HANDOFF -> 0.38
-                FilterTransitionVariant.ECHO_RIDE -> 0.52
-            },
-        )
-        val vocalEntryOpenBy = onBar(entryOpenBy + (VOCAL_SAFE_ENTRY_OPEN_BY - entryOpenBy) * clash)
-        val blendEntryOpenBy = onBar(BLEND_ENTRY_OPEN_BY + (BLEND_ENTRY_CLASH_OPEN_BY - BLEND_ENTRY_OPEN_BY) * clash)
-        val blendExitFrom = onBar(BLEND_EXIT_FROM + (BLEND_EXIT_CLASH_FROM - BLEND_EXIT_FROM) * clash)
-        val filterSwapAt = onBar(
-            when (filterVariant) {
-                FilterTransitionVariant.SWEEP -> FILTER_BASS_SWAP_AT
-                FilterTransitionVariant.BASS_HANDOFF -> 0.43
-                FilterTransitionVariant.ECHO_RIDE -> 0.58
-            },
-        )
-        val filterSwapAtF = filterSwapAt.toFloat()
-
-
-        /**
-         * Where the dry outgoing signal is killed and only its echo goes on:
-         * the filter ride's bass handover. The send opens
-         * across the beat before it, so what repeats is that one beat — the
-         * DJ move of hitting echo on the last beat and pulling the fader.
-         */
-        val echoAt = onBar(FILTER_ECHO_AT)
-        val echoFrom = if (grid > 0) echoAt - 1.0 / grid else echoAt
-        val echoKill = if (grid > 0) ECHO_KILL_BEATS / grid else 0.0
-
-        /**
-         * How much of the DJ fader curve a blend keeps: all of it for two tracks
-         * that don't sing over each other, none — plain equal power — for a
-         * head-on vocal collision, where both faders up would only be louder.
-         */
-        val holdFaders = (1.0 - clash).toFloat()
-        val swapAtF = swapAt.toFloat()
-
-        /**
-         * Where the session moves to the incoming track. Advanced: when it
-         * actually takes over — the bass swap in a blend.
-         */
-        val handoffAt = when {
-            !advanced -> HANDOFF_AT
-            style == TransitionStyle.DJ_BLEND && bassSwap -> swapAtF
-            style == TransitionStyle.DJ_FILTER && filterVariant == FilterTransitionVariant.BASS_HANDOFF -> filterSwapAtF
-            else -> HANDOFF_AT
-        }
-
-        private fun onBeat(fraction: Double): Double =
-            if (grid > 0) (round(fraction * grid) / grid).coerceIn(1.0 / grid, 1.0 - 1.0 / grid) else fraction
-
-        private fun onBar(fraction: Double): Double =
-            if (grid >= 8.0) {
-                (round(fraction * grid / 4.0) * 4.0 / grid).coerceIn(4.0 / grid, 1.0 - 4.0 / grid)
-            } else {
-                onBeat(fraction)
-            }
-    }
+    private var render = TransitionRender(tracks = tracks)
 
     private var fadeStartedAt = 0L
 
@@ -497,76 +449,27 @@ class CrossfadeController(
 
     // ---- Phase lock (Advanced Automix) --------------------------------------
 
-    /** When the speed nudge in flight ends, from [SystemClock.elapsedRealtime]; 0 when none is. */
-    private var nudgeUntil = 0L
+    private val phaseLock = PhaseLock()
 
-    /** No phase is measured before this: the players are settling after a start or a nudge. */
-    private var lockQuietUntil = 0L
-
-    /** Phase errors, in incoming seconds, gathered until there are enough to take a median of. */
-    private val lockErrors = DoubleArray(LOCK_SAMPLES)
-    private var lockCount = 0
-
-    /** [beatAt]'s answer — seconds past the last beat, and that beat's length — without allocating. */
-    private val beatScratch = DoubleArray(2)
+    /** [BeatPhase]'s answer for the scrubber's pulse, without allocating. */
+    private val beatPhase = BeatPhase()
 
     /** Where each side of the blend really is between the player's own reports — see [PositionClock]. */
-    private val outClock = PositionClock()
-    private val inClock = PositionClock()
+    private val outClock = PositionClock(HALF_TICK_NANOS)
+    private val inClock = PositionClock(HALF_TICK_NANOS)
 
-    /**
-     * A player's position between the moments it actually reports one.
-     *
-     * Media3 1.11 schedules its playback loop dynamically: while the output
-     * buffer is full it sleeps, and [ExoPlayer.getCurrentPosition] only moves
-     * when it wakes — measured here at about every 280ms, a step at a time.
-     * Everything a blend times off a position was reading those steps: the
-     * faders and filters moved in lurches, the scrubber's beat anchor jumped by
-     * up to a beat, and the phase lock compared two players whose last reports
-     * were a quarter of a second apart in age, on a 320ms beat — noise it then
-     * dutifully "corrected".
-     *
-     * So each new report is taken as having landed halfway through the tick it
-     * was seen in, and moved on from there at the player's own speed until the
-     * next one. One subtraction and one multiply per read, and no need to turn
-     * the scheduling — and the battery it saves — off.
-     */
-    private class PositionClock {
-        private var player: ExoPlayer? = null
-        private var reported = 0L
-        private var seenAt = 0L
-
-        fun reset() {
-            player = null
-        }
-
-        /** [p]'s position now, in ms. */
-        fun read(p: ExoPlayer): Double {
-            val now = System.nanoTime()
-            val position = p.currentPosition
-            if (p !== player || position != reported) {
-                seenAt = if (p === player) now - HALF_TICK_NANOS else now
-                player = p
-                reported = position
-            }
-            if (!p.isPlaying) return position.toDouble()
-            val since = (now - seenAt).coerceIn(0L, MAX_EXTRAPOLATION_NANOS)
-            return position + since / 1e6 * p.playbackParameters.speed
-        }
-    }
+    private fun PositionClock.of(p: ExoPlayer): Double =
+        read(p, p.currentPosition, p.isPlaying, p.playbackParameters.speed, System.nanoTime())
 
     /** [player]'s position through whichever clock follows its side of the blend. */
     private fun positionMs(player: ExoPlayer): Double =
-        if (player === incoming) inClock.read(player) else outClock.read(player)
+        if (player === incoming) inClock.of(player) else outClock.of(player)
 
     // ---- Tempo ease-back (Advanced Automix) --------------------------------
 
     /** The player still coming off a beatmatch stretch after its blend finished, or null. */
     private var easing: ExoPlayer? = null
-    private var easeRate = 1.0
-    private var easeStep = 0.0
-    private var easeStepMs = 0L
-    private var easeNextAtMs = 0L
+    private val ease = TempoEase()
     private var easeItemIndex = 0
     private var softSpeedJob: Job? = null
 
@@ -1035,18 +938,7 @@ class CrossfadeController(
             playbackRate = plan.incomingPlaybackRate,
             outgoingRate = plan.outgoingPlaybackRate,
             beatMs = beatMs,
-            renderStyle = Render(
-                style = plan.transitionStyle,
-                bassSwap = plan.bassSwap,
-                bassSwapFraction = plan.bassSwapFraction,
-                filterSweep = plan.filterSweep,
-                filterVariant = plan.filterVariant,
-                vocalOverlap = plan.vocalOverlap,
-                advanced = advanced,
-                beats = if (plan.beatSeconds > 0) plan.fadeSeconds / plan.beatSeconds else 0.0,
-                lockPhase = plan.phaseLock,
-                echoSeconds = plan.echoSeconds,
-            ),
+            renderStyle = TransitionRender.of(plan, advanced, tracks),
         )
     }
 
@@ -1194,7 +1086,7 @@ class CrossfadeController(
         playbackRate: Double = 1.0,
         outgoingRate: Double = 1.0,
         beatMs: Long = 0L,
-        renderStyle: Render = Render(),
+        renderStyle: TransitionRender? = null,
     ): Boolean {
         val out = active()
         val into = standby()
@@ -1211,12 +1103,9 @@ class CrossfadeController(
         incomingCueTimeMs = cueTimeMs.coerceAtLeast(0L)
         incomingPlaybackRate = playbackRate
         outgoingPlaybackRate = outgoingRate
-        rampSteps = if (beatMs > 0L) rampStepsFor(outgoingRate) else 0
-        rampStepMs = beatMs
-        rampStartMs = endMs - fade - rampSteps * beatMs
-        rampStep = 0
-        render = renderStyle
-        armDeadline = SystemClock.elapsedRealtime() + ARM_TIMEOUT_MS + rampSteps * beatMs
+        ramp.begin(outgoingRate, beatMs, endMs, fade)
+        render = renderStyle ?: TransitionRender(tracks = tracks)
+        armDeadline = SystemClock.elapsedRealtime() + ARM_TIMEOUT_MS + ramp.steps * beatMs
         handedOff = false
         outgoing = out
         incoming = into
@@ -1405,8 +1294,8 @@ class CrossfadeController(
         } else {
             0f
         }
-        rideFilters(0f, outgoingAt.takeIf { it > 0f }?.coerceAtMost(1f))
-        if (rampSteps > 0) rampOutgoing(out)
+        render.rideFilters(0f, outgoingAt.takeIf { it > 0f }?.coerceAtMost(1f))
+        if (ramp.steps > 0) rampOutgoing(out)
 
         // Wait for the track to actually reach the fade point. [fadeEndMs] is
         // the track's own duration in standard mode, or a Automix plan's
@@ -1433,16 +1322,14 @@ class CrossfadeController(
         into.volume = 0f
         into.playWhenReady = true
         fadeStartedAt = SystemClock.elapsedRealtime()
-        nudgeUntil = 0L
-        lockCount = 0
         outClock.reset()
         inClock.reset()
         // The incoming player's clock is still settling off its start.
-        lockQuietUntil = fadeStartedAt + LOCK_START_MS
+        phaseLock.start(fadeStartedAt)
         // However the ramp went — a late arm, a slow buffer — the blend starts
         // on the incoming tempo.
-        if (rampSteps > 0 && rampStep < rampSteps) {
-            rampStep = rampSteps
+        if (ramp.pending) {
+            ramp.finish()
             out.setPlaybackSpeed((AppSettings.playbackSpeed.value * outgoingPlaybackRate).toFloat())
         }
         outgoingAnalysis = out.currentMediaItem?.let(analysisFor) ?: TrackAnalysis()
@@ -1561,7 +1448,7 @@ class CrossfadeController(
             ?.coerceAtLeast(0L)
         val incomingCap = remainingIncoming?.div(3) ?: Long.MAX_VALUE
         val span = minOf(fadeMs, incomingCap).coerceAtLeast(1L)
-        val elapsed = (inClock.read(player) - incomingCueTimeMs).coerceAtLeast(0.0).toFloat()
+        val elapsed = (inClock.of(player) - incomingCueTimeMs).coerceAtLeast(0.0).toFloat()
         // Advanced: [fadeMs] is outgoing time, and a stretched incoming track
         // covers `rate` times as much of its own timeline in it — unscaled, a
         // 4% stretch finished the blend 4% early and left the incoming drop
@@ -1592,12 +1479,12 @@ class CrossfadeController(
         val incomingAt = ((elapsed + tracks.incomingLeadMs()) / wallSpan).coerceIn(0f, 1f)
         val outgoingAt = (progress + tracks.outgoingLeadMs() / span.toFloat()).coerceIn(0f, 1f)
 
-        val rise = mixRise(progress)
-        val fall = mixFall(progress)
+        val rise = render.mixRise(progress)
+        val fall = render.mixFall(progress)
         player.volume = rise
         out.volume = if (ranOn(out)) 0f else fall
         onBlendHeadroom(
-            headroomFor(mixRise(outgoingAt), outgoingLevel(elapsed / wallSpan + tracks.outgoingLeadMs() / span.toFloat(), wallSpan)),
+            headroomFor(render.mixRise(outgoingAt), render.outgoingLevel(elapsed / wallSpan + tracks.outgoingLeadMs() / span.toFloat(), wallSpan)),
         )
         if (render.phaseLock) holdPhase(out, player, progress)
 
@@ -1609,7 +1496,7 @@ class CrossfadeController(
             handOff(out, player)
         }
         publishBlend(out, player)
-        rideFilters(incomingAt, outgoingAt)
+        render.rideFilters(incomingAt, outgoingAt)
 
         // Finish when the fade runs its course or its setting is switched off.
         // The outgoing decoder ending is not completion: its final sample may
@@ -1676,10 +1563,10 @@ class CrossfadeController(
         var beatMs = 0f
         var anchor = 0L
         for ((analysis, player) in sides) {
-            if (!beatAt(analysis, positionMs(player) / 1000.0)) continue
+            if (!beatPhase.at(analysis, positionMs(player) / 1000.0)) continue
             val rate = player.playbackParameters.speed.toDouble().takeIf { it > 0.0 } ?: 1.0
-            val sinceBeat = beatScratch[0]
-            beatMs = (beatScratch[1] * 1000.0 / rate).toFloat()
+            val sinceBeat = beatPhase.sinceBeat
+            beatMs = (beatPhase.beatSeconds * 1000.0 / rate).toFloat()
             anchor = System.nanoTime() - (sinceBeat / rate * 1e9).toLong()
             break
         }
@@ -1840,8 +1727,8 @@ class CrossfadeController(
         filters.open()
         filters.parkEchoes()
         onBlendHeadroom(1f)
-        render = Render()
-        nudgeUntil = 0L
+        render = TransitionRender(tracks = tracks)
+        phaseLock.stop()
 
         if (handedOff) {
             // The roles have already traded: the incoming player is the session
@@ -1879,7 +1766,7 @@ class CrossfadeController(
         incomingCueTimeMs = 0L
         incomingPlaybackRate = 1.0
         outgoingPlaybackRate = 1.0
-        rampSteps = 0
+        ramp.clear()
         outgoingAnalysis = TrackAnalysis()
         incomingAnalysis = TrackAnalysis()
         phase = Phase.IDLE
@@ -1927,399 +1814,6 @@ class CrossfadeController(
     }
 
     /**
-     * [filters] addressed by track rather than by session role.
-     *
-     * The service wires [TransitionFilters.incoming] to the session player's
-     * sink and [TransitionFilters.outgoing] to the spare's, which describes the
-     * two tracks only once the handoff has moved the session. The handoff is
-     * halfway through the blend now, so for the first half the roles are the
-     * other way round, and each ride would otherwise be filtering the wrong
-     * song.
-     */
-    private val tracks = object : TransitionFilters {
-        override fun incoming(lowPassHz: Float, highPassHz: Float) {
-            if (!aimIncoming) return
-            if (handedOff) filters.incoming(lowPassHz, highPassHz) else filters.outgoing(lowPassHz, highPassHz)
-        }
-
-        override fun outgoing(lowPassHz: Float, highPassHz: Float) {
-            if (!aimOutgoing) return
-            if (handedOff) filters.outgoing(lowPassHz, highPassHz) else filters.incoming(lowPassHz, highPassHz)
-        }
-
-        override fun incomingLeadMs(): Long =
-            if (handedOff) filters.incomingLeadMs() else filters.outgoingLeadMs()
-
-        override fun outgoingLeadMs(): Long =
-            if (handedOff) filters.outgoingLeadMs() else filters.incomingLeadMs()
-
-        override fun outgoingEcho(delaySeconds: Float, send: Float, dry: Float) {
-            if (!aimOutgoing) return
-            if (handedOff) {
-                filters.outgoingEcho(delaySeconds, send, dry)
-            } else {
-                filters.incomingEcho(delaySeconds, send, dry)
-            }
-        }
-    }
-
-    /**
-     * Which side a ride pass may aim. Both, unless [rideFilters] is evaluating
-     * the style at two different points in the blend — one per side, because
-     * each side's filter runs its own distance ahead of the speaker.
-     */
-    private var aimIncoming = true
-    private var aimOutgoing = true
-
-    /**
-     * Aims the incoming filter at [incomingAt] and the outgoing one at
-     * [outgoingAt]: each the point in the blend its sink is processing *now*,
-     * which is seconds past the point being heard — see
-     * [TransitionFilterProcessor.leadUs]. Driving both off the heard progress,
-     * as this used to, left every filter move seconds late: the incoming track
-     * played its first seconds unfiltered, and the entry filter was still
-     * lifting after the faders had finished.
-     *
-     * One style pass when the two agree, two masked passes when they don't —
-     * a handful of `pow`s either way. [outgoingAt] is null for the arming
-     * case, where the outgoing sink has not reached the blend yet and must be
-     * left open.
-     */
-    private fun rideFilters(incomingAt: Float, outgoingAt: Float?) {
-        if (outgoingAt == incomingAt) {
-            rideStyle(incomingAt)
-            return
-        }
-        // Incoming first: the few progress-independent branches that open both
-        // filters agree with themselves, and the outgoing pass after this one
-        // then has the last word on its own side.
-        aimOutgoing = false
-        rideStyle(incomingAt)
-        aimOutgoing = true
-        if (outgoingAt == null) return
-        aimIncoming = false
-        rideStyle(outgoingAt)
-        aimIncoming = true
-    }
-
-    /**
-     * Renders the plan's [TransitionStyle] as filtering across the blend.
-     *
-     * The gain curve is the same equal-power pair for every style — this is
-     * what makes them sound different from each other, and it is the whole of
-     * Phase 4. Driven off the same `progress` as the gains so the two stay
-     * locked: a pause parks the filter exactly where it parks the fade.
-     */
-    private fun rideStyle(progress: Float) {
-        when (render.style) {
-            TransitionStyle.DJ_FILTER -> when (render.filterVariant) {
-                FilterTransitionVariant.BASS_HANDOFF -> rideFallbackBassHandoff(progress)
-                FilterTransitionVariant.SWEEP,
-                FilterTransitionVariant.ECHO_RIDE,
-                -> rideFilterSweep(progress)
-            }
-            TransitionStyle.DJ_BLEND ->
-                if (render.bassSwap) rideBassSwap(progress) else rideVocalSeparation(progress)
-            // GAPLESS is an album being played through, where any filtering would
-            // be an edit the record didn't ask for — so it stays open whatever
-            // the material does.
-            TransitionStyle.GAPLESS -> filters.open()
-            // EQUAL_POWER used to be defined the same way: the bottom tier,
-            // reached because the evidence was too weak to justify anything more
-            // opinionated, therefore don't touch the spectrum.
-            //
-            // That conflated two different kinds of evidence. The tier is decided
-            // by tempo and beat confidence; whether both tracks are singing is
-            // measured by a separate model that doesn't depend on either. A pair
-            // can have useless tempo evidence — dropping it to this tier — and a
-            // perfectly good vocal mask on both sides saying they collide. Every
-            // one of those transitions was rendered as a plain crossfade with two
-            // full vocals over each other, because the weak half of the evidence
-            // was silencing the strong half.
-            TransitionStyle.EQUAL_POWER -> rideVocalSeparation(progress)
-        }
-        if (render.echo) rideEchoOut(progress)
-    }
-
-    /**
-     * Echo out, over whatever the style did to the outgoing side: that track
-     * stays open — an echo of a muffled signal is only mud — with its low end
-     * handed off on the echo beat, the send opening across the beat before it,
-     * and the dry signal killed on it. After that only the repeats are left,
-     * ringing over the incoming track.
-     *
-     * Left alone before the send opens, so the echo stage is not even engaged
-     * — not a sample touched — until the beat that feeds it.
-     */
-    private fun rideEchoOut(progress: Float) {
-        val p = progress.toDouble()
-        val handover = ((p - (render.echoAt - render.swapWidth)) / render.swapWidth).coerceIn(0.0, 1.0)
-        tracks.outgoing(TransitionFilterProcessor.OPEN_HZ, bassCutoff(handover))
-        if (p < render.echoFrom) return
-        val send = if (p >= render.echoAt) 0.0 else (p - render.echoFrom) / (render.echoAt - render.echoFrom)
-        tracks.outgoingEcho(render.echoSecondsF, send.toFloat(), echoDry(progress))
-    }
-
-    /** The outgoing dry level in an echo out: whole until the echo beat, gone a fraction of a beat after. */
-    private fun echoDry(progress: Float): Float =
-        (1.0 - ((progress - render.echoAt) / render.echoKill).coerceIn(0.0, 1.0)).toFloat()
-
-    /**
-     * How loud the outgoing track actually is at [progress] — uncapped, since
-     * an echo tail runs past the end of the blend — for the headroom trim: its
-     * fader, or with an echo out, where the fader stays up for the repeats and
-     * the chain does the fading, the louder of its dry signal and its repeats.
-     * The repeats sum with a full-level incoming track in the platform mixer
-     * just as a dry signal would.
-     */
-    private fun outgoingLevel(progress: Float, wallSpan: Float): Float {
-        if (!render.echo) return mixFall(progress)
-        val sinceEcho = (progress - render.echoAt.toFloat()) * wallSpan
-        val repeats = if (sinceEcho > 0f) sinceEcho / (render.echoSecondsF * 1000f) else 0f
-        val wet = if (sinceEcho > 0f) ECHO_LEVEL * ECHO_DECAY.pow(repeats) else 0f
-        return maxOf(echoDry(progress), wet)
-    }
-
-    /**
-     * The minimum intervention: pull two colliding vocals apart, and otherwise
-     * leave the spectrum alone.
-     *
-     * Not a filter ride. [rideFilterSweep] is a *style* — a gesture chosen for a
-     * pair that cannot be blended flat, driving to [FILTER_FLOOR_HZ] and taking
-     * the outgoing track somewhere distant. This is damage control on a pair that
-     * was going to be crossfaded plainly, and it has to stay subtle enough that a
-     * listener notices the absence of the clash rather than the presence of a
-     * filter. So it works the same way — complementary bands, outgoing losing its
-     * top while the incoming enters with its body lifted — over a much shorter
-     * distance, and only as far as the measured collision justifies.
-     *
-     * Zero overlap leaves both sides open, which is exactly what these styles did
-     * before, so nothing changes for a pair that doesn't collide or for either
-     * track lacking a vocal mask.
-     */
-    private fun rideVocalSeparation(progress: Float) {
-        val amount = render.vocalOverlap.coerceIn(0.0, 1.0)
-        if (amount <= 0.0) {
-            filters.open()
-            return
-        }
-        val open = TransitionFilterProcessor.OPEN_HZ.toDouble()
-        // Both endpoints scaled by the collision, so a marginal clash is nudged
-        // and a full one is properly separated, rather than everything getting
-        // the same treatment at different speeds.
-        val floor = glide(open, VOCAL_SEPARATION_FLOOR_HZ, amount)
-        tracks.outgoing(
-            glide(open, floor, progress.toDouble().pow(FILTER_SWEEP_SHAPE)).toFloat(),
-            TransitionFilterProcessor.OFF_HZ,
-        )
-        tracks.incoming(
-            TransitionFilterProcessor.OPEN_HZ,
-            entryHighPass(progress, amount, VOCAL_SEPARATION_HIGH_PASS_HZ, ENTRY_OPEN_BY),
-        )
-    }
-
-    /**
-     * Pulls the outgoing track behind a closing low-pass while the incoming one
-     * arrives with its body lifted out, for a pair too far apart in tempo to
-     * blend flat.
-     *
-     * ## Why both sides are filtered
-     *
-     * The first version filtered only the outgoing track, and squared the
-     * progress so that the sweep was spent almost entirely in the second half.
-     * Both halves of that were wrong for the same reason: at the midpoint the
-     * outgoing cutoff was still at 6.9kHz — wide open across the whole vocal
-     * range — and the incoming track was explicitly set to no filtering at all.
-     * So for the entire first half of every transition, two complete vocals
-     * played over each other at comparable level, and the only thing
-     * distinguishing them was gain. That is what a plain crossfade sounds like,
-     * which is the one thing this is meant not to be.
-     *
-     * What a DJ does instead is hand the midrange over rather than double it:
-     * the outgoing track starts losing its top the moment the blend begins, and
-     * the incoming one enters high-passed — hats and presence only, no vocal
-     * body — opening out as the outgoing track darkens. The two occupy
-     * complementary bands through the middle of the blend and never compete for
-     * the range a voice lives in.
-     *
-     * [FILTER_SWEEP_SHAPE] is what replaces the squaring: front-loaded now, so
-     * the outgoing track's top is gone within the first tenth of the blend
-     * rather than somewhere past the midpoint. What keeps that from gutting the
-     * track being left is [FILTER_FLOOR_HZ] — the ride settles onto a 300Hz bed
-     * and stays there — not restraint in the early travel, which is the part the
-     * listener reads as the transition happening at all.
-     */
-    private fun rideFilterSweep(progress: Float) {
-        val sweep = render.filterSweep.coerceIn(0.0, 1.0)
-        if (sweep <= 0.0) {
-            filters.open()
-            return
-        }
-        // Both ends scaled by [filterSweep], so a partial sweep engages less
-        // sharply *and* stops short of the floor rather than crawling the same
-        // distance more slowly.
-        val open = TransitionFilterProcessor.OPEN_HZ.toDouble()
-        val entry = glide(open, FILTER_ENTRY_HZ, sweep)
-        val floor = glide(open, FILTER_FLOOR_HZ, sweep)
-        val cutoff = glide(entry, floor, progress.toDouble().pow(FILTER_SWEEP_SHAPE))
-        val entryCorner = entryHighPass(
-            progress,
-            sweep,
-            glide(ENTRY_HIGH_PASS_HZ, VOCAL_SAFE_ENTRY_HIGH_PASS_HZ, render.clash),
-            render.vocalEntryOpenBy,
-        )
-        if (!render.advanced) {
-            tracks.outgoing(cutoff.toFloat(), TransitionFilterProcessor.OFF_HZ)
-            tracks.incoming(TransitionFilterProcessor.OPEN_HZ, entryCorner)
-            return
-        }
-        // Two tempi that don't match are two kicks that flam, and the 300Hz bed
-        // keeps the outgoing kick whole. So the low end still changes hands
-        // once, on a beat — only one kick is ever playing.
-        val handover = ((progress - (render.filterSwapAt - render.swapWidth)) / render.swapWidth).coerceIn(0.0, 1.0)
-        tracks.outgoing(cutoff.toFloat(), bassCutoff(handover))
-        tracks.incoming(TransitionFilterProcessor.OPEN_HZ, maxOf(entryCorner, bassCutoff(1.0 - handover)))
-    }
-
-    /**
-     * A compact fallback move for unmatched grids: keep the mids recognisable,
-     * remove the two kicks from each other's way, then darken the outgoing deck
-     * as the incoming low end takes over. This is deliberately a different
-     * gesture from the long filter sweep and uses the same two filter stages.
-     */
-    private fun rideFallbackBassHandoff(progress: Float) {
-        val p = progress.toDouble()
-        val handover = ((p - (render.filterSwapAt - render.swapWidth)) / render.swapWidth).coerceIn(0.0, 1.0)
-        val exitAmount = ((p - render.filterSwapAt) / (1.0 - render.filterSwapAt)).coerceIn(0.0, 1.0)
-        val handoffTone = glide(
-            TransitionFilterProcessor.OPEN_HZ.toDouble(),
-            FALLBACK_HANDOFF_FLOOR_HZ,
-            exitAmount.pow(FALLBACK_HANDOFF_SHAPE),
-        )
-        // If timed masks found two singers, start clearing the outgoing vocal
-        // range immediately instead of waiting for the bass exchange.
-        val vocalTone = glide(
-            TransitionFilterProcessor.OPEN_HZ.toDouble(),
-            VOCAL_SEPARATION_FLOOR_HZ,
-            render.clash * p.pow(VOCAL_SAFE_EXIT_SHAPE),
-        )
-        val outgoingTone = minOf(handoffTone, vocalTone).toFloat()
-        val incomingEntry = entryHighPass(
-            progress,
-            1.0,
-            glide(FALLBACK_HANDOFF_ENTRY_HZ, VOCAL_SAFE_ENTRY_HIGH_PASS_HZ, render.clash),
-            render.vocalEntryOpenBy,
-        )
-        tracks.outgoing(outgoingTone, bassCutoff(handover))
-        tracks.incoming(TransitionFilterProcessor.OPEN_HZ, maxOf(incomingEntry, bassCutoff(1.0 - handover)))
-    }
-
-    /**
-     * Where the incoming track's high-pass sits at [progress].
-     *
-     * Rides from [topHz] down to nothing by [openBy] of the fade, so the track
-     * is whole well before it is alone — the filter is there to keep it out of
-     * the outgoing vocal's way during the overlap, not to colour the track the
-     * listener is left with. [amount] scales the whole gesture, so a partial
-     * sweep lifts proportionally less out.
-     *
-     * [ENTRY_SHAPE] is why the descent isn't linear. A geometric glide runs from
-     * [TransitionFilterProcessor.OFF_HZ] to [topHz], and the bottom half of that
-     * range is sub-bass nobody hears a filter in: measured, a plain ride was
-     * down to 123Hz by a third of the way through, which is to say doing nothing
-     * at all for two thirds of the overlap. The exponent spends the travel where
-     * a voice actually is — 772Hz at a sixth of the way in, 436Hz at a third —
-     * and still arrives at fully open on time.
-     */
-    private fun entryHighPass(progress: Float, amount: Double, topHz: Double, openBy: Double): Float {
-        val remaining = (1.0 - progress / openBy).coerceIn(0.0, 1.0)
-        return glide(TransitionFilterProcessor.OFF_HZ.toDouble(), topHz, amount * remaining.pow(ENTRY_SHAPE))
-            .toFloat()
-    }
-
-    /**
-     * Geometric interpolation between two cutoffs: [amount] 0 gives [from], 1
-     * gives [to].
-     *
-     * Geometric rather than linear because pitch is logarithmic — a cutoff
-     * moving in equal Hz steps sounds like it lurches through the bottom of its
-     * range and crawls through the top.
-     */
-    private fun glide(from: Double, to: Double, amount: Double): Double =
-        from * (to / from).pow(amount.coerceIn(0.0, 1.0))
-
-    /**
-     * Hands the low end from one track to the other, once, at the beat the
-     * planner chose.
-     *
-     * Below [BASS_SWAP_HZ] exactly one track is present at any instant: the
-     * incoming track arrives with its low end lifted out, and takes it over as
-     * the outgoing track's is lifted in turn. Ramped over [BASS_SWAP_WIDTH] of
-     * the fade rather than switched, because a 24 dB/octave filter appearing in
-     * one buffer is a transient of its own.
-     *
-     * The midrange is handled far more lightly than in [rideFilterSweep] but is
-     * no longer left alone, which it was. This style is chosen for pairs that
-     * are beat-matched and close in tempo, so the two tracks are *meant* to
-     * sound simultaneous — but "simultaneous" and "two lead vocals at once" are
-     * not the same thing, and only the bass was ever being separated. So the
-     * incoming track still enters with its body lifted, over a shorter window
-     * and from a lower corner, and the outgoing track loses its top in the last
-     * half, where it is already quiet enough that the change reads as it
-     * receding rather than as an effect.
-     */
-    private fun rideBassSwap(progress: Float) {
-        // 0 before the swap window, 1 after it: how much of the low end has
-        // changed hands. Classically a window centred on the swap; advanced,
-        // half a beat that ends on it, so the new kick arrives on the one.
-        val handover = ((progress - render.swapFrom) / render.swapWidth).coerceIn(0.0, 1.0)
-        // The incoming track's own low end is already being held out by the
-        // swap, so whichever corner sits higher is the one doing the work.
-        // Scaled up by however much the two are actually singing over each other.
-        // A blend is chosen for pairs on a shared grid, which is the case where
-        // nothing about the arrangement separates two lead vocals — they sit in
-        // the same bar and the same range for the whole overlap — so the fixed
-        // corner that was here handled a marginal collision and a head-on one
-        // identically. At full collision the entry corner reaches
-        // [BLEND_ENTRY_CLASH_HIGH_PASS_HZ] and holds longer.
-        val clash = render.vocalOverlap.coerceIn(0.0, 1.0)
-        val entry = maxOf(
-            bassCutoff(1.0 - handover),
-            entryHighPass(
-                progress,
-                1.0,
-                glide(BLEND_ENTRY_HIGH_PASS_HZ, BLEND_ENTRY_CLASH_HIGH_PASS_HZ, clash),
-                render.blendEntryOpenBy,
-            ),
-        )
-        tracks.incoming(TransitionFilterProcessor.OPEN_HZ, entry)
-        tracks.outgoing(blendExitLowPass(progress, clash), bassCutoff(handover))
-    }
-
-    /**
-     * The outgoing track's low-pass through a beat-matched blend: open until
-     * [BLEND_EXIT_FROM], then closing to [BLEND_EXIT_LOW_PASS_HZ] by the end.
-     *
-     * Deliberately shallow. Enough to take the air and the sibilance off a voice
-     * that is on its way out, so it stops competing with the one arriving;
-     * nowhere near the [FILTER_FLOOR_HZ] that [rideFilterSweep] drives to, which
-     * would contradict the reason this style was chosen.
-     *
-     * [clash] both starts it earlier and takes it further, because "shallow" is
-     * the right default and the wrong answer for two choruses landing together.
-     */
-    private fun blendExitLowPass(progress: Float, clash: Double): Float {
-        val from = render.blendExitFrom
-        val amount = ((progress - from) / (1.0 - from)).coerceIn(0.0, 1.0)
-        val floor = glide(BLEND_EXIT_LOW_PASS_HZ, BLEND_EXIT_CLASH_LOW_PASS_HZ, clash)
-        return glide(TransitionFilterProcessor.OPEN_HZ.toDouble(), floor, amount).toFloat()
-    }
-
-    /** [amount] 0 leaves the low end alone; 1 lifts it out entirely. */
-    private fun bassCutoff(amount: Double): Float =
-        glide(TransitionFilterProcessor.OFF_HZ.toDouble(), BASS_SWAP_HZ, amount).toFloat()
-
-    /**
      * Whether the transition in flight is doing something a plain crossfade
      * could not — which is what [AppSettings.smartMixInProgress] promises the
      * listener when it lights the scrubber up.
@@ -2338,76 +1832,6 @@ class CrossfadeController(
             incomingPlaybackRate != 1.0 ||
             outgoingPlaybackRate != 1.0
         )
-
-    /** Equal-power pair: [riseGain]² + [fallGain]² = 1, so the blend never dips. */
-    private fun riseGain(progress: Float): Float =
-        sin(progress.coerceIn(0f, 1f) * PI.toFloat() / 2f)
-
-    private fun fallGain(progress: Float): Float =
-        cos(progress.coerceIn(0f, 1f) * PI.toFloat() / 2f)
-
-    /**
-     * The incoming fader for the blend in flight. Classic Automix — and every
-     * non-DJ style — is the equal-power [riseGain]. Advanced, each style gets
-     * the curve a DJ would ride it on, with the filters doing the separating:
-     *  - a bass-swap blend has the incoming fader fully up by the swap
-     *    ("both faders up"), backed off toward equal power as far as the two
-     *    vocals collide;
-     *  - a filter ride brings it up a little early, behind its high-pass.
-     *
-     * [headroomFor] keeps two faders at full from summing past full scale.
-     */
-    private fun mixRise(progress: Float): Float {
-        if (!render.advanced) return riseGain(progress)
-        val styled = when (render.style) {
-            TransitionStyle.DJ_BLEND ->
-                if (render.bassSwap) held(riseGain(progress), riseGain(progress / render.swapAtF)) else riseGain(progress)
-            TransitionStyle.DJ_FILTER -> when (render.filterVariant) {
-                FilterTransitionVariant.BASS_HANDOFF -> riseGain(progress / render.filterSwapAtF)
-                FilterTransitionVariant.ECHO_RIDE -> riseGain(progress.pow(ECHO_RIDE_RISE_SHAPE))
-                FilterTransitionVariant.SWEEP -> riseGain(progress.pow(FILTER_RISE_SHAPE))
-            }
-            else -> riseGain(progress)
-        }
-        val vocalSafe = riseGain(progress.pow(VOCAL_SAFE_RISE_SHAPE))
-        return styled + (vocalSafe - styled) * render.clash.toFloat()
-    }
-
-    /**
-     * The outgoing fader, [mixRise]'s partner: held at full until the bass
-     * swap in a blend and pulled after it, held longer in a filter ride where
-     * the closing low-pass is already taking it away.
-     */
-    private fun mixFall(progress: Float): Float {
-        if (!render.advanced) return fallGain(progress)
-        // The fader carries the repeats too, so an echo out leaves it up and
-        // fades the dry signal in the chain instead — see [rideEchoOut].
-        if (render.echo) return 1f
-        val styled = when (render.style) {
-            TransitionStyle.DJ_BLEND -> {
-                if (!render.bassSwap) {
-                    fallGain(progress)
-                } else {
-                    val swap = render.swapAtF
-                    held(fallGain(progress), if (progress <= swap) 1f else fallGain((progress - swap) / (1f - swap)))
-                }
-            }
-            TransitionStyle.DJ_FILTER -> when (render.filterVariant) {
-                FilterTransitionVariant.BASS_HANDOFF -> {
-                    val swap = render.filterSwapAtF
-                    if (progress <= swap) 1f else fallGain((progress - swap) / (1f - swap))
-                }
-                FilterTransitionVariant.ECHO_RIDE -> fallGain(progress.pow(ECHO_RIDE_FALL_SHAPE))
-                FilterTransitionVariant.SWEEP -> fallGain(progress.pow(FILTER_FALL_SHAPE))
-            }
-            else -> fallGain(progress)
-        }
-        val vocalSafe = fallGain(progress.pow(VOCAL_SAFE_FALL_SHAPE))
-        return styled + (vocalSafe - styled) * render.clash.toFloat()
-    }
-
-    /** [dj] as far as [Render.holdFaders] allows, the rest of the way back toward [plain]. */
-    private fun held(plain: Float, dj: Float): Float = plain + (dj - plain) * render.holdFaders
 
     // ---- Phase lock ---------------------------------------------------------
 
@@ -2435,46 +1859,16 @@ class CrossfadeController(
      * already runs through, moved briefly.
      */
     private fun holdPhase(out: ExoPlayer, into: ExoPlayer, progress: Float) {
-        val now = SystemClock.elapsedRealtime()
-        if (nudgeUntil != 0L) {
-            // A pause mid-pulse ends it early; the next reading picks up the rest.
-            if (now < nudgeUntil && into.isPlaying) return
-            nudgeUntil = 0L
-            into.setPlaybackSpeed(incomingBaseSpeed())
-            lockQuietUntil = now + LOCK_SETTLE_MS
-            lockCount = 0
-            return
-        }
-        // Once the outgoing track is on its way out its beat stops mattering.
-        if (progress >= LOCK_UNTIL || now < lockQuietUntil) return
-        if (!out.isPlaying || !into.isPlaying) {
-            lockCount = 0
-            return
-        }
-        val error = phaseError(out, into)
-        if (error.isNaN()) return
-        lockErrors[lockCount++] = error
-        if (lockCount < LOCK_SAMPLES) return
-        lockCount = 0
-        lockErrors.sort()
-        val median = lockErrors[LOCK_SAMPLES / 2]
-        if (abs(median) < LOCK_DEADBAND_SECONDS) {
-            lockQuietUntil = now + LOCK_IN_PHASE_MS
-            return
-        }
-        val base = incomingBaseSpeed()
-        // Ahead slows down, behind speeds up; the pulse lasts as long as it
-        // takes that offset in speed to cover the error.
-        // Speeding up is capped so a nudge stacked on a large stretch never
-        // takes the incoming track past [MAX_TOTAL_SPEED_UP].
-        val factor = if (median > 0) {
-            1f - NUDGE
-        } else {
-            minOf(1f + NUDGE, (MAX_TOTAL_SPEED_UP / incomingPlaybackRate).toFloat())
-        }
-        if (factor <= 1f && median < 0) return
-        into.setPlaybackSpeed(base * factor)
-        nudgeUntil = now + (abs(median) / (base * abs(factor - 1f)) * 1000).roundToLong().coerceIn(1L, MAX_NUDGE_MS)
+        val speed = phaseLock.update(
+            nowMs = SystemClock.elapsedRealtime(),
+            progress = progress,
+            outPlaying = out.isPlaying,
+            inPlaying = into.isPlaying,
+            base = incomingBaseSpeed(),
+            incomingPlaybackRate = incomingPlaybackRate,
+            errorSeconds = phaseError(out, into),
+        )
+        if (!speed.isNaN()) into.setPlaybackSpeed(speed)
     }
 
     private fun incomingBaseSpeed(): Float = (AppSettings.playbackSpeed.value * incomingPlaybackRate).toFloat()
@@ -2490,60 +1884,8 @@ class CrossfadeController(
      * so a track counted at half or double time against the other still
      * locks on the shared pulse.
      */
-    private fun phaseError(out: ExoPlayer, into: ExoPlayer): Double {
-        if (!beatAt(outgoingAnalysis, positionMs(out) / 1000.0)) return Double.NaN
-        val outSince = beatScratch[0]
-        val outBeat = beatScratch[1]
-        if (!beatAt(incomingAnalysis, positionMs(into) / 1000.0)) return Double.NaN
-        val rate = mediaRatio
-        val period = minOf(outBeat, beatScratch[1] / rate)
-        var diff = (beatScratch[0] / rate - outSince) % period
-        if (diff > period / 2) diff -= period else if (diff < -period / 2) diff += period
-        if (abs(diff) > period * LOCK_MAX_BEATS) return Double.NaN
-        return diff * rate
-    }
-
-    /**
-     * Where [positionSec] falls in [analysis]'s beat: seconds past the last
-     * beat into [beatScratch]`[0]`, that beat's length into `[1]`. False when
-     * the track has no grid at all.
-     *
-     * Beats are counted within the bar the analyzer's downbeats bound, not off
-     * one constant interval from the first beat, so a track that drifts still
-     * reads its own local beat rather than one that slid minutes ago.
-     */
-    private fun beatAt(analysis: TrackAnalysis, positionSec: Double): Boolean {
-        // The tempo is the authority. A stored beat interval that disagrees with
-        // it by more than a quarter is not a beat — a head-only analysis was seen
-        // carrying one of 24.7s on a 127 BPM track, which stopped the scrubber's
-        // pulse dead for the rest of the blend.
-        val fromTempo = if (analysis.bpm > 0.0) 60.0 / analysis.bpm else 0.0
-        val interval = analysis.beatInterval
-        val nominal = when {
-            interval > 0.0 && (fromTempo <= 0.0 || abs(interval / fromTempo - 1.0) < 0.25) -> interval
-            fromTempo > 0.0 -> fromTempo
-            else -> return false
-        }
-        val downbeats = analysis.downbeats
-        val next = downbeats.binarySearch(positionSec).let { if (it >= 0) it + 1 else -it - 1 }
-        val origin: Double
-        var beat = nominal
-        if (next in 1 until downbeats.size) {
-            origin = downbeats[next - 1]
-            val bar = downbeats[next] - origin
-            // A bar of one to eight beats is a bar, counted from the analyzer's own
-            // downbeats. Anything longer is a stretch the analyzer found no
-            // downbeat in, and dividing it up would invent a tempo.
-            val beatsInBar = (bar / nominal).roundToInt()
-            if (beatsInBar in 1..8) beat = bar / beatsInBar
-        } else {
-            origin = if (next >= 1) downbeats[next - 1] else analysis.firstBeat
-        }
-        if (beat <= 0.0 || !beat.isFinite()) return false
-        beatScratch[0] = ((positionSec - origin) % beat + beat) % beat
-        beatScratch[1] = beat
-        return true
-    }
+    private fun phaseError(out: ExoPlayer, into: ExoPlayer): Double =
+        phaseLock.error(outgoingAnalysis, positionMs(out) / 1000.0, incomingAnalysis, positionMs(into) / 1000.0, mediaRatio)
 
     // ---- Tempo ease-back ----------------------------------------------------
 
@@ -2558,22 +1900,11 @@ class CrossfadeController(
      * per tick: each is a real change to the audio path.
      */
     private fun beginEase(player: ExoPlayer, rate: Double, analysis: TrackAnalysis) {
-        val stretch = rate - 1.0
-        if (abs(stretch) < EASE_DONE) {
+        if (!ease.begin(rate, analysis, player.currentPosition)) {
             player.setPlaybackSpeed(AppSettings.playbackSpeed.value)
             return
         }
-        val beat = when {
-            analysis.beatInterval > 0.0 -> analysis.beatInterval
-            analysis.bpm > 0.0 -> 60.0 / analysis.bpm
-            else -> 0.0
-        }
-        val steps = rampStepsFor(rate)
-        easeStep = stretch / steps
-        easeRate = rate
-        easeStepMs = if (beat > 0.0) (beat * 1000).roundToLong() else EASE_FALLBACK_STEP_MS
         easeItemIndex = player.currentMediaItemIndex
-        easeNextAtMs = player.currentPosition + easeStepMs
         easing = player
         // Drops any phase-lock nudge still in flight back onto the plain stretch.
         setPlaybackSpeedClickless(player, (AppSettings.playbackSpeed.value * rate).toFloat())
@@ -2591,20 +1922,19 @@ class CrossfadeController(
         val position = player.currentPosition
         if (player !== active() ||
             player.currentMediaItemIndex != easeItemIndex ||
-            position < easeNextAtMs - 2 * easeStepMs ||
+            ease.lost(position) ||
             ListenTogether.state.value.inParty
         ) {
             endEase()
             return
         }
-        if (position < easeNextAtMs) return
-        easeRate -= easeStep
-        if (abs(easeRate - 1.0) < EASE_DONE) {
+        val next = ease.step(position)
+        if (next.isNaN()) return
+        if (next == TempoEase.DONE) {
             endEase()
             return
         }
-        setPlaybackSpeedClickless(player, (AppSettings.playbackSpeed.value * easeRate).toFloat())
-        easeNextAtMs += easeStepMs
+        setPlaybackSpeedClickless(player, (AppSettings.playbackSpeed.value * next).toFloat())
     }
 
     /**
@@ -2615,17 +1945,9 @@ class CrossfadeController(
      * tick landing late only delays a step, never skips the tempo it reaches.
      */
     private fun rampOutgoing(out: ExoPlayer) {
-        val due = ((out.currentPosition - rampStartMs) / rampStepMs + 1).toInt().coerceIn(0, rampSteps)
-        if (due <= rampStep) return
-        rampStep = due
-        val rate = 1.0 + (outgoingPlaybackRate - 1.0) * due / rampSteps
+        val rate = ramp.due(out.currentPosition, outgoingPlaybackRate)
+        if (rate.isNaN()) return
         out.setPlaybackSpeed((AppSettings.playbackSpeed.value * rate).toFloat())
-    }
-
-    /** Beats a tempo change of [rate] takes at [TEMPO_STEP_PER_BEAT]; 0 for none. */
-    private fun rampStepsFor(rate: Double): Int {
-        val stretch = abs(rate - 1.0)
-        return if (stretch < EASE_DONE) 0 else ceil(stretch / TEMPO_STEP_PER_BEAT).toInt()
     }
 
     /** Puts the easing player on the listener's own speed and forgets it. Idempotent. */
@@ -2673,12 +1995,6 @@ class CrossfadeController(
                 if (player === active() && phase == Phase.IDLE) player.volume = level
             }
         }
-    }
-
-    /** See [onBlendHeadroom]. */
-    private fun headroomFor(incomingGain: Float, outgoingGain: Float): Float {
-        val sum = incomingGain + outgoingGain
-        return if (sum <= 1f) 1f else 1f / kotlin.math.sqrt(sum)
     }
 
     // There is deliberately no second, equal-gain pair here any more. It existed
@@ -2759,326 +2075,12 @@ class CrossfadeController(
          */
         const val ARM_TIMEOUT_MS = 12_000L
 
-        /**
-         * Where the outgoing low-pass sits the instant a filter ride begins.
-         *
-         * The ride used to start from [TransitionFilterProcessor.OPEN_HZ] and
-         * travel down, which meant the first stretch of every transition was
-         * spent crossing a range nobody can hear a filter in: a tenth of the way
-         * through the fade the cutoff was still at 17.5kHz, indistinguishable
-         * from no filter at all, and the ride only became audible around the
-         * midpoint. Engaging here instead — above the fundamentals of everything
-         * but cymbals, so what goes first is air and shimmer — is what makes the
-         * gesture read as a hand landing on the filter the moment the blend
-         * starts, rather than something remembered late.
-         *
-         * 9kHz was the first attempt at that and still read as late by ear: it
-         * is above everything but cymbals, so engaging there takes the air off
-         * and nothing else, and the outgoing vocal — the thing actually clashing
-         * — was untouched until the sweep had travelled most of the way down.
-         * 7kHz is inside the presence range, so the gesture is audible on the
-         * voice itself from the first instant.
-         */
-        const val FILTER_ENTRY_HZ = 7_000.0
-
-        /**
-         * The bottom of a filter ride. Below a few hundred hertz a track stops
-         * reading as "further away" and starts reading as "broken", which is not
-         * the impression a transition should leave of the song being left.
-         */
-        const val FILTER_FLOOR_HZ = 300.0
-
-        /**
-         * Where the low end is considered to end. Around the fundamental of a
-         * bass guitar's upper register, and the usual corner on a mixer's bass
-         * kill — high enough to clear the kick and the sub, low enough to leave
-         * the body of the vocal alone.
-         */
-        const val BASS_SWAP_HZ = 200.0
-
-        /** How much of the fade the low end takes to change hands. */
-        const val BASS_SWAP_WIDTH = 0.10
-
-        // ---- Advanced Automix ----------------------------------------------
-
-        /**
-         * Advanced: the low end changes hands over this many beats, ending on
-         * the swap beat. Half a beat is a hand on the EQ, not a kill switch —
-         * long enough that the 24 dB/octave corner moving is no click, short
-         * enough that the two kicks never play together.
-         */
-        const val SWAP_BEATS = 0.5
-
-        /** Where a filter ride hands its low end over, before bar-snapping. */
-        const val FILTER_BASS_SWAP_AT = 0.5
-
-        /**
-         * Filter-ride fader shapes, as exponents on progress. Above 1 holds the
-         * outgoing fader up longer, since the closing low-pass is already
-         * taking it away; below 1 brings the incoming one up a little early
-         * behind its high-pass.
-         */
-        const val FILTER_FALL_SHAPE = 1.6f
-        const val FILTER_RISE_SHAPE = 0.8f
-
-        /** Alternate fallback: a quick bass exchange followed by a shallow exit filter. */
-        const val FALLBACK_HANDOFF_ENTRY_HZ = 900.0
-        const val FALLBACK_HANDOFF_FLOOR_HZ = 1_600.0
-        const val FALLBACK_HANDOFF_SHAPE = 0.8
-
-        /** Vocal-aware fallback: keep the arriving lead out until the outgoing lead has cleared. */
-        const val VOCAL_SAFE_ENTRY_HIGH_PASS_HZ = 2_400.0
-        const val VOCAL_SAFE_ENTRY_OPEN_BY = 0.78
-        const val VOCAL_SAFE_EXIT_SHAPE = 0.55
-        const val VOCAL_SAFE_RISE_SHAPE = 1.65f
-        const val VOCAL_SAFE_FALL_SHAPE = 0.65f
-
-        /** Echo personality keeps both decks recognisable until its decisive fader pull. */
-        const val ECHO_RIDE_RISE_SHAPE = 0.7f
-        const val ECHO_RIDE_FALL_SHAPE = 1.35f
-
-        /**
-         * An echo out's dry signal is killed over this much of a beat: short
-         * enough to read as the fader being pulled, long enough not to click.
-         */
-        const val ECHO_KILL_BEATS = 0.25
-
-        /**
-         * The echo's first repeat against the dry level, and what each repeat
-         * keeps of the one before — [TransitionFilterProcessor]'s wet and
-         * feedback, mirrored here for the headroom trim.
-         */
-        const val ECHO_LEVEL = 0.5f
-        const val ECHO_DECAY = 0.4f
-
-        /** Grace after the incoming track starts before its position is trusted for phase. */
-        const val LOCK_START_MS = 300L
-
-        /** Phase readings per decision; the median of these is what gets corrected. */
-        const val LOCK_SAMPLES = 5
-
-        /** Under this the two beats are together as far as anyone can hear. */
-        const val LOCK_DEADBAND_SECONDS = 0.008
-
-        /** After a nudge: long enough for the audio already buffered to play out at the new speed. */
-        const val LOCK_SETTLE_MS = 400L
-
-        /** After a reading in phase, how long before looking again. */
-        const val LOCK_IN_PHASE_MS = 500L
-
-        /**
-         * How far a nudge moves the incoming speed. Inside the stretch the policy
-         * already calls transparent, and over a pulse this short nobody hears
-         * the tempo move — just the beats pulling together.
-         */
-        const val NUDGE = 0.03f
-
-        /** Longest single nudge; anything left over is corrected on the next reading. */
-        const val MAX_NUDGE_MS = 1_500L
-
-        /** Past this much of the blend the outgoing track is too far gone for its beat to matter. */
-        const val LOCK_UNTIL = 0.9f
-
-        /**
-         * More than this far apart — in beats of the shared pulse — is two grids
-         * disagreeing about where the beat is, not a start that landed late, and
-         * nudging toward it would only make it worse.
-         */
-        const val LOCK_MAX_BEATS = 0.3
-
-        /**
-         * The most the tempo moves in one beat, ramping up or easing back.
-         * Gradual drift below about 1% a beat reads as the groove, not as the
-         * track changing speed.
-         */
-        const val TEMPO_STEP_PER_BEAT = 0.0075
-
-        /** The ceiling on a phase-lock nudge stacked on a speed-up. */
-        const val MAX_TOTAL_SPEED_UP = 1.12
-
-        /** Close enough to the listener's own speed to call the ease done. */
-        const val EASE_DONE = 1e-4
-
-        /** A step every this long when the track has no beat to step on. */
-        const val EASE_FALLBACK_STEP_MS = 500L
-
         /** Short silence around an audible AudioTrack PlaybackParams update. */
         const val SPEED_NOTCH_STEPS = 2
         const val SPEED_NOTCH_STEP_MS = 2L
         const val SPEED_NOTCH_HOLD_MS = 2L
         const val SPEED_CHANGE_EPSILON = 0.0001f
 
-        /**
-         * Shape of the outgoing low-pass against fade progress, between
-         * [FILTER_ENTRY_HZ] and [FILTER_FLOOR_HZ].
-         *
-         * Was 2.0 — squared — which left the cutoff at 6.9kHz at the midpoint,
-         * so the outgoing vocal went untouched through the whole first half of
-         * every transition. Then 1.3, which was still back-loaded: the exponent
-         * held the cutoff near its entry point through the opening of the fade,
-         * which is precisely where the two vocals overlap at comparable level.
-         *
-         * Below 1 now, so the ride is front-loaded — steepest at the start,
-         * flattening as it approaches the floor. That is the shape of the gesture
-         * being imitated: a hand moves a filter knob fast and then eases it in,
-         * not the reverse. The old worry that a fast cutoff takes the outgoing
-         * track out prematurely is answered by [FILTER_FLOOR_HZ] rather than by
-         * the exponent — the ride bottoms out at 300Hz, which is still a present
-         * bed under the incoming track, not silence.
-         *
-         * Crosses 5kHz — about where a low-pass becomes plainly audible on a
-         * full-range mix — a twentieth of the way into the fade, against a
-         * quarter of the way at 1.3. Lands at 3.8kHz a tenth of the way in,
-         * 2.6kHz at a fifth, 1.0kHz at the midpoint.
-         */
-        const val FILTER_SWEEP_SHAPE = 0.75
-
-        /**
-         * Where the incoming track's high-pass starts on a filter ride.
-         *
-         * Above the fundamental range of most voices and the body of a snare, so
-         * what arrives first is presence and percussion — enough to hear a track
-         * coming and lock onto its groove, not enough for a second lead vocal.
-         *
-         * 700Hz was that corner while the outgoing sweep was gentler. It no longer
-         * is: the sweep engages at [FILTER_ENTRY_HZ] and is down to 4kHz a tenth
-         * of the way in, so a 700Hz entry left the two tracks sharing very nearly
-         * three octaves — and sharing them from 529Hz up, which is exactly where a
-         * lead vocal's fundamentals sit. 1.2kHz takes about an octave off the
-         * bottom of that shared band, and it is the octave the collision actually
-         * happens in. What is left of the outgoing track then sits *under* the
-         * arriving one rather than inside it, which is what makes the incoming
-         * track read as a layer landing on top of a darkening one instead of a
-         * second voice in the same space.
-         */
-        const val ENTRY_HIGH_PASS_HZ = 1_200.0
-
-        /**
-         * How far into the fade the incoming track is fully open again.
-         *
-         * Comfortably before the end: past this point the outgoing track is deep
-         * into its own sweep and quiet with it, so there is nothing left to keep
-         * out of the way of, and anything still filtered here would just be the
-         * new track arriving wrong.
-         */
-        const val ENTRY_OPEN_BY = 0.6
-
-        /**
-         * Shape of the incoming high-pass's descent; see [entryHighPass].
-         *
-         * Below 1 so the corner lingers in the range a voice occupies instead of
-         * dropping straight through it into sub-bass, where a high-pass is
-         * inaudible and the clash this exists to prevent is already back.
-         *
-         * 0.35 rather than 0.45 for more of the same, and the effect compounds
-         * across the overlap rather than being a flat offset: on a filter ride the
-         * corner sits a fourteenth higher a tenth of the way in, a quarter higher
-         * at three tenths, a third higher at four. So the hold is back-loaded into
-         * the middle of the blend — where both tracks are near equal gain and the
-         * collision is at its worst — and what gets given up in exchange is the
-         * bottom of the descent, which is a few hundred hertz of sub-bass nobody
-         * hears a high-pass leave. The release into the last of [ENTRY_OPEN_BY] is
-         * correspondingly more of an event, which is the point: the arriving track
-         * opening out is the moment the listener is meant to notice.
-         */
-        const val ENTRY_SHAPE = 0.35
-
-        /**
-         * How far [rideVocalSeparation] closes the outgoing track's top at a
-         * full collision.
-         *
-         * Well above [FILTER_FLOOR_HZ]'s 300Hz, because this fires on pairs that
-         * were going to be crossfaded plainly and the intent is to stop two
-         * voices competing, not to send one of them into another room. 1.6kHz is
-         * below the presence and sibilance a lead vocal is picked out by, and
-         * above enough of its body that the track still reads as itself.
-         */
-        const val VOCAL_SEPARATION_FLOOR_HZ = 1_600.0
-
-        /**
-         * Where the incoming track's high-pass starts in [rideVocalSeparation].
-         *
-         * Lower than [ENTRY_HIGH_PASS_HZ]'s 1.2kHz, for the same reason the floor
-         * is higher: on a plain crossfade the arriving track has no filter
-         * gesture to explain itself with, so it has to sound like it fades in
-         * normally. 700Hz clears the body of a voice while leaving its lower
-         * harmonics, which is enough to stop it fighting the outgoing lead.
-         *
-         * Was 450Hz, which fit that description on paper and was mostly inaudible
-         * in practice: a fifth of the way in it was already down to 268Hz, doing
-         * nothing about a collision the vocal model had reported at full strength.
-         * 700Hz is the corner a filter ride itself used to open at, so it is a
-         * known-restrained one rather than a new guess — and keeping this style a
-         * clear step below that one leaves the two ranked the way their tiers are.
-         */
-        const val VOCAL_SEPARATION_HIGH_PASS_HZ = 700.0
-
-        /**
-         * [ENTRY_HIGH_PASS_HZ]'s counterpart for a beat-matched blend: lower, and
-         * briefer.
-         *
-         * Was 320Hz, which the bass swap almost entirely swallowed. The incoming
-         * track is already high-passed at [BASS_SWAP_HZ] until the low end changes
-         * hands and [rideBassSwap] takes whichever corner is higher, so a 320Hz
-         * entry was only above that floor for the first sixth of the blend, and
-         * only ever by a little. 520Hz gives the arriving track an entry gesture
-         * that outlives the bass kill — clear of it until nearly three tenths in —
-         * rather than one hiding inside it.
-         */
-        const val BLEND_ENTRY_HIGH_PASS_HZ = 520.0
-
-        /** [ENTRY_OPEN_BY]'s counterpart for a beat-matched blend. */
-        const val BLEND_ENTRY_OPEN_BY = 0.45
-
-        /**
-         * Where [BLEND_ENTRY_HIGH_PASS_HZ] and [BLEND_ENTRY_OPEN_BY] go at a full
-         * vocal collision: a corner high enough to hold the arriving voice's body
-         * out, held for most of the blend rather than a third of it.
-         *
-         * Still short of [ENTRY_HIGH_PASS_HZ]'s filter-ride treatment. The two
-         * tracks are on a shared grid and meant to sound simultaneous; the aim is
-         * to stop the two leads occupying one band, not to hide either of them.
-         *
-         * Tracks [BLEND_ENTRY_HIGH_PASS_HZ] upward — 620Hz to 950Hz — so how hard
-         * the two are singing over each other stays the thing that separates a
-         * marginal collision from a head-on one, rather than both converging on
-         * whatever the bass kill was already doing.
-         */
-        const val BLEND_ENTRY_CLASH_HIGH_PASS_HZ = 950.0
-        const val BLEND_ENTRY_CLASH_OPEN_BY = 0.7
-
-        /** Where [BLEND_EXIT_FROM] and [BLEND_EXIT_LOW_PASS_HZ] go at a full collision. */
-        const val BLEND_EXIT_CLASH_FROM = 0.12
-        const val BLEND_EXIT_CLASH_LOW_PASS_HZ = 1_100.0
-
-        /**
-         * Where the outgoing track starts losing its top on a beat-matched
-         * blend.
-         *
-         * Was 0.5, which left the outgoing track completely unfiltered for the
-         * whole first half — the same "remembered late" complaint that
-         * [FILTER_ENTRY_HZ] answers on a filter ride, in the one style where
-         * both tracks are at their most similar and so most likely to clash.
-         * Brought forward rather than to zero: a beat-matched blend is chosen
-         * because the two tracks are meant to sound simultaneous, and opening
-         * with the outgoing one already darkened would defeat that.
-         */
-        const val BLEND_EXIT_FROM = 0.3
-
-        /**
-         * Where that low-pass lands by the end of the blend. High enough that the
-         * track is still plainly itself — this style is chosen for pairs meant to
-         * sound simultaneous — and low enough to take the sibilance off a voice
-         * that is leaving.
-         */
-        const val BLEND_EXIT_LOW_PASS_HZ = 2_200.0
-
-        /**
-         * Where in the blend the session moves to the incoming track: halfway,
-         * which with an equal-power curve is the instant the two are equally
-         * loud and the incoming one takes over.
-         */
-        const val HANDOFF_AT = 0.5f
 
         /**
          * Hands off early when the outgoing track is this close to its end,

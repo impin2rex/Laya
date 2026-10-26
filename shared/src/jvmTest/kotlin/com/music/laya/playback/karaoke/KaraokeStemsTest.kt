@@ -1,5 +1,6 @@
 package com.music.laya.playback.karaoke
 
+import okio.Path.Companion.toOkioPath
 import com.music.laya.playback.KaraokeProcessor
 import kotlin.math.PI
 import kotlin.math.log10
@@ -10,7 +11,7 @@ import kotlin.test.assertTrue
 class KaraokeStemsTest {
 
     private val rate = MdxSeparator.SAMPLE_RATE
-    private val cache = kotlin.io.path.createTempDirectory("karaoke").toFile().apply { deleteOnExit() }
+    private val cache = kotlin.io.path.createTempDirectory("karaoke").toFile().apply { deleteOnExit() }.toOkioPath()
 
     /** A deterministic stereo "song": a few tones and a little noise, different per side. */
     private fun sample(frame: Long, channel: Int): Float {

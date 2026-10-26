@@ -132,8 +132,6 @@ fun deviceFolderIcon(browseId: String): ImageVector? = when (browseId) {
     else -> null
 }
 
-/** The Library row that opens the connected Spotify account; handled by the app, not a browse page. */
-const val SPOTIFY_BROWSE_ID = "app:spotify"
 
 /** The Cached songs folder's page id — one of the `local:` device folders. */
 const val CACHE_FOLDER_BROWSE_ID = "local:cache"

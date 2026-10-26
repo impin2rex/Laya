@@ -691,21 +691,10 @@ class QueueCoordinatorTest {
 
     @Before
     fun setUp() {
-        val editor = Proxy.newProxyInstance(
-            android.content.SharedPreferences.Editor::class.java.classLoader,
-            arrayOf(android.content.SharedPreferences.Editor::class.java),
-        ) { proxy, method, _ ->
-            if (method.returnType == android.content.SharedPreferences.Editor::class.java) proxy else null
-        }
-        val prefs = Proxy.newProxyInstance(
-            android.content.SharedPreferences::class.java.classLoader,
-            arrayOf(android.content.SharedPreferences::class.java),
-        ) { _, method, _ ->
-            if (method.name == "edit") editor else null
-        } as android.content.SharedPreferences
-        val field = com.music.laya.data.settings.AppSettings::class.java.getDeclaredField("prefs")
-        field.isAccessible = true
-        field.set(com.music.laya.data.settings.AppSettings, prefs)
+        com.music.laya.data.settings.AppSettings.init(
+            com.russhwolf.settings.MapSettings(),
+            com.music.laya.data.settings.AppSettingsHost(),
+        )
 
         QueueShuffle.setEnabled(false)
         QueueShuffle.canonicalContext = emptyList()

@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import okio.Path.Companion.toOkioPath
 import com.music.laya.playback.Karaoke
 import com.music.laya.playback.KaraokeProcessor
 import com.music.laya.playback.karaoke.KaraokeModel
@@ -26,7 +27,7 @@ class DesktopKaraokeTest {
         DesktopAnalysisRuntime.ensureStarted()
         val model = KaraokeModel.model
         KaraokeModel.install { File(models, KaraokeModel.ASSET).path }
-        KaraokeStems.install(kotlin.io.path.createTempDirectory("karaoke").toFile())
+        KaraokeStems.install(kotlin.io.path.createTempDirectory("karaoke").toOkioPath())
         Karaoke.setEnabled(true)
 
         val deck = DesktopAudioDecoder()

@@ -23,6 +23,7 @@
 
 package com.music.laya.playback.smart
 
+import okio.Path.Companion.toOkioPath
 import android.content.Context
 import android.media.MediaDataSource
 import android.net.Uri
@@ -36,6 +37,8 @@ import com.music.laya.data.model.SearchResult
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.AutomixPerformanceMode
 import com.music.laya.data.sources.SourceResolver
+import com.music.laya.data.sources.isPickedAddonRow
+import com.music.laya.data.sources.targetIn
 import com.music.laya.data.sources.TrackMatcher
 import com.music.laya.playback.AudioCache
 import kotlinx.coroutines.CoroutineScope
@@ -156,7 +159,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
     private val restoreAttempted = ConcurrentHashMap.newKeySet<String>()
 
     /** Results that survive the process, so a track is measured once and stays measured. */
-    private val store = AnalysisStore { context.filesDir }
+    private val store = AnalysisStore { context.filesDir.toOkioPath() }
 
     /**
      * Cache keys of renditions that decoded short despite the cache calling them
@@ -879,7 +882,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
      * only one of the two is a strike.
      */
     private class Structural(
-        val features: TrackFeatures.Features?,
+        val features: TrackFeatureSet?,
         val decodedShort: Boolean = false,
     )
 
@@ -1107,7 +1110,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
         val vocalMask: DoubleArray?,
         val seconds: Double,
         /** Only populated when the caller asked for it; see [region]'s `deriveFeatures`. */
-        val features: TrackFeatures.Features? = null,
+        val features: TrackFeatureSet? = null,
     )
 
     /**
@@ -1128,7 +1131,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
         openSource: () -> MediaDataSource?,
         startSeconds: Double,
         endSeconds: Double,
-        features: TrackFeatures.Features?,
+        features: TrackFeatureSet?,
         deriveFeatures: Boolean = false,
     ): Region? {
         val decoded = openSource()?.use { AudioDecoder.decodeRegionStereo(it, startSeconds, endSeconds) { stopped } }
@@ -1167,7 +1170,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
     }
 
     /** A region's model input, and its DSP features when the caller asked for them. */
-    private class RegionInputs(val forModel: FloatArray?, val derived: TrackFeatures.Features?)
+    private class RegionInputs(val forModel: FloatArray?, val derived: TrackFeatureSet?)
 
     /**
      * Reduces a decoded region to the buffers the models and the DSP actually read.
@@ -1220,7 +1223,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
      */
     private fun vocalMask(
         stereo: AudioDecoder.StereoPcm,
-        features: TrackFeatures.Features,
+        features: TrackFeatureSet,
         actualStart: Double,
     ): DoubleArray? {
         val curve = features.energyCurve
@@ -1238,12 +1241,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
 
         val values = vocals.track(left, right, stereo.sampleRate) ?: return null
 
-        val mask = DoubleArray(curve.size) { NEUTRAL_VOCAL }
-        for (index in curve.indices) {
-            val frame = ((curve[index].time - actualStart) * VocalSpectrogram.frameRate).toInt()
-            if (frame in values.indices) mask[index] = values[frame].toDouble()
-        }
-        return mask
+        return VocalModel.maskOver(curve, values, actualStart)
     }
 
     /**
@@ -1251,16 +1249,8 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
      * which the caller answers by keeping the DSP heuristic rather than reporting a mask of
      * nothing but [NEUTRAL_VOCAL].
      */
-    private fun mergeMasks(size: Int, head: DoubleArray?, tail: DoubleArray?): List<Double>? {
-        if (size <= 0 || (head == null && tail == null)) return null
-        val merged = DoubleArray(size) { NEUTRAL_VOCAL }
-        for (source in listOfNotNull(head, tail)) {
-            for (index in merged.indices) {
-                if (index < source.size && source[index] != NEUTRAL_VOCAL) merged[index] = source[index]
-            }
-        }
-        return merged.toList()
-    }
+    private fun mergeMasks(size: Int, head: DoubleArray?, tail: DoubleArray?): List<Double>? =
+        VocalModel.mergeMasks(size, head, tail)
 
     /** Recorded ready-but-empty so a track that cannot be decoded is not retried every tick. */
     private fun empty(trackId: String, durationSeconds: Double) = TrackAnalysis(
@@ -1295,7 +1285,7 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
          * design, so absence of measurement is never mistaken for absence of a vocal, or for the
          * presence of one.
          */
-        const val NEUTRAL_VOCAL = 0.5
+        const val NEUTRAL_VOCAL = VocalModel.NEUTRAL_VOCAL
 
         /**
          * How much more than the average-bitrate estimate of the opening window

@@ -57,6 +57,7 @@ class AddonSourceTest {
         // Both are read on every stream answer. Pinned so a test asserting on
         // format never depends on what the machine running it can decode.
         DeviceCodecs.forced = true
+        useAndroidSourcesHost()
         AppSettings.dolbyAtmos.value = true
     }
 

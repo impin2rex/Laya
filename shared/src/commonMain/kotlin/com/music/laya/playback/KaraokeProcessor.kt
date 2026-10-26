@@ -72,6 +72,8 @@ class KaraokeProcessor(
     private val onUnavailableChanged: (Boolean) -> Unit = {},
     /** Called on the audio thread when the neural vocal takes over or lets go; see [isUsingStems]. */
     private val onNeuralChanged: (Boolean) -> Unit = {},
+    /** How long bound-but-unready stems keep the vocal whole before the spectral estimate steps in; see [waiting]. */
+    private val holdSeconds: Int = HOLD_SECONDS,
 ) {
 
     @Volatile
@@ -331,7 +333,7 @@ class KaraokeProcessor(
         val stemTarget = if (stemsReady) 1f else 0f
         val bound = boundStems != null && bindCount != staleBind
         waiting = if (stemsReady || !bound) 0L else waiting + sampleCount / channels
-        val holding = bound && waiting < HOLD_SECONDS * sampleRate
+        val holding = bound && waiting < holdSeconds.toLong() * sampleRate
         val levelTarget = targetLevel
 
         val delaySize = delay.size
