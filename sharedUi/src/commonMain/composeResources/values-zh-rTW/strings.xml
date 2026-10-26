@@ -692,4 +692,6 @@
     <string name="when_you_listen_the_most">你最常收聽的時段</string>
     <string name="your_biggest_day">你收聽最多的一天：%1$s</string>
     <string name="your_lyrics_card">你的歌詞卡片</string>
+    <string name="no_internet_connection">無網路連線</string>
+    <string name="something_went_wrong">出了點問題</string>
 </resources>

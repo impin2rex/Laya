@@ -692,4 +692,6 @@
     <string name="when_you_listen_the_most">Thời điểm bạn nghe nhiều nhất</string>
     <string name="your_biggest_day">Ngày nghe nhiều nhất: %1$s</string>
     <string name="your_lyrics_card">Thẻ lời bài hát của bạn</string>
+    <string name="no_internet_connection">Không có kết nối internet</string>
+    <string name="something_went_wrong">Đã xảy ra lỗi</string>
 </resources>

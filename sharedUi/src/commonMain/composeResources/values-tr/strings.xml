@@ -697,4 +697,6 @@
     <string name="when_you_listen_the_most">En çok ne zaman dinlediğin</string>
     <string name="your_biggest_day">En yoğun günün: %1$s</string>
     <string name="your_lyrics_card">Şarkı sözü kartın</string>
+    <string name="no_internet_connection">İnternet bağlantısı yok</string>
+    <string name="something_went_wrong">Bir şeyler ters gitti</string>
 </resources>

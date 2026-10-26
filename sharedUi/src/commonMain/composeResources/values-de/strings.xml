@@ -697,4 +697,6 @@
     <string name="when_you_listen_the_most">Wann du am meisten hörst</string>
     <string name="your_biggest_day">Dein größter Tag: %1$s</string>
     <string name="your_lyrics_card">Deine Textkarte</string>
+    <string name="no_internet_connection">Keine Internetverbindung</string>
+    <string name="something_went_wrong">Etwas ist schiefgelaufen</string>
 </resources>
