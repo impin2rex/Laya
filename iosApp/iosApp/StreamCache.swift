@@ -37,6 +37,15 @@ final class StreamCache {
         return entry
     }
 
+    /// Whether [url] is a FLAC this run has already fetched to its end.
+    func isCompleteFlac(_ url: URL) -> Bool {
+        lock.lock()
+        let entry = entries[url.absoluteString]
+        lock.unlock()
+        guard let entry, entry.state.complete else { return false }
+        return entry.flacInfo != nil
+    }
+
     /// Oldest files out until the folder fits the cap; files a reader holds are kept. Called with `lock` held.
     private func evict() {
         let keys: [URLResourceKey] = [.fileSizeKey, .contentModificationDateKey]

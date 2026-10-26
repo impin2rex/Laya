@@ -49,6 +49,7 @@ import com.music.laya.playback.toneCurve
 import com.music.laya.playback.QueueTimeline
 import com.music.laya.playback.QueueTimeline.asQueueEntry
 import com.music.laya.ui.player.RepeatModes
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -611,12 +612,14 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
-        if (!next) alignLyrics(song, o)
+        if (!next) alignLyrics(song, o) else queuedOpened = song.videoId to o
         if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
         else engine.play(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
     }
 
     private var alignJob: Job? = null
+    /** What the engine was last handed as the next track, so its lyrics are aligned when it starts by itself. */
+    @Volatile private var queuedOpened: Pair<String, Opened>? = null
 
     /**
      * Lyrics are timed to the YouTube cut. When another release plays instead (an addon's copy of a YouTube track),
@@ -908,6 +911,12 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         index = preloaded
         if (sleepAfterTrack) { cancelSleep(); engine.pause() }
         NerdStats.onTrackTransition(song?.videoId)
+        // A gapless or blended start never went through hand(next = false): align its lyrics here, or clear the last
+        // track's shift.
+        val queued = queuedOpened?.takeIf { it.first == song?.videoId }?.second
+        queuedOpened = null
+        val now = song
+        if (now != null && queued != null) alignLyrics(now, queued) else { alignJob?.cancel(); IosLyricsAlign.offsetMs.value = 0 }
         position.report(0)
         IosPlayerStore.saveQueue(queue, index)
         announce()

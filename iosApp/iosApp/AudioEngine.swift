@@ -155,7 +155,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func materializeNextIfDue(force: Bool = false) {
         guard let p = pendingNext, let current = currentItem else { return }
         if !force {
-            let duration = exactDuration(of: current) ?? streamDuration(of: current)
+            let duration = streamDuration(of: current)
             let position = current.currentTime().seconds
             guard current.status == .readyToPlay, duration.isFinite, duration > 0, position.isFinite else { return }
             // Early enough for the blend's window when one is planned, and for the item to buffer before it is needed.
@@ -189,6 +189,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     func pause() {
         pausedByInterruption = false
+        resumeAfterSeek = false
         player.pause()
         if fade != nil { idle.pause() }
         reportProgress()
@@ -208,6 +209,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             pendingSeekMs = positionMs
             return
         }
+        if let loader = loaders[ObjectIdentifier(item)], !loader.precise, loader.flacInfo != nil {
+            // The reopen is this seek, made exactly; before the file is in, it lands on the estimate and is put right then.
+            if loader.flacOnDisk, fade == nil { return reopenPrecise(item, loader, at: positionMs) }
+            loader.estimatedSeek = true
+        }
         let time = CMTime(value: positionMs, timescale: 1000)
         // Exact, as ExoPlayer seeks. With any tolerance AVPlayer may place a FLAC with no SEEKTABLE (most addon and
         // downloaded files) by a byte estimate and still report the asked-for time: audio and lyrics land off.
@@ -219,6 +225,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         player.seek(to: time, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
             guard let self else { return }
             if self.seekingToMs == positionMs { self.seekingToMs = nil }
+            if self.resumeAfterSeek { self.resumeAfterSeek = false; self.go() }
             print("AudioEngine: seek landed requested=\(Double(positionMs) / 1000)s currentTime=\(self.player.currentTime().seconds)s")
             self.reportProgress()
             self.updateNowPlayingTiming()
@@ -243,6 +250,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         loaders.removeAll()
         pendingSeekMs = nil
         seekingToMs = nil
+        reopening = nil
+        resumeAfterSeek = false
         pausedByInterruption = false
     }
 
@@ -375,12 +384,20 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     // MARK: - Items
 
+    /// Without this, AVFoundation places a seek in a FLAC with no SEEKTABLE (most addon and downloaded files) by a byte
+    /// estimate, seconds out, while reporting the asked-for time: audio, lyrics and seekbar part ways. With it, it scans
+    /// the frames first and seeks exactly; that scan reads the whole file, so it is only asked for once the file is all
+    /// on disk. Measured on a no-SEEKTABLE FLAC through a resource loader: -2 s to +4 s off without, under 30 ms with.
+    private static let precise: [String: Any] = [AVURLAssetPreferPreciseDurationAndTimingKey: true]
+
     private func makeItem(url: String, headers: [String: String], mimeType: String,
                           contentLength: Int64, chunkBytes: Int64) -> AVPlayerItem? {
         guard let source = URL(string: url) else { return nil }
         // A downloaded or imported file: AVFoundation reads it directly.
         if source.isFileURL {
-            let item = AVPlayerItem(asset: AVURLAsset(url: source))
+            let flac = (try? FileHandle(forReadingFrom: source))
+                .map { h in defer { try? h.close() }; return h.readData(ofLength: 4) == Data("fLaC".utf8) } ?? false
+            let item = AVPlayerItem(asset: AVURLAsset(url: source, options: flac ? Self.precise : nil))
             item.preferredForwardBufferDuration = 30
             prepare(item)
             return item
@@ -392,13 +409,40 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             knownLength: contentLength > 0 ? contentLength : nil,
             chunkBytes: max(64 * 1024, chunkBytes)
         )
-        let asset = AVURLAsset(url: loader.proxyURL)
+        // A FLAC already fetched whole (a replay) is precise from the start; one still downloading is reopened later.
+        loader.precise = StreamCache.shared.isCompleteFlac(source)
+        let asset = AVURLAsset(url: loader.proxyURL, options: loader.precise ? Self.precise : nil)
         asset.resourceLoader.setDelegate(loader, queue: loader.queue)
         let item = AVPlayerItem(asset: asset)
         item.preferredForwardBufferDuration = 30
         prepare(item)
         adopt(loader, for: item)
         return item
+    }
+
+    /// The precise copy of the playing item while it takes over (see reopenPrecise).
+    private var reopening: AVPlayerItem?
+    /// Paused for a reopen: playback goes on once its seek lands.
+    private var resumeAfterSeek = false
+
+    /// Replaces the playing FLAC [item] with the same stream reopened precisely, now its file is all on disk, at [ms].
+    private func reopenPrecise(_ item: AVPlayerItem, _ loader: ChunkedResourceLoader, at ms: Int64) {
+        let fresh = loader.reopened()
+        fresh.precise = true
+        let asset = AVURLAsset(url: fresh.proxyURL, options: Self.precise)
+        asset.resourceLoader.setDelegate(fresh, queue: fresh.queue)
+        let new = AVPlayerItem(asset: asset)
+        new.preferredForwardBufferDuration = item.preferredForwardBufferDuration
+        prepare(new)
+        adopt(fresh, for: new)
+        print("AudioEngine: reopening the FLAC with precise timing at \(Double(ms) / 1000)s")
+        reopening = new
+        resumeAfterSeek = player.timeControlStatus != .paused
+        player.pause() // nothing plays from 0 before the seek below lands
+        player.insert(new, after: item)
+        player.advanceToNextItem() // currentItemChanged hands it the seek
+        pendingSeekMs = ms
+        seekingToMs = ms
     }
 
     private func adopt(_ loader: ChunkedResourceLoader, for item: AVPlayerItem) {
@@ -449,6 +493,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// exist, or keeps replaying its tail) is ended here. Any source; the stated length (dur=) is handled in reportProgress.
     private func checkStuckEnd() {
         materializeNextIfDue()
+        // A FLAC seeked while it downloaded plays from AVFoundation's estimate: once the file is in, reopen it where the
+        // timeline (and the lyrics) say it is, so the audio comes back to them.
+        if let item = currentItem, item === player.currentItem, fade == nil, seekingToMs == nil, item.status == .readyToPlay,
+           let loader = loaders[ObjectIdentifier(item)], loader.estimatedSeek, loader.flacOnDisk {
+            return reopenPrecise(item, loader, at: Int64(item.currentTime().seconds * 1000))
+        }
         guard let item = player.currentItem, item === currentItem, seekingToMs == nil, fade == nil,
               player.timeControlStatus != .paused else { stuckAt = -1; lastWatchedPosition = -1; return }
         let position = player.currentTime().seconds
@@ -569,6 +619,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         if old !== now {
             print("AudioEngine: item changed (old at \(old?.currentTime().seconds ?? -1)s status=\(old?.status.rawValue ?? -1) err=\(old?.error?.localizedDescription ?? "-"), next=\(now === nextItem), parked=\(parked))")
         }
+        if let fresh = reopening, now === fresh {
+            // The same track reopened precisely (reopenPrecise), not the next one.
+            reopening = nil
+            if let old { dropItem(old) }
+            becomeCurrent(fresh) // its status observer makes the pending seek once it is ready
+            seekingToMs = pendingSeekMs
+            return
+        }
         if let old, old !== now, old === currentItem, hasFailed(old) {
             // The queue moved past a track that broke rather than ended. Undo that and let Kotlin recover it.
             cancelFade()
@@ -602,9 +660,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         }
     }
 
-    /// The stream's stated length when it has one (see ChunkedResourceLoader.durationHint), else AVFoundation's.
+    /// The stream's stated length when it has one (googlevideo's dur=, a FLAC's STREAMINFO), else AVFoundation's,
+    /// which for a FLAC opened without precise timing is an estimate: the seekbar's scale.
     private func streamDuration(of item: AVPlayerItem) -> Double {
-        loaders[ObjectIdentifier(item)]?.durationHint ?? item.duration.seconds
+        exactDuration(of: item) ?? item.duration.seconds
     }
 
     private func reportProgress() {

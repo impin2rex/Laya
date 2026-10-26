@@ -67,6 +67,18 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             .queryItems?.first { $0.name == "dur" }?.value.flatMap(Double.init)
     }
 
+    /// The item reading through this was opened with AVURLAssetPreferPreciseDurationAndTimingKey. Main thread.
+    var precise = false
+    /// Seeked while not precise: the item's clock has been AVFoundation's estimate since. Main thread.
+    var estimatedSeek = false
+    /// A FLAC served from StreamCache whose file is now all on disk, so an asset over it can be precise.
+    var flacOnDisk: Bool { streaming && flacInfo != nil && (entry?.state.complete ?? false) }
+
+    /// A new loader over the same stream, for an item reopening it.
+    func reopened() -> ChunkedResourceLoader {
+        ChunkedResourceLoader(source: source, headers: headers, mimeType: mimeType, knownLength: knownLength, chunkBytes: chunkBytes)
+    }
+
     func cancelAll() {
         queue.async {
             self.invalidated = true
