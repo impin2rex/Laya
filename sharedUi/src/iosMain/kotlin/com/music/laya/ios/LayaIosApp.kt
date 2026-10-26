@@ -607,6 +607,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 kotlinx.coroutines.delay(12_000)
             }
         }
+        // LAYA_KARAOKE=1 turns neural karaoke on once the track plays (it goes off by itself at the next track).
+        if (env["LAYA_KARAOKE"] == "1") {
+            while (player.durationMs <= 0 || !player.isPlaying) kotlinx.coroutines.delay(500)
+            com.music.laya.playback.Karaoke.setEnabled(true)
+        }
     }
 
     // Test hook: `simctl launch` with SIMCTL_CHILD_LAYA_AUTOPLAY=<query> searches and plays the first hit.
