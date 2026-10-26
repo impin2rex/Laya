@@ -697,4 +697,6 @@
     <string name="when_you_listen_the_most">जब आप सबसे ज़्यादा सुनते हैं</string>
     <string name="your_biggest_day">आपका सबसे बड़ा दिन: %1$s</string>
     <string name="your_lyrics_card">आपका शब्द कार्ड</string>
+    <string name="no_internet_connection">इंटरनेट कनेक्शन नहीं है</string>
+    <string name="something_went_wrong">कुछ गड़बड़ हो गई</string>
 </resources>

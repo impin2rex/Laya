@@ -63,6 +63,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.jetbrains.compose.resources.getString
+import com.music.laya.sharedui.resources.no_internet_connection
+import com.music.laya.sharedui.resources.something_went_wrong
+import io.ktor.client.engine.darwin.DarwinHttpRequestException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.sharedui.resources.connected
@@ -123,7 +127,12 @@ private fun browseTypeOf(id: String, fallback: BrowseType) = when {
 internal fun loadingPage(browseId: String, title: String, subtitle: String, thumb: String?, type: BrowseType) =
     DetailPage(browseId, title, subtitle, thumb, UiState.Loading, browseTypeOf(browseId, type))
 
-private fun friendly(e: Throwable) = e.message ?: "Something went wrong"
+/** Android's MainViewModel.friendly: a dropped connection reads "No internet connection", not NSURLError's dump. */
+internal suspend fun friendly(e: Throwable): String = when {
+    generateSequence(e) { it.cause }.any { it is DarwinHttpRequestException || it is HttpRequestTimeoutException } ->
+        getString(Res.string.no_internet_connection)
+    else -> e.message ?: getString(Res.string.something_went_wrong)
+}
 
 /**
  * Fills a [loadingPage] — the same two calls MainViewModel.openDetail makes.

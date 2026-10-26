@@ -276,7 +276,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         launch {
             YtMusicRepository.home()
                 .onSuccess { homeContinuation = it.continuation; publishHome(it.shelves) }
-                .onFailure { if (home !is UiState.Success) home = UiState.Error(it.message ?: "Error") }
+                .onFailure { if (home !is UiState.Success) home = UiState.Error(friendly(it)) }
             homePending--
         }
         if (signedIn) launch {
@@ -305,7 +305,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
     suspend fun loadExplore() = coroutineScope {
-        explore = YtMusicRepository.moodAndGenres().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Error") })
+        explore = YtMusicRepository.moodAndGenres().fold({ UiState.Success(it) }, { UiState.Error(friendly(it)) })
         // Category buttons carry no art; resolve it 4 at a time from the shelves they open (as MainViewModel does).
         val limiter = Semaphore(4)
         (explore as? UiState.Success)?.data?.flatMap { it.items }?.forEach { item ->

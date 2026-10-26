@@ -697,4 +697,6 @@
     <string name="when_you_listen_the_most">Quand vous écoutez le plus</string>
     <string name="your_biggest_day">Votre plus grosse journée : %1$s</string>
     <string name="your_lyrics_card">Votre carte de paroles</string>
+    <string name="no_internet_connection">Aucune connexion internet</string>
+    <string name="something_went_wrong">Un problème est survenu</string>
 </resources>
