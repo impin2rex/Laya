@@ -12,6 +12,7 @@ import com.music.laya.data.innertube.potoken.PoTokenGenerator
 import com.music.laya.data.innertube.potoken.PoTokenWebView
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.sources.SourceResolver
+import okio.Path.Companion.toOkioPath
 
 /**
  * The phone's answers to what the shared stream resolution asks of its
@@ -58,7 +59,7 @@ object AndroidStreamHooks {
             available = { webViewSupported },
         )
         InnerTubeXResolver.init(
-            filesDir = app.filesDir,
+            filesDir = app.filesDir.toOkioPath(),
             store = object : InnerTubeXResolver.ConfigStore {
                 override fun getString(key: String): String? = prefs.getString(key, null)
                 override fun getLong(key: String): Long? = if (prefs.contains(key)) prefs.getLong(key, 0L) else null

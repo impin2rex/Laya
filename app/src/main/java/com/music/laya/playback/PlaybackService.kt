@@ -17,6 +17,7 @@ import android.os.SystemClock
 import com.music.laya.data.TelemetryProvenance
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.music.laya.playback.smart.TransitionFilters
 import com.music.laya.playback.audio.usb.UsbDirectManager
 import com.music.laya.playback.audio.usb.DirectUsbProbeResult
 import android.util.Log
@@ -135,6 +136,8 @@ import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.EqualizerMode
 import com.music.laya.data.settings.OutputPcmMode
 import com.music.laya.data.sources.SourceResolver
+import com.music.laya.data.sources.resolve
+import com.music.laya.data.sources.targetIn
 import com.music.laya.data.sources.SourceStream
 import com.music.laya.data.sources.StreamFormat
 import com.music.laya.data.sources.TrackMatcher

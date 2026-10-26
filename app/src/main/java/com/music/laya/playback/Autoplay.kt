@@ -2,12 +2,8 @@ package com.music.laya.playback
 
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.listentogether.ListenTogether
-import com.music.laya.data.model.SearchFilter
-import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
-import com.music.laya.data.sources.SourceRegistry
-import com.music.laya.data.sources.TrackMatcher
 import com.music.laya.playback.QueueCoordinator.asQueueEntry
 import kotlinx.coroutines.CancellationException
 
@@ -74,22 +70,6 @@ fun autoplayQueueNeedsRefresh(
     !loadInProgress &&
     currentIndex >= 0 &&
     currentIndex == itemCount - 1
-
-/**
- * Finds the YouTube id that should seed AutoPlay for a song. Module tracks do not
- * carry YouTube ids, so they are matched on YouTube before the radio request.
- */
-suspend fun youtubeSeedFor(song: Song): String? {
-    if (SourceRegistry.parseTrackKey(song.videoId) == null) return song.videoId
-    val target = TrackMatcher.targetOf(song)
-    val query = TrackMatcher.queries(target).firstOrNull() ?: return null
-    return YtMusicRepository.search(query, SearchFilter.SONGS)
-        .getOrNull()
-        ?.filterIsInstance<SearchResult.Track>()
-        ?.map { it.song }
-        ?.let { TrackMatcher.best(it, target) }
-        ?.videoId
-}
 
 /**
  * Loads, de-duplicates and resolves one AutoPlay batch. The playback service is

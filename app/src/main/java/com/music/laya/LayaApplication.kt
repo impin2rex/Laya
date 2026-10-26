@@ -1,5 +1,6 @@
 package com.music.laya
 
+import okio.Path.Companion.toOkioPath
 import android.app.Application
 import android.content.Intent
 import androidx.core.content.pm.ShortcutInfoCompat
@@ -23,6 +24,7 @@ import com.music.laya.data.lyrics.LyricsTranslation
 import androidx.appcompat.app.AppCompatDelegate
 import com.music.laya.ui.player.AndroidPlayerHost
 import com.music.laya.ui.player.PlayerPlatform
+import com.music.laya.data.canvas.AndroidSpotifyHarvest
 import com.music.laya.data.canvas.CanvasCache
 import com.music.laya.data.smb.SmbCoverFetcher
 import com.music.laya.data.webdav.WebDavCoilAuth
@@ -36,16 +38,20 @@ import com.music.laya.playback.OriginalVersion
 import com.music.laya.data.innertube.Innertube
 import com.music.laya.data.innertube.AndroidStreamHooks
 import com.music.laya.data.listentogether.ListenTogether
+import com.music.laya.data.listentogether.init
 import com.music.laya.data.scrobbling.LastFM
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.init
 import com.music.laya.data.settings.SearchHistory
 import com.music.laya.data.sources.SourceRegistry
-import com.music.laya.data.stats.ArtistFacts
-import com.music.laya.data.stats.ListeningStats
+import com.music.laya.data.sources.AndroidSourcesHost
+import com.music.laya.data.stats.initArtistFacts
+import com.music.laya.data.stats.initListening
 import com.music.laya.download.Downloads
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okio.Path.Companion.toOkioPath
 import kotlin.concurrent.thread
 
 class LayaApplication : Application(), SingletonImageLoader.Factory {
@@ -53,6 +59,13 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        com.music.laya.ui.theme.SFProDisplay = androidx.compose.ui.text.font.FontFamily(
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_regular, androidx.compose.ui.text.font.FontWeight.W400),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_medium, androidx.compose.ui.text.font.FontWeight.W500),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_semibold, androidx.compose.ui.text.font.FontWeight.W600),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_bold, androidx.compose.ui.text.font.FontWeight.W700),
+            androidx.compose.ui.text.font.Font(R.font.sf_pro_display_heavy, androidx.compose.ui.text.font.FontWeight.W800),
+        )
         // The player is drawn by the shared UI module; this is what it reads
         // underneath — settings, the Canvas decoder, outputs, the party.
         AndroidStreamHooks.installEarly()
@@ -64,9 +77,13 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
             unpackAsset(com.music.laya.playback.karaoke.KaraokeModel.ASSET)
         }
         // The song being sung, separated: one at a time, in the cache, cleared at launch.
-        com.music.laya.playback.karaoke.KaraokeStems.install(java.io.File(cacheDir, "karaoke"))
+        com.music.laya.playback.karaoke.KaraokeStems.install(java.io.File(cacheDir, "karaoke").toOkioPath())
         PlayerPlatform.install(AndroidPlayerHost(this))
+        com.music.laya.ui.screens.PartyPlatform.host = com.music.laya.ui.AndroidPartyPlatform(this)
         com.music.laya.ui.AppUi.install(com.music.laya.ui.AndroidAppUiHost)
+        com.music.laya.ui.screens.DetailExtras.host = com.music.laya.ui.AndroidDetailHost
+        com.music.laya.ui.AndroidSettingsHost.install(this)
+        com.music.laya.ui.screens.SettingsExtras.host = com.music.laya.ui.AndroidSettingsHost
         // The shared data layer (lyrics, the YouTube Music client) logs to
         // logcat on debug builds only, as the app's own DebugLog always has.
         if (BuildConfig.DEBUG) {
@@ -91,7 +108,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         Innertube.appLanguage = { AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() }
         migrateScriptOnlyAppLocale()
         registerSearchShortcut()
-        LyricsTranslation.cacheDir = cacheDir
+        LyricsTranslation.cacheDir = cacheDir.toOkioPath()
         // PlaybackService shares this process, so seeding the cookie here means
         // stream resolution is authenticated from the first play onwards.
         authStore = AuthStore(this)
@@ -103,7 +120,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // threads racing to create it. Joined before onCreate returns, so
         // nothing that runs after startup can see any of them half open.
         val backgroundInit = thread(name = "startup-init") {
-            SourceRegistry.init(this)
+            SourceRegistry.init(AndroidSourcesHost(this))
             AndroidStreamHooks.initInnerTubeX(this)
             // Its own directory: canvas clips are looping video, not audio, and
             // belong in a cache AudioCache's own limit and eviction policy were
@@ -157,9 +174,9 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // The device's own listening record. Opened here rather than in
         // PlaybackService because the Replay page reads it from the UI side and
         // both live in this process — one owner, one directory.
-        ListeningStats.init(this)
+        initListening(this)
         // After AppSettings, whose switch decides whether half of it runs.
-        ArtistFacts.init(this)
+        initArtistFacts(this)
         // One cache directory can only be opened once per process, and
         // PlaybackService shares this one — so it's opened here, not there.
         AudioCache.init(this)
@@ -167,7 +184,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // listener's own session cookie needs a Context, and nothing in the
         // suspend call chain that reaches it (a track's canvas lookup) has
         // one to hand — see SpotifyToken's doc for why.
-        SpotifyToken.init(this)
+        AndroidSpotifyHarvest.install(this)
         // A sideloaded update is just a new APK over the old one, so app data —
         // including whatever the old build left in the image cache — survives
         // it untouched. Wipe that on the first launch of a higher versionCode so

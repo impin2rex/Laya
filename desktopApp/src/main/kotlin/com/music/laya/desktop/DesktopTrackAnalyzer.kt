@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import okio.Path.Companion.toOkioPath
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AutomixPerformanceMode
 import com.music.laya.data.settings.TrackAnalysisState
@@ -44,7 +45,7 @@ internal class DesktopTrackAnalyzer(
     }
 
     /** Analyses kept between runs, so a track measured yesterday is not measured again today. */
-    private val store = AnalysisStore { DesktopAnalysisRuntime.analysisHome() }
+    private val store = AnalysisStore { DesktopAnalysisRuntime.analysisHome().toOkioPath() }
 
     private val results = ConcurrentHashMap<String, TrackAnalysis>()
     private val running = ConcurrentHashMap.newKeySet<String>()

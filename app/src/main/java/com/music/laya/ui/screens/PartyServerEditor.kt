@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.music.laya.R
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.listentogether.ServerConnectionState
+import com.music.laya.data.listentogether.ServerUrlError
 import com.music.laya.data.listentogether.ServerUrlValidationResult
 import com.music.laya.ui.components.AddonEditorAlert
 import dev.chrisbanes.haze.HazeState
@@ -55,7 +56,7 @@ fun PartyServerEditor(hazeState: HazeState, onDismiss: () -> Unit) {
             // In the card, where the address being complained about still is. A
             // toast over a dialog is a sentence about a field it is covering.
             is ServerUrlValidationResult.Invalid ->
-                status = context.getString(validation.error.toMessageRes()) to false
+                status = context.getString(validation.error.toMessageResId()) to false
 
             is ServerUrlValidationResult.Valid -> {
                 busy = true
@@ -125,7 +126,7 @@ fun PartyServerEditor(hazeState: HazeState, onDismiss: () -> Unit) {
         onTest = {
             when (val validation = ListenTogether.parseAndNormalizeServerUrl(input)) {
                 is ServerUrlValidationResult.Invalid ->
-                    status = context.getString(validation.error.toMessageRes()) to false
+                    status = context.getString(validation.error.toMessageResId()) to false
 
                 is ServerUrlValidationResult.Valid -> {
                     busy = true
@@ -153,6 +154,17 @@ fun PartyServerEditor(hazeState: HazeState, onDismiss: () -> Unit) {
         removeLabel = stringResource(R.string.listen_together_remove_server),
         onDismiss = onDismiss,
     )
+}
+
+private fun ServerUrlError.toMessageResId(): Int = when (this) {
+    ServerUrlError.Whitespace -> R.string.listen_together_err_whitespace
+    ServerUrlError.InvalidScheme, ServerUrlError.InvalidHost, ServerUrlError.Malformed ->
+        R.string.listen_together_invalid_server_url
+    ServerUrlError.InvalidPort -> R.string.listen_together_err_invalid_port
+    ServerUrlError.InvalidPath -> R.string.listen_together_err_invalid_path
+    ServerUrlError.HasPath -> R.string.listen_together_err_no_path
+    ServerUrlError.HasQuery -> R.string.listen_together_err_no_query
+    ServerUrlError.HasFragment -> R.string.listen_together_err_no_fragment
 }
 
 /**

@@ -826,6 +826,7 @@ class SourcesTest {
     @Test
     fun `prefers the immersive row over a lossless one when Atmos is wanted`() {
         DeviceCodecs.forced = true
+        useAndroidSourcesHost()
         AppSettings.dolbyAtmos.value = true
         try {
             val target = TrackMatcher.Target("Gehra Hua", "Shashwat Sachdev", durationSec = 362)
@@ -847,6 +848,7 @@ class SourcesTest {
     @Test
     fun `ignores the immersive row when the Atmos setting is off`() {
         DeviceCodecs.forced = true
+        useAndroidSourcesHost()
         AppSettings.dolbyAtmos.value = false
         try {
             val target = TrackMatcher.Target("Gehra Hua", "Shashwat Sachdev", durationSec = 362)
