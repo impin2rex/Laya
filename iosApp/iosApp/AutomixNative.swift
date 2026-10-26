@@ -24,9 +24,20 @@ final class AutomixNativeImpl: NSObject, AutomixNative {
 
     func vocalModelPath() -> String { Bundle.main.path(forResource: "vocals_umxhq_int8", ofType: "onnx") ?? "" }
 
+    /// Called on Kotlin/Native threads, which drain no autorelease pool: ORT's tensors would stay until the thread ends.
     func vocalBands(modelPath: String, threads: Int32, url: String, headers: [String: String], mimeType: String,
                     contentLength: Int64, chunkBytes: Int64, startSec: Double, seconds: Double,
                     firstBin: Int32, lastBin: Int32) -> AutomixVocal? {
+        autoreleasepool {
+            vocalBandsNow(modelPath: modelPath, threads: threads, url: url, headers: headers, mimeType: mimeType,
+                          contentLength: contentLength, chunkBytes: chunkBytes, startSec: startSec, seconds: seconds,
+                          firstBin: firstBin, lastBin: lastBin)
+        }
+    }
+
+    private func vocalBandsNow(modelPath: String, threads: Int32, url: String, headers: [String: String], mimeType: String,
+                               contentLength: Int64, chunkBytes: Int64, startSec: Double, seconds: Double,
+                               firstBin: Int32, lastBin: Int32) -> AutomixVocal? {
         guard !modelPath.isEmpty, let source = URL(string: url),
               let reader = PcmReader(source: source, headers: headers, mimeType: mimeType, contentLength: contentLength,
                                      chunkBytes: chunkBytes, rate: Self.vocalRate, channels: 2) else { return nil }
@@ -109,7 +120,12 @@ final class AutomixNativeImpl: NSObject, AutomixNative {
         return samples.isEmpty ? nil : PcmBuffer(samples)
     }
 
+    /// See vocalBands: a pool per call, so the chunks' tensors go when it returns.
     func beatLogits(modelPath: String, threads: Int32, pcm: UnsafeMutableRawPointer, count: Int32) -> AutomixLogits? {
+        autoreleasepool { beatLogitsNow(modelPath: modelPath, threads: threads, pcm: pcm, count: count) }
+    }
+
+    private func beatLogitsNow(modelPath: String, threads: Int32, pcm: UnsafeMutableRawPointer, count: Int32) -> AutomixLogits? {
         var frames = 0
         guard let mel = LayaAnalysis.beatSpectrogram(pcm.assumingMemoryBound(to: Float.self), count: Int(count), frames: &frames), frames > 0,
               let session = session(modelPath, Int(threads)) else { return nil }

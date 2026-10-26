@@ -24,38 +24,49 @@ private final class OrtModelRun: NSObject, KaraokeModelRun {
     private static let shape: [NSNumber] = [1, 4, 2048, 256]
     private static let bytes = 4 * 2048 * 256 * MemoryLayout<Float>.size
 
-    private let env: ORTEnv
-    private let session: ORTSession
+    private var env: ORTEnv?
+    private var session: ORTSession?
     private let inputName: String
     private let outputName: String
 
     init(path: String, threads: Int) throws {
-        env = try ORTEnv(loggingLevel: .warning)
+        let env = try ORTEnv(loggingLevel: .warning)
         let options = try ORTSessionOptions()
         try options.setIntraOpNumThreads(Int32(threads))
         try options.setGraphOptimizationLevel(.all)
-        session = try ORTSession(env: env, modelPath: path, sessionOptions: options)
+        let session = try ORTSession(env: env, modelPath: path, sessionOptions: options)
         inputName = try session.inputNames().first ?? "input"
         outputName = try session.outputNames().first ?? "output"
+        self.env = env
+        self.session = session
     }
 
+    /// Called on KaraokeStems' Kotlin/Native threads, which drain no autorelease pool: without one here each run's
+    /// 8 MB in and 8 MB out stayed until the thread ended (measured: +17 MB per segment, 1.9 GB for one song).
     func run(input: UnsafeMutableRawPointer, output: UnsafeMutableRawPointer) -> Bool {
-        do {
-            // NSMutableData may copy even with bytesNoCopy, so a pre-bound output tensor can be written
-            // somewhere Kotlin never sees (the vocal came back silent). ORT returns its own output; copy it back.
-            let inValue = try ORTValue(tensorData: NSMutableData(bytes: input, length: Self.bytes),
-                                       elementType: .float, shape: Self.shape)
-            let outputs = try session.run(withInputs: [inputName: inValue], outputNames: [outputName], runOptions: nil)
-            guard let result = try outputs[outputName]?.tensorData(), result.length >= Self.bytes else { return false }
-            memcpy(output, result.bytes, Self.bytes)
-            return true
-        } catch {
-            print("Karaoke: inference failed: \(error)")
-            return false
+        autoreleasepool {
+            guard let session else { return false }
+            do {
+                // NSMutableData may copy even with bytesNoCopy, so a pre-bound output tensor can be written
+                // somewhere Kotlin never sees (the vocal came back silent). ORT returns its own output; copy it back.
+                let inValue = try ORTValue(tensorData: NSMutableData(bytes: input, length: Self.bytes),
+                                           elementType: .float, shape: Self.shape)
+                let outputs = try session.run(withInputs: [inputName: inValue], outputNames: [outputName], runOptions: nil)
+                guard let result = try outputs[outputName]?.tensorData(), result.length >= Self.bytes else { return false }
+                memcpy(output, result.bytes, Self.bytes)
+                return true
+            } catch {
+                print("Karaoke: inference failed: \(error)")
+                return false
+            }
         }
     }
 
-    func close() {}
+    /// The session's memory goes now, not whenever a K/N GC gets round to this object's wrapper.
+    func close() {
+        session = nil
+        env = nil
+    }
 }
 
 /// AVAssetReader over the same chunked stream the player reads, as 44.1 kHz interleaved stereo float.
@@ -90,7 +101,10 @@ final class PcmReader: NSObject, KaraokePcmSource {
         if !start(at: 0) { close(); return nil }
     }
 
-    private func start(at frame: Int64) -> Bool {
+    /// Like read, called on Kotlin/Native threads, which drain no autorelease pool.
+    private func start(at frame: Int64) -> Bool { autoreleasepool { startNow(at: frame) } }
+
+    private func startNow(at frame: Int64) -> Bool {
         reader?.cancelReading()
         reader = nil
         output = nil
@@ -116,7 +130,13 @@ final class PcmReader: NSObject, KaraokePcmSource {
         return true
     }
 
+    /// Called on Kotlin/Native threads (karaoke, Automix, version alignment), which drain no autorelease pool:
+    /// whatever AVAssetReader autoreleases per sample buffer would otherwise stay until the thread ends.
     func read(into destination: UnsafeMutableRawPointer, maxFrames: Int32) -> Int32 {
+        autoreleasepool { readNow(into: destination, maxFrames: maxFrames) }
+    }
+
+    private func readNow(into destination: UnsafeMutableRawPointer, maxFrames: Int32) -> Int32 {
         let want = Int(maxFrames) * channels
         while pending.count - pendingPos < want, let sample = output?.copyNextSampleBuffer() {
             guard let block = CMSampleBufferGetDataBuffer(sample) else { continue }

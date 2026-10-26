@@ -7,6 +7,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
@@ -33,7 +34,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.music.laya.ui.player.CanvasContentMode
 import com.music.laya.ui.player.CanvasVideoSpec
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import platform.AVFoundation.AVPlayerItem
 import platform.AVFoundation.AVPlayerLooper
 import platform.AVFoundation.AVQueuePlayer
@@ -192,7 +196,15 @@ private fun placement(frame: IntSize, view: androidx.compose.ui.geometry.Size, m
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     val current by rememberUpdatedState(spec)
-    val clip = remember(spec.canvas.url) { CanvasPlayer(spec.canvas.url) }
+    // Built off the main thread: AVQueuePlayer() and AVPlayerItem(URL:) each wait on a synchronous XPC call to the media
+    // server, and a busy one held the main thread until the watchdog killed the app (0x8BADF00D). Not cancellable
+    // while it is built, so a clip made for a song already gone is still released, not leaked with its connection.
+    val clip by produceState<CanvasPlayer?>(null, spec.canvas.url) {
+        val made = withContext(NonCancellable + Dispatchers.Default) { CanvasPlayer(spec.canvas.url) }
+        value = made
+        awaitDispose { made.release() }
+    }
+    var viewSize by remember { mutableStateOf(IntSize.Zero) }
     var frame by remember(clip) { mutableStateOf<ImageBitmap?>(null) }
     // Rendered only once a real frame exists, so the parent keeps the artwork opaque until then.
     val rendered = frame != null
@@ -200,7 +212,6 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
 
     DisposableEffect(clip) {
         onDispose {
-            clip.release()
             // The parent owns the still/canvas handoff: never leave it holding a clip that no longer exists.
             current.onRenderedChanged(false)
             current.onCoverChanged(0f)
@@ -208,6 +219,7 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
         }
     }
     LaunchedEffect(clip, spec.pausedForTransition) {
+        val clip = clip ?: return@LaunchedEffect
         clip.play(!spec.pausedForTransition)
         // Poll once per display frame, only while playing: a paused clip has nothing new to show.
         while (!spec.pausedForTransition) {
@@ -215,10 +227,14 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
             clip.nextFrame()?.let { frame = it }
         }
     }
-    clip.mode = spec.contentMode
-    clip.alignTop = spec.alignPortraitTop
+    clip?.let {
+        it.viewSize = viewSize
+        it.mode = spec.contentMode
+        it.alignTop = spec.alignPortraitTop
+    }
     // Same cadence as Android: one capture once the first frame shows, then every refreshFrameEveryMs if asked.
     LaunchedEffect(clip, rendered, spec.refreshFrameEveryMs, spec.frameCapturePx, aspect) {
+        val clip = clip ?: return@LaunchedEffect
         if (!rendered) return@LaunchedEffect
         androidx.compose.runtime.withFrameNanos { }
         clip.capture(current.frameCapturePx)?.let { current.onFrameCaptured(it) }
@@ -234,7 +250,7 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     val alpha by animateFloatAsState(if (rendered) 1f else 0f, tween(320), label = "canvasAlpha")
     LaunchedEffect(clip) { snapshotFlow { alpha * current.presentationAlpha() }.collect { current.onCoverChanged(it) } }
 
-    Canvas(modifier.onSizeChanged { clip.viewSize = it }.graphicsLayer {
+    Canvas(modifier.onSizeChanged { viewSize = it; clip?.viewSize = it }.graphicsLayer {
         this.alpha = if (current.contentMode == CanvasContentMode.FIT_PORTRAIT && aspect <= 0f) 0f else alpha * current.presentationAlpha()
         if (current.bottomFade > 0.001f) compositingStrategy = CompositingStrategy.Offscreen
     }) {

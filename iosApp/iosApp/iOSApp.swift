@@ -13,12 +13,18 @@ struct iOSApp: App {
         IosKaraoke.shared.native = KaraokeNativeImpl()
         IosAutomix.shared.native = AutomixNativeImpl()
         _ = iOSApp.castNative // statics are lazy
+        // Home-screen widgets: what they draw, and where their buttons' intents land.
+        IosWidgets.shared.host = WidgetHostImpl()
+        LayaWidgetCommands.handler = { IosWidgets.shared.perform(command: $0) }
     }
 
     var body: some Scene {
         WindowGroup {
             ComposeView().ignoresSafeArea()
-                .onOpenURL { url in _ = IosPartyKt.handleInviteUrl(url: url.absoluteString) }
+                .onOpenURL { url in
+                    if IosWidgets.shared.handleUrl(url: url.absoluteString) { return }
+                    _ = IosPartyKt.handleInviteUrl(url: url.absoluteString)
+                }
         }
     }
 }

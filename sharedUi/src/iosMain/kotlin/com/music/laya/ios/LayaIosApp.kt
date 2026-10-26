@@ -82,7 +82,13 @@ import coil3.compose.AsyncImage
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.InnertubeParser
 import com.music.laya.data.innertube.PlaybackTracker
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
+import androidx.compose.runtime.snapshotFlow
+import com.music.laya.data.model.HEADER_ART_PX
+import com.music.laya.data.model.ROW_ART_PX
+import com.music.laya.data.model.artworkAt
 import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsRepository
 import com.music.laya.data.lyrics.LyricsSource
@@ -368,6 +374,54 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         // Android skips ahead when the playing track is the one just disliked.
         if (next == LikeStatus.DISLIKE && player.song?.videoId == id) player.next()
     }
+
+    // Home-screen widgets (IosWidgets), as Android's publishWidgetState and LikedWidgetSongs: what they draw, and
+    // their buttons and links, which run here.
+    LaunchedEffect(player) {
+        snapshotFlow {
+            val song = player.song
+            WidgetState(
+                song?.videoId, song?.title.orEmpty(), song?.artist.orEmpty(), song?.artworkAt(HEADER_ART_PX) ?: song?.thumbnailUrl,
+                // What was asked for, not whether audio is out yet: a tap flips the glyph at once (playWhenReady).
+                isPlaying = player.isPlaying || player.isLoading,
+                hasPrevious = player.hasPrevious, hasNext = player.hasNext,
+                isLiked = song != null && isLiked(song.videoId),
+                canLike = signedIn && song != null && song.localUri == null,
+                shuffleEnabled = shuffle,
+            )
+        }.distinctUntilChanged().collect { IosWidgets.publish(it) }
+    }
+    LaunchedEffect(Unit) {
+        // Only once the library has an answer: signed out is empty, still loading leaves the last row up.
+        snapshotFlow { if (!signedIn) emptyList() else (library as? UiState.Success)?.data?.likedSongs?.take(5) }
+            .filterNotNull().distinctUntilChanged().collect { songs ->
+                IosWidgets.host?.publishLiked(songs.map { it.videoId }, songs.map { it.title }, songs.map { it.artworkAt(ROW_ART_PX) ?: it.thumbnailUrl.orEmpty() })
+            }
+    }
+    LaunchedEffect(Unit) {
+        IosWidgets.ready = true
+        try {
+            IosWidgets.commands.collect { command ->
+                when {
+                    command == "toggle" -> player.togglePlayPause()
+                    command == "next" -> player.next()
+                    command == "previous" -> player.previous()
+                    command == "like" -> player.song?.takeIf { signedIn && it.localUri == null }?.let { toggleLike(it.videoId) }
+                    command == "shuffle" -> player.setShuffle(!AppSettings.shuffleEnabled.value)
+                    command == "open" -> if (player.song != null) nowPlayingOpen = true
+                    command.startsWith("play:") -> {
+                        val id = command.removePrefix("play:")
+                        (library as? UiState.Success)?.data?.likedSongs?.firstOrNull { it.videoId == id }?.let {
+                            player.play(listOf(it), 0)
+                            nowPlayingOpen = true
+                        }
+                    }
+                }
+            }
+        } finally {
+            IosWidgets.ready = false
+        }
+    }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
     var infoTarget by remember { mutableStateOf<Song?>(null) }
     var sleepPicker by remember { mutableStateOf(false) }
@@ -606,6 +660,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 player.seekTo(s * 1000)
                 kotlinx.coroutines.delay(12_000)
             }
+        }
+        // LAYA_KARAOKE=1 turns neural karaoke on once the track plays (it goes off by itself at the next track).
+        if (env["LAYA_KARAOKE"] == "1") {
+            while (player.durationMs <= 0 || !player.isPlaying) kotlinx.coroutines.delay(500)
+            com.music.laya.playback.Karaoke.setEnabled(true)
         }
     }
 
