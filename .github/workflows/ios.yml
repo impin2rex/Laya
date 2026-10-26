@@ -80,7 +80,12 @@ jobs:
         find "$APP" -type d -empty -delete
         # Embedded frameworks (ONNX Runtime, Google Cast) are signed before the bundle that contains them.
         for f in "$APP"/Frameworks/*.framework; do [ -e "$f" ] && codesign --force --sign - --timestamp=none "$f"; done
-        codesign --force --sign - --timestamp=none --generate-entitlement-der "$APP"
+        # The widgets extension, then the app, with the App Group they share: an unsigned build carries no
+        # entitlements, and a re-signing sideloader only sets up the groups it finds here.
+        codesign --force --sign - --timestamp=none --generate-entitlement-der \
+          --entitlements iosApp/LayaWidgets/LayaWidgets.entitlements "$APP/PlugIns/LayaWidgets.appex"
+        codesign --force --sign - --timestamp=none --generate-entitlement-der \
+          --entitlements iosApp/iosApp/iosApp.entitlements "$APP"
         codesign --verify --strict --verbose=2 "$APP"
 
     - name: Package .ipa

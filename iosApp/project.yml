@@ -20,6 +20,8 @@ targets:
     platform: iOS
     sources:
       - iosApp
+      # The widgets' snapshot and button intents: compiled into the app too, where the intents run.
+      - Shared
       # Neural karaoke's model, the same file Android bundles.
       - path: ../app/src/main/assets/UVR_MDXNET_9482.onnx
         buildPhase: resources
@@ -37,10 +39,14 @@ targets:
       - framework: Vendor/GoogleCast.xcframework
         embed: true
       - sdk: Photos.framework
+      - target: LayaWidgets
+        embed: true
     settings:
       base:
         # Checked-in plist; XcodeGen's `info:` key would overwrite it.
         INFOPLIST_FILE: iosApp/Info.plist
+        # The App Group the widgets read the snapshot from (LayaWidgetStore).
+        CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
         GENERATE_INFOPLIST_FILE: NO
         PRODUCT_NAME: Laya
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -62,3 +68,23 @@ targets:
           # Xcode passes no JAVA_HOME; Gradle 8.11 can't run on the newest JDKs.
           if [ -z "$JAVA_HOME" ]; then export JAVA_HOME="$(/usr/libexec/java_home -v 21)"; fi
           ./gradlew :sharedUi:embedAndSignAppleFrameworkForXcode
+
+  # The home-screen widgets (Android's four), WidgetKit. iOS 17: interactive buttons start there.
+  LayaWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - LayaWidgets
+      - Shared
+    settings:
+      base:
+        INFOPLIST_FILE: LayaWidgets/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        PRODUCT_NAME: LayaWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.music.laya.widgets
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_ENTITLEMENTS: LayaWidgets/LayaWidgets.entitlements
+        # Shared/LayaWidgetShared.swift leaves out what an extension may not use.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) LAYA_WIDGET_EXTENSION"
+        SKIP_INSTALL: YES
