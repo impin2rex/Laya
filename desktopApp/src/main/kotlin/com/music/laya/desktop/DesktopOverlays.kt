@@ -65,7 +65,6 @@ internal enum class DesktopSettingsPage {
     LISTEN_TOGETHER,
     LYRICS_SOURCES,
     TRANSLATION_LANGUAGE,
-    SPOTIFY_CANVAS,
     INTEGRATIONS,
     LICENSES,
 }

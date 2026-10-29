@@ -488,10 +488,7 @@
     <string name="upgrade_length_slack_subtitle">Максимальная разница в длительности для замещающего потока</string>
     <string name="upgrade_length_slack_footer">Больший допуск принимает больше совпадений из источников; меньший — строже. По умолчанию 3 секунды.</string>
     <string name="seconds_short">%1$d с</string>
-    <string name="spdc_token">Токен sp_dc</string>
     <string name="spotify_canvas_setup">Настроить Spotify</string>
-    <string name="spotify_canvas_setup_description">Чтобы использовать Spotify Canvas, укажите свой cookie sp_dc от Spotify.</string>
-    <string name="spotify_canvas_setup_steps">1. Войдите на open.spotify.com в браузере.\n2. Откройте инструменты разработчика, затем Application и Cookies.\n3. Скопируйте значение cookie sp_dc.\n4. Вставьте его ниже.</string>
     <string name="spotify_canvas_auto_hide">Автоскрытие элементов управления</string>
     <string name="spotify_canvas_auto_hide_subtitle">Сворачивает половину плеера через 5 секунд, пока играет Spotify Canvas</string>
     <string name="prioritize_spotify_canvas">Приоритет Spotify Canvas</string>
@@ -1332,7 +1329,6 @@
     <string name="spotify_import_unmatched">%1$d треков не найдено на YouTube Music</string>
     <string name="spotify_library_subtitle">Ваши плейлисты Spotify</string>
     <string name="spotify_sign_in">Войти через Spotify</string>
-    <string name="spotify_use_spdc_token">Использовать токен sp_dc</string>
     <string name="spotify_track_unavailable">Не удалось найти этот трек на YouTube Music</string>
     <string name="artist_signatures">Подписи исполнителей</string>
     <string name="artist_signatures_subtitle">Показывает подпись от руки, если в Apple Music нет заголовочного логотипа</string>

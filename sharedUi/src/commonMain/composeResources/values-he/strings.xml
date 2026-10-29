@@ -486,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">התחברו כדי לטעון את הפלייליסטים שלכם. ההשמעה משתמשת ב-YouTube Music.</string>
     <string name="spotify_sign_in">התחברות עם Spotify</string>
-    <string name="spotify_use_spdc_token">שימוש באסימון sp_dc</string>
     <string name="spotify_disconnect">התנתקות</string>
     <string name="spotify_empty_playlists">אין פלייליסטים בחשבון זה</string>
     <string name="spotify_empty_tracks">לפלייליסט זה אין שירים</string>

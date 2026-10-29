@@ -486,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Inicia sesión para cargar tus playlists. La reproducción usa YouTube Music.</string>
     <string name="spotify_sign_in">Iniciar sesión con Spotify</string>
-    <string name="spotify_use_spdc_token">Usar token sp_dc</string>
     <string name="spotify_disconnect">Desconectar</string>
     <string name="spotify_empty_playlists">No hay playlists en esta cuenta</string>
     <string name="spotify_empty_tracks">Esta playlist no tiene canciones</string>

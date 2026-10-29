@@ -469,10 +469,7 @@
     <string name="upgrade_length_slack_subtitle">Maximal erlaubte Längenabweichung für einen Ersatz-Stream</string>
     <string name="upgrade_length_slack_footer">Eine größere Toleranz akzeptiert mehr Treffer aus Quellen, eine kleinere ist strenger. Standard sind 3 Sekunden.</string>
     <string name="seconds_short">%1$d s</string>
-    <string name="spdc_token">sp_dc-Token</string>
     <string name="spotify_canvas_setup">Spotify einrichten</string>
-    <string name="spotify_canvas_setup_description">Um Spotify Canvas zu nutzen, gib dein Spotify-sp_dc-Cookie an.</string>
-    <string name="spotify_canvas_setup_steps">1. Melde dich in einem Browser bei open.spotify.com an.\n2. Öffne die Entwicklertools, dann Anwendung und Cookies.\n3. Kopiere den Wert des sp_dc-Cookies.\n4. Füge ihn unten ein.</string>
     <string name="spotify_canvas_auto_hide">Player-Steuerung automatisch ausblenden</string>
     <string name="spotify_canvas_auto_hide_subtitle">Klappt den halben Player nach 5 Sekunden ein, während Spotify Canvas läuft</string>
     <string name="prioritize_spotify_canvas">Spotify Canvas bevorzugen</string>
@@ -1300,7 +1297,6 @@
     <string name="spotify_import_unmatched">%1$d Titel wurden auf YouTube Music nicht gefunden</string>
     <string name="spotify_library_subtitle">Deine Spotify-Playlists</string>
     <string name="spotify_sign_in">Bei Spotify anmelden</string>
-    <string name="spotify_use_spdc_token">sp_dc-Token verwenden</string>
     <string name="spotify_track_unavailable">Diesen Titel gab es nicht auf YouTube Music</string>
     <string name="artist_signatures">Künstlersignaturen</string>
     <string name="artist_signatures_subtitle">Zeigt eine handschriftliche Signatur, wenn Apple Music kein Titellogo hat</string>

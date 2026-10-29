@@ -109,26 +109,27 @@ internal fun DesktopIntegrationsDialog(
     }
 }
 
-/** The Spotify account, as the app holds it: an `sp_dc` cookie, and how to get or drop one. */
+/** The Spotify account, as the app holds it: the `sp_dc` cookie its sign-in leaves, and how to get or drop one. */
 internal class DesktopSpotifyConnection(
     val connected: Boolean,
-    /** Whether the sign-in window can be shown; without it only pasting is left. */
+    /** Whether the sign-in window can be shown; it needs JavaFX. */
     val canSignIn: Boolean,
     val signingIn: Boolean,
     val error: String?,
     /** Opens the sign-in window, or closes the one already open. */
     val onSignIn: () -> Unit,
-    val onPasteCookie: () -> Unit,
+    /** The account's playlists, as the Library's Spotify card opens them. */
+    val onOpenPlaylists: () -> Unit,
     val onDisconnect: () -> Unit,
 )
 
-/** Android's Spotify group, with Canvas in place of the playlists the desktop does not show yet. */
+/** Android's Spotify group: sign in, then the account's playlists and Canvas. */
 @Composable
 private fun SpotifySection(spotify: DesktopSpotifyConnection) {
     PanelGroup(
         header = "Spotify",
         footer = spotify.error
-            ?: "Sign in to show Spotify Canvas behind your tracks. Playback uses YouTube Music.",
+            ?: "Sign in to open your Spotify playlists and show Spotify Canvas behind your tracks. Playback uses YouTube Music.",
     ) {
         PanelActionRow(
             title = "Spotify",
@@ -136,32 +137,30 @@ private fun SpotifySection(spotify: DesktopSpotifyConnection) {
                 spotify.connected -> DesktopStrings["connected", "Connected"]
                 spotify.signingIn -> "Finish signing in in the Spotify window. Click to cancel"
                 spotify.canSignIn -> "Click to sign in"
-                else -> "Click to paste your sp_dc cookie"
+                else -> "Sign-in needs JavaFX, which this build does not have"
             },
             destructive = false,
             onClick = {
                 when {
-                    // Connected: the cookie page, to see or replace what is held.
-                    spotify.connected || !spotify.canSignIn -> spotify.onPasteCookie()
-                    else -> spotify.onSignIn()
+                    spotify.connected -> spotify.onOpenPlaylists()
+                    spotify.canSignIn -> spotify.onSignIn()
                 }
             },
         )
         if (spotify.connected) {
             DesktopCardRule()
             PanelActionRow(
-                title = DesktopStrings["spotify_disconnect", "Disconnect"],
-                subtitle = "Forgets the sp_dc cookie; Canvas stops until you sign in again",
-                destructive = true,
-                onClick = spotify.onDisconnect,
+                title = DesktopStrings["d_your_playlists", "Your playlists"],
+                subtitle = DesktopStrings["spotify_library_subtitle", "Your playlists and Liked Songs"],
+                destructive = false,
+                onClick = spotify.onOpenPlaylists,
             )
-        } else if (spotify.canSignIn && !spotify.signingIn) {
             DesktopCardRule()
             PanelActionRow(
-                title = "Paste a cookie instead",
-                subtitle = "Copy sp_dc from open.spotify.com yourself",
-                destructive = false,
-                onClick = spotify.onPasteCookie,
+                title = DesktopStrings["spotify_disconnect", "Disconnect"],
+                subtitle = "Signs out of Spotify; Canvas stops until you sign in again",
+                destructive = true,
+                onClick = spotify.onDisconnect,
             )
         }
     }

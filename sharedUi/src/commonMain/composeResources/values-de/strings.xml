@@ -486,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Melde dich an, um deine Playlists zu laden. Die Wiedergabe nutzt YouTube Music.</string>
     <string name="spotify_sign_in">Bei Spotify anmelden</string>
-    <string name="spotify_use_spdc_token">sp_dc-Token verwenden</string>
     <string name="spotify_disconnect">Trennen</string>
     <string name="spotify_empty_playlists">Keine Playlists auf diesem Konto</string>
     <string name="spotify_empty_tracks">Diese Playlist enthält keine Titel</string>

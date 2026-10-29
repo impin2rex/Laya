@@ -485,7 +485,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">サインインしてプレイリストを読み込みます。再生は YouTube Music を使います。</string>
     <string name="spotify_sign_in">Spotify でサインイン</string>
-    <string name="spotify_use_spdc_token">sp_dc トークンを使用</string>
     <string name="spotify_disconnect">切断</string>
     <string name="spotify_empty_playlists">このアカウントにはプレイリストがありません</string>
     <string name="spotify_empty_tracks">このプレイリストには曲がありません</string>

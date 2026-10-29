@@ -476,10 +476,7 @@
     <string name="sources_order_header">แหล่งข้อมูล เรียงตามลำดับที่ลอง</string>
     <string name="sources_quality_capped">การเชื่อมต่อนี้ตั้งไว้ต่ำกว่าคุณภาพสูง สตรีมจึงถูกแปลงให้พอดีกับขีดจำกัดนั้น การดาวน์โหลดไม่ได้รับผลกระทบ</string>
     <string name="sources_subtitle">เสียงมาจากที่ใดและลำดับที่ใช้</string>
-    <string name="spdc_token">โทเคน sp_dc</string>
     <string name="spotify_canvas_setup">ตั้งค่า Spotify Canvas</string>
-    <string name="spotify_canvas_setup_description">หากต้องการใช้ Spotify Canvas ให้ระบุคุกกี้ sp_dc ของ Spotify</string>
-    <string name="spotify_canvas_setup_steps">1. ลงชื่อเข้าใช้ที่ open.spotify.com ในเบราว์เซอร์\n2. เปิดเครื่องมือสำหรับนักพัฒนา จากนั้นไปที่ Application และ Cookies\n3. คัดลอกค่าของคุกกี้ sp_dc\n4. วางไว้ด้านล่าง</string>
     <string name="status">สถานะ</string>
     <string name="status_dialog_message">สิ่งที่บัญชีของคุณแสดงขณะเปิดใช้งานการแสดงสถานะ</string>
     <string name="status_dnd">ห้ามรบกวน</string>

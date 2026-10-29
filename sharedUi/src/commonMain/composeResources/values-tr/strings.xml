@@ -486,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Çalma listelerini yüklemek için oturum açın. Oynatma YouTube Music kullanır.</string>
     <string name="spotify_sign_in">Spotify ile oturum aç</string>
-    <string name="spotify_use_spdc_token">sp_dc token\'ı kullan</string>
     <string name="spotify_disconnect">Bağlantıyı kes</string>
     <string name="spotify_empty_playlists">Bu hesapta çalma listesi yok</string>
     <string name="spotify_empty_tracks">Bu çalma listesinde şarkı yok</string>

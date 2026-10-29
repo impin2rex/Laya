@@ -448,10 +448,7 @@
     <string name="sources_order_header">Sumber, dicoba dalam urutan ini</string>
     <string name="sources_quality_capped">Koneksi ini diatur di bawah Kualitas tinggi, sehingga stream ditranskode agar sesuai dengan batas tersebut. Unduhan tidak terpengaruh.</string>
     <string name="sources_subtitle">Dari mana audio berasal dan urutan yang digunakan</string>
-    <string name="spdc_token">Token sp_dc</string>
     <string name="spotify_canvas_setup">Penyiapan Spotify Canvas</string>
-    <string name="spotify_canvas_setup_description">Untuk menggunakan Spotify Canvas, berikan cookie sp_dc Spotify Anda.</string>
-    <string name="spotify_canvas_setup_steps">1. Masuk di open.spotify.com melalui browser.\n2. Buka Developer Tools, lalu Application dan Cookies.\n3. Salin nilai cookie sp_dc.\n4. Tempel di bawah ini.</string>
     <string name="status">Status</string>
     <string name="status_dialog_message">Apa yang ditampilkan akun Anda saat presence aktif.</string>
     <string name="status_dnd">Jangan ganggu</string>

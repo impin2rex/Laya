@@ -74,6 +74,14 @@ import com.music.laya.sharedui.resources.Res
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.sharedui.resources.connected
 import com.music.laya.sharedui.resources.sign_out
+import com.music.laya.sharedui.resources.account_profiles_help
+import com.music.laya.sharedui.resources.brand_account
+import com.music.laya.sharedui.resources.add_account
+import com.music.laya.sharedui.resources.accounts
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.foundation.layout.fillMaxWidth
 import com.music.laya.sharedui.resources.spotify
 import com.music.laya.sharedui.resources.prioritize_spotify_canvas
 import com.music.laya.sharedui.resources.prioritize_spotify_canvas_subtitle
@@ -351,9 +359,12 @@ internal fun IosAccountPage(
         onClick = { onChange(!checked) },
     )
     Column(Modifier.verticalScroll(rememberScrollState()).padding(contentPadding)) {
-        SettingsGroup(topSpacing = 0.dp) {
-            AccountCard(signedIn = signedIn, account = account, onSignIn = onSignIn, grouped = true)
-            if (signedIn) DestructiveRow(label = stringResource(Res.string.sign_out), onClick = onSignOut)
+        if (!signedIn) {
+            SettingsGroup(topSpacing = 0.dp) {
+                AccountCard(signedIn = false, account = account, onSignIn = onSignIn, grouped = true)
+            }
+        } else {
+            IosAccountsGroup(onAddAccount = onSignIn, onRemoveActive = onSignOut)
         }
         SettingsGroup(header = stringResource(Res.string.spotify), footer = stringResource(Res.string.spotify_connect_subtitle)) {
             SettingsRow(
@@ -371,6 +382,66 @@ internal fun IosAccountPage(
                 DestructiveRow(label = stringResource(Res.string.spotify_disconnect), onClick = onSpotifyDisconnect)
             }
         }
+    }
+}
+
+/**
+ * Every Google login and its Personal / Brand profiles, Android's AccountProfileSelector as a
+ * settings group: tap one to act as it, add another login, or remove the one in use.
+ */
+@Composable
+private fun IosAccountsGroup(onAddAccount: () -> Unit, onRemoveActive: () -> Unit) {
+    val accounts by IosAuth.accounts.collectAsState()
+    val activeAccountId by IosAuth.activeAccountId.collectAsState()
+    SettingsGroup(
+        header = stringResource(Res.string.accounts),
+        footer = stringResource(Res.string.account_profiles_help),
+        topSpacing = 0.dp,
+    ) {
+        accounts.forEachIndexed { index, login ->
+            if (index > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+            login.profiles.forEachIndexed { profileIndex, profile ->
+                if (profileIndex > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+                IosProfileRow(
+                    profile = profile,
+                    login = login,
+                    active = login.id == activeAccountId && profile.id == login.activeProfile?.id,
+                    onClick = { IosAuth.select(login.id, profile.id) },
+                )
+            }
+        }
+        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+        SettingsRow(icon = Icons.Rounded.Add, title = stringResource(Res.string.add_account), onClick = onAddAccount)
+        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+        DestructiveRow(label = stringResource(Res.string.sign_out), onClick = onRemoveActive)
+    }
+}
+
+@Composable
+private fun IosProfileRow(profile: IosProfile, login: IosAccount, active: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val avatar = Modifier.size(40.dp).clip(CircleShape).thumbnailBorder(CircleShape)
+        if (profile.avatar != null) {
+            AsyncImage(profile.avatar, null, avatar, contentScale = ContentScale.Crop)
+        } else {
+            Box(avatar.background(MaterialTheme.colorScheme.surfaceVariant), Alignment.Center) {
+                Icon(Icons.Rounded.Person, null, Modifier.size(22.dp), MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Text(profile.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                if (profile.brand) stringResource(Res.string.brand_account) else login.email.ifBlank { profile.handle },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (active) Icon(Icons.Rounded.Check, null, tint = MaterialTheme.colorScheme.primary)
     }
 }
 

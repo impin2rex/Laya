@@ -435,13 +435,7 @@
     <string name="upgrade_length_slack_subtitle">Diferença máxima de duração permitida para um stream substituto</string>
     <string name="upgrade_length_slack_footer">Uma tolerância maior aceita mais correspondências; uma menor é mais rigorosa. O padrão é 3 segundos.</string>
     <string name="seconds_short">%1$d s</string>
-    <string name="spdc_token">Token sp_dc</string>
     <string name="spotify_canvas_setup">Configurar Spotify</string>
-    <string name="spotify_canvas_setup_description">Para usar o Spotify Canvas, forneça seu cookie sp_dc do Spotify.</string>
-    <string name="spotify_canvas_setup_steps">1. Faça login em open.spotify.com no navegador.
-2. Abra Ferramentas de Desenvolvedor &gt; Aplicação &gt; Cookies.
-3. Copie o valor de sp_dc.
-4. Cole abaixo.</string>
     <string name="spotify_canvas_auto_hide">Ocultar controles automaticamente</string>
     <string name="spotify_canvas_auto_hide_subtitle">Recolhe o meio player após 5 segundos enquanto o Spotify Canvas está tocando</string>
     <string name="prioritize_spotify_canvas">Priorizar Spotify Canvas</string>
@@ -1305,7 +1299,6 @@
     <string name="spotify_import_unmatched">%1$d músicas não foram encontradas no YouTube Music</string>
     <string name="spotify_library_subtitle">Suas playlists do Spotify</string>
     <string name="spotify_sign_in">Entrar com Spotify</string>
-    <string name="spotify_use_spdc_token">Usar token sp_dc</string>
     <string name="spotify_track_unavailable">Não foi possível encontrar essa música no YouTube Music</string>
     <string name="artist_signatures">Assinaturas de artistas</string>
     <string name="artist_signatures_subtitle">Mostra uma assinatura manuscrita quando o Apple Music não tem logotipo de título</string>

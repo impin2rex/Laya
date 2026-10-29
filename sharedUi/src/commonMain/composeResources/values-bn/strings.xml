@@ -465,7 +465,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">আপনার প্লেলিস্ট লোড করতে সাইন ইন করুন। গান চলবে YouTube Music দিয়ে।</string>
     <string name="spotify_sign_in">Spotify দিয়ে সাইন ইন করুন</string>
-    <string name="spotify_use_spdc_token">sp_dc টোকেন ব্যবহার করুন</string>
     <string name="spotify_disconnect">ডিসকানেক্ট করুন</string>
     <string name="spotify_empty_playlists">এই অ্যাকাউন্টে কোনো প্লেলিস্ট নেই</string>
     <string name="spotify_empty_tracks">এই প্লেলিস্টে কোনো গান নেই</string>

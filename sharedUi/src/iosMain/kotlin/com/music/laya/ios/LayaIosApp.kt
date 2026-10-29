@@ -341,7 +341,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             onFailure = { UiState.Error(it.message ?: "Error") },
         )
     }
-    LaunchedEffect(signedIn) {
+    val sessionVersion by IosAuth.sessionVersion.collectAsState()
+    // Keyed on the identity too: switching account or profile keeps signedIn true but changes whose library this is.
+    LaunchedEffect(signedIn, sessionVersion) {
         if (signedIn) { library = UiState.Loading; loadLibrary(); loadHome() }
         else { library = UiState.Loading; stack = stack.filterNot { it is IosPage.Account || it is IosPage.History } }
     }
@@ -900,7 +902,6 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     IosPage.Spotify -> SpotifyLibraryScreen(
                                         onOpenPlaylist = { openDetail(SPOTIFY_PAGE_PREFIX + it.id, it.name, it.owner ?: "Spotify", it.imageUrl, BrowseType.PLAYLIST) },
                                         onOpenLogin = { showSpotifyLogin = true },
-                                        onOpenTokenSetup = null,
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
                                     IosPage.ListenTogether -> ListenTogetherScreen(
@@ -922,7 +923,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         signedIn = signedIn,
                                         account = account,
                                         onSignIn = { showLogin = true },
-                                        onSignOut = { scope.launch { IosAuth.signOut() } },
+                                        // Removes the login in use; the next one takes over.
+                                        onSignOut = { scope.launch { IosAuth.activeAccountId.value?.let { IosAuth.remove(it) } } },
                                         onSpotify = { if (spotifyConnected) stack = stack + IosPage.Spotify else showSpotifyLogin = true },
                                         onSpotifyDisconnect = { scope.launch { IosSpotify.signOut() } },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
