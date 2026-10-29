@@ -136,7 +136,7 @@ internal suspend fun friendly(e: Throwable): String = when {
 
 /**
  * Fills a [loadingPage] — the same two calls MainViewModel.openDetail makes.
- * ponytail: first page of tracks only (no continuation fill-in), no device-local or Spotify pages.
+ * ponytail: first page of tracks only (openDetail follows the continuation), no device-local or Spotify pages.
  */
 internal suspend fun loadDetail(base: DetailPage): DetailPage {
     val fallback = base.thumbnailUrl

@@ -457,6 +457,24 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         scope.launch {
             val loaded = loadDetail(base)
             stack = stack.map { if (it is IosPage.Detail && it.page === base) IosPage.Detail(loaded) else it }
+            val seen = HashSet<String>()
+            var next = loaded.continuation
+            while (next != null && seen.add(next)) {
+                val more = YtMusicRepository.moreSongs(next).getOrNull() ?: break
+                var progressed = false
+                stack = stack.map { p ->
+                    val cur = (p as? IosPage.Detail)?.page
+                    val songs = (cur?.songs as? UiState.Success<List<Song>>)?.data
+                    if (cur == null || cur.browseId != base.browseId || songs == null) return@map p
+                    val known = songs.mapTo(HashSet()) { it.videoId }
+                    val added = more.songs.filter { known.add(it.videoId) }
+                    if (added.isEmpty()) return@map p
+                    progressed = true
+                    IosPage.Detail(cur.copy(songs = UiState.Success(songs + added), continuation = more.continuation))
+                }
+                if (!progressed) break
+                next = more.continuation
+            }
         }
     }
     fun openMood(item: MoodGenre) {
