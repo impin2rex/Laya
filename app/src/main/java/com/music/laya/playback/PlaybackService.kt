@@ -3486,9 +3486,19 @@ class PlaybackService : MediaLibraryService() {
             .addCategory(Intent.CATEGORY_LAUNCHER)
             // MainActivity is singleTask, so this resumes the existing task
             // rather than stacking a second copy of the UI.
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            // On TV this is the home screen's Now Playing card, which has to land
+            // on playback controls (TV app quality, TV-NP), not on Home.
+            .apply { if (isTv) putExtra(PlayerDeepLink.EXTRA_OPEN_PLAYER, true) },
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
+
+    /** Android TV / Google TV: the same test as the TV build's DeviceType.isTv. */
+    private val isTv: Boolean by lazy {
+        getSystemService(android.app.UiModeManager::class.java)?.currentModeType ==
+            android.content.res.Configuration.UI_MODE_TYPE_TELEVISION ||
+            packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+    }
 
     private fun registerCurrentPlay() {
         player?.currentMediaItem?.mediaId?.let(PlaybackTracker::onPlaying)
@@ -7572,7 +7582,10 @@ class PlaybackService : MediaLibraryService() {
         val currentSong = exoPlayer.currentMediaItem?.toSong() ?: return
         val lines = serviceLyrics
         val pos = exoPlayer.currentPosition
-        val subtitleText = if (lines != null && lines.isNotEmpty() && AppSettings.syncedLyrics.value) {
+        // Not on TV: the line changes every second or two, and each change is a
+        // metadata update to the session the home screen's Now Playing card
+        // reads. The card wants a steady title and artist, not a ticker.
+        val subtitleText = if (!isTv && lines != null && lines.isNotEmpty() && AppSettings.syncedLyrics.value) {
             val idx = lines.indexOfLast { it.timeMs <= pos }
             val currentLine = lines.getOrNull(idx)
             if (currentLine != null && !currentLine.isGap && currentLine.text.isNotBlank()) {

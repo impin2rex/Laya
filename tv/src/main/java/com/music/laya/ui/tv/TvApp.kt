@@ -60,6 +60,7 @@ import androidx.media3.session.MediaController
 import com.music.laya.R
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.settings.TvSettings
+import com.music.laya.playback.PlayerDeepLink
 import com.music.laya.playback.PlayerState
 import com.music.laya.ui.MainViewModel
 import com.music.laya.ui.tv.components.LocalTvChrome
@@ -113,6 +114,15 @@ fun TvApp(
     val setupVersionCompleted by TvSettings.tvSetupVersionCompleted.collectAsState()
     var isRunningSetup by remember(setupVersionCompleted) { mutableStateOf(setupVersionCompleted == 0) }
     var isNowPlayingOpen by remember { mutableStateOf(false) }
+    // The home screen's Now Playing card (PlayerDeepLink), as on the phone: spent
+    // by being served, and only when there is a track to show.
+    val openPlayerRequested by PlayerDeepLink.pending.collectAsState()
+    LaunchedEffect(openPlayerRequested, playerState.song != null) {
+        if (openPlayerRequested && playerState.song != null) {
+            isNowPlayingOpen = true
+            PlayerDeepLink.handled()
+        }
+    }
     val googleAccounts by viewModel.googleAccounts.collectAsState()
     val activeAccountId by viewModel.activeAccountId.collectAsState()
     val activeProfileId by viewModel.activeProfileId.collectAsState()
