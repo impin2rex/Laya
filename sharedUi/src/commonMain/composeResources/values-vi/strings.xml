@@ -485,7 +485,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Đăng nhập để tải danh sách phát của bạn. Phát nhạc dùng YouTube Music.</string>
     <string name="spotify_sign_in">Đăng nhập bằng Spotify</string>
-    <string name="spotify_use_spdc_token">Dùng token sp_dc</string>
     <string name="spotify_disconnect">Ngắt kết nối</string>
     <string name="spotify_empty_playlists">Không có danh sách phát nào trên tài khoản này</string>
     <string name="spotify_empty_tracks">Danh sách phát này không có bài hát</string>

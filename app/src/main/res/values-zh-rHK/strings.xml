@@ -455,10 +455,7 @@
     <string name="upgrade_length_slack_subtitle">替換音訊流允許的最大時長差</string>
     <string name="upgrade_length_slack_footer">容差越大，接受的來源匹配越多；容差越小則越嚴格。預設為 3 秒。</string>
     <string name="seconds_short">%1$d 秒</string>
-    <string name="spdc_token">sp_dc 令牌</string>
     <string name="spotify_canvas_setup">Spotify Canvas 設定</string>
-    <string name="spotify_canvas_setup_description">要使用 Spotify Canvas，請提供你的 Spotify sp_dc cookie。</string>
-    <string name="spotify_canvas_setup_steps">1. 在瀏覽器中登入 open.spotify.com。\n2. 開啟開發者工具，然後進入“應用程式”和“Cookie”。\n3. 複製 sp_dc cookie 的值。\n4. 將其貼上到下方。</string>
     <string name="spotify_canvas_auto_hide">自動隱藏播放控制元件</string>
     <string name="spotify_canvas_auto_hide_subtitle">播放 Spotify Canvas 時，5 秒後收起半屏播放器</string>
     <string name="prioritize_spotify_canvas">優先使用 Spotify Canvas</string>
@@ -1278,7 +1275,6 @@
     <string name="spotify_library_subtitle">你的 Spotify 播放列表</string>
     <string name="spotify_sign_in">使用 Spotify 登入</string>
     <string name="spotify_track_unavailable">在 YouTube Music 上找不到該歌曲</string>
-    <string name="spotify_use_spdc_token">使用 sp_dc 權杖</string>
     <string name="show_queue_history">顯示佇列記錄</string>
     <string name="show_queue_history_subtitle">在佇列中「正在播放」上方顯示最多 25 首先前播放過的歌曲</string>
     <string name="not_enough_this_week">本週再多播放幾首歌曲即可解鎖你的 Replay。</string>

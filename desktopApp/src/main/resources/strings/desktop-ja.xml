@@ -45,7 +45,6 @@
     <string name="d_no_downloads">ダウンロードなし</string>
     <string name="d_nobody_is_signed_in">誰もログインしていません。ライブラリ、プレイリスト、履歴には YouTube Music アカウントが必要です。</string>
     <string name="d_open_listenbrainz">ListenBrainz を開く</string>
-    <string name="d_open_spotify">Spotify を開く</string>
     <string name="d_output_precision">出力精度</string>
     <string name="d_paste_a_cookie_instead">代わりに Cookie を貼り付ける</string>
     <string name="d_paste_the_cookie_header_for_music_youtube_com">music.youtube.com の Cookie ヘッダーを貼り付けてください。</string>

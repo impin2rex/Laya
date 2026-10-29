@@ -613,10 +613,7 @@
     <string name="sources_order_header">সোর্স, এই ক্রমে চেষ্টা করা হয়</string>
     <string name="sources_quality_capped">এই কানেকশনে কোয়ালিটি High-এর নিচে সেট করা আছে, তাই স্ট্রিম সেই সীমার মধ্যে ট্রান্সকোড করা হয়। ডাউনলোডে এর প্রভাব পড়ে না।</string>
     <string name="sources_subtitle">অডিও কোথা থেকে আসে আর কোন ক্রমে</string>
-    <string name="spdc_token">sp_dc টোকেন</string>
     <string name="spotify_canvas_setup">Spotify Canvas সেটআপ</string>
-    <string name="spotify_canvas_setup_description">Spotify Canvas ব্যবহার করতে আপনার Spotify sp_dc কুকি দিন।</string>
-    <string name="spotify_canvas_setup_steps">1. ব্রাউজারে open.spotify.com-এ সাইন ইন করুন।\n2. Developer Tools খুলুন, তারপর Application আর Cookies-এ যান।\n3. sp_dc কুকির মানটা কপি করুন।\n4. নিচে পেস্ট করুন।</string>
     <string name="status">স্ট্যাটাস</string>
     <string name="status_dialog_message">প্রেজেন্স চালু থাকলে আপনার অ্যাকাউন্টে যা দেখাবে।</string>
     <string name="status_dnd">বিরক্ত করবেন না</string>

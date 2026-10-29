@@ -45,7 +45,6 @@
     <string name="d_no_downloads">कोई डाउनलोड नहीं</string>
     <string name="d_nobody_is_signed_in">कोई साइन इन नहीं है। आपकी लाइब्रेरी, प्लेलिस्ट और इतिहास के लिए एक YouTube Music खाता चाहिए।</string>
     <string name="d_open_listenbrainz">ListenBrainz खोलें</string>
-    <string name="d_open_spotify">Spotify खोलें</string>
     <string name="d_output_precision">आउटपुट परिशुद्धता</string>
     <string name="d_paste_a_cookie_instead">इसके बजाय कुकी चिपकाएँ</string>
     <string name="d_paste_the_cookie_header_for_music_youtube_com">music.youtube.com के लिए Cookie हेडर चिपकाएँ।</string>

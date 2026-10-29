@@ -22,12 +22,10 @@ import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.spotify
 import com.music.laya.sharedui.resources.spotify_connect_subtitle
 import com.music.laya.sharedui.resources.spotify_sign_in
-import com.music.laya.sharedui.resources.spotify_use_spdc_token
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,8 +59,6 @@ const val SPOTIFY_BROWSE_ID = "app:spotify"
 fun SpotifyLibraryScreen(
     onOpenPlaylist: (SpotifyPlaylist) -> Unit,
     onOpenLogin: () -> Unit,
-    /** Null hides the manual `sp_dc` entry (platforms with no token setup page). */
-    onOpenTokenSetup: (() -> Unit)?,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -119,12 +115,6 @@ fun SpotifyLibraryScreen(
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = onOpenLogin) {
                         Text(stringResource(Res.string.spotify_sign_in))
-                    }
-                    if (onOpenTokenSetup != null) {
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedButton(onClick = onOpenTokenSetup) {
-                            Text(stringResource(Res.string.spotify_use_spdc_token))
-                        }
                     }
                 }
             }

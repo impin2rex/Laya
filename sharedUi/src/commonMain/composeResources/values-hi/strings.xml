@@ -486,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">अपनी प्लेलिस्ट लाने के लिए साइन इन करें. प्लेबैक YouTube Music से होता है.</string>
     <string name="spotify_sign_in">Spotify से साइन इन करें</string>
-    <string name="spotify_use_spdc_token">sp_dc टोकन इस्तेमाल करें</string>
     <string name="spotify_disconnect">डिस्कनेक्ट</string>
     <string name="spotify_empty_playlists">इस खाते में कोई प्लेलिस्ट नहीं</string>
     <string name="spotify_empty_tracks">इस प्लेलिस्ट में कोई गाना नहीं</string>

@@ -45,7 +45,6 @@
     <string name="d_no_downloads">Sin descargas</string>
     <string name="d_nobody_is_signed_in">No hay nadie con la sesión iniciada. Tu biblioteca, listas e historial necesitan una cuenta de YouTube Music.</string>
     <string name="d_open_listenbrainz">Abrir ListenBrainz</string>
-    <string name="d_open_spotify">Abrir Spotify</string>
     <string name="d_output_precision">Precisión de salida</string>
     <string name="d_paste_a_cookie_instead">Pegar una cookie en su lugar</string>
     <string name="d_paste_the_cookie_header_for_music_youtube_com">Pega la cabecera Cookie de music.youtube.com.</string>

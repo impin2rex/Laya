@@ -488,7 +488,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Zaloguj się, aby wczytać swoje playlisty. Odtwarzanie korzysta z YouTube Music.</string>
     <string name="spotify_sign_in">Zaloguj się przez Spotify</string>
-    <string name="spotify_use_spdc_token">Użyj tokena sp_dc</string>
     <string name="spotify_disconnect">Rozłącz</string>
     <string name="spotify_empty_playlists">Brak playlist na tym koncie</string>
     <string name="spotify_empty_tracks">Ta playlista nie ma utworów</string>

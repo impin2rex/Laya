@@ -450,10 +450,7 @@
     <string name="sources_order_header">來源，按此順序嘗試</string>
     <string name="sources_quality_capped">此連線的設定低於高品質，因此串流會被轉碼以符合該限制，下載不受影響。</string>
     <string name="sources_subtitle">音訊的來源及使用順序</string>
-    <string name="spdc_token">sp_dc 令牌</string>
     <string name="spotify_canvas_setup">Spotify Canvas 設定</string>
-    <string name="spotify_canvas_setup_description">要使用 Spotify Canvas，請提供你的 Spotify sp_dc cookie。</string>
-    <string name="spotify_canvas_setup_steps">1. 在瀏覽器中登入 open.spotify.com。\n2. 開啟開發者工具，然後進入“應用程式”和“Cookie”。\n3. 複製 sp_dc cookie 的值。\n4. 將其貼上到下方。</string>
     <string name="status">狀態</string>
     <string name="status_dialog_message">狀態顯示開啟時，你的賬號所展示的內容。</string>
     <string name="status_dnd">請勿打擾</string>

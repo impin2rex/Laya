@@ -121,7 +121,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">আপনার প্লেলিস্ট লোড করতে সাইন ইন করুন। গান চলবে YouTube Music দিয়ে।</string>
     <string name="spotify_sign_in">Spotify দিয়ে সাইন ইন করুন</string>
-    <string name="spotify_use_spdc_token">sp_dc টোকেন ব্যবহার করুন</string>
     <string name="spotify_disconnect">ডিসকানেক্ট করুন</string>
     <string name="spotify_empty_playlists">এই অ্যাকাউন্টে কোনো প্লেলিস্ট নেই</string>
     <string name="spotify_empty_tracks">এই প্লেলিস্টে কোনো গান নেই</string>
@@ -657,10 +656,7 @@
     <string name="upgrade_length_slack_subtitle">বিকল্প স্ট্রিমের দৈর্ঘ্যে সর্বোচ্চ কতটা ফারাক চলবে</string>
     <string name="upgrade_length_slack_footer">ছাড় বেশি হলে বেশি সোর্স মিলবে; কম হলে মেলানো আরও কড়া হবে। ডিফল্ট 3 সেকেন্ড।</string>
     <string name="seconds_short">%1$d সে</string>
-    <string name="spdc_token">sp_dc টোকেন</string>
     <string name="spotify_canvas_setup">Spotify সেট আপ করুন</string>
-    <string name="spotify_canvas_setup_description">Spotify Canvas ব্যবহার করতে আপনার Spotify sp_dc কুকি দিন।</string>
-    <string name="spotify_canvas_setup_steps">1. ব্রাউজারে open.spotify.com-এ সাইন ইন করুন।\n2. Developer Tools খুলুন, তারপর Application আর Cookies-এ যান।\n3. sp_dc কুকির মানটা কপি করুন।\n4. নিচে পেস্ট করুন।</string>
     <string name="spotify_canvas_auto_hide">প্লেয়ার কন্ট্রোল নিজে থেকে লুকান</string>
     <string name="spotify_canvas_auto_hide_subtitle">Spotify Canvas চলার সময় 5 সেকেন্ড পরে হাফ-প্লেয়ার গুটিয়ে নিন</string>
     <string name="prioritize_spotify_canvas">Spotify Canvas-কে অগ্রাধিকার দিন</string>

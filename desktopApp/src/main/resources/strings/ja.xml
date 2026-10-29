@@ -448,10 +448,7 @@
     <string name="sources_order_header">ソース（この順番で試行）</string>
     <string name="sources_quality_capped">この接続は「高音質」より低く設定されているため、ストリームはその上限に合わせてトランスコードされます。ダウンロードには影響しません。</string>
     <string name="sources_subtitle">音声の取得元と使用する順序</string>
-    <string name="spdc_token">sp_dcトークン</string>
     <string name="spotify_canvas_setup">Spotify Canvasの設定</string>
-    <string name="spotify_canvas_setup_description">Spotify Canvasを使うには、Spotifyのsp_dc cookieを入力してください。</string>
-    <string name="spotify_canvas_setup_steps">1. ブラウザでopen.spotify.comにログインします。\n2. デベロッパーツールを開き、[Application]と[Cookies]を選択します。\n3. sp_dc cookieの値をコピーします。\n4. 下に貼り付けます。</string>
     <string name="status">ステータス</string>
     <string name="status_dialog_message">プレゼンスが有効な間、アカウントに表示される内容です。</string>
     <string name="status_dnd">取り込み中</string>

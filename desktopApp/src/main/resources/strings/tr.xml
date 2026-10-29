@@ -490,10 +490,7 @@
     <string name="sources_order_header">Kaynaklar, bu sırayla denenir</string>
     <string name="sources_quality_capped">Bu bağlantı Yüksek kalitenin altına ayarlandığından, akışlar bu sınıra uyacak şekilde yeniden kodlanır. İndirmeler etkilenmez.</string>
     <string name="sources_subtitle">Sesin nereden geldiği ve kullanılan sıra</string>
-    <string name="spdc_token">sp_dc belirteci</string>
     <string name="spotify_canvas_setup">Spotify Canvas kurulumu</string>
-    <string name="spotify_canvas_setup_description">Spotify Canvas\'ı kullanmak için Spotify sp_dc çerezinizi girin.</string>
-    <string name="spotify_canvas_setup_steps">1. Bir tarayıcıda open.spotify.com\'a giriş yapın.\n2. Geliştirici Araçları\'nı, ardından Uygulama ve Çerezler\'i açın.\n3. sp_dc çerezinin değerini kopyalayın.\n4. Aşağıya yapıştırın.</string>
     <string name="status">Durum</string>
     <string name="status_dialog_message">Varlık aktifken hesabının gösterdiği şey.</string>
     <string name="status_dnd">Rahatsız etmeyin</string>

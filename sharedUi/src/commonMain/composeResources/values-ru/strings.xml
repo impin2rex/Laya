@@ -488,7 +488,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Войдите, чтобы загрузить свои плейлисты. Воспроизведение идёт через YouTube Music.</string>
     <string name="spotify_sign_in">Войти через Spotify</string>
-    <string name="spotify_use_spdc_token">Использовать токен sp_dc</string>
     <string name="spotify_disconnect">Отключить</string>
     <string name="spotify_empty_playlists">В этом аккаунте нет плейлистов</string>
     <string name="spotify_empty_tracks">В этом плейлисте нет треков</string>

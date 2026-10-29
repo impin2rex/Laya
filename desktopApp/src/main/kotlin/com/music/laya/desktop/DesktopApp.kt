@@ -2462,6 +2462,23 @@ fun LayaDesktopApp() {
         }
     }
 
+    // What Integrations shows of the Spotify account, and what its rows do.
+    val spotifyConnection = DesktopSpotifyConnection(
+        connected = spotifyCanvasCookie.isNotBlank(),
+        canSignIn = DesktopWebSignIn.available,
+        signingIn = spotifySignInJob != null,
+        error = spotifySignInError,
+        onSignIn = ::signInToSpotify,
+        onOpenPlaylists = {
+            selectDestination(DesktopDestination.LIBRARY)
+            openSpotifyLibrary()
+        },
+        onDisconnect = {
+            DesktopSpotifyToken.setCookie("")
+            spotifyCanvasCookie = ""
+        },
+    )
+
     /**
      * The Library's "On device" shelf: the playlists kept on this computer rather than on the
      * account — the desktop's counterpart of the phone's downloaded releases, and like them
@@ -3921,7 +3938,8 @@ fun LayaDesktopApp() {
                                         persistence.saveBoolean("animated_canvas", it)
                                     },
                                     spotifyCanvasReady = spotifyCanvasCookie.isNotBlank(),
-                                    onOpenSpotifyCanvasSetup = { overlays.settingsPage = DesktopSettingsPage.SPOTIFY_CANVAS },
+                                    // Sign-in, playlists and Disconnect all live on Integrations.
+                                    onOpenSpotifyCanvasSetup = { overlays.settingsPage = DesktopSettingsPage.INTEGRATIONS },
                                     dontRepeatSuggestions = dontRepeatSuggestions,
                                     onDontRepeatSuggestionsChange = {
                                         dontRepeatSuggestions = it
@@ -4114,24 +4132,9 @@ fun LayaDesktopApp() {
                                     onDismiss = ::goBack,
                                 )
                                 DesktopSettingsPage.TRANSLATION_LANGUAGE -> DesktopTranslationLanguageDialog(onDismiss = ::goBack)
-                                DesktopSettingsPage.SPOTIFY_CANVAS -> DesktopSpotifyCanvasDialog(
-                                    onDismiss = ::goBack,
-                                    onSaved = { spotifyCanvasCookie = it },
-                                )
                                 DesktopSettingsPage.INTEGRATIONS -> DesktopIntegrationsDialog(
                                     song = playback.song,
-                                    spotify = DesktopSpotifyConnection(
-                                        connected = spotifyCanvasCookie.isNotBlank(),
-                                        canSignIn = DesktopWebSignIn.available,
-                                        signingIn = spotifySignInJob != null,
-                                        error = spotifySignInError,
-                                        onSignIn = ::signInToSpotify,
-                                        onPasteCookie = { overlays.settingsPage = DesktopSettingsPage.SPOTIFY_CANVAS },
-                                        onDisconnect = {
-                                            DesktopSpotifyToken.setCookie("")
-                                            spotifyCanvasCookie = ""
-                                        },
-                                    ),
+                                    spotify = spotifyConnection,
                                     onOpenLastfm = { overlays.lastfmLogin = true },
                                     onOpenListenBrainz = { overlays.listenBrainzToken = true },
                                     onOpenDiscordToken = { overlays.discordToken = true },
@@ -6534,7 +6537,7 @@ private fun DesktopSettingsScreen(
                             subtitle = if (spotifyCanvasReady) {
                                 "Connected"
                             } else {
-                                "To use Spotify Canvas, provide your Spotify sp_dc cookie."
+                                "Sign in with Spotify"
                             },
                             onClick = onOpenSpotifyCanvasSetup,
                         )
