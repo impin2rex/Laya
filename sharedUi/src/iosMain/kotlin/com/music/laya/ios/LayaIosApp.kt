@@ -172,6 +172,7 @@ import com.music.laya.data.listentogether.JamInviteLink
 import com.music.laya.data.sources.AddonSource
 import com.music.laya.data.sources.SourceKind
 import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.SourceResolver
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
@@ -457,6 +458,24 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         scope.launch {
             val loaded = loadDetail(base)
             stack = stack.map { if (it is IosPage.Detail && it.page === base) IosPage.Detail(loaded) else it }
+            val seen = HashSet<String>()
+            var next = loaded.continuation
+            while (next != null && seen.add(next)) {
+                val more = YtMusicRepository.moreSongs(next).getOrNull() ?: break
+                var progressed = false
+                stack = stack.map { p ->
+                    val cur = (p as? IosPage.Detail)?.page
+                    val songs = (cur?.songs as? UiState.Success<List<Song>>)?.data
+                    if (cur == null || cur.browseId != base.browseId || songs == null) return@map p
+                    val known = songs.mapTo(HashSet()) { it.videoId }
+                    val added = more.songs.filter { known.add(it.videoId) }
+                    if (added.isEmpty()) return@map p
+                    progressed = true
+                    IosPage.Detail(cur.copy(songs = UiState.Success(songs + added), continuation = more.continuation))
+                }
+                if (!progressed) break
+                next = more.continuation
+            }
         }
     }
     fun openMood(item: MoodGenre) {
@@ -1185,6 +1204,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     }
 
                     menuSong?.let { m ->
+                        val pinnedOriginals by IosOriginalVersion.pinned.collectAsState()
                         IosSongMenu(
                             song = m,
                             onDismiss = { menuSong = null },
@@ -1201,6 +1221,13 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             // Android: sleep timer and Copy log are the player menu's own rows.
                             sleepStatus = player.sleepMinutes?.let { "$it min" } ?: if (player.sleepAfterTrack) "End of track" else null,
                             onSleepTimer = if (nowPlayingOpen) ({ sleepPicker = true }) else null,
+                            onRevertToOriginal = if (nowPlayingOpen && m.videoId == song?.videoId && player.playingFromSource &&
+                                m.videoId !in pinnedOriginals && IosDownloads.fileUrl(m.videoId) == null
+                            ) ({ player.revertToOriginal() }) else null,
+                            onUpgradeQuality = if (nowPlayingOpen && m.videoId == song?.videoId && IosDownloads.fileUrl(m.videoId) == null &&
+                                (m.videoId in pinnedOriginals || (!player.playingFromSource && SourceResolver.canSubstituteForYouTube()))
+                            ) ({ player.upgradeQuality() }) else null,
+                            upgradeInProgress = player.upgrading,
                             onCopyLog = if (nowPlayingOpen) ({
                                 scope.launch { IosPlayerHost.showMessage("Copied ${copyTrackLog(m)} log lines") }
                             }) else null,

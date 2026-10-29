@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -40,8 +41,8 @@ import androidx.compose.ui.unit.Velocity
  * alone, so a finger can still catch it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
-fun Modifier.guardSheetFromContentTouches(sheetState: SheetState): Modifier =
-    pointerInput(sheetState) {
+fun Modifier.guardSheetFromContentTouches(sheetState: SheetState, partialHeight: Boolean = false): Modifier =
+    pointerInput(sheetState, partialHeight) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
             // Unconsumed means the sheet was not animating, so it waits for its
@@ -49,7 +50,17 @@ fun Modifier.guardSheetFromContentTouches(sheetState: SheetState): Modifier =
             if (!down.isConsumed) return@awaitEachGesture
             val offset = runCatching { sheetState.requireOffset() }.getOrNull()
                 ?: return@awaitEachGesture
-            if (offset > 1f) return@awaitEachGesture
+            // "Fully open" is offset 0 only for a sheet as tall as the window. A
+            // shorter one ([partialHeight], such as a song menu) rests lower down,
+            // so there it is the anchor the sheet is settled on and heading for.
+            // Without this the guard never fired on the menu, and every flick
+            // within 300 ms of the last one bounced the whole sheet.
+            val resting = if (partialHeight) {
+                sheetState.currentValue == SheetValue.Expanded && sheetState.targetValue == SheetValue.Expanded
+            } else {
+                offset <= 1f
+            }
+            if (!resting) return@awaitEachGesture
             while (true) {
                 val event = awaitPointerEvent(PointerEventPass.Main)
                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
