@@ -17,6 +17,7 @@ import com.music.laya.sharedui.resources.listening_history
 import com.music.laya.sharedui.resources.settings
 import com.music.laya.ui.components.thumbnailBorder
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
@@ -25,6 +26,8 @@ import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.HighQuality
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Downloading
 import androidx.compose.material.icons.rounded.ErrorOutline
@@ -98,6 +101,7 @@ import com.music.laya.data.model.HomeShelf
 import com.music.laya.data.model.MoodGenre
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.UiState
+import com.music.laya.ui.utils.guardSheetFromContentTouches
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 
@@ -237,6 +241,11 @@ internal fun IosSongMenu(
     sleepStatus: String? = null,
     onSleepTimer: (() -> Unit)? = null,
     onCopyLog: (() -> Unit)? = null,
+    /** Player-only, one at a time like Android: back to YouTube's audio, or the way out of that. Null hides the row. */
+    onRevertToOriginal: (() -> Unit)? = null,
+    onUpgradeQuality: (() -> Unit)? = null,
+    /** Greys the row out while the lookup runs; the player's seekbar label says "Upgrading quality". */
+    upgradeInProgress: Boolean = false,
 ) {
     @Composable
     fun Action(icon: ImageVector, label: String, onClick: () -> Unit) = ListItem(
@@ -245,13 +254,31 @@ internal fun IosSongMenu(
         colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         modifier = Modifier.clickable { onDismiss(); onClick() },
     )
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState())) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        // The sheet grabs a touch landing right after a scroll ends (see guardSheetFromContentTouches): the menu jumped.
+        // Capped like Android's TintedSheet: a full-height sheet fights its own scrolling list and jumps up and down.
+        val maxHeight = with(androidx.compose.ui.platform.LocalDensity.current) {
+            androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height.toDp() * 0.85f
+        }
+        Column(
+            Modifier.guardSheetFromContentTouches(sheetState, partialHeight = true).heightIn(max = maxHeight)
+                .navigationBarsPadding().verticalScroll(rememberScrollState()),
+        ) {
             ListItem(
                 headlineContent = { Text(song.title, maxLines = 1) },
                 supportingContent = { Text(song.artist, maxLines = 1) },
                 colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
             )
+            onRevertToOriginal?.let { Action(Icons.AutoMirrored.Rounded.Undo, "Revert to original", it) }
+            onUpgradeQuality?.let {
+                ListItem(
+                    headlineContent = { Text("Upgrade quality") },
+                    leadingContent = { Icon(Icons.Rounded.HighQuality, null) },
+                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                    modifier = Modifier.clickable(enabled = !upgradeInProgress) { onDismiss(); it() },
+                )
+            }
             liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) "Remove from liked" else "Like", onToggleLike) }
             disliked?.let { Action(if (it) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt, if (it) "Undo dislike" else "Dislike", onToggleDislike) }
             onAddToPlaylist?.let { Action(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist", it) }

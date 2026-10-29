@@ -172,6 +172,7 @@ import com.music.laya.data.listentogether.JamInviteLink
 import com.music.laya.data.sources.AddonSource
 import com.music.laya.data.sources.SourceKind
 import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.SourceResolver
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
@@ -1203,6 +1204,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     }
 
                     menuSong?.let { m ->
+                        val pinnedOriginals by IosOriginalVersion.pinned.collectAsState()
                         IosSongMenu(
                             song = m,
                             onDismiss = { menuSong = null },
@@ -1219,6 +1221,13 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             // Android: sleep timer and Copy log are the player menu's own rows.
                             sleepStatus = player.sleepMinutes?.let { "$it min" } ?: if (player.sleepAfterTrack) "End of track" else null,
                             onSleepTimer = if (nowPlayingOpen) ({ sleepPicker = true }) else null,
+                            onRevertToOriginal = if (nowPlayingOpen && m.videoId == song?.videoId && player.playingFromSource &&
+                                m.videoId !in pinnedOriginals && IosDownloads.fileUrl(m.videoId) == null
+                            ) ({ player.revertToOriginal() }) else null,
+                            onUpgradeQuality = if (nowPlayingOpen && m.videoId == song?.videoId && IosDownloads.fileUrl(m.videoId) == null &&
+                                (m.videoId in pinnedOriginals || (!player.playingFromSource && SourceResolver.canSubstituteForYouTube()))
+                            ) ({ player.upgradeQuality() }) else null,
+                            upgradeInProgress = player.upgrading,
                             onCopyLog = if (nowPlayingOpen) ({
                                 scope.launch { IosPlayerHost.showMessage("Copied ${copyTrackLog(m)} log lines") }
                             }) else null,

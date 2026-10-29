@@ -111,6 +111,8 @@ private const val MAX_AUTOPLAY = 10
 
 /** How long a source ranked above YouTube gets before a track starts on YouTube regardless (Android's SUBSTITUTE_TIMEOUT_MS). */
 private const val SUBSTITUTE_TIMEOUT_MS = 20_000L
+/** Android's UPGRADE_MIN_REMAINING_MS: an upgrade this close to the end is not worth the swap. */
+private const val UPGRADE_MIN_REMAINING_MS = 20_000L
 
 /** Android's DEFAULT_SMART_FALLBACK_SECONDS: the fade a pair gets before it is analysed, when the slider says Off. */
 private const val DEFAULT_SMART_FALLBACK_SECONDS = 6.0
@@ -143,6 +145,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     var isLoading by mutableStateOf(false); private set
     var durationMs by mutableStateOf(0L); private set
     val position = PlaybackPosition()
+    /** The track playing comes from a source ranked above YouTube (the player menu offers "Revert to original"). */
+    var playingFromSource by mutableStateOf(false); private set
+    /** A hand-asked "Upgrade quality" lookup is running (the menu row waits). */
+    var upgrading by mutableStateOf(false); private set
 
     val song: Song? get() = queue.getOrNull(index)
     val hasNext get() = manualNext() >= 0
@@ -555,6 +561,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             }
             return Opened(url, emptyMap(), mime, -1L, "Downloaded")
         }
+        // Reverted by hand: YouTube's own audio, whatever the track was queued from, until "Upgrade quality".
+        if (IosOriginalVersion.isPinned(song.videoId)) youtubeSeedFor(song)?.let { return youtube(it) }
         val target = TrackMatcher.targetOf(song)
         SourceRegistry.parseTrackKey(song.videoId)?.let { (configId, trackId) ->
             // Addon rows play as the row the listener picked, never its Atmos sibling or YouTube's copy (MIX_PARAM).
@@ -600,9 +608,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     /** Gives the engine [o] and records what it is, for Karaoke and the nerd stats. */
-    private fun hand(song: Song, o: Opened, next: Boolean) {
+    private fun hand(song: Song, o: Opened, next: Boolean, swap: Boolean = false) {
         streams[song.videoId] = KaraokeSource(o.url, o.headers, o.mime, o.length)
         if (o.sourceName != "YouTube") offSite += song.videoId else offSite -= song.videoId
+        if (!next) playingFromSource = o.sourceName != "YouTube" && o.sourceName != "Downloaded"
         // Host only: addon URLs carry the owner's token in the path or query.
         TrackLog.d(
             "Laya",
@@ -614,6 +623,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
         if (!next) alignLyrics(song, o) else queuedOpened = song.videoId to o
         if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
+        else if (swap) engine.swapCurrent(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
         else engine.play(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
     }
 
@@ -645,22 +655,76 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     /**
-     * Swaps to the better copy a source lands on while [song] is playing, at the same position. Only when
-     * it is the same recording (runtime within the resolver's drift) and worth the short break in the audio.
+     * Swaps to the better copy a source lands on while [song] is playing, at the same position and without a break
+     * in the audio ([AudioEngine.swapCurrent]). Only when it is the same recording (runtime within the resolver's drift).
      */
     private fun watchUpgrade(song: Song, o: Opened) {
         upgradeJob?.cancel()
         upgradeJob = scope.launch {
-            val better = runCatching { o.pending?.await() }.getOrNull() ?: return@launch
+            NerdStats.onLosslessRaceStart(song.videoId) // the player's "Upgrading quality" label, as on Android
+            val better = try { runCatching { o.pending?.await() }.getOrNull() } finally { NerdStats.onLosslessRaceEnd(song.videoId) }
+                ?: return@launch
             if (this@IosPlayer.song?.videoId != song.videoId) return@launch
             if (!SourceResolver.worthSwapping(better.format, o.format)) return@launch
             if (!SourceResolver.sameRecordingAs(better.durationSec, durationMs.takeIf { it > 0 }?.let { (it / 1000).toInt() })) return@launch
-            val at = position.positionMs
+            if (durationMs - position.positionMs < UPGRADE_MIN_REMAINING_MS) return@launch
             val opened = withContext(ioDispatcher) { fromSource(better) }
             if (this@IosPlayer.song?.videoId != song.videoId) return@launch
-            hand(song, opened, next = false)
-            engine.seekTo(at)
-            preResolveNext() // the swap replaced the engine's queued item
+            hand(song, opened, next = false, swap = true) // the engine crossfades it in at the position it has reached
+            preResolveNext() // the swap dropped the engine's queued item
+        }
+    }
+
+
+    /** The player menu's "Revert to original": YouTube's own audio for this track from now on, swapped in without a break. */
+    fun revertToOriginal() {
+        val s = song ?: return
+        if (!playingFromSource) return
+        IosOriginalVersion.pin(s.videoId)
+        upgradeJob?.cancel()
+        scope.launch {
+            runCatching {
+                val id = withContext(ioDispatcher) { youtubeSeedFor(s) } ?: error("no YouTube match for ${s.title}")
+                val o = withContext(ioDispatcher) { youtube(id) }
+                if (song?.videoId != s.videoId) return@launch
+                NerdStats.clearDeclared(s.videoId)
+                hand(s, o, next = false, swap = true)
+                preResolveNext()
+            }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) return@onFailure
+                IosOriginalVersion.unpin(s.videoId)
+                IosPlayerHost.showMessage("Couldn't switch ${s.title} to YouTube")
+            }
+        }
+    }
+
+    /** The menu's "Upgrade quality": lifts a revert and asks the sources again now, swapping the copy in if one has the track. */
+    fun upgradeQuality() {
+        val s = song ?: return
+        if (upgrading) return
+        IosOriginalVersion.unpin(s.videoId)
+        SourceRegistry.clearCompletedAddonTrackCalls() // a manual retry wants the addon's answer now, not a cached miss
+        upgradeJob?.cancel()
+        upgrading = true
+        NerdStats.onLosslessRaceStart(s.videoId) // the player's "Upgrading quality" label, as on Android
+        upgradeJob = scope.launch {
+            try {
+                val late = CompletableDeferred<SourceStream?>()
+                val better = withContext(ioDispatcher) {
+                    withTimeoutOrNull(SUBSTITUTE_TIMEOUT_MS) { SourceResolver.substituteForYouTube(TrackMatcher.targetOf(s), late) ?: late.await() }
+                }
+                NerdStats.onLosslessRaceEnd(s.videoId)
+                if (song?.videoId != s.videoId) return@launch
+                if (durationMs - position.positionMs < UPGRADE_MIN_REMAINING_MS) return@launch
+                if (better == null || !SourceResolver.sameRecordingAs(better.durationSec, durationMs.takeIf { it > 0 }?.let { (it / 1000).toInt() })) {
+                    IosPlayerHost.showMessage("No better copy of ${s.title}")
+                    return@launch
+                }
+                val o = withContext(ioDispatcher) { fromSource(better) }
+                if (song?.videoId != s.videoId) return@launch
+                hand(s, o, next = false, swap = true)
+                preResolveNext()
+            } finally { upgrading = false; NerdStats.onLosslessRaceEnd(s.videoId) }
         }
     }
 
