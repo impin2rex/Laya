@@ -40,6 +40,10 @@ class TvActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
 
+        // A cold launch from the Now Playing card (or a link) arrives here, not
+        // through onNewIntent.
+        if (savedInstanceState == null) consumeLinks(intent)
+
         setContent {
             LayaTvTheme {
                 // The phone's Material theme too, so the components shared with
