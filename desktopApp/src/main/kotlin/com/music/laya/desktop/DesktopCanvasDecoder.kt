@@ -81,7 +81,8 @@ internal class DesktopCanvasDecoder {
         av_dict_set(options, "rw_timeout", "15000000", 0)
 
         val opened = AVFormatContext(null)
-        check(avformat_open_input(opened, url, null, options) >= 0) { "could not open the clip" }
+        val source = singleVariant(url, headers) ?: url
+        check(avformat_open_input(opened, source, null, options) >= 0) { "could not open the clip" }
         format = opened
         check(avformat_find_stream_info(opened, null as AVDictionary?) >= 0) { "no stream info" }
         streamIndex = av_find_best_stream(
@@ -206,9 +207,50 @@ internal class DesktopCanvasDecoder {
         /** Plenty for a sleeve, and a quarter of the pixels of the source. */
         const val MAX_EDGE = 540
 
+        private val http = java.net.http.HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(10))
+            .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
+            .build()
+
+        /**
+         * One H.264 rendition out of an HLS master playlist, or null when [url] isn't one.
+         *
+         * Apple's artist clips are masters listing a dozen renditions, HEVC and I-frame-only ones
+         * among them. FFmpeg opens such a master and then reads no frames at all, so the clip
+         * stayed blank; a single rendition decodes. The smallest one at least [MAX_EDGE] square
+         * is taken, as frames are scaled down to that anyway.
+         */
+        fun singleVariant(url: String, headers: Map<String, String>): String? {
+            if (!isManifest(url)) return null
+            val request = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(15))
+                .apply { headers.forEach { (name, value) -> header(name, value) } }
+                .GET().build()
+            val manifest = runCatching {
+                http.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+                    .takeIf { it.statusCode() in 200..299 }?.body()
+            }.getOrNull() ?: return null
+            return pickVariant(manifest, url, MAX_EDGE)
+        }
+
         /** Thirty frames a second is motion; sixty is just more bitmaps. */
         const val MIN_INTERVAL_MS = 33L
     }
 }
 
 private typealias DoublePointer = org.bytedeco.javacpp.DoublePointer
+
+/** [singleVariant]'s choice out of a master playlist's text; null when it lists no H.264 rendition. */
+internal fun pickVariant(manifest: String, manifestUrl: String, minEdge: Int = 540): String? {
+    val lines = manifest.lines()
+    val variants = lines.withIndex().mapNotNull { (i, line) ->
+        if (!line.startsWith("#EXT-X-STREAM-INF:") || !line.contains("avc1")) return@mapNotNull null
+        val uri = lines.getOrNull(i + 1)?.trim()?.takeIf { it.isNotEmpty() && !it.startsWith("#") }
+            ?: return@mapNotNull null
+        val edge = Regex("RESOLUTION=(\\d+)x(\\d+)").find(line)
+            ?.destructured?.let { (w, h) -> minOf(w.toInt(), h.toInt()) } ?: 0
+        edge to java.net.URI.create(manifestUrl).resolve(uri).toString()
+    }
+    return (variants.filter { it.first >= minEdge }.minByOrNull { it.first }
+        ?: variants.maxByOrNull { it.first })?.second
+}

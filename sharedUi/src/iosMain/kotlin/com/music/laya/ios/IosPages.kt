@@ -163,6 +163,8 @@ internal suspend fun loadDetail(base: DetailPage): DetailPage {
                 description = p.description,
                 subscriberCountText = p.subscriberCountText,
                 monthlyListenerCount = p.monthlyListenerCount,
+                // The header's subscribe star; null signed out, which hides it.
+                subscription = p.subscription,
             )
         }, { base.copy(songs = UiState.Error(friendly(it))) })
     } else {
@@ -177,6 +179,8 @@ internal suspend fun loadDetail(base: DetailPage): DetailPage {
                 subtitle = if (header != null && header.subtitle.isNotBlank() &&
                     (base.type == BrowseType.ALBUM || base.subtitle.isBlank())) header.subtitle else base.subtitle,
                 thumbnailUrl = fallback ?: header?.thumbnailUrl,
+                // The release's save button, as Android: only with tracks, null signed out.
+                library = if (p.songs.isEmpty()) null else p.library,
             )
         }, { base.copy(songs = UiState.Error(friendly(it))) })
     }

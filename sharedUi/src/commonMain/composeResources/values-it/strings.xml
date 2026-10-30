@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Riproduce il video in loop fornito da alcune release invece di una copertina statica</string>
     <string name="animated_cover_cellular">Riproduci copertina animata con dati mobili</string>
     <string name="app_icon">Icona dell’app</string>
+    <string name="app_icon_default">Predefinita</string>
     <string name="app_language">Lingua dell\'app</string>
     <string name="appearance">Aspetto</string>
     <string name="artist_signatures">Firme degli artisti</string>

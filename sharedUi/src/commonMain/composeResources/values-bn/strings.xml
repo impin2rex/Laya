@@ -238,6 +238,7 @@
     <string name="animated_cover_art_subtitle">কিছু রিলিজের সঙ্গে আসা লুপিং ভিডিও চালায়, স্থির ছবির বদলে</string>
     <string name="animated_cover_cellular">মোবাইল ডেটায় অ্যানিমেটেড কভার চালান</string>
     <string name="app_icon">অ্যাপ আইকন</string>
+    <string name="app_icon_default">ডিফল্ট</string>
     <string name="app_language">অ্যাপের ভাষা</string>
     <string name="appearance">চেহারা</string>
     <string name="artist_signatures">শিল্পীর সই</string>

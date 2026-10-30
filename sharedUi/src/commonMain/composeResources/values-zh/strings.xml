@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">播放部分发行版自带的循环视频，而不是静态封面</string>
     <string name="animated_cover_cellular">在移动数据下播放动态封面</string>
     <string name="app_icon">应用图标</string>
+    <string name="app_icon_default">默认</string>
     <string name="app_language">应用语言</string>
     <string name="appearance">外观</string>
     <string name="artist_signatures">艺人签名</string>

@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Bazı sürümlerin geldiği döngülü videoyu sabit bir kılıf yerine oynatır</string>
     <string name="animated_cover_cellular">Mobil veri ile hareketli kapağı oynat</string>
     <string name="app_icon">Uygulama simgesi</string>
+    <string name="app_icon_default">Varsayılan</string>
     <string name="app_language">Uygulama dili</string>
     <string name="appearance">Görünüm</string>
     <string name="artist_signatures">Sanatçı imzaları</string>

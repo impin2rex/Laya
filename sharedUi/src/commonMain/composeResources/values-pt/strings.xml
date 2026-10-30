@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Reproduz o vídeo em loop que alguns lançamentos trazem em vez de uma capa estática</string>
     <string name="animated_cover_cellular">Reproduzir capa animada com dados móveis</string>
     <string name="app_icon">Ícone do app</string>
+    <string name="app_icon_default">Padrão</string>
     <string name="app_language">Idioma do aplicativo</string>
     <string name="appearance">Aparência</string>
     <string name="artist_signatures">Assinaturas de artistas</string>
