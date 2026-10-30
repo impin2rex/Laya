@@ -25,7 +25,7 @@
           "date": "2026-10-30T16:47:24Z",
           "localizedDescription": "- **Landscape support.** Rotate your iPhone; pages, the tab bar and the mini player stay clear of the notch and Dynamic Island. No more white flash while rotating.\n- **Several Google accounts.** Add, switch between and remove accounts, including Brand profiles, from the Account page. Your existing sign-in carries over.\n- **App icon picker** in Settings: Default, Liquid Glass and Liquid Glass Dark (real glass on iOS 26).\n- **Artist header video**, as on Android, when animated canvas is on.\n- **Follow artists and save releases** from their pages; Library updates right away.\n- **Liked Music and long playlists** now load in full, not just the first 100 songs.\n- **Quality upgrades mid-song** swap in without stopping playback, and the player menu has Upgrade quality and Revert to original.\n- **Lock screen controls** (play, pause, seek, next, previous) now work with Listen Together, and the lock screen no longer stays on Pause after you stop.\n- **Listen Together** stays in sync after the phone has been locked, and track changes no longer jump to the previous song's position.\n- Song and player menus: no more bouncing while scrolling; album and artist links work for more songs, and the player closes before opening a page.\n- Spotify connects through the in-app sign-in page only.",
           "downloadURL": "https://github.com/impin2rex/Laya/releases/download/v1.9.1/Laya-1.9.1-ios.ipa",
-          "size": 86536322,
+          "size": 86541580,
           "minOSVersion": "16.0"
         },
         {
