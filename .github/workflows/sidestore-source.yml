@@ -1,9 +1,13 @@
 name: SideStore source
 
 on:
-  # Drafts from release.yml carry assets nobody can download yet; publishing one is what makes it installable.
+  # An entry needs both a published release (draft assets can't be downloaded) and ios.yml's IPA on it.
+  # Either can come last, so both trigger this; the earlier one finds the other missing and steps aside.
   release:
     types: [published]
+  workflow_run:
+    workflows: ["iOS IPA"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       tag:
@@ -19,6 +23,10 @@ concurrency:
 
 jobs:
   update:
+    # Only a successful IPA build for a release tag; a manual ios.yml run on a branch has no release to add.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -29,13 +37,17 @@ jobs:
     - name: Add the release's IPA to sidestore/source.json
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        TAG: ${{ github.event.release.tag_name || github.event.workflow_run.head_branch || inputs.tag }}
       run: |
         tag="${TAG:-$(gh release view --json tagName -q .tagName)}"
+        if [ "$(gh release view "$tag" --json isDraft -q .isDraft)" = "true" ]; then
+          echo "::notice::$tag is still a draft; publishing it adds it to the source"
+          exit 0
+        fi
         name=$(gh release view "$tag" --json assets -q '.assets[].name | select(endswith("-ios.ipa"))' | head -1)
         if [ -z "$name" ]; then
-          echo "::error::$tag has no -ios.ipa asset yet; rerun this workflow once ios.yml has attached it"
-          exit 1
+          echo "::notice::$tag has no -ios.ipa yet; ios.yml adds it to the source once it attaches one"
+          exit 0
         fi
         gh release download "$tag" -p "$name" -O app.ipa
         # Version and build come from the IPA itself, so SideStore compares against exactly what installs.
