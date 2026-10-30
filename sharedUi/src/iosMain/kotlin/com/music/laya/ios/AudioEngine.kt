@@ -66,6 +66,11 @@ interface AudioEngineListener {
     fun onError(message: String, httpStatus: Int)
     /** Hardware keys, Control Center or our own slider moved the system volume. */
     fun onVolumeChanged(level: Float)
+    /** Lock screen, Control Center, headphones, or the system handing the audio back after a call. */
+    fun onRemotePlayPause(play: Boolean)
+    fun onRemoteSeek(positionMs: Long)
+    /** The system paused the audio without the listener asking: a call, Siri, the headphones coming out. */
+    fun onSystemPause()
     fun onRemoteNext()
     fun onRemotePrevious()
 }

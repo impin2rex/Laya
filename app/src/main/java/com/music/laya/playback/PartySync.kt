@@ -76,10 +76,11 @@ import kotlin.math.abs
  *    early by exactly that lead — and being *consistently* early is worse than
  *    being occasionally late, because it is below the drift limit and would
  *    never be corrected. So a resume waits out [ListenTogether.msUntilStart].
- *  - **Drift is corrected by seeking, and only when it is real.** A seek is
- *    audible, so [DRIFT_LIMIT_MS] is set well above the jitter of two decoders
- *    running independently and at the level of an actual desync — a buffering
- *    stall, a doze, a device that came back from a tunnel.
+ *  - **Drift is corrected by seeking, and a seek lands where it is aimed.**
+ *    [PartyDriftCorrector], shared with iOS and the desktop, checks every seek
+ *    once it settles and learns how far behind this device's seeks land, so a
+ *    control is met to within tens of milliseconds rather than left a rebuffer
+ *    behind under a drift limit that would never correct it.
  *  - **Position is only trusted once the clock is.** Before the first
  *    ping/pong there is no measured offset, so track and play/pause are applied
  *    and the playhead is left alone rather than seeked to a guess.
@@ -116,26 +117,11 @@ class PartySync(
     private var awaitPlaybackSeq = Long.MAX_VALUE
     private var awaitQueueSeq = Long.MAX_VALUE
 
-    /** Tracks last seen playback anchor properties to differentiate playback controls from queue updates. */
-    private var lastAnchorMs = 0L
-    private var lastPositionMs = 0L
-    private var lastTrackId: String? = null
-    private var lastIsPlaying = false
-
     /** Guards against re-issuing a load for a track already being loaded. */
     private var loadingVideoId: String? = null
 
-    /**
-     * The last party control this device has put itself exactly on.
-     *
-     * A control is a discontinuity — everybody is meant to land on the same
-     * instant, precisely — whereas the time between controls is a slow drift
-     * worth tolerating. So a seq not yet aligned to is matched exactly, and
-     * after that [DRIFT_LIMIT_MS] applies. Without this the device that *issued*
-     * a control keeps whatever head start issuing it gave it: below the drift
-     * limit, so never corrected, and permanent.
-     */
-    private var alignedSeq = -1L
+    /** Where the playhead goes to meet the party, and the seek lag this device has shown. */
+    private val drift = PartyDriftCorrector()
 
     /**
      * A resume this device has accepted but not yet performed.
@@ -181,12 +167,6 @@ class PartySync(
      */
     @Volatile
     private var rejoining = false
-
-    /** Consecutive over-limit readings. See the drift branch of [reconcile]. */
-    private var driftStrikes = 0
-
-    /** When the player may next be seeked for drift, having just been. */
-    private var driftCooldownUntilMs = 0L
 
     private var lastPartyCode: String? = null
 
@@ -480,10 +460,7 @@ class PartySync(
             // draw that wait forever.
             deferredPlayPending = false
             locallyPaused = false
-            lastAnchorMs = 0L
-            lastPositionMs = 0L
-            lastTrackId = null
-            lastIsPlaying = false
+            drift.reset()
             return
         }
         // Before any of the early returns below, so a local pause cannot
@@ -574,11 +551,10 @@ class PartySync(
                 }
                 return
             }
-            if (want != null) exo.seekTo(want)
+            if (want != null) exo.seekTo(drift.startAt(want, target, SystemClock.elapsedRealtime()))
             deferredPlayPending = false
             startJob?.cancel()
             exo.play()
-            alignedSeq = target.seq
             return
         }
 
@@ -594,60 +570,12 @@ class PartySync(
         // Only a settled player can be measured. While it is buffering,
         // `currentPosition` is where it will resume rather than where it is, so
         // the party runs on and this reads as drift that is not there.
-        if (exo.playbackState != Player.STATE_READY) {
-            driftStrikes = 0
-            return
-        }
+        if (exo.playbackState != Player.STATE_READY) return
 
-        val drift = exo.currentPosition - want
-        // A control this device has not yet put itself on. Everyone is meant to
-        // land on it exactly, so it is matched without regard to the drift
-        // limit — including on the device that issued it, which is otherwise
-        // left holding the head start that issuing it gave it.
-        //
-        // However, if target.seq changed without any change to the playback anchor,
-        // position, track, or playing state (e.g. queue operations or metadata updates),
-        // we must not force an audible seek flush.
-        if (target.seq != alignedSeq) {
-            val isPlaybackAnchorChanged = lastAnchorMs != target.anchorMs ||
-                lastPositionMs != target.positionMs ||
-                lastTrackId != track.videoId ||
-                lastIsPlaying != target.isPlaying
-
-            alignedSeq = target.seq
-            lastAnchorMs = target.anchorMs
-            lastPositionMs = target.positionMs
-            lastTrackId = track.videoId
-            lastIsPlaying = target.isPlaying
-
-            if (isPlaybackAnchorChanged && abs(drift) > ALIGN_TOLERANCE_MS) {
-                Log.i(TAG, "aligning ${drift}ms onto party control ${target.seq}")
-                exo.seekTo(want)
-                return
-            }
+        drift.correct(exo.currentPosition, want, target, SystemClock.elapsedRealtime())?.let { to ->
+            Log.i(TAG, "${exo.currentPosition - want}ms off the party, seeking with ${drift.seekLagMs}ms lead")
+            exo.seekTo(to)
         }
-        if (abs(drift) <= DRIFT_LIMIT_MS) {
-            driftStrikes = 0
-            return
-        }
-        // Seeking is not free, and on a slow device it is not cheap either: the
-        // re-buffer it costs can be longer than the gap being closed, so the
-        // correction arrives already as far behind as the error it was fixing,
-        // and does it again, forever. That loop is real — it was measured here
-        // at a flat -1402ms every 1.4s, to the millisecond, for as long as it
-        // was left running.
-        //
-        // Two things keep it out. A correction has to be asked for twice in a
-        // row before it happens, so one reading taken while the pipeline was
-        // catching up cannot trigger anything; and after one, the player is left
-        // alone long enough to settle and show what it is really doing.
-        val now = SystemClock.elapsedRealtime()
-        if (now < driftCooldownUntilMs) return
-        if (++driftStrikes < DRIFT_STRIKES) return
-        Log.i(TAG, "correcting ${drift}ms of drift against the party")
-        driftStrikes = 0
-        driftCooldownUntilMs = now + DRIFT_COOLDOWN_MS
-        exo.seekTo(want)
     }
 
     /**
@@ -1014,39 +942,8 @@ class PartySync(
          */
         const val TICK_MS = 700L
 
-        /**
-         * How far out of step is worth an audible seek.
-         *
-         * Above the jitter of two decoders on different hardware, and at the
-         * level of a real desync. Tightening this does not make a party more
-         * synchronised — it makes it seek more often, which is what people
-         * actually hear.
-         */
-        const val DRIFT_LIMIT_MS = 1_200L
-
-        /** Readings in a row above the limit before a correction is made. */
-        const val DRIFT_STRIKES = 2
-
-        /**
-         * How long the player is left alone after a corrective seek.
-         *
-         * Long enough to cover the re-buffer a seek costs on a slow device
-         * plus room to show a settled position afterwards. This is the value
-         * that decides whether correction converges or oscillates, so it is
-         * deliberately generous: a party a second out for a few seconds is
-         * fine, a party seeking every 1.4s is not listenable.
-         */
-        const val DRIFT_COOLDOWN_MS = 6_000L
-
         /** While paused there is nothing to hear, so the playhead can be exact. */
         const val PAUSED_TOLERANCE_MS = 400L
-
-        /**
-         * How exactly a device lands on a control. Low enough that nobody keeps
-         * a head start worth hearing, high enough not to seek over the few tens
-         * of milliseconds between asking the player where it is and it acting.
-         */
-        const val ALIGN_TOLERANCE_MS = 120L
 
         /**
          * Below this, a difference from the party's playhead is not a seek

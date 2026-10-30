@@ -640,6 +640,9 @@ class PlaybackService : MediaLibraryService() {
     private var activeTrackIsDolbyAtmos = false
 
     private var activeFilter: TransitionFilterProcessor = transitionFilterA
+
+    /** Each player's sink, by its transition filter — which follows the player through every handoff. */
+    private val sinkOf = java.util.concurrent.ConcurrentHashMap<TransitionFilterProcessor, PrecisionAudioSink>()
     private var spareFilter: TransitionFilterProcessor = transitionFilterB
 
     /**
@@ -6503,7 +6506,8 @@ class PlaybackService : MediaLibraryService() {
                 // audible one writes telemetry, so the idle player's reset
                 // cannot publish "not exact" over the playing track's verdict.
                 isAudible = { transition === activeFilter },
-            )
+                requiresPcm = ::effectsNeedPcm,
+            ).also { sinkOf[transition] = it }
         }
     }
 
@@ -6896,6 +6900,10 @@ class PlaybackService : MediaLibraryService() {
                 .collect { applyReverb() }
         }
         scope.launch {
+            combine(AppSettings.reverbEnabled, AppSettings.equalizerEnabled, Karaoke.enabled) { _, _, _ -> }
+                .collect { decodeIfBitstream() }
+        }
+        scope.launch {
             Karaoke.enabled.collect { enabled ->
                 karaokeA.setEnabled(enabled)
                 karaokeB.setEnabled(enabled)
@@ -6984,6 +6992,25 @@ class PlaybackService : MediaLibraryService() {
         val settings = AppSettings.reverb.value
         reverbA.setTarget(enabled, settings)
         reverbB.setTarget(enabled, settings)
+    }
+
+    /** Read on the playback thread by [PrecisionAudioSink]: StateFlow values only. */
+    private fun effectsNeedPcm(): Boolean =
+        AppSettings.reverbEnabled.value || AppSettings.equalizerEnabled.value || Karaoke.enabled.value
+
+    /**
+     * An effect was just turned on over a track the audible player is passing through as a
+     * bitstream. Its renderer chose that when the track started, so the sink now declining it
+     * changes nothing until the audio renderer is selected again — which disabling and
+     * re-enabling the audio track type does, at the cost of a short gap on a switch-on.
+     */
+    private fun decodeIfBitstream() {
+        val exo = player ?: return
+        if (!effectsNeedPcm() || sinkOf[activeFilter]?.isBitstream != true) return
+        TrackLog.i("AUDIO_OUT", "an effect needs PCM: re-selecting audio to decode the bitstream", about = exo.currentMediaItem?.mediaId)
+        val params = exo.trackSelectionParameters
+        exo.trackSelectionParameters = params.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true).build()
+        exo.trackSelectionParameters = params
     }
 
     /**

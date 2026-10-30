@@ -363,10 +363,11 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun next() = intent { manualNext().let { if (it >= 0) start(it) } }
     fun previous() = intent { if (hasPrevious) start(index - 1) else rawSeek(0) }
     fun jumpTo(i: Int) = intent { if (i in queue.indices) start(i) }
-    fun togglePlayPause() {
-        if (party.handleLockedPlayPause()) return
+    fun togglePlayPause() = setPlaying(!isPlaying)
+    fun setPlaying(play: Boolean) {
+        if (party.handleLockedPlayPause(play)) return
         val at = pendingMs
-        if (at != null) start(index, at) else if (isPlaying) pauseOut() else resumeOut()
+        if (!play) pauseOut() else if (at != null) start(index, at) else resumeOut()
         party.onLocalIntent()
     }
 
@@ -624,8 +625,19 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         if (!next) alignLyrics(song, o) else queuedOpened = song.videoId to o
         if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
         else if (swap) engine.swapCurrent(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
-        else engine.play(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
+        else {
+            engine.play(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
+            // Queued behind the engine's own hop to the main thread, so it lands after the old track is stopped.
+            scope.launch { handing = false }
+        }
     }
+
+    /**
+     * Between [start] and the engine being handed the new track, its progress is still the old track's. Taken as
+     * the new one's, it cleared [isLoading] and put the old position on the new song: a party was told the new
+     * track at the old one's playhead (past the end of a shorter song, so it never played), and a retry resumed there.
+     */
+    private var handing = false
 
     private var alignJob: Job? = null
     /** What the engine was last handed as the next track, so its lyrics are aligned when it starts by itself. */
@@ -738,6 +750,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         TrackLog.onTrackStarted(song.videoId)
         pendingMs = null
         isLoading = true
+        handing = true
         durationMs = 0
         position.report(fromMs)
         IosPlayerStore.saveQueue(queue, i)
@@ -901,6 +914,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             if (isPlaying) { engine.pause(); IosCast.native?.play() }
             return
         }
+        if (handing && isLoading) return
         position.report(positionMs)
         this.durationMs = durationMs
         this.isPlaying = isPlaying
@@ -1044,6 +1058,11 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     override fun onVolumeChanged(level: Float) { if (!IosCast.active) IosVolume.level.value = level }
+    // The lock screen, Control Center and headphones are the listener's own buttons: they go where the app's do, so
+    // a party hears them. Straight to the engine, a pause was undone by the next reconcile within a second.
+    override fun onRemotePlayPause(play: Boolean) = setPlaying(play)
+    override fun onRemoteSeek(positionMs: Long) = seekTo(positionMs)
+    override fun onSystemPause() = party.onSystemPause()
     override fun onRemoteNext() = next()
     override fun onRemotePrevious() = previous()
 }

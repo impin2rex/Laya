@@ -77,7 +77,22 @@ class PrecisionAudioSink(
      * sink's to write; the spare stays quiet.
      */
     private val isAudible: () -> Boolean = { true },
+    /**
+     * Whether an effect the listener turned on (reverb, equaliser, karaoke) needs decoded PCM.
+     *
+     * A Dolby stream (E-AC-3 JOC, AC-4) on a route that advertises direct playback for it — a
+     * Dolby phone's speaker, an AVR — is otherwise sent as a bitstream: [DefaultAudioSink] says
+     * it can take it as-is, the renderer skips the decoder, and not one sample passes through
+     * [dspChain]. The reverb switch then did nothing, on exactly the Atmos tracks. While this is
+     * true the bitstream is declined, so the renderer decodes and the chain runs; while it is
+     * false a TV keeps passing Atmos through untouched.
+     */
+    private val requiresPcm: () -> Boolean = { false },
 ) : ForwardingAudioSink(delegate) {
+
+    /** Configured for a compressed bitstream the chain cannot touch. See [requiresPcm]. */
+    val isBitstream: Boolean
+        get() = !isPrecisionActive && activeFormat?.let { it.sampleMimeType != null && it.sampleMimeType != MimeTypes.AUDIO_RAW } == true
 
     /** Whether the precision Float32 DSP path is currently active for the configured format. */
     var isPrecisionActive: Boolean = false
@@ -548,6 +563,8 @@ class PrecisionAudioSink(
                 return AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY
             }
         }
+        val mime = format.sampleMimeType
+        if (mime != null && mime != MimeTypes.AUDIO_RAW && requiresPcm()) return AudioSink.SINK_FORMAT_UNSUPPORTED
         return delegate.getFormatSupport(format)
     }
 
@@ -694,11 +711,14 @@ class PrecisionAudioSink(
         const val DEFAULT_CAPACITY_FRAMES: Int = 4096
 
         /**
-         * Widest channel layout the precision path will take on. Eight covers
-         * 7.1, which is the most any decoder here produces; the cap exists so a
-         * nonsense channel count cannot size a buffer without bound.
+         * Widest channel layout the precision path will take on: Android's own
+         * ceiling (`AudioFormat`'s FCC_24). From API 32 Media3 asks every
+         * decoder for up to 99 output channels, and Dolby's decoder answers an
+         * Atmos track with 7.1.4 — twelve. A cap of eight dropped exactly those
+         * tracks onto the legacy path, reverb and equaliser with them. The cap
+         * exists so a nonsense channel count cannot size a buffer without bound.
          */
-        const val MAX_CHANNELS: Int = 8
+        const val MAX_CHANNELS: Int = 24
 
         /** Human-readable name for a Media3 PCM encoding constant. */
         fun encodingLabel(pcmEncoding: Int): String = when (pcmEncoding) {

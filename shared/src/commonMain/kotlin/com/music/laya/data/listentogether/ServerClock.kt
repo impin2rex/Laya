@@ -1,6 +1,7 @@
 package com.music.laya.data.listentogether
 
 import kotlin.concurrent.Volatile
+import kotlin.math.abs
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlin.time.TimeSource
@@ -66,7 +67,14 @@ class ServerClock(
     fun record(sentAtLocalMs: Long, serverMs: Long, receivedAtLocalMs: Long) = synchronized(lock) {
         val roundTrip = (receivedAtLocalMs - sentAtLocalMs).coerceAtLeast(0)
         val midpoint = sentAtLocalMs + roundTrip / 2
-        samples.addLast(Sample(serverMs - midpoint, roundTrip, receivedAtLocalMs))
+        val sample = Sample(serverMs - midpoint, roundTrip, receivedAtLocalMs)
+        // Two honest samples disagree by at most their half round trips. Past that a clock jumped (a
+        // phone asleep under a clock that stops for it, a server restart) and every older sample is a
+        // reading of a timeline that no longer exists: kept, the best of them pinned a wrong offset.
+        offsetMs?.let { current ->
+            if (abs(sample.offsetMs - current) > (roundTrip + roundTripMs) / 2 + JUMP_MARGIN_MS) samples.clear()
+        }
+        samples.addLast(sample)
         while (samples.size > WINDOW) samples.removeFirst()
 
         // Stale samples are dropped before choosing, or one lucky round trip
@@ -94,6 +102,7 @@ class ServerClock(
     companion object {
         private const val WINDOW = 12
         private const val SAMPLE_TTL_MS = 120_000L
+        private const val JUMP_MARGIN_MS = 100L
     }
 }
 

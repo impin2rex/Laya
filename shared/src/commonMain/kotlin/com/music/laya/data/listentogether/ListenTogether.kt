@@ -1251,7 +1251,7 @@ object ListenTogether {
      * milliseconds per minute.
      */
     private suspend fun DefaultClientWebSocketSession.pingLoop() {
-        repeat(4) {
+        repeat(8) {
             ping()
             delay(300)
         }
@@ -1688,7 +1688,9 @@ object ListenTogether {
     /** How long a removal keeps this device out of that party. */
     private const val KICK_BLOCK_MS = 24L * 60 * 60 * 1000
 
-    private const val PING_INTERVAL_MS = 15_000L
+    // Each pong is a clock sample, and the offset is the best round trip of the last minute: one every
+    // 5s gives it a dozen to choose from, so a radio wake-up or a congested minute is outvoted.
+    private const val PING_INTERVAL_MS = 5_000L
     // Polled only while the Listen Together screen is open and no party socket is
     // live (see shouldSkipIdleProbe), so 10s costs nothing when nobody is looking.
     private const val HEALTH_POLL_INTERVAL_MS = 10_000L
