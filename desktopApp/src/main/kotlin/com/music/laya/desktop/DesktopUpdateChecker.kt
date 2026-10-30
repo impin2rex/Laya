@@ -37,7 +37,7 @@ internal object DesktopUpdateChecker {
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/impin2rex/Laya/releases/latest"
 
-    val currentVersion: String = System.getProperty("laya.version") ?: "1.9.0"
+    val currentVersion: String = System.getProperty("laya.version") ?: "1.9.1"
 
     private val json = Json { ignoreUnknownKeys = true }
 
