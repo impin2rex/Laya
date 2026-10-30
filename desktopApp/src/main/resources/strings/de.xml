@@ -461,10 +461,7 @@
     <string name="sources_order_header">Quellen, in dieser Reihenfolge versucht</string>
     <string name="sources_quality_capped">Diese Verbindung ist unter Hohe Qualität eingestellt, daher werden Streams transkodiert, um dieses Limit einzuhalten. Downloads sind davon nicht betroffen.</string>
     <string name="sources_subtitle">Woher Audio stammt und in welcher Reihenfolge</string>
-    <string name="spdc_token">sp_dc-Token</string>
     <string name="spotify_canvas_setup">Spotify-Canvas-Einrichtung</string>
-    <string name="spotify_canvas_setup_description">Um Spotify Canvas zu nutzen, gib dein Spotify-sp_dc-Cookie an.</string>
-    <string name="spotify_canvas_setup_steps">1. Melde dich in einem Browser bei open.spotify.com an.\n2. Öffne die Entwicklertools, dann Anwendung und Cookies.\n3. Kopiere den Wert des sp_dc-Cookies.\n4. Füge ihn unten ein.</string>
     <string name="status">Status</string>
     <string name="status_dialog_message">Was dein Konto anzeigt, während Presence aktiv ist.</string>
     <string name="status_dnd">Nicht stören</string>

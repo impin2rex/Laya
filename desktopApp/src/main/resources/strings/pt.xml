@@ -426,13 +426,7 @@
     <string name="sources_order_header">Fontes, tentadas nesta ordem</string>
     <string name="sources_quality_capped">Esta conexão está definida abaixo de Alta qualidade, então os fluxos são transcodificados. Downloads não são afetados.</string>
     <string name="sources_subtitle">De onde vem o áudio e a ordem usada</string>
-    <string name="spdc_token">Token sp_dc</string>
     <string name="spotify_canvas_setup">Configuração do Spotify Canvas</string>
-    <string name="spotify_canvas_setup_description">Para usar o Spotify Canvas, forneça seu cookie sp_dc do Spotify.</string>
-    <string name="spotify_canvas_setup_steps">1. Faça login em open.spotify.com no navegador.
-2. Abra Ferramentas de Desenvolvedor &gt; Aplicação &gt; Cookies.
-3. Copie o valor de sp_dc.
-4. Cole abaixo.</string>
     <string name="status">Status</string>
     <string name="status_dialog_message">O que sua conta mostra enquanto a presença está ativa.</string>
     <string name="status_dnd">Não perturbe</string>

@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">מנגן את סרטון הלופ שמגיע עם חלק מההוצאות במקום עטיפה סטטית</string>
     <string name="animated_cover_cellular">הפעלת עטיפה מונפשת ברשת הסלולרית</string>
     <string name="app_icon">סמל האפליקציה</string>
+    <string name="app_icon_default">ברירת מחדל</string>
     <string name="app_language">שפת האפליקציה</string>
     <string name="appearance">מראה</string>
     <string name="artist_signatures">חתימות של אמנים</string>
@@ -486,7 +487,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">התחברו כדי לטעון את הפלייליסטים שלכם. ההשמעה משתמשת ב-YouTube Music.</string>
     <string name="spotify_sign_in">התחברות עם Spotify</string>
-    <string name="spotify_use_spdc_token">שימוש באסימון sp_dc</string>
     <string name="spotify_disconnect">התנתקות</string>
     <string name="spotify_empty_playlists">אין פלייליסטים בחשבון זה</string>
     <string name="spotify_empty_tracks">לפלייליסט זה אין שירים</string>

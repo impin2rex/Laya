@@ -153,7 +153,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private var pendingNext: PendingNext?
 
     private func materializeNextIfDue(force: Bool = false) {
-        guard let p = pendingNext, let current = currentItem else { return }
+        guard let p = pendingNext, let current = currentItem, swapItem == nil else { return }
         if !force {
             let duration = streamDuration(of: current)
             let position = current.currentTime().seconds
@@ -187,12 +187,16 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         loaders.removeValue(forKey: ObjectIdentifier(item))?.cancelAll()
     }
 
-    func pause() {
+    func pause() { onMain { self.pauseOnMain() } }
+
+    private func pauseOnMain() {
+        cancelSwap()
         pausedByInterruption = false
         resumeAfterSeek = false
         player.pause()
         if fade != nil { idle.pause() }
         reportProgress()
+        updateNowPlayingTiming()
     }
 
     func resume() {
@@ -204,6 +208,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     func seekTo(positionMs: Int64) { onMain { self.seekOnMain(positionMs: positionMs) } }
 
     private func seekOnMain(positionMs: Int64) {
+        cancelSwap()
         cancelFade()
         guard let item = player.currentItem, item.status == .readyToPlay else {
             pendingSeekMs = positionMs
@@ -233,6 +238,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     func stop() {
+        cancelSwap(resume: false)
         pendingNext = nil
         for deck in [player, idle] { deck.pause(); deck.removeAllItems(); deck.volume = 1 }
         fade = nil
@@ -687,6 +693,135 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         )
     }
 
+
+    // MARK: - Source swap
+
+    /// The other copy of the playing track (a better source landing mid-song), loading and cued on the idle deck.
+    private var swapItem: AVPlayerItem?
+    private var swapObservation: NSKeyValueObservation?
+    private var swapGen = 0
+
+    /// Replaces the playing track with another copy of it, at the same position, without stopping the audio: the copy
+    /// loads and seeks on the idle deck while the old one keeps playing, starts on the clock at the moment the old one
+    /// reaches the same point, and takes over with a short crossfade (Android's smoothSwapCurrentTrackVersion).
+    /// Gives up quietly (the old copy plays on) if anything gets in the way: a seek, a pause, a blend, a stop.
+    func swapCurrent(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
+        onMain { self.swapOnMain(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes) }
+    }
+
+    private func swapOnMain(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
+        cancelSwap()
+        guard fade == nil, !parked, let old = currentItem, player.currentItem === old, old.status == .readyToPlay,
+              let item = makeItem(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes)
+        else { return print("AudioEngine: source swap skipped") }
+        clearNextOnMain() // Kotlin queues it again once the swap is in
+        swapItem = item
+        swapGen += 1
+        let gen = swapGen
+        let deck = idle
+        deck.removeAllItems()
+        deck.volume = 0
+        deck.insert(item, after: nil)
+        deck.pause()
+        swapObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+            DispatchQueue.main.async {
+                guard let self, gen == self.swapGen else { return }
+                if item.status == .readyToPlay {
+                    self.swapObservation = nil
+                    self.swapAlign(item, deck, gen, attempt: 0)
+                } else if item.status == .failed {
+                    print("AudioEngine: source swap failed to load; staying on the playing copy")
+                    self.cancelSwap()
+                }
+            }
+        }
+    }
+
+    /// Cues the copy a moment ahead of the playing one and starts it at the host time the old one gets there.
+    private func swapAlign(_ item: AVPlayerItem, _ deck: AVQueuePlayer, _ gen: Int, attempt: Int) {
+        guard gen == swapGen, player.currentItem === currentItem else { return }
+        let rate = max(speed, 0.1)
+        let running = player.timeControlStatus != .paused
+        // A FLAC cue is far more data than an Opus one; the lead grows each time the copy can't get there in time.
+        let target = player.currentTime().seconds + (running ? (1.5 + 1.5 * Double(attempt)) * Double(rate) : 0)
+        func retry() {
+            if attempt >= 3 { print("AudioEngine: source swap could not line up; staying on the playing copy"); return cancelSwap() }
+            swapAlign(item, deck, gen, attempt: attempt + 1)
+        }
+        deck.seek(to: CMTime(seconds: target, preferredTimescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] done in
+            DispatchQueue.main.async {
+                guard let self, gen == self.swapGen, done else { return }
+                guard running else { return self.swapCommit(deck, item, gen) }
+                // Buffered at the cue before it is asked to sound. Started cold, a streaming FLAC stalls at once, and a deck
+                // started with automaticallyWaitsToMinimizeStalling off stays stopped after a stall (Play had to be pressed).
+                // preroll throws unless the deck is ready and stopped.
+                guard deck.status == .readyToPlay, item.status == .readyToPlay, deck.rate == 0 else { return retry() }
+                deck.preroll(atRate: rate) { [weak self] _ in
+                    DispatchQueue.main.async {
+                        guard let self, gen == self.swapGen else { return }
+                        let wait = (target - self.player.currentTime().seconds) / Double(rate) // the buffering may have outlasted the lead
+                        guard wait > 0.05 else { return retry() }
+                        deck.automaticallyWaitsToMinimizeStalling = false
+                        deck.setRate(rate, time: CMTime(seconds: target, preferredTimescale: 1000),
+                                     atHostTime: CMTime(seconds: CACurrentMediaTime() + wait, preferredTimescale: 1000))
+                        deck.automaticallyWaitsToMinimizeStalling = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in self?.swapCommit(deck, item, gen) }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The copy is sounding in step with the old one: it becomes the current track, and the old one fades out under it.
+    private func swapCommit(_ deck: AVQueuePlayer, _ item: AVPlayerItem, _ gen: Int) {
+        guard gen == swapGen, swapItem === item else { return }
+        swapItem = nil
+        swapObservation = nil
+        let out = player
+        let oldItem = currentItem
+        player = deck
+        idle = out
+        IosDsp.shared.reset()
+        becomeCurrent(item)
+        if let oldItem { dropItem(oldItem) }
+        func retire() {
+            out.pause()
+            out.removeAllItems()
+            out.volume = 1
+            deck.volume = 1
+        }
+        if out.timeControlStatus == .paused { // paused (or interrupted) while the copy was lining up
+            deck.pause()
+            retire()
+        } else {
+            go() // a deck that stalled since its start sits at rate 0; this puts it back to playing (waiting for bytes if it must)
+            let began = CACurrentMediaTime()
+            let timer = Timer(timeInterval: 0.02, repeats: true) { t in
+                let f = min(1, (CACurrentMediaTime() - began) / 0.16)
+                deck.volume = Float(f)
+                out.volume = Float(1 - f)
+                if f >= 1 { t.invalidate(); retire() }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+        }
+        materializeNextIfDue()
+        reportProgress()
+        updateNowPlayingTiming()
+        print("AudioEngine: source swapped at \(player.currentTime().seconds)s")
+    }
+
+    private func cancelSwap(resume: Bool = true) {
+        guard let item = swapItem else { return }
+        swapGen += 1
+        swapItem = nil
+        swapObservation = nil
+        idle.pause()
+        idle.removeAllItems()
+        idle.volume = 1
+        dropItem(item)
+        if resume { materializeNextIfDue() }
+    }
+
     // MARK: - Crossfade
 
     private struct Transition { var startMs: Int64 = -1; var fadeMs: Int64 = 0; var cueMs: Int64 = 0; var rate: Float = 1; var outRate: Float = 1 }
@@ -962,8 +1097,13 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             nowPlaying[MPMediaItemPropertyPlaybackDuration] = duration
         }
         nowPlaying[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position.isFinite ? position : 0
+        let playing = player.timeControlStatus != .paused
         nowPlaying[MPNowPlayingInfoPropertyPlaybackRate] = player.timeControlStatus == .playing ? Double(speed) : 0.0
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlaying
+        let center = MPNowPlayingInfoCenter.default()
+        center.nowPlayingInfo = nowPlaying
+        // The lock screen's button reads this, not the rate: a pause the app made itself (another device in a
+        // Listen Together party) stopped the audio and left the button on Pause.
+        center.playbackState = playing ? .playing : .paused
     }
 
     // MARK: - Audio session & system events
@@ -1005,11 +1145,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             // iOS has already paused the player; remember it wasn't the user.
             pausedByInterruption = wasPlaying
             reportProgress()
+            if pausedByInterruption { listener?.onSystemPause() }
         case .ended:
             let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsRaw)
             if pausedByInterruption && options.contains(.shouldResume) {
-                resume()
+                requestPlaying(true)
             }
             pausedByInterruption = false
         @unknown default:
@@ -1023,6 +1164,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         // Headphones unplugged / Bluetooth disconnected: pause rather than blast the speaker.
         if reason == .oldDeviceUnavailable {
             pause()
+            listener?.onSystemPause()
         }
     }
 
@@ -1031,18 +1173,20 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func configureRemoteCommands() {
         let center = MPRemoteCommandCenter.shared()
 
+        // Through Kotlin, like the app's own button: a Listen Together party has to hear these, or its next
+        // reconcile puts the music straight back on.
         center.playCommand.addTarget { [weak self] _ in
             guard let self, self.player.currentItem != nil else { return .noActionableNowPlayingItem }
-            self.resume()
+            self.requestPlaying(true)
             return .success
         }
         center.pauseCommand.addTarget { [weak self] _ in
-            self?.pause()
+            self?.requestPlaying(false)
             return .success
         }
         center.togglePlayPauseCommand.addTarget { [weak self] _ in
             guard let self, self.player.currentItem != nil else { return .noActionableNowPlayingItem }
-            if self.player.timeControlStatus == .paused { self.resume() } else { self.pause() }
+            self.requestPlaying(self.player.timeControlStatus == .paused)
             return .success
         }
         center.nextTrackCommand.addTarget { [weak self] _ in
@@ -1055,11 +1199,16 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         }
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let self, let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-            self.seekTo(positionMs: Int64(event.positionTime * 1000))
+            let ms = Int64(event.positionTime * 1000)
+            if let listener = self.listener { listener.onRemoteSeek(positionMs: ms) } else { self.seekTo(positionMs: ms) }
             return .success
         }
         center.skipForwardCommand.isEnabled = false
         center.skipBackwardCommand.isEnabled = false
         UIApplication.shared.beginReceivingRemoteControlEvents()
+    }
+
+    private func requestPlaying(_ play: Bool) {
+        if let listener { listener.onRemotePlayPause(play: play) } else if play { resume() } else { pause() }
     }
 }

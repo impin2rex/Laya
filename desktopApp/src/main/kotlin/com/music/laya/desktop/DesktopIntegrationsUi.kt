@@ -176,68 +176,6 @@ internal fun DesktopLastfmLoginDialog(onDismiss: () -> Unit) {
 }
 
 /**
- * The `sp_dc` cookie Spotify Canvas needs.
- *
- * Android's `SpotifyCanvasAuthScreen`, with its four steps unchanged — they name a browser's
- * developer tools, which is where a desktop listener already is.
- */
-@Composable
-internal fun DesktopSpotifyCanvasDialog(onDismiss: () -> Unit, onSaved: (String) -> Unit) {
-    var token by remember { mutableStateOf(DesktopSpotifyToken.cookie()) }
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-
-    fun save() {
-        DesktopSpotifyToken.setCookie(token.trim())
-        onSaved(token.trim())
-        onDismiss()
-    }
-
-    DesktopDialogPanel(onDismiss = onDismiss, maxWidth = 420) {
-        DialogHeading(
-            title = DesktopStrings["spotify_canvas_setup", "Spotify Canvas setup"],
-            message = DesktopStrings["spotify_canvas_setup_description", "To use Spotify Canvas, provide your Spotify sp_dc cookie."],
-        )
-        Text(
-            DesktopStrings[
-                "spotify_canvas_setup_steps",
-                "1. Sign in at open.spotify.com in a browser.\n" +
-                    "2. Open Developer Tools, then Application and Cookies.\n" +
-                    "3. Copy the value of the sp_dc cookie.\n" +
-                    "4. Paste it below.",
-            ],
-            modifier = Modifier.fillMaxWidth().padding(horizontal = panelInset(22.dp), vertical = 4.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = DesktopSecondary,
-        )
-        Spacer(Modifier.height(12.dp))
-        DialogField(
-            value = token,
-            onValueChange = { token = it },
-            placeholder = DesktopStrings["spdc_token", "sp_dc token"],
-            isPassword = true,
-            onSubmit = ::save,
-            modifier = Modifier.focusRequester(focus),
-        )
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = panelInset(22.dp)),
-            horizontalArrangement = Arrangement.Start,
-        ) {
-            TextButton(onClick = { DesktopExternalLinks.open("https://open.spotify.com/") }) {
-                Text(DesktopStrings["d_open_spotify", "Open Spotify"], color = DesktopSecondary, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-        DialogActions(
-            confirm = DesktopStrings["save", "Save"],
-            confirmEnabled = true,
-            busy = false,
-            onConfirm = ::save,
-            onDismiss = onDismiss,
-        )
-    }
-}
-
-/**
  * ListenBrainz's user token.
  *
  * One field and no verification, as on Android: ListenBrainz has no endpoint

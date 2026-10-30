@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Spielt das Endlosvideo ab, das manche Veröffentlichungen anstelle eines Standbilds mitbringen</string>
     <string name="animated_cover_cellular">Animiertes Cover bei mobilen Daten abspielen</string>
     <string name="app_icon">App-Symbol</string>
+    <string name="app_icon_default">Standard</string>
     <string name="app_language">App-Sprache</string>
     <string name="appearance">Erscheinungsbild</string>
     <string name="artist_signatures">Künstlersignaturen</string>
@@ -486,7 +487,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Melde dich an, um deine Playlists zu laden. Die Wiedergabe nutzt YouTube Music.</string>
     <string name="spotify_sign_in">Bei Spotify anmelden</string>
-    <string name="spotify_use_spdc_token">sp_dc-Token verwenden</string>
     <string name="spotify_disconnect">Trennen</string>
     <string name="spotify_empty_playlists">Keine Playlists auf diesem Konto</string>
     <string name="spotify_empty_tracks">Diese Playlist enthält keine Titel</string>

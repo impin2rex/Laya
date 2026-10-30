@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
@@ -172,6 +174,7 @@ import com.music.laya.data.listentogether.JamInviteLink
 import com.music.laya.data.sources.AddonSource
 import com.music.laya.data.sources.SourceKind
 import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.data.sources.SourceResolver
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
@@ -340,7 +343,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             onFailure = { UiState.Error(it.message ?: "Error") },
         )
     }
-    LaunchedEffect(signedIn) {
+    val sessionVersion by IosAuth.sessionVersion.collectAsState()
+    // Keyed on the identity too: switching account or profile keeps signedIn true but changes whose library this is.
+    LaunchedEffect(signedIn, sessionVersion) {
         if (signedIn) { library = UiState.Loading; loadLibrary(); loadHome() }
         else { library = UiState.Loading; stack = stack.filterNot { it is IosPage.Account || it is IosPage.History } }
     }
@@ -457,6 +462,24 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         scope.launch {
             val loaded = loadDetail(base)
             stack = stack.map { if (it is IosPage.Detail && it.page === base) IosPage.Detail(loaded) else it }
+            val seen = HashSet<String>()
+            var next = loaded.continuation
+            while (next != null && seen.add(next)) {
+                val more = YtMusicRepository.moreSongs(next).getOrNull() ?: break
+                var progressed = false
+                stack = stack.map { p ->
+                    val cur = (p as? IosPage.Detail)?.page
+                    val songs = (cur?.songs as? UiState.Success<List<Song>>)?.data
+                    if (cur == null || cur.browseId != base.browseId || songs == null) return@map p
+                    val known = songs.mapTo(HashSet()) { it.videoId }
+                    val added = more.songs.filter { known.add(it.videoId) }
+                    if (added.isEmpty()) return@map p
+                    progressed = true
+                    IosPage.Detail(cur.copy(songs = UiState.Success(songs + added), continuation = more.continuation))
+                }
+                if (!progressed) break
+                next = more.continuation
+            }
         }
     }
     fun openMood(item: MoodGenre) {
@@ -567,8 +590,16 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         SearchHistoryEntity(song.videoId, song.title, song.artist, song.thumbnailUrl, EntityType.TRACK),
     )
 
+    // Android's player backfill: a track started from a feed or the queue rarely knows its album and artist pages, so
+    // ask once the player is up. The credits and the menu's Open album / Open artist rows go nowhere without them.
+    var links by remember { mutableStateOf<Song?>(null) }
+    LaunchedEffect(player.song?.videoId, nowPlayingOpen) {
+        links = null
+        val current = player.song ?: return@LaunchedEffect
+        if (nowPlayingOpen && current.needsLinks()) links = YtMusicRepository.trackLinks(current.videoId).getOrNull()
+    }
     // Lyrics for the playing song, once its duration is known.
-    val song = player.song
+    val song = remember(player.song, links) { player.song?.withLinks(links) }
     var lyrics by remember(song?.videoId) { mutableStateOf<List<LyricLine>?>(null) }
     var lyricsSource by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
     var lyricsChecked by remember(song?.videoId) { mutableStateOf(false) }
@@ -783,7 +814,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val appBackdrop = rememberLayerBackdrop(onDraw = remember(windowBackground) { { drawRect(windowBackground); drawContent() } })
         CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                BoxWithConstraints(Modifier.fillMaxSize()) {
+                // In landscape the notch and Dynamic Island sit on a side edge; keep pages, tab bar and mini player clear of it.
+                BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
                     val noPadding = PaddingValues(bottom = barHeight)
                     Box(Modifier.fillMaxSize().layerBackdrop(appBackdrop).nestedScroll(navBarScroll)) {
                         // A detail page draws its own header up under the status bar (as Android's edge to edge does), so only the other pages are inset here.
@@ -798,9 +830,29 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         var activeShelf by remember { mutableStateOf<HomeShelf?>(null) }
                                         // The Downloads page is rebuilt as songs are saved or deleted.
                                         val downloaded by IosDownloads.savedIds.collectAsState()
-                                        val page = if (top.page.browseId == DOWNLOADS_BROWSE_ID) remember(downloaded) { IosDownloads.page() } else top.page
+                                        val loaded = if (top.page.browseId == DOWNLOADS_BROWSE_ID) remember(downloaded) { IosDownloads.page() } else top.page
+                                        // The release's save and the artist's subscribe star, as Android's toggleLibrary /
+                                        // toggleSubscription: flipped at once, put back if YouTube refuses, and the Library
+                                        // reloaded once it takes, since its Albums / Subscriptions shelves are now out of date.
+                                        var saved by remember { mutableStateOf(loaded.library?.saved) }
+                                        var subscribed by remember { mutableStateOf(loaded.subscription?.subscribed) }
+                                        val page = loaded.copy(
+                                            library = loaded.library?.let { it.copy(saved = saved ?: it.saved) },
+                                            subscription = loaded.subscription?.let { it.copy(subscribed = subscribed ?: it.subscribed) },
+                                        )
+                                        fun toggle(target: Boolean, show: (Boolean) -> Unit, write: suspend () -> Result<Unit>) {
+                                            show(target)
+                                            scope.launch { if (write().isSuccess) loadLibrary() else show(!target) }
+                                        }
                                         DetailScreen(
                                             page = page,
+                                            // Both are the account's, so a guest isn't shown the buttons.
+                                            onToggleLibrary = page.library?.takeIf { signedIn }?.let { lib ->
+                                                { toggle(!lib.saved, { saved = it }) { YtMusicRepository.setSaved(lib.playlistId, !lib.saved) } }
+                                            },
+                                            onToggleSubscription = page.subscription?.takeIf { signedIn }?.let { sub ->
+                                                { toggle(!sub.subscribed, { subscribed = it }) { YtMusicRepository.setSubscribed(sub.channelId, !sub.subscribed) } }
+                                            },
                                             currentSong = song,
                                             isPlaying = player.isPlaying,
                                             onSongClick = { songs, i ->
@@ -881,7 +933,6 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     IosPage.Spotify -> SpotifyLibraryScreen(
                                         onOpenPlaylist = { openDetail(SPOTIFY_PAGE_PREFIX + it.id, it.name, it.owner ?: "Spotify", it.imageUrl, BrowseType.PLAYLIST) },
                                         onOpenLogin = { showSpotifyLogin = true },
-                                        onOpenTokenSetup = null,
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
                                     IosPage.ListenTogether -> ListenTogetherScreen(
@@ -903,7 +954,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         signedIn = signedIn,
                                         account = account,
                                         onSignIn = { showLogin = true },
-                                        onSignOut = { scope.launch { IosAuth.signOut() } },
+                                        // Removes the login in use; the next one takes over.
+                                        onSignOut = { scope.launch { IosAuth.activeAccountId.value?.let { IosAuth.remove(it) } } },
                                         onSpotify = { if (spotifyConnected) stack = stack + IosPage.Spotify else showSpotifyLogin = true },
                                         onSpotifyDisconnect = { scope.launch { IosSpotify.signOut() } },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
@@ -1184,14 +1236,22 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         )
                     }
 
-                    menuSong?.let { m ->
+                    menuSong?.let { held ->
+                        val pinnedOriginals by IosOriginalVersion.pinned.collectAsState()
+                        // As Android's menu: a row from search, recents or a feed is looked up as the menu opens.
+                        var menuLinks by remember(held.videoId) { mutableStateOf<Song?>(null) }
+                        LaunchedEffect(held.videoId) {
+                            if (held.needsLinks()) menuLinks = YtMusicRepository.trackLinks(held.videoId).getOrNull()
+                        }
+                        val m = remember(held, menuLinks) { held.withLinks(menuLinks) }
                         IosSongMenu(
                             song = m,
                             onDismiss = { menuSong = null },
                             onPlayNext = { player.playNext(m) },
                             onAddToQueue = { player.addToQueue(m) },
-                            onOpenAlbum = { openDetail(it, m.albumName.orEmpty(), m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
-                            onOpenArtist = { openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
+                            // Pushed over whatever is under the player, which closes so the page is seen.
+                            onOpenAlbum = { sheetMotion.close(); openDetail(it, m.albumName ?: m.title, m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
+                            onOpenArtist = { sheetMotion.close(); openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
                             liked = if (signedIn) isLiked(m.videoId) else null,
                             onToggleLike = { toggleLike(m.videoId) },
                             disliked = if (signedIn) isDisliked(m.videoId) else null,
@@ -1201,6 +1261,13 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             // Android: sleep timer and Copy log are the player menu's own rows.
                             sleepStatus = player.sleepMinutes?.let { "$it min" } ?: if (player.sleepAfterTrack) "End of track" else null,
                             onSleepTimer = if (nowPlayingOpen) ({ sleepPicker = true }) else null,
+                            onRevertToOriginal = if (nowPlayingOpen && m.videoId == song?.videoId && player.playingFromSource &&
+                                m.videoId !in pinnedOriginals && IosDownloads.fileUrl(m.videoId) == null
+                            ) ({ player.revertToOriginal() }) else null,
+                            onUpgradeQuality = if (nowPlayingOpen && m.videoId == song?.videoId && IosDownloads.fileUrl(m.videoId) == null &&
+                                (m.videoId in pinnedOriginals || (!player.playingFromSource && SourceResolver.canSubstituteForYouTube()))
+                            ) ({ player.upgradeQuality() }) else null,
+                            upgradeInProgress = player.upgrading,
                             onCopyLog = if (nowPlayingOpen) ({
                                 scope.launch { IosPlayerHost.showMessage("Copied ${copyTrackLog(m)} log lines") }
                             }) else null,
@@ -1315,9 +1382,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                             sheetMotion.close()
                                             openDetail(id, song.albumName.orEmpty(), song.artist, song.thumbnailUrl, BrowseType.ALBUM)
                                         },
+                                        // As Android: YouTube doesn't link every credited artist (on a two-artist track only the
+                                        // first), so the rest go by name, opening only an exact match rather than a stranger.
                                         onOpenArtist = { id, name ->
                                             sheetMotion.close()
-                                            (id ?: song.artistId)?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
+                                            val known = id ?: song.artistId?.takeIf { name == song.artist }
+                                            if (known != null) openDetail(known, name, "Artist", null, BrowseType.ARTIST)
+                                            else scope.launch {
+                                                YtMusicRepository.findArtistPageId(name).getOrNull()
+                                                    ?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
+                                                    ?: IosPlayerHost.showMessage("Couldn't find $name")
+                                            }
                                         },
                                         onOpenPlaybackSource = {},
                                         onListenTogether = {
@@ -1384,3 +1459,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
 }
+
+/** Missing an album or artist page that [YtMusicRepository.trackLinks] can supply; a saved file has none to find. */
+private fun Song.needsLinks() = localUri == null && videoId.isNotBlank() && (albumId == null || artistId == null)
+
+/** Fills in the pages [extra] (this track's trackLinks answer) knows and this row doesn't. */
+private fun Song.withLinks(extra: Song?): Song =
+    if (extra == null || extra.videoId != videoId) this
+    else copy(artistId = artistId ?: extra.artistId, albumId = albumId ?: extra.albumId, albumName = albumName ?: extra.albumName)

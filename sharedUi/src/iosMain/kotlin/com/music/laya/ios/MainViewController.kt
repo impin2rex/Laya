@@ -1,5 +1,6 @@
 package com.music.laya.ios
 
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
@@ -37,6 +38,7 @@ import com.music.laya.data.settings.AppSettingsHost
 import com.russhwolf.settings.NSUserDefaultsSettings
 
 /** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]; [onStatusBarLight] tells the host VC which status bar icon colour the screen needs. */
+@OptIn(ExperimentalComposeUiApi::class)
 fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: (Boolean) -> Unit): UIViewController {
     // Not NSLog: Kotlin strings passed through its C varargs crash (EXC_BAD_ACCESS).
     DebugLog.sink = DebugLog.Sink { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
@@ -89,5 +91,7 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
             Font("sf_pro_display_$n", runBlocking { Res.readBytes("font/sf_pro_display_$n.otf") }, FontWeight(w))
         },
     )
-    return ComposeUIViewController { LayaIosApp(engine, onStatusBarLight) }
+    // Not opaque: an opaque Metal layer clears to white wherever nothing is drawn, which shows as a white band
+    // while the canvas resizes on rotation. Transparent lets the host's black background show instead.
+    return ComposeUIViewController(configure = { opaque = false }) { LayaIosApp(engine, onStatusBarLight) }
 }

@@ -2761,7 +2761,6 @@ private fun LayaApp(
                                     )
                                 },
                                 onOpenLogin = { showSpotifyLogin = true },
-                                onOpenTokenSetup = { showSpotifyCanvasAuth = true },
                                 contentPadding = listPadding,
                             )
                         } else if (pageRoute == AppRoute.Discord) {
@@ -5200,6 +5199,16 @@ private fun LayaApp(
             }
         }
 
+        // Before the sign-in overlay, so signing in from here draws over it and
+        // comes back to it with the new cookie filled in.
+        if (showSpotifyCanvasAuth) {
+            BackHandler { showSpotifyCanvasAuth = false }
+            SpotifyCanvasAuthScreen(
+                onNavigateUp = { showSpotifyCanvasAuth = false },
+                onOpenLogin = { showSpotifyLogin = true },
+            )
+        }
+
         // ---- Spotify sign-in (full screen WebView) ----
         // Out here with Discord's rather than on the Spotify page itself: see
         // SpotifyLoginScreen for what the blurred content tree does to a WebView.
@@ -5236,13 +5245,6 @@ private fun LayaApp(
                     )
                 }
             }
-        }
-
-        if (showSpotifyCanvasAuth) {
-            BackHandler { showSpotifyCanvasAuth = false }
-            SpotifyCanvasAuthScreen(
-                onNavigateUp = { showSpotifyCanvasAuth = false }
-            )
         }
 
         discordDialog?.let { which ->

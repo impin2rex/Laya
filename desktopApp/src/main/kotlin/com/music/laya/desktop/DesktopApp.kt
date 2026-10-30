@@ -47,6 +47,9 @@ import com.music.laya.ui.player.LyricsSidePanel
 import com.music.laya.ui.player.NowPlayingScreen
 import com.music.laya.ui.player.QueueSidePanel
 import com.music.laya.ui.player.PlayerBack
+import com.music.laya.ui.player.CanvasArtworkPlayer
+import com.music.laya.data.canvas.AppleArtistArtRepository
+import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.ui.player.RepeatModes
 import com.music.laya.ui.player.rememberMixPulse
 import androidx.compose.runtime.SideEffect
@@ -2462,6 +2465,23 @@ fun LayaDesktopApp() {
         }
     }
 
+    // What Integrations shows of the Spotify account, and what its rows do.
+    val spotifyConnection = DesktopSpotifyConnection(
+        connected = spotifyCanvasCookie.isNotBlank(),
+        canSignIn = DesktopWebSignIn.available,
+        signingIn = spotifySignInJob != null,
+        error = spotifySignInError,
+        onSignIn = ::signInToSpotify,
+        onOpenPlaylists = {
+            selectDestination(DesktopDestination.LIBRARY)
+            openSpotifyLibrary()
+        },
+        onDisconnect = {
+            DesktopSpotifyToken.setCookie("")
+            spotifyCanvasCookie = ""
+        },
+    )
+
     /**
      * The Library's "On device" shelf: the playlists kept on this computer rather than on the
      * account — the desktop's counterpart of the phone's downloaded releases, and like them
@@ -3921,7 +3941,8 @@ fun LayaDesktopApp() {
                                         persistence.saveBoolean("animated_canvas", it)
                                     },
                                     spotifyCanvasReady = spotifyCanvasCookie.isNotBlank(),
-                                    onOpenSpotifyCanvasSetup = { overlays.settingsPage = DesktopSettingsPage.SPOTIFY_CANVAS },
+                                    // Sign-in, playlists and Disconnect all live on Integrations.
+                                    onOpenSpotifyCanvasSetup = { overlays.settingsPage = DesktopSettingsPage.INTEGRATIONS },
                                     dontRepeatSuggestions = dontRepeatSuggestions,
                                     onDontRepeatSuggestionsChange = {
                                         dontRepeatSuggestions = it
@@ -4114,24 +4135,9 @@ fun LayaDesktopApp() {
                                     onDismiss = ::goBack,
                                 )
                                 DesktopSettingsPage.TRANSLATION_LANGUAGE -> DesktopTranslationLanguageDialog(onDismiss = ::goBack)
-                                DesktopSettingsPage.SPOTIFY_CANVAS -> DesktopSpotifyCanvasDialog(
-                                    onDismiss = ::goBack,
-                                    onSaved = { spotifyCanvasCookie = it },
-                                )
                                 DesktopSettingsPage.INTEGRATIONS -> DesktopIntegrationsDialog(
                                     song = playback.song,
-                                    spotify = DesktopSpotifyConnection(
-                                        connected = spotifyCanvasCookie.isNotBlank(),
-                                        canSignIn = DesktopWebSignIn.available,
-                                        signingIn = spotifySignInJob != null,
-                                        error = spotifySignInError,
-                                        onSignIn = ::signInToSpotify,
-                                        onPasteCookie = { overlays.settingsPage = DesktopSettingsPage.SPOTIFY_CANVAS },
-                                        onDisconnect = {
-                                            DesktopSpotifyToken.setCookie("")
-                                            spotifyCanvasCookie = ""
-                                        },
-                                    ),
+                                    spotify = spotifyConnection,
                                     onOpenLastfm = { overlays.lastfmLogin = true },
                                     onOpenListenBrainz = { overlays.listenBrainzToken = true },
                                     onOpenDiscordToken = { overlays.discordToken = true },
@@ -5445,6 +5451,12 @@ private fun DesktopArtistPage(
                 val palette = rememberDesktopArtworkPalette(artist.thumbnailUrl)
                 // The name is billed in the artist's own hand when a signature API is set up.
                 val signature = rememberDesktopArtistSignature(name)
+                // The phone's artist clip: Apple's looping video over the photograph, when it has one
+                // and animated artwork is on.
+                val animatedCanvas by DesktopPlayerSettings.animatedCanvas.collectAsState()
+                val video by produceState<String?>(null, name, animatedCanvas) {
+                    value = if (animatedCanvas) AppleArtistArtRepository.artFor(name)?.videoUrl else null
+                }
                 // Android caps the top-songs block and pages it sideways so the release shelves are
                 // not buried under a hundred rows.
                 val top = artist.songs.take(MAX_ARTIST_SONGS)
@@ -5454,7 +5466,7 @@ private fun DesktopArtistPage(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         item(key = "artist-header") {
-                            DesktopArtistBanner(artist.thumbnailUrl, name, palette, signature)
+                            DesktopArtistBanner(artist.thumbnailUrl, video, name, palette, signature)
                         }
                         if (artist.subscriberCountText != null || artist.monthlyListenerCount != null) {
                             item(key = "artist-stats") {
@@ -5568,16 +5580,25 @@ private fun DesktopArtistPage(
     }
 }
 
-/** The photograph, and the name across the foot of it. */
+/** The photograph (or the artist's clip over it), and the name across the foot of it. */
 @Composable
 private fun DesktopArtistBanner(
     url: String?,
+    videoUrl: String?,
     name: String,
     palette: DesktopArtworkPalette,
     signature: DesktopArtistSignature?,
 ) {
     Box(Modifier.fillMaxWidth().height(ARTIST_BANNER_HEIGHT)) {
         DesktopArtwork(url, Modifier.matchParentSize(), px = HEADER_ART_PX)
+        // Under the washes, as on the phone. Always running: the page is only up while it's read.
+        videoUrl?.let { clip ->
+            CanvasArtworkPlayer(
+                canvas = remember(clip) { CanvasArtwork(url = clip) },
+                isPlaying = true,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
         // Two washes rather than one.
         Box(
             Modifier.matchParentSize().background(
@@ -6534,7 +6555,7 @@ private fun DesktopSettingsScreen(
                             subtitle = if (spotifyCanvasReady) {
                                 "Connected"
                             } else {
-                                "To use Spotify Canvas, provide your Spotify sp_dc cookie."
+                                "Sign in with Spotify"
                             },
                             onClick = onOpenSpotifyCanvasSetup,
                         )
@@ -6797,7 +6818,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet, as Android has it. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("laya.version") ?: "1.9.0" }
+    val version = remember { System.getProperty("laya.version") ?: "1.9.1" }
     val linkStyles = TextLinkStyles(
         style = SpanStyle(color = DesktopAccent, textDecoration = TextDecoration.Underline),
     )

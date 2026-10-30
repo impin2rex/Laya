@@ -14,6 +14,12 @@ interface AudioEngine {
     fun clearNext()
 
     /**
+     * Replace the playing track with another copy of it at the same position, without stopping the audio: the copy loads in
+     * the background and crossfades in when it lines up. The old copy plays on if that never happens (a seek, a pause, a failure).
+     */
+    fun swapCurrent(url: String, headers: Map<String, String>, mimeType: String, contentLength: Long, chunkBytes: Long)
+
+    /**
      * How the queued next track follows the playing one: a crossfade of [fadeMs] (0 = plain gapless), starting when the
      * playing track reaches [startMs] (-1 = so that it ends with the track; [fadeMs] is then kept to a third of it),
      * with the next track cued to [cueMs] and played at [rate] times the chosen speed (the playing one at [outRate] times, from the fade's start).
@@ -60,6 +66,11 @@ interface AudioEngineListener {
     fun onError(message: String, httpStatus: Int)
     /** Hardware keys, Control Center or our own slider moved the system volume. */
     fun onVolumeChanged(level: Float)
+    /** Lock screen, Control Center, headphones, or the system handing the audio back after a call. */
+    fun onRemotePlayPause(play: Boolean)
+    fun onRemoteSeek(positionMs: Long)
+    /** The system paused the audio without the listener asking: a call, Siri, the headphones coming out. */
+    fun onSystemPause()
     fun onRemoteNext()
     fun onRemotePrevious()
 }

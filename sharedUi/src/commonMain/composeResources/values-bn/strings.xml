@@ -238,6 +238,7 @@
     <string name="animated_cover_art_subtitle">কিছু রিলিজের সঙ্গে আসা লুপিং ভিডিও চালায়, স্থির ছবির বদলে</string>
     <string name="animated_cover_cellular">মোবাইল ডেটায় অ্যানিমেটেড কভার চালান</string>
     <string name="app_icon">অ্যাপ আইকন</string>
+    <string name="app_icon_default">ডিফল্ট</string>
     <string name="app_language">অ্যাপের ভাষা</string>
     <string name="appearance">চেহারা</string>
     <string name="artist_signatures">শিল্পীর সই</string>
@@ -465,7 +466,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">আপনার প্লেলিস্ট লোড করতে সাইন ইন করুন। গান চলবে YouTube Music দিয়ে।</string>
     <string name="spotify_sign_in">Spotify দিয়ে সাইন ইন করুন</string>
-    <string name="spotify_use_spdc_token">sp_dc টোকেন ব্যবহার করুন</string>
     <string name="spotify_disconnect">ডিসকানেক্ট করুন</string>
     <string name="spotify_empty_playlists">এই অ্যাকাউন্টে কোনো প্লেলিস্ট নেই</string>
     <string name="spotify_empty_tracks">এই প্লেলিস্টে কোনো গান নেই</string>

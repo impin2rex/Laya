@@ -45,7 +45,6 @@
     <string name="d_no_downloads">Aucun téléchargement</string>
     <string name="d_nobody_is_signed_in">Personne n\'est connecté. Ta bibliothèque, tes playlists et ton historique nécessitent une compte YouTube Music.</string>
     <string name="d_open_listenbrainz">Ouvrir ListenBrainz</string>
-    <string name="d_open_spotify">Ouvrir Spotify</string>
     <string name="d_output_precision">Précision de sortie</string>
     <string name="d_paste_a_cookie_instead">Coller un cookie à la place</string>
     <string name="d_paste_the_cookie_header_for_music_youtube_com">Colle l\'en-tête Cookie de music.youtube.com.</string>

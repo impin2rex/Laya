@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">播放部分发行版自带的循环视频，而不是静态封面</string>
     <string name="animated_cover_cellular">在移动数据下播放动态封面</string>
     <string name="app_icon">应用图标</string>
+    <string name="app_icon_default">默认</string>
     <string name="app_language">应用语言</string>
     <string name="appearance">外观</string>
     <string name="artist_signatures">艺人签名</string>
@@ -485,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">登录以载入你的播放列表。播放使用 YouTube Music。</string>
     <string name="spotify_sign_in">使用 Spotify 登录</string>
-    <string name="spotify_use_spdc_token">使用 sp_dc 令牌</string>
     <string name="spotify_disconnect">断开连接</string>
     <string name="spotify_empty_playlists">此账号没有播放列表</string>
     <string name="spotify_empty_tracks">此播放列表没有歌曲</string>

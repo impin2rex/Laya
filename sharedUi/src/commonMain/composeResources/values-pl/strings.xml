@@ -261,6 +261,7 @@
     <string name="animated_cover_art_subtitle">Odtwarza animowaną okładkę dostępną w niektórych wydaniach zamiast statycznej</string>
     <string name="animated_cover_cellular">Odtwarzaj animowaną okładkę w sieci komórkowej</string>
     <string name="app_icon">Ikona aplikacji</string>
+    <string name="app_icon_default">Domyślna</string>
     <string name="app_language">Język aplikacji</string>
     <string name="appearance">Wygląd</string>
     <string name="artist_signatures">Podpisy artystów</string>
@@ -488,7 +489,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Zaloguj się, aby wczytać swoje playlisty. Odtwarzanie korzysta z YouTube Music.</string>
     <string name="spotify_sign_in">Zaloguj się przez Spotify</string>
-    <string name="spotify_use_spdc_token">Użyj tokena sp_dc</string>
     <string name="spotify_disconnect">Rozłącz</string>
     <string name="spotify_empty_playlists">Brak playlist na tym koncie</string>
     <string name="spotify_empty_tracks">Ta playlista nie ma utworów</string>

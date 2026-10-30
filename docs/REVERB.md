@@ -77,9 +77,13 @@ before the seek doesn't ring on.
   with more than two channels (5.1 beds, Dolby Atmos decoded to PCM) get the
   tail on the front left/right pair only. Every channel's dry level is scaled
   together, so the front-to-rear balance stays the same.
-- **Android passthrough/offload and Cast**: no PCM passes through the app's
-  sink on these paths, so the reverb doesn't run. The equaliser has the same
-  limitation.
+- **Android Dolby passthrough**: a route that can take Dolby (E-AC-3 JOC,
+  AC-4) as-is — a Dolby phone's speaker, an AVR — would get the bitstream, and
+  no PCM would reach the reverb. While reverb, the equaliser or karaoke is on,
+  the app declines passthrough and decodes instead, and switching one on
+  mid-track re-selects the audio with a brief gap. With all three off, a TV
+  still passes Atmos through untouched.
+- **Cast**: the receiver plays the stream, so the reverb doesn't run.
 - **Android crossfades**: each player has its own tank. When a crossfade ends,
   the outgoing track's tail stops with that player, but by then the crossfade
   has already faded it out.

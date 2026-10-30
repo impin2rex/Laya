@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">Memutar video berulang yang disertakan beberapa rilisan alih-alih sampul diam</string>
     <string name="animated_cover_cellular">Putar sampul animasi lewat data seluler</string>
     <string name="app_icon">Ikon aplikasi</string>
+    <string name="app_icon_default">Default</string>
     <string name="app_language">Bahasa aplikasi</string>
     <string name="appearance">Tampilan</string>
     <string name="artist_signatures">Tanda tangan artis</string>
@@ -485,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Masuk untuk memuat playlist Anda. Pemutaran memakai YouTube Music.</string>
     <string name="spotify_sign_in">Masuk dengan Spotify</string>
-    <string name="spotify_use_spdc_token">Gunakan token sp_dc</string>
     <string name="spotify_disconnect">Putuskan</string>
     <string name="spotify_empty_playlists">Tidak ada playlist di akun ini</string>
     <string name="spotify_empty_tracks">Playlist ini tidak punya lagu</string>

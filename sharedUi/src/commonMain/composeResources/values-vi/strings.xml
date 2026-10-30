@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">Phát video vòng lặp mà một số bản phát hành cung cấp thay vì ảnh tĩnh</string>
     <string name="animated_cover_cellular">Phát ảnh bìa động qua dữ liệu di động</string>
     <string name="app_icon">Biểu tượng ứng dụng</string>
+    <string name="app_icon_default">Mặc định</string>
     <string name="app_language">Ngôn ngữ ứng dụng</string>
     <string name="appearance">Giao diện</string>
     <string name="artist_signatures">Chữ ký nghệ sĩ</string>
@@ -485,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Đăng nhập để tải danh sách phát của bạn. Phát nhạc dùng YouTube Music.</string>
     <string name="spotify_sign_in">Đăng nhập bằng Spotify</string>
-    <string name="spotify_use_spdc_token">Dùng token sp_dc</string>
     <string name="spotify_disconnect">Ngắt kết nối</string>
     <string name="spotify_empty_playlists">Không có danh sách phát nào trên tài khoản này</string>
     <string name="spotify_empty_tracks">Danh sách phát này không có bài hát</string>

@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.music.laya.data.canvas.AppleArtistArt
+import com.music.laya.data.canvas.AppleArtistArtRepository
 import com.music.laya.data.canvas.ArtistSignature
 import com.music.laya.data.canvas.ArtistSignatureRepository
 import com.music.laya.data.settings.AppSettings
@@ -36,8 +38,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
-/** The artist-signature lookups for the artist page; same repository Android uses. */
+/** The artist page's Apple header art and signature lookups; same repositories Android uses. */
 internal object IosDetailHost : DetailHost {
+    override fun cachedArt(name: String): AppleArtistArt? = AppleArtistArtRepository.cached(name)
+    override suspend fun artFor(name: String): AppleArtistArt? = AppleArtistArtRepository.artFor(name)
     override val signatureUpdates: StateFlow<Int> get() = ArtistSignatureRepository.updates
     override fun signatureBase(enabled: Boolean, url: String) = ArtistSignatureRepository.effectiveBaseUrl(enabled, url)
     override fun cachedSignature(name: String, base: String?): ArtistSignature? = ArtistSignatureRepository.cached(name, base)

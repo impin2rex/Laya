@@ -478,10 +478,7 @@
     <string name="sources_order_header">Источники, пробуются в этом порядке</string>
     <string name="sources_quality_capped">Это соединение установлено ниже высокого качества, поэтому потоки перекодируются под это ограничение. На загрузки это не влияет.</string>
     <string name="sources_subtitle">Откуда поступает аудио и в каком порядке</string>
-    <string name="spdc_token">Токен sp_dc</string>
     <string name="spotify_canvas_setup">Настройка Spotify Canvas</string>
-    <string name="spotify_canvas_setup_description">Чтобы использовать Spotify Canvas, укажите свой cookie sp_dc от Spotify.</string>
-    <string name="spotify_canvas_setup_steps">1. Войдите на open.spotify.com в браузере.\n2. Откройте инструменты разработчика, затем Application и Cookies.\n3. Скопируйте значение cookie sp_dc.\n4. Вставьте его ниже.</string>
     <string name="status">Статус</string>
     <string name="status_dialog_message">Что показывает ваш аккаунт, пока Presence активен.</string>
     <string name="status_dnd">Не беспокоить</string>

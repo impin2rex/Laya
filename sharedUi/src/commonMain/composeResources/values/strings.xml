@@ -268,6 +268,9 @@
     <string name="animated_cover_art_subtitle">Plays the looping video some releases ship instead of a still sleeve</string>
     <string name="animated_cover_cellular">Play animated cover over cellular</string>
     <string name="app_icon">App icon</string>
+    <string name="app_icon_default">Default</string>
+    <string name="app_icon_liquid_glass" translatable="false">Liquid Glass</string>
+    <string name="app_icon_liquid_glass_dark" translatable="false">Liquid Glass Dark</string>
     <string name="app_language">App language</string>
     <string name="appearance">Appearance</string>
     <string name="artist_signatures">Artist signatures</string>
@@ -449,6 +452,10 @@
     <string name="close">Close</string>
     <string name="checking">Checking…</string>
     <string name="use_this_profile">Use this profile</string>
+    <string name="accounts">Accounts</string>
+    <string name="add_account">Add account</string>
+    <string name="brand_account">Brand account</string>
+    <string name="account_profiles_help">A Google account can have Personal and Brand profiles. Each has its own library, likes and history.</string>
     <string name="switch_profile_hint">Switch using the avatar, then use this profile.</string>
     <string name="profile_unavailable">No signed-in profile is available on this page yet.</string>
     <string name="eq_preset_acoustic">Acoustic</string>
@@ -495,7 +502,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Sign in to load your playlists. Playback uses YouTube Music.</string>
     <string name="spotify_sign_in">Sign in with Spotify</string>
-    <string name="spotify_use_spdc_token">Use sp_dc token</string>
     <string name="spotify_disconnect">Disconnect</string>
     <string name="spotify_empty_playlists">No playlists on this account</string>
     <string name="spotify_empty_tracks">This playlist has no tracks</string>

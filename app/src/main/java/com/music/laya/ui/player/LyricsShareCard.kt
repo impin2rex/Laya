@@ -1,3 +1,7 @@
+// sharedUi has a LyricsShareCard.kt in this package too; without its own facade name the
+// two compile to one LyricsShareCardKt class, which R8 rejects in a release build.
+@file:JvmName("AndroidLyricsShareCard")
+
 package com.music.laya.ui.player
 
 import android.content.Context
@@ -127,7 +131,7 @@ internal suspend fun renderLyricsShareCard(
 
 // ── Fitting ────────────────────────────────────────────────────────────────
 
-private class Row(
+private class ShareRow(
     val text: String,
     val paint: Paint,
     val height: Float,
@@ -138,7 +142,7 @@ private class Row(
 )
 
 /** The rows at one size, with everything needed to place them. */
-private class Plan(val rows: List<Row>, val ascent: Float) {
+private class SharePlan(val rows: List<ShareRow>, val ascent: Float) {
     /** Distance from the top of the first line to the bottom of the last. */
     val content: Float
         get() = ascent + rows.fold(0f) { total, row -> total + row.gapBefore + row.height }
@@ -157,7 +161,7 @@ private fun fittestPlan(
     type: Fonts,
     lines: List<LyricsShareLine>,
     room: Float,
-): Plan {
+): SharePlan {
     for (size in FIT_LADDER) {
         val plan = planAt(type, lines, size)
         if (plan.content <= room) return plan
@@ -175,12 +179,12 @@ private fun fittestPlan(
  * the divisions: -0.7 over 34 for the words, -0.7 over 20 for the smaller line
  * the panel hangs underneath them.
  */
-private fun planAt(type: Fonts, lines: List<LyricsShareLine>, size: Float): Plan {
+private fun planAt(type: Fonts, lines: List<LyricsShareLine>, size: Float): SharePlan {
     val primary = type.heading(size, Color.WHITE).apply { letterSpacing = TRACKING }
     val subSize = (size * SUB_RATIO).coerceAtLeast(SUB_FLOOR)
     val secondary = type.heading(subSize, SUB_COLOR).apply { letterSpacing = SUB_TRACKING }
 
-    val rows = mutableListOf<Row>()
+    val rows = mutableListOf<ShareRow>()
     lines.forEachIndexed { index, line ->
         if (line.isGap) {
             // The skipped lines, as "(...)" — the conventional editorial mark
@@ -190,7 +194,7 @@ private fun planAt(type: Fonts, lines: List<LyricsShareLine>, size: Float): Plan
             // provides the separation below it.
             val marker = type.body(size * 0.65f, 0x66FFFFFF)
             val markerHeight = marker.descent() - marker.ascent()
-            rows += Row("(...)", marker, markerHeight, 0f, isGap = true)
+            rows += ShareRow("(...)", marker, markerHeight, 0f, isGap = true)
             return@forEachIndexed
         }
         var firstOfLine = true
@@ -203,7 +207,7 @@ private fun planAt(type: Fonts, lines: List<LyricsShareLine>, size: Float): Plan
                 firstOfLine && index > 0 -> size * 0.55f
                 else -> 0f
             }
-            rows += Row(text, paint, height, gap)
+            rows += ShareRow(text, paint, height, gap)
             firstOfLine = false
         }
         wrap(line.text, primary, CARD_CONTENT_W).forEach { add(it, primary, size * LEAD) }
@@ -212,7 +216,7 @@ private fun planAt(type: Fonts, lines: List<LyricsShareLine>, size: Float): Plan
             wrap(sub, secondary, CARD_CONTENT_W).forEach { add(it, secondary, subSize * SUB_LEAD) }
         }
     }
-    return Plan(rows, -primary.ascent())
+    return SharePlan(rows, -primary.ascent())
 }
 
 // ── Text ───────────────────────────────────────────────────────────────────

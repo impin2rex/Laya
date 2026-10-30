@@ -425,13 +425,7 @@
     <string name="sources_order_header">מקורות, נוסו בסדר זה</string>
     <string name="sources_quality_capped">חיבור זה מוגדר מתחת לאיכות גבוהה, ולכן השידורים מומרים כדי להתאים למגבלה. הורדות אינן מושפעות.</string>
     <string name="sources_subtitle">מאיפה מגיע האודיו והסדר שבו נעשה שימוש</string>
-    <string name="spdc_token">אסימון sp_dc</string>
     <string name="spotify_canvas_setup">הגדרת Spotify Canvas</string>
-    <string name="spotify_canvas_setup_description">כדי להשתמש ב-Spotify Canvas, ספק את קובץ ה-cookie של sp_dc שלך מספוטיפיי.</string>
-    <string name="spotify_canvas_setup_steps">1. היכנס בכתובת open.spotify.com בדפדפן.
-2. פתח כלים למפתחים &gt; Application &gt; Cookies.
-3. העתק את הערך של העוגייה sp_dc.
-4. הדבק למטה.</string>
     <string name="status">סטטוס</string>
     <string name="status_dialog_message">מה החשבון שלך מראה בזמן שהנוכחות פעילה.</string>
     <string name="status_dnd">נא לא להפריע</string>

@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">เล่นวิดีโอวนซ้ำที่บางผลงานมีให้แทนปกนิ่ง</string>
     <string name="animated_cover_cellular">เล่นปกเคลื่อนไหวผ่านเน็ตมือถือ</string>
     <string name="app_icon">ไอคอนแอป</string>
+    <string name="app_icon_default">ค่าเริ่มต้น</string>
     <string name="app_language">ภาษาแอป</string>
     <string name="appearance">ลักษณะที่ปรากฏ</string>
     <string name="artist_signatures">ลายเซ็นศิลปิน</string>
@@ -485,7 +486,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">ลงชื่อเข้าใช้เพื่อโหลดเพลย์ลิสต์ของคุณ การเล่นใช้ YouTube Music</string>
     <string name="spotify_sign_in">ลงชื่อเข้าใช้ด้วย Spotify</string>
-    <string name="spotify_use_spdc_token">ใช้โทเค็น sp_dc</string>
     <string name="spotify_disconnect">ยกเลิกการเชื่อมต่อ</string>
     <string name="spotify_empty_playlists">ไม่มีเพลย์ลิสต์ในบัญชีนี้</string>
     <string name="spotify_empty_tracks">เพลย์ลิสต์นี้ไม่มีเพลง</string>

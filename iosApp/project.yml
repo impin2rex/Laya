@@ -8,8 +8,8 @@ options:
 settings:
   base:
     # A tag build overrides this with the tag's version (.github/workflows/ios.yml).
-    MARKETING_VERSION: "1.9.0"
-    CURRENT_PROJECT_VERSION: "31"
+    MARKETING_VERSION: "1.9.1"
+    CURRENT_PROJECT_VERSION: "32"
 packages:
   onnxruntime:
     url: https://github.com/microsoft/onnxruntime-swift-package-manager
@@ -50,6 +50,8 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         PRODUCT_NAME: Laya
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Alternate icons for the App icon picker (IosAppIcon): Icon Composer documents, so iOS 26 renders them as Liquid Glass.
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-LiquidGlass AppIcon-LiquidGlassDark"
         PRODUCT_BUNDLE_IDENTIFIER: com.music.laya
         TARGETED_DEVICE_FAMILY: "1"
         ENABLE_USER_SCRIPT_SANDBOXING: NO

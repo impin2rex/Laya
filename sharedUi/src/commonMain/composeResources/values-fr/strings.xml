@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Lit la vidéo en boucle que proposent certaines sorties au lieu d\'une pochette fixe</string>
     <string name="animated_cover_cellular">Lire la pochette animée avec les données mobiles</string>
     <string name="app_icon">Icône de l\'app</string>
+    <string name="app_icon_default">Par défaut</string>
     <string name="app_language">Langue de l\'application</string>
     <string name="appearance">Apparence</string>
     <string name="artist_signatures">Signatures d\'artistes</string>
@@ -486,7 +487,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Connectez-vous pour charger vos playlists. La lecture utilise YouTube Music.</string>
     <string name="spotify_sign_in">Se connecter avec Spotify</string>
-    <string name="spotify_use_spdc_token">Utiliser un jeton sp_dc</string>
     <string name="spotify_disconnect">Déconnecter</string>
     <string name="spotify_empty_playlists">Aucune playlist sur ce compte</string>
     <string name="spotify_empty_tracks">Cette playlist ne contient aucun titre</string>

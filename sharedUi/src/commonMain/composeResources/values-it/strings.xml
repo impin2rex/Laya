@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Riproduce il video in loop fornito da alcune release invece di una copertina statica</string>
     <string name="animated_cover_cellular">Riproduci copertina animata con dati mobili</string>
     <string name="app_icon">Icona dell’app</string>
+    <string name="app_icon_default">Predefinita</string>
     <string name="app_language">Lingua dell\'app</string>
     <string name="appearance">Aspetto</string>
     <string name="artist_signatures">Firme degli artisti</string>
@@ -486,7 +487,6 @@
     <string name="spotify">Spotify</string>
     <string name="spotify_connect_subtitle">Accedi per caricare le tue playlist. La riproduzione usa YouTube Music.</string>
     <string name="spotify_sign_in">Accedi con Spotify</string>
-    <string name="spotify_use_spdc_token">Usa token sp_dc</string>
     <string name="spotify_disconnect">Disconnetti</string>
     <string name="spotify_empty_playlists">Nessuna playlist su questo account</string>
     <string name="spotify_empty_tracks">Questa playlist non ha brani</string>

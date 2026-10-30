@@ -461,10 +461,7 @@
     <string name="sources_order_header">स्रोत, इसी क्रम में आज़माए जाते हैं</string>
     <string name="sources_quality_capped">यह कनेक्शन हाई क्वालिटी से नीचे सेट है, इसलिए स्ट्रीम को उस सीमा में फिट करने के लिए ट्रांसकोड किया जाता है। डाउनलोड पर कोई असर नहीं पड़ता।</string>
     <string name="sources_subtitle">ऑडियो कहां से आता है और किस क्रम में इस्तेमाल होता है</string>
-    <string name="spdc_token">sp_dc टोकन</string>
     <string name="spotify_canvas_setup">Spotify Canvas सेटअप</string>
-    <string name="spotify_canvas_setup_description">Spotify Canvas इस्तेमाल करने के लिए, अपनी Spotify sp_dc कुकी दें।</string>
-    <string name="spotify_canvas_setup_steps">1. ब्राउज़र में open.spotify.com पर साइन इन करें।\n2. Developer Tools खोलें, फिर Application और Cookies पर जाएं।\n3. sp_dc कुकी की वैल्यू कॉपी करें।\n4. इसे नीचे पेस्ट करें।</string>
     <string name="status">स्टेटस</string>
     <string name="status_dialog_message">प्रेज़ेंस चालू रहते हुए आपका खाता क्या दिखाता है।</string>
     <string name="status_dnd">डिस्टर्ब न करें</string>

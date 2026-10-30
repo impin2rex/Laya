@@ -504,7 +504,7 @@ internal object DesktopListenTogether {
 
     /** A burst on connect converges the offset faster than a long series would. */
     private suspend fun DefaultClientWebSocketSession.pingLoop() {
-        repeat(4) {
+        repeat(8) {
             ping()
             delay(300)
         }
@@ -865,7 +865,9 @@ internal object DesktopListenTogether {
     private const val KEY_KICKED = "listen_together_kicked_until"
     private const val SERVER_PLACEHOLDER = "<party server>"
     private const val UNREACHABLE = "Couldn't reach the party server."
-    private const val PING_INTERVAL_MS = 15_000L
+    // Each pong is a clock sample, and the offset is the best round trip of the last minute: one every
+    // 5s gives it a dozen to choose from, so a radio wake-up or a congested minute is outvoted.
+    private const val PING_INTERVAL_MS = 5_000L
     private const val REPORT_INTERVAL_MS = 10_000L
     private const val CUSTOM_SERVER_TIMEOUT_MS = 6_000L
     private const val DEFAULT_SERVER_TIMEOUT_MS = 15_000L

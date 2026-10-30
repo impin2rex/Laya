@@ -56,3 +56,6 @@ AGENTS.md
 # iOS (XcodeGen output)
 iosApp/*.xcodeproj
 iosApp/Vendor/
+
+# graphify (local knowledge graph, rebuild with `graphify update .`)
+graphify-out/

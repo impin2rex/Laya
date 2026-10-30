@@ -151,6 +151,9 @@ internal fun DesktopCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
             this.alpha = alpha * presentationAlpha()
             // Offscreen so the bottom dissolve masks the clip, not what is behind it.
             if (bottomFade > 0.001f) compositingStrategy = CompositingStrategy.Offscreen
+            // A cropped clip is drawn larger than its box; kept inside it, as the phone's
+            // TextureView keeps it, rather than over whatever sits below (an artist banner's page).
+            clip = true
         },
     ) {
         val image = frame ?: return@Canvas

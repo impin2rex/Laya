@@ -17,6 +17,7 @@ import com.music.laya.sharedui.resources.listening_history
 import com.music.laya.sharedui.resources.settings
 import com.music.laya.ui.components.thumbnailBorder
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
@@ -25,6 +26,8 @@ import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.HighQuality
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Downloading
 import androidx.compose.material.icons.rounded.ErrorOutline
@@ -71,6 +74,14 @@ import com.music.laya.sharedui.resources.Res
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.sharedui.resources.connected
 import com.music.laya.sharedui.resources.sign_out
+import com.music.laya.sharedui.resources.account_profiles_help
+import com.music.laya.sharedui.resources.brand_account
+import com.music.laya.sharedui.resources.add_account
+import com.music.laya.sharedui.resources.accounts
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.foundation.layout.fillMaxWidth
 import com.music.laya.sharedui.resources.spotify
 import com.music.laya.sharedui.resources.prioritize_spotify_canvas
 import com.music.laya.sharedui.resources.prioritize_spotify_canvas_subtitle
@@ -98,6 +109,7 @@ import com.music.laya.data.model.HomeShelf
 import com.music.laya.data.model.MoodGenre
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.UiState
+import com.music.laya.ui.utils.guardSheetFromContentTouches
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 
@@ -136,7 +148,7 @@ internal suspend fun friendly(e: Throwable): String = when {
 
 /**
  * Fills a [loadingPage] — the same two calls MainViewModel.openDetail makes.
- * ponytail: first page of tracks only (no continuation fill-in), no device-local or Spotify pages.
+ * ponytail: first page of tracks only (openDetail follows the continuation), no device-local or Spotify pages.
  */
 internal suspend fun loadDetail(base: DetailPage): DetailPage {
     val fallback = base.thumbnailUrl
@@ -151,6 +163,8 @@ internal suspend fun loadDetail(base: DetailPage): DetailPage {
                 description = p.description,
                 subscriberCountText = p.subscriberCountText,
                 monthlyListenerCount = p.monthlyListenerCount,
+                // The header's subscribe star; null signed out, which hides it.
+                subscription = p.subscription,
             )
         }, { base.copy(songs = UiState.Error(friendly(it))) })
     } else {
@@ -165,6 +179,8 @@ internal suspend fun loadDetail(base: DetailPage): DetailPage {
                 subtitle = if (header != null && header.subtitle.isNotBlank() &&
                     (base.type == BrowseType.ALBUM || base.subtitle.isBlank())) header.subtitle else base.subtitle,
                 thumbnailUrl = fallback ?: header?.thumbnailUrl,
+                // The release's save button, as Android: only with tracks, null signed out.
+                library = if (p.songs.isEmpty()) null else p.library,
             )
         }, { base.copy(songs = UiState.Error(friendly(it))) })
     }
@@ -237,6 +253,11 @@ internal fun IosSongMenu(
     sleepStatus: String? = null,
     onSleepTimer: (() -> Unit)? = null,
     onCopyLog: (() -> Unit)? = null,
+    /** Player-only, one at a time like Android: back to YouTube's audio, or the way out of that. Null hides the row. */
+    onRevertToOriginal: (() -> Unit)? = null,
+    onUpgradeQuality: (() -> Unit)? = null,
+    /** Greys the row out while the lookup runs; the player's seekbar label says "Upgrading quality". */
+    upgradeInProgress: Boolean = false,
 ) {
     @Composable
     fun Action(icon: ImageVector, label: String, onClick: () -> Unit) = ListItem(
@@ -245,13 +266,31 @@ internal fun IosSongMenu(
         colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         modifier = Modifier.clickable { onDismiss(); onClick() },
     )
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState())) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        // The sheet grabs a touch landing right after a scroll ends (see guardSheetFromContentTouches): the menu jumped.
+        // Capped like Android's TintedSheet: a full-height sheet fights its own scrolling list and jumps up and down.
+        val maxHeight = with(androidx.compose.ui.platform.LocalDensity.current) {
+            androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height.toDp() * 0.85f
+        }
+        Column(
+            Modifier.guardSheetFromContentTouches(sheetState, partialHeight = true).heightIn(max = maxHeight)
+                .navigationBarsPadding().verticalScroll(rememberScrollState()),
+        ) {
             ListItem(
                 headlineContent = { Text(song.title, maxLines = 1) },
                 supportingContent = { Text(song.artist, maxLines = 1) },
                 colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
             )
+            onRevertToOriginal?.let { Action(Icons.AutoMirrored.Rounded.Undo, "Revert to original", it) }
+            onUpgradeQuality?.let {
+                ListItem(
+                    headlineContent = { Text("Upgrade quality") },
+                    leadingContent = { Icon(Icons.Rounded.HighQuality, null) },
+                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                    modifier = Modifier.clickable(enabled = !upgradeInProgress) { onDismiss(); it() },
+                )
+            }
             liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) "Remove from liked" else "Like", onToggleLike) }
             disliked?.let { Action(if (it) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt, if (it) "Undo dislike" else "Dislike", onToggleDislike) }
             onAddToPlaylist?.let { Action(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist", it) }
@@ -324,9 +363,12 @@ internal fun IosAccountPage(
         onClick = { onChange(!checked) },
     )
     Column(Modifier.verticalScroll(rememberScrollState()).padding(contentPadding)) {
-        SettingsGroup(topSpacing = 0.dp) {
-            AccountCard(signedIn = signedIn, account = account, onSignIn = onSignIn, grouped = true)
-            if (signedIn) DestructiveRow(label = stringResource(Res.string.sign_out), onClick = onSignOut)
+        if (!signedIn) {
+            SettingsGroup(topSpacing = 0.dp) {
+                AccountCard(signedIn = false, account = account, onSignIn = onSignIn, grouped = true)
+            }
+        } else {
+            IosAccountsGroup(onAddAccount = onSignIn, onRemoveActive = onSignOut)
         }
         SettingsGroup(header = stringResource(Res.string.spotify), footer = stringResource(Res.string.spotify_connect_subtitle)) {
             SettingsRow(
@@ -344,6 +386,66 @@ internal fun IosAccountPage(
                 DestructiveRow(label = stringResource(Res.string.spotify_disconnect), onClick = onSpotifyDisconnect)
             }
         }
+    }
+}
+
+/**
+ * Every Google login and its Personal / Brand profiles, Android's AccountProfileSelector as a
+ * settings group: tap one to act as it, add another login, or remove the one in use.
+ */
+@Composable
+private fun IosAccountsGroup(onAddAccount: () -> Unit, onRemoveActive: () -> Unit) {
+    val accounts by IosAuth.accounts.collectAsState()
+    val activeAccountId by IosAuth.activeAccountId.collectAsState()
+    SettingsGroup(
+        header = stringResource(Res.string.accounts),
+        footer = stringResource(Res.string.account_profiles_help),
+        topSpacing = 0.dp,
+    ) {
+        accounts.forEachIndexed { index, login ->
+            if (index > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+            login.profiles.forEachIndexed { profileIndex, profile ->
+                if (profileIndex > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+                IosProfileRow(
+                    profile = profile,
+                    login = login,
+                    active = login.id == activeAccountId && profile.id == login.activeProfile?.id,
+                    onClick = { IosAuth.select(login.id, profile.id) },
+                )
+            }
+        }
+        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+        SettingsRow(icon = Icons.Rounded.Add, title = stringResource(Res.string.add_account), onClick = onAddAccount)
+        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+        DestructiveRow(label = stringResource(Res.string.sign_out), onClick = onRemoveActive)
+    }
+}
+
+@Composable
+private fun IosProfileRow(profile: IosProfile, login: IosAccount, active: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val avatar = Modifier.size(40.dp).clip(CircleShape).thumbnailBorder(CircleShape)
+        if (profile.avatar != null) {
+            AsyncImage(profile.avatar, null, avatar, contentScale = ContentScale.Crop)
+        } else {
+            Box(avatar.background(MaterialTheme.colorScheme.surfaceVariant), Alignment.Center) {
+                Icon(Icons.Rounded.Person, null, Modifier.size(22.dp), MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Text(profile.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                if (profile.brand) stringResource(Res.string.brand_account) else login.email.ifBlank { profile.handle },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (active) Icon(Icons.Rounded.Check, null, tint = MaterialTheme.colorScheme.primary)
     }
 }
 
