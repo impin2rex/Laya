@@ -267,7 +267,13 @@ internal fun IosSongMenu(
         modifier = Modifier.clickable { onDismiss(); onClick() },
     )
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    // No sheet insets (the Column pads the home indicator itself). Material3 1.10 pads by the top safe area less the
+    // sheet's offset, so a tall menu reaching the status bar grew, rose, grew again up to the top, and jumped under a drag.
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        contentWindowInsets = { androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0) },
+    ) {
         // The sheet grabs a touch landing right after a scroll ends (see guardSheetFromContentTouches): the menu jumped.
         // Capped like Android's TintedSheet: a full-height sheet fights its own scrolling list and jumps up and down.
         val maxHeight = with(androidx.compose.ui.platform.LocalDensity.current) {
