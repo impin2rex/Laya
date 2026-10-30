@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
@@ -812,7 +814,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val appBackdrop = rememberLayerBackdrop(onDraw = remember(windowBackground) { { drawRect(windowBackground); drawContent() } })
         CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                BoxWithConstraints(Modifier.fillMaxSize()) {
+                // In landscape the notch and Dynamic Island sit on a side edge; keep pages, tab bar and mini player clear of it.
+                BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
                     val noPadding = PaddingValues(bottom = barHeight)
                     Box(Modifier.fillMaxSize().layerBackdrop(appBackdrop).nestedScroll(navBarScroll)) {
                         // A detail page draws its own header up under the status bar (as Android's edge to edge does), so only the other pages are inset here.

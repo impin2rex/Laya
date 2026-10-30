@@ -47,6 +47,8 @@ final class StatusBarHost: UIViewController {
     override var preferredStatusBarStyle: UIStatusBarStyle { light ? .lightContent : .darkContent }
 
     func embed(_ child: UIViewController) {
+        // Shows through the (non-opaque) Compose canvas while it resizes on rotation; otherwise systemBackground, white in light mode.
+        view.backgroundColor = .black
         addChild(child)
         child.view.frame = view.bounds
         child.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
