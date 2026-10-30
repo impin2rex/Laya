@@ -16,7 +16,8 @@ concurrency:
 
 jobs:
   build-ipa:
-    runs-on: macos-15
+    # Xcode 26+: the alternate app icons are Icon Composer (.icon) documents, which Xcode 16 silently leaves out.
+    runs-on: macos-26
     timeout-minutes: 150
     env:
       # Runner has an Android SDK; point at nothing so settings.gradle.kts only configures KMP modules.
@@ -55,6 +56,7 @@ jobs:
 
     - name: Generate Xcode project
       run: |
+        xcodebuild -version
         brew install xcodegen
         cd iosApp && xcodegen generate
 
@@ -87,6 +89,9 @@ jobs:
         codesign --force --sign - --timestamp=none --generate-entitlement-der \
           --entitlements iosApp/iosApp/iosApp.entitlements "$APP"
         codesign --verify --strict --verbose=2 "$APP"
+        # The Settings icon picker needs these; an older Xcode drops them without an error.
+        /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP/Info.plist" \
+          || { echo "::error::No alternate app icons in the build; the icon picker would do nothing"; exit 1; }
 
     - name: Package .ipa
       run: |
