@@ -261,6 +261,7 @@
     <string name="animated_cover_art_subtitle">Воспроизводит зацикленное видео, которое есть у некоторых релизов вместо неподвижной обложки</string>
     <string name="animated_cover_cellular">Воспроизводить анимированную обложку через мобильные данные</string>
     <string name="app_icon">Значок приложения</string>
+    <string name="app_icon_default">По умолчанию</string>
     <string name="app_language">Язык приложения</string>
     <string name="appearance">Внешний вид</string>
     <string name="artist_signatures">Подписи исполнителей</string>

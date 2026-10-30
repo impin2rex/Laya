@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">Memutar video berulang yang disertakan beberapa rilisan alih-alih sampul diam</string>
     <string name="animated_cover_cellular">Putar sampul animasi lewat data seluler</string>
     <string name="app_icon">Ikon aplikasi</string>
+    <string name="app_icon_default">Default</string>
     <string name="app_language">Bahasa aplikasi</string>
     <string name="appearance">Tampilan</string>
     <string name="artist_signatures">Tanda tangan artis</string>

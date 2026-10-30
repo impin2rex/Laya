@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="501" height="498" viewBox="0 0 501 498">
+<defs>
+  <linearGradient id="grad_1" x1="-88.16" y1="85.41" x2="100.91" y2="-97.77" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="rgb(87,68,227)"/>
+    <stop offset="0.05" stop-color="rgb(91,68,228)"/>
+    <stop offset="0.14" stop-color="rgb(101,70,231)"/>
+    <stop offset="0.18" stop-color="rgb(110,72,233)"/>
+    <stop offset="0.32" stop-color="rgb(150,81,239)"/>
+    <stop offset="0.36" stop-color="rgb(161,86,242)"/>
+    <stop offset="0.5" stop-color="rgb(202,101,233)"/>
+    <stop offset="0.59" stop-color="rgb(227,113,218)"/>
+    <stop offset="0.64" stop-color="rgb(235,120,211)"/>
+    <stop offset="0.68" stop-color="rgb(242,129,201)"/>
+    <stop offset="0.86" stop-color="rgb(250,162,175)"/>
+    <stop offset="0.91" stop-color="rgb(252,171,171)"/>
+    <stop offset="0.95" stop-color="rgb(252,178,170)"/>
+    <stop offset="1" stop-color="rgb(251,180,171)"/>
+  </linearGradient>
+  <linearGradient id="grad_2" x1="-30.66" y1="29.42" x2="82.95" y2="-79.62" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="rgb(151,85,233)"/>
+    <stop offset="0.05" stop-color="rgb(154,85,234)"/>
+    <stop offset="0.09" stop-color="rgb(163,85,236)"/>
+    <stop offset="0.14" stop-color="rgb(173,88,238)"/>
+    <stop offset="0.36" stop-color="rgb(212,108,227)"/>
+    <stop offset="0.45" stop-color="rgb(223,118,217)"/>
+    <stop offset="0.55" stop-color="rgb(228,129,207)"/>
+    <stop offset="0.68" stop-color="rgb(242,144,192)"/>
+    <stop offset="0.82" stop-color="rgb(249,161,179)"/>
+    <stop offset="0.91" stop-color="rgb(251,174,173)"/>
+    <stop offset="0.95" stop-color="rgb(251,178,173)"/>
+    <stop offset="1" stop-color="rgb(250,179,171)"/>
+  </linearGradient>
+</defs>
+<path d="M 155.07 285.59 L 308.62 159.01 A 33 33 0 0 1 350.60 209.93 L 315.88 238.56 A 19.3 19.3 0 0 0 324.31 272.36 A 33.5 33.5 0 0 1 338.95 331.00 L 278.76 380.61 A 33.5 33.5 0 0 1 236.14 328.91 L 284.75 288.84 A 9.5 9.5 0 0 0 272.67 274.18 L 197.05 336.51 A 33 33 0 0 1 155.07 285.59 Z" fill="url(#grad_1)"/>
+<path d="M 155.92 173.43 L 227.68 114.27 A 33 33 0 0 1 269.66 165.20 L 197.90 224.35 A 33 33 0 0 1 155.92 173.43 Z" fill="url(#grad_2)"/>
+</svg>

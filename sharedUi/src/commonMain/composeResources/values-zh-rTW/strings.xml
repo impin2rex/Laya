@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">播放部分發行版自帶的迴圈影片，而不是靜態封面</string>
     <string name="animated_cover_cellular">在移動資料下播放動態封面</string>
     <string name="app_icon">應用程式圖示</string>
+    <string name="app_icon_default">預設</string>
     <string name="app_language">應用語言</string>
     <string name="appearance">外觀</string>
     <string name="artist_signatures">藝人簽名</string>

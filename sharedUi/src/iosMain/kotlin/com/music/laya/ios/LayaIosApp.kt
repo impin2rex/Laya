@@ -588,8 +588,16 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         SearchHistoryEntity(song.videoId, song.title, song.artist, song.thumbnailUrl, EntityType.TRACK),
     )
 
+    // Android's player backfill: a track started from a feed or the queue rarely knows its album and artist pages, so
+    // ask once the player is up. The credits and the menu's Open album / Open artist rows go nowhere without them.
+    var links by remember { mutableStateOf<Song?>(null) }
+    LaunchedEffect(player.song?.videoId, nowPlayingOpen) {
+        links = null
+        val current = player.song ?: return@LaunchedEffect
+        if (nowPlayingOpen && current.needsLinks()) links = YtMusicRepository.trackLinks(current.videoId).getOrNull()
+    }
     // Lyrics for the playing song, once its duration is known.
-    val song = player.song
+    val song = remember(player.song, links) { player.song?.withLinks(links) }
     var lyrics by remember(song?.videoId) { mutableStateOf<List<LyricLine>?>(null) }
     var lyricsSource by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
     var lyricsChecked by remember(song?.videoId) { mutableStateOf(false) }
@@ -819,9 +827,29 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         var activeShelf by remember { mutableStateOf<HomeShelf?>(null) }
                                         // The Downloads page is rebuilt as songs are saved or deleted.
                                         val downloaded by IosDownloads.savedIds.collectAsState()
-                                        val page = if (top.page.browseId == DOWNLOADS_BROWSE_ID) remember(downloaded) { IosDownloads.page() } else top.page
+                                        val loaded = if (top.page.browseId == DOWNLOADS_BROWSE_ID) remember(downloaded) { IosDownloads.page() } else top.page
+                                        // The release's save and the artist's subscribe star, as Android's toggleLibrary /
+                                        // toggleSubscription: flipped at once, put back if YouTube refuses, and the Library
+                                        // reloaded once it takes, since its Albums / Subscriptions shelves are now out of date.
+                                        var saved by remember { mutableStateOf(loaded.library?.saved) }
+                                        var subscribed by remember { mutableStateOf(loaded.subscription?.subscribed) }
+                                        val page = loaded.copy(
+                                            library = loaded.library?.let { it.copy(saved = saved ?: it.saved) },
+                                            subscription = loaded.subscription?.let { it.copy(subscribed = subscribed ?: it.subscribed) },
+                                        )
+                                        fun toggle(target: Boolean, show: (Boolean) -> Unit, write: suspend () -> Result<Unit>) {
+                                            show(target)
+                                            scope.launch { if (write().isSuccess) loadLibrary() else show(!target) }
+                                        }
                                         DetailScreen(
                                             page = page,
+                                            // Both are the account's, so a guest isn't shown the buttons.
+                                            onToggleLibrary = page.library?.takeIf { signedIn }?.let { lib ->
+                                                { toggle(!lib.saved, { saved = it }) { YtMusicRepository.setSaved(lib.playlistId, !lib.saved) } }
+                                            },
+                                            onToggleSubscription = page.subscription?.takeIf { signedIn }?.let { sub ->
+                                                { toggle(!sub.subscribed, { subscribed = it }) { YtMusicRepository.setSubscribed(sub.channelId, !sub.subscribed) } }
+                                            },
                                             currentSong = song,
                                             isPlaying = player.isPlaying,
                                             onSongClick = { songs, i ->
@@ -1205,15 +1233,22 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         )
                     }
 
-                    menuSong?.let { m ->
+                    menuSong?.let { held ->
                         val pinnedOriginals by IosOriginalVersion.pinned.collectAsState()
+                        // As Android's menu: a row from search, recents or a feed is looked up as the menu opens.
+                        var menuLinks by remember(held.videoId) { mutableStateOf<Song?>(null) }
+                        LaunchedEffect(held.videoId) {
+                            if (held.needsLinks()) menuLinks = YtMusicRepository.trackLinks(held.videoId).getOrNull()
+                        }
+                        val m = remember(held, menuLinks) { held.withLinks(menuLinks) }
                         IosSongMenu(
                             song = m,
                             onDismiss = { menuSong = null },
                             onPlayNext = { player.playNext(m) },
                             onAddToQueue = { player.addToQueue(m) },
-                            onOpenAlbum = { openDetail(it, m.albumName.orEmpty(), m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
-                            onOpenArtist = { openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
+                            // Pushed over whatever is under the player, which closes so the page is seen.
+                            onOpenAlbum = { sheetMotion.close(); openDetail(it, m.albumName ?: m.title, m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
+                            onOpenArtist = { sheetMotion.close(); openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
                             liked = if (signedIn) isLiked(m.videoId) else null,
                             onToggleLike = { toggleLike(m.videoId) },
                             disliked = if (signedIn) isDisliked(m.videoId) else null,
@@ -1344,9 +1379,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                             sheetMotion.close()
                                             openDetail(id, song.albumName.orEmpty(), song.artist, song.thumbnailUrl, BrowseType.ALBUM)
                                         },
+                                        // As Android: YouTube doesn't link every credited artist (on a two-artist track only the
+                                        // first), so the rest go by name, opening only an exact match rather than a stranger.
                                         onOpenArtist = { id, name ->
                                             sheetMotion.close()
-                                            (id ?: song.artistId)?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
+                                            val known = id ?: song.artistId?.takeIf { name == song.artist }
+                                            if (known != null) openDetail(known, name, "Artist", null, BrowseType.ARTIST)
+                                            else scope.launch {
+                                                YtMusicRepository.findArtistPageId(name).getOrNull()
+                                                    ?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
+                                                    ?: IosPlayerHost.showMessage("Couldn't find $name")
+                                            }
                                         },
                                         onOpenPlaybackSource = {},
                                         onListenTogether = {
@@ -1413,3 +1456,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
 }
+
+/** Missing an album or artist page that [YtMusicRepository.trackLinks] can supply; a saved file has none to find. */
+private fun Song.needsLinks() = localUri == null && videoId.isNotBlank() && (albumId == null || artistId == null)
+
+/** Fills in the pages [extra] (this track's trackLinks answer) knows and this row doesn't. */
+private fun Song.withLinks(extra: Song?): Song =
+    if (extra == null || extra.videoId != videoId) this
+    else copy(artistId = artistId ?: extra.artistId, albumId = albumId ?: extra.albumId, albumName = albumName ?: extra.albumName)

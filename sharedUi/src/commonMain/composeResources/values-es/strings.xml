@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Reproduce el video en bucle que incluyen algunos lanzamientos</string>
     <string name="animated_cover_cellular">Reproducir portada animada con datos móviles</string>
     <string name="app_icon">Icono de la app</string>
+    <string name="app_icon_default">Predeterminado</string>
     <string name="app_language">Idioma de la aplicación</string>
     <string name="appearance">Apariencia</string>
     <string name="artist_signatures">Firmas de artistas</string>

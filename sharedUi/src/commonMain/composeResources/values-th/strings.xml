@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">เล่นวิดีโอวนซ้ำที่บางผลงานมีให้แทนปกนิ่ง</string>
     <string name="animated_cover_cellular">เล่นปกเคลื่อนไหวผ่านเน็ตมือถือ</string>
     <string name="app_icon">ไอคอนแอป</string>
+    <string name="app_icon_default">ค่าเริ่มต้น</string>
     <string name="app_language">ภาษาแอป</string>
     <string name="appearance">ลักษณะที่ปรากฏ</string>
     <string name="artist_signatures">ลายเซ็นศิลปิน</string>

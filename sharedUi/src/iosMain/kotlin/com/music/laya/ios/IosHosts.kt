@@ -37,6 +37,8 @@ internal object IosSettingsHost : SettingsHost {
     override val hasDownloads = true
     override val hasExportDownloads = false // no shared Music folder on iOS; downloads stay in the app
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
+    override val appIconRow: (@Composable () -> Unit)?
+        get() = if (IosAppIcon.supported) ({ IosAppIconPicker() }) else null
     @Composable
     override fun versionName() =
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"

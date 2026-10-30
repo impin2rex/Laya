@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Lit la vidéo en boucle que proposent certaines sorties au lieu d\'une pochette fixe</string>
     <string name="animated_cover_cellular">Lire la pochette animée avec les données mobiles</string>
     <string name="app_icon">Icône de l\'app</string>
+    <string name="app_icon_default">Par défaut</string>
     <string name="app_language">Langue de l\'application</string>
     <string name="appearance">Apparence</string>
     <string name="artist_signatures">Signatures d\'artistes</string>

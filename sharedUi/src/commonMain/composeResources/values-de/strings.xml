@@ -259,6 +259,7 @@
     <string name="animated_cover_art_subtitle">Spielt das Endlosvideo ab, das manche Veröffentlichungen anstelle eines Standbilds mitbringen</string>
     <string name="animated_cover_cellular">Animiertes Cover bei mobilen Daten abspielen</string>
     <string name="app_icon">App-Symbol</string>
+    <string name="app_icon_default">Standard</string>
     <string name="app_language">App-Sprache</string>
     <string name="appearance">Erscheinungsbild</string>
     <string name="artist_signatures">Künstlersignaturen</string>

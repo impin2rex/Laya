@@ -258,6 +258,7 @@
     <string name="animated_cover_art_subtitle">Phát video vòng lặp mà một số bản phát hành cung cấp thay vì ảnh tĩnh</string>
     <string name="animated_cover_cellular">Phát ảnh bìa động qua dữ liệu di động</string>
     <string name="app_icon">Biểu tượng ứng dụng</string>
+    <string name="app_icon_default">Mặc định</string>
     <string name="app_language">Ngôn ngữ ứng dụng</string>
     <string name="appearance">Giao diện</string>
     <string name="artist_signatures">Chữ ký nghệ sĩ</string>
