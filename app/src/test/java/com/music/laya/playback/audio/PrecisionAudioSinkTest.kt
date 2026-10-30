@@ -159,6 +159,34 @@ class PrecisionAudioSinkTest {
         .setSampleRate(48000)
         .build()
 
+    // ---- Dolby bitstreams ---------------------------------------------------
+
+    private val atmos: Format = Format.Builder()
+        .setSampleMimeType(MimeTypes.AUDIO_E_AC3_JOC)
+        .setChannelCount(6)
+        .setSampleRate(48000)
+        .build()
+
+    /** A route that takes Atmos directly keeps it, until an effect needs the samples. */
+    @Test
+    fun `a bitstream is declined only while an effect needs pcm`() {
+        var needPcm = false
+        val sink = PrecisionAudioSink(
+            delegate = FakeAudioSink(),
+            dspChain = idleDspChain(),
+            enableFloatOutput = true,
+            requiresPcm = { needPcm },
+        )
+        assertEquals(AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY, sink.getFormatSupport(atmos))
+        needPcm = true
+        assertEquals(AudioSink.SINK_FORMAT_UNSUPPORTED, sink.getFormatSupport(atmos))
+        assertEquals(
+            "decoded PCM is still taken",
+            AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY,
+            sink.getFormatSupport(rawFormat(C.ENCODING_PCM_16BIT, channelCount = 6)),
+        )
+    }
+
     // ---- Bit-exactness -----------------------------------------------------
     //
     // These assert on the *samples handed to the delegate*, not on flags. The
@@ -375,6 +403,10 @@ class PrecisionAudioSinkTest {
         assertTrue(sink.isPrecisionActive)
         assertTrue(AudioOutputStatus.current.value.dspAvailable)
         assertEquals(6, fakeDelegate.configuredConfig!!.format.channelCount)
+
+        // Atmos through Dolby's decoder on API 32+: 7.1.4.
+        sink.configure(AudioSink.AudioSinkConfig.Builder(rawFormat(C.ENCODING_PCM_16BIT, channelCount = 12)).build())
+        assertTrue(sink.isPrecisionActive)
     }
 
     /** A bitstream the sink cannot decode is reported as having no DSP at all. */
@@ -557,9 +589,9 @@ class PrecisionAudioSinkTest {
     }
 
     /**
-     * Past 7.1 the precision path steps aside rather than sizing a buffer off
-     * a channel count nothing here produces. 5.1 and 7.1 themselves are
-     * handled — see `precision stays active for a 5 point 1 stream`.
+     * Past Android's 24-channel ceiling the precision path steps aside rather
+     * than sizing a buffer off a channel count nothing produces. 5.1 and 7.1.4
+     * are handled — see `precision stays active for a 5 point 1 stream`.
      */
     @Test
     fun `configure falls back beyond the channel ceiling`() {

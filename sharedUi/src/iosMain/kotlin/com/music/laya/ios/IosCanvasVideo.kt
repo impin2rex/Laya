@@ -39,7 +39,9 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import platform.AVFoundation.AVPlayerItem
+import platform.AVFoundation.AVPlayerAudiovisualBackgroundPlaybackPolicyPauses
 import platform.AVFoundation.AVPlayerLooper
+import platform.AVFoundation.audiovisualBackgroundPlaybackPolicy
 import platform.AVFoundation.AVQueuePlayer
 import platform.AVFoundation.currentItem
 import platform.AVFoundation.muted
@@ -80,7 +82,13 @@ import platform.posix.memcpy
 private class CanvasPlayer(url: String) {
     // Dropped on release: each AVPlayer holds a connection to mediaplaybackd until the ObjC object goes, and a K/N
     // wrapper is only freed by a later GC. One clip per song piling up crashed the media server ("too many clients").
-    private var player: AVQueuePlayer? = AVQueuePlayer().apply { muted = true; preventsDisplaySleepDuringVideoPlayback = false }
+    // Paused in the background: a clip still looping there, muted or not, is playback iOS credits to the app, so the
+    // lock screen kept showing Pause over music that had stopped.
+    private var player: AVQueuePlayer? = AVQueuePlayer().apply {
+        muted = true
+        preventsDisplaySleepDuringVideoPlayback = false
+        audiovisualBackgroundPlaybackPolicy = AVPlayerAudiovisualBackgroundPlaybackPolicyPauses
+    }
     private var looper: AVPlayerLooper? = AVPlayerLooper.playerLooperWithPlayer(player!!, AVPlayerItem.playerItemWithURL(NSURL.URLWithString(url)!!).apply { preferredMaximumResolution = CGSizeMake(1280.0, 1280.0) })
     private var item: AVPlayerItem? = null
     private var output: AVPlayerItemVideoOutput? = null

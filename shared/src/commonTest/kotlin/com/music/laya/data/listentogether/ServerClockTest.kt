@@ -58,6 +58,18 @@ class ServerClockTest {
     }
 
     @Test
+    fun `a clock that jumped is followed at once, not after the old samples age out`() {
+        val clock = clock()
+        clock.record(sentAtLocalMs = 0, serverMs = 5_010, receivedAtLocalMs = 20)
+        // The phone slept ten minutes under a clock that stopped for it: the server is 600s further on.
+        clock.record(sentAtLocalMs = 100, serverMs = 605_200, receivedAtLocalMs = 300)
+        assertEquals(605_000, clock.offsetMs)
+        // An ordinary slow sample after it is no jump, and does not displace the better one.
+        clock.record(sentAtLocalMs = 400, serverMs = 605_650, receivedAtLocalMs = 900)
+        assertEquals(605_000, clock.offsetMs)
+    }
+
+    @Test
     fun `the server reading is this device's clock plus the offset`() {
         val clock = clock()
         clock.record(sentAtLocalMs = 100, serverMs = 5_150, receivedAtLocalMs = 200)

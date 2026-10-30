@@ -5,6 +5,8 @@ import com.music.laya.data.listentogether.partyQueueIndexOf
 import com.music.laya.data.listentogether.partyUpcomingAfter
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.QueueTier
+import com.music.laya.playback.PartyDriftCorrector
+import com.music.laya.playback.PartySyncLogic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,9 +32,9 @@ import kotlin.math.abs
  *    future so every device has one instant to aim at. Playing the moment the frame lands would
  *    start this device early by exactly that lead — and being *consistently* early is worse than
  *    occasionally late, because it sits under the drift limit and is never corrected.
- *  - **Drift is corrected by seeking, and only when it is real.** A seek is audible, so
- *    [DRIFT_LIMIT_MS] sits well above the jitter of two decoders running independently, and a
- *    correction needs [DRIFT_STRIKES] readings in a row before it fires.
+ *  - **Drift is corrected by seeking, and a seek lands where it is aimed.** [PartyDriftCorrector],
+ *    shared with the phone, checks each seek once it settles and learns this device's seek lag,
+ *    so a control is met to within tens of milliseconds and stays there.
  *  - **Position is only trusted once the clock is.** Before the first ping/pong there is no
  *    measured offset, so the track and play/pause are applied and the playhead is left alone
  *    rather than seeked to a guess.
@@ -65,9 +67,7 @@ internal class DesktopPartySync(
     private var publishJob: Job? = null
 
     private var loadingVideoId: String? = null
-    private var alignedSeq = -1L
-    private var driftStrikes = 0
-    private var driftCooldownUntilMs = 0L
+    private val drift = PartyDriftCorrector()
     /**
      * The seqs the party reaches once every control this device last sent has come back round.
      * Until then a reconcile would undo the very thing the listener just did; past them the quiet
@@ -133,8 +133,7 @@ internal class DesktopPartySync(
         publishJob?.cancel()
         publishJob = null
         loadingVideoId = null
-        alignedSeq = -1L
-        driftStrikes = 0
+        drift.reset()
         awaitPlaybackSeq = Long.MAX_VALUE
         awaitQueueSeq = Long.MAX_VALUE
         locallyPaused = false
@@ -267,29 +266,19 @@ internal class DesktopPartySync(
                 }
                 return
             }
-            if (want != null) engine.seekTo(want)
+            if (want != null) engine.seekTo(drift.startAt(want, target, nowMs()))
             startJob?.cancel()
             engine.play()
             return
         }
 
         if (want == null) return
-        val drift = playback.positionMs - want
-        val now = nowMs()
-        val decision = decideSeek(
-            drift = drift,
-            controlSeq = target.seq,
-            alignedSeq = alignedSeq,
-            strikes = driftStrikes,
-            nowMs = now,
-            cooldownUntilMs = driftCooldownUntilMs,
+        val position = PartySyncLogic.livePositionMs(
+            playback.positionMs, playback.positionSampledAtNanos, System.nanoTime(), playback.isPlaying,
         )
-        alignedSeq = decision.alignedSeq
-        driftStrikes = decision.strikes
-        if (decision.cooldownUntilMs > 0) driftCooldownUntilMs = decision.cooldownUntilMs
-        if (decision.seek) {
-            DesktopTrackLog.log("party: ${decision.reason} ${drift}ms")
-            engine.seekTo(want)
+        drift.correct(position, want, target, nowMs())?.let { to ->
+            DesktopTrackLog.log("party: ${position - want}ms off, seeking with ${drift.seekLagMs}ms lead")
+            engine.seekTo(to)
         }
     }
 
@@ -375,67 +364,8 @@ internal class DesktopPartySync(
 
     private fun nowMs(): Long = System.nanoTime() / 1_000_000L
 
-    /** What [reconcile] decided about the playhead, and the counters it leaves behind. */
-    internal data class SeekDecision(
-        val seek: Boolean,
-        val alignedSeq: Long,
-        val strikes: Int,
-        val cooldownUntilMs: Long = 0,
-        val reason: String = "",
-    )
-
     internal companion object {
-
-        /**
-         * Whether the playhead should be moved, given how far out it is.
-         *
-         * Pure so the rules can be stated rather than inferred: a new control aligns at once and
-         * tightly, ordinary drift has to be both large and persistent, and a correction that has
-         * just fired will not fire again until the cooldown is out.
-         */
-        fun decideSeek(
-            drift: Long,
-            controlSeq: Long,
-            alignedSeq: Long,
-            strikes: Int,
-            nowMs: Long,
-            cooldownUntilMs: Long,
-        ): SeekDecision {
-            // A deliberate jump by whoever holds the party: align to it now.
-            if (controlSeq != alignedSeq) {
-                return SeekDecision(
-                    seek = abs(drift) > ALIGN_TOLERANCE_MS,
-                    alignedSeq = controlSeq,
-                    strikes = 0,
-                    reason = "aligning onto control $controlSeq",
-                )
-            }
-            if (abs(drift) <= DRIFT_LIMIT_MS) {
-                return SeekDecision(seek = false, alignedSeq = alignedSeq, strikes = 0)
-            }
-            if (nowMs < cooldownUntilMs) {
-                return SeekDecision(seek = false, alignedSeq = alignedSeq, strikes = strikes)
-            }
-            val next = strikes + 1
-            if (next < DRIFT_STRIKES) {
-                return SeekDecision(seek = false, alignedSeq = alignedSeq, strikes = next)
-            }
-            return SeekDecision(
-                seek = true,
-                alignedSeq = alignedSeq,
-                strikes = 0,
-                cooldownUntilMs = nowMs + DRIFT_COOLDOWN_MS,
-                reason = "correcting",
-            )
-        }
-        /** Well above two decoders' jitter, and at the level of an actual desync. */
-        const val DRIFT_LIMIT_MS = 1_200L
-
-        /** Readings in a row before a correction fires, so one stall does not cause a seek. */
-        const val DRIFT_STRIKES = 2
-        const val DRIFT_COOLDOWN_MS = 6_000L
         const val PAUSED_TOLERANCE_MS = 400L
-        const val ALIGN_TOLERANCE_MS = 120L
         const val SEEK_REPORT_FLOOR_MS = 1_000L
         /**
          * The longest a local action is protected from being reconciled away. Normally it ends

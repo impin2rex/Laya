@@ -3,6 +3,8 @@ package com.music.laya.ios
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.listentogether.partyQueueIndexOf
 import com.music.laya.data.listentogether.partyUpcomingAfter
+import com.music.laya.platform.nanoTime
+import com.music.laya.playback.PartyDriftCorrector
 import com.music.laya.playback.PartySyncLogic
 import com.music.laya.playback.toPartyTrack
 import kotlinx.coroutines.CoroutineScope
@@ -28,12 +30,18 @@ internal class IosPartySync(private val scope: CoroutineScope, private val playe
     private var publishJob: Job? = null
 
     private var loadingVideoId: String? = null
-    private var alignedSeq = -1L
-    private var driftStrikes = 0
-    private var driftCooldownUntilMs = 0L
+    private val drift = PartyDriftCorrector()
     private var awaitPlaybackSeq = Long.MAX_VALUE
     private var awaitQueueSeq = Long.MAX_VALUE
     private var locallyPaused = false
+
+    /**
+     * iOS paused the audio for something that was not the listener: a call, Siri, the headphones
+     * coming out. Android's `focusLost`: one person's call does not pause the party, and this device
+     * stops following it — or the next tick would put the music back over the call, or out of the
+     * speaker — until its own listener presses play, which rejoins without telling anyone.
+     */
+    private var detached = false
     private var lastPartyCode: String? = null
     private var pendingIntentVideoId: String? = null
     private var quietUntilMs = 0L
@@ -50,8 +58,9 @@ internal class IosPartySync(private val scope: CoroutineScope, private val playe
                     if (key.third != lastPartyCode) {
                         lastPartyCode = key.third
                         loadingVideoId = null
-                        alignedSeq = -1L
+                        drift.reset()
                         locallyPaused = false
+                        detached = false
                     }
                     if (pendingIntentVideoId == null && key.first >= awaitPlaybackSeq && key.second >= awaitQueueSeq) {
                         quietUntilMs = 0L
@@ -72,6 +81,14 @@ internal class IosPartySync(private val scope: CoroutineScope, private val playe
     fun onLocalIntent() {
         val party = ListenTogether.state.value
         if (!party.inParty || party.controlsLocked) return
+        // Coming back after a system pause: the gap is this device's to close, and published as a
+        // seek it would haul everyone back to where the call came in. So nothing is sent.
+        if (detached) {
+            detached = false
+            quietUntilMs = 0L
+            reconcile()
+            return
+        }
         val waitFor = player.song?.videoId.takeIf { player.isLoading }
         pendingIntentVideoId = waitFor
         awaitPlaybackSeq = Long.MAX_VALUE
@@ -98,10 +115,18 @@ internal class IosPartySync(private val scope: CoroutineScope, private val playe
         }
     }
 
+    /** The system paused this device (a call, a route lost). See [detached]. */
+    fun onSystemPause() {
+        if (!ListenTogether.state.value.inParty) return
+        detached = true
+        startJob?.cancel()
+    }
+
     /** In a host-locked party, play/pause moves only this device. */
-    fun handleLockedPlayPause(): Boolean {
+    fun handleLockedPlayPause(play: Boolean): Boolean {
         if (!ListenTogether.state.value.controlsLocked) return false
-        if (player.isPlaying) {
+        detached = false
+        if (!play) {
             locallyPaused = true
             player.partyPause()
         } else {
@@ -117,8 +142,10 @@ internal class IosPartySync(private val scope: CoroutineScope, private val playe
         if (!party.inParty) {
             loadingVideoId = null
             locallyPaused = false
+            detached = false
             return
         }
+        if (detached) return
         if (!party.controlsLocked) locallyPaused = false
         if (nowMs() < quietUntilMs) return
         val target = party.playback
@@ -145,10 +172,13 @@ internal class IosPartySync(private val scope: CoroutineScope, private val playe
         if (player.isLoading) return
         reconcileQueue(party)
 
+        val position = PartySyncLogic.livePositionMs(
+            player.position.positionMs, player.position.sampledAtNanos, nanoTime(), player.isPlaying,
+        )
         if (!target.isPlaying) {
             locallyPaused = false
             if (player.isPlaying) player.partyPause()
-            if (abs(player.position.positionMs - target.positionMs) > PartySyncLogic.PAUSED_TOLERANCE_MS) {
+            if (abs(position - target.positionMs) > PartySyncLogic.PAUSED_TOLERANCE_MS) {
                 player.partySeek(target.positionMs)
             }
             return
@@ -166,28 +196,16 @@ internal class IosPartySync(private val scope: CoroutineScope, private val playe
                 }
                 return
             }
-            if (want != null) player.partySeek(want)
+            if (want != null) player.partySeek(drift.startAt(want, target, nowMs()))
             startJob?.cancel()
             player.partyResume()
             return
         }
 
         if (want == null) return
-        val drift = player.position.positionMs - want
-        val decision = PartySyncLogic.decideSeek(
-            drift = drift,
-            controlSeq = target.seq,
-            alignedSeq = alignedSeq,
-            strikes = driftStrikes,
-            nowMs = nowMs(),
-            cooldownUntilMs = driftCooldownUntilMs,
-        )
-        alignedSeq = decision.alignedSeq
-        driftStrikes = decision.strikes
-        if (decision.cooldownUntilMs > 0) driftCooldownUntilMs = decision.cooldownUntilMs
-        if (decision.seek) {
-            println("IosPartySync: ${decision.reason} ${drift}ms")
-            player.partySeek(want)
+        drift.correct(position, want, target, nowMs())?.let { to ->
+            println("IosPartySync: ${position - want}ms off the party, seeking with ${drift.seekLagMs}ms lead")
+            player.partySeek(to)
         }
     }
 

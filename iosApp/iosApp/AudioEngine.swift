@@ -187,13 +187,16 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         loaders.removeValue(forKey: ObjectIdentifier(item))?.cancelAll()
     }
 
-    func pause() {
+    func pause() { onMain { self.pauseOnMain() } }
+
+    private func pauseOnMain() {
         cancelSwap()
         pausedByInterruption = false
         resumeAfterSeek = false
         player.pause()
         if fade != nil { idle.pause() }
         reportProgress()
+        updateNowPlayingTiming()
     }
 
     func resume() {
@@ -1094,8 +1097,13 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             nowPlaying[MPMediaItemPropertyPlaybackDuration] = duration
         }
         nowPlaying[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position.isFinite ? position : 0
+        let playing = player.timeControlStatus != .paused
         nowPlaying[MPNowPlayingInfoPropertyPlaybackRate] = player.timeControlStatus == .playing ? Double(speed) : 0.0
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlaying
+        let center = MPNowPlayingInfoCenter.default()
+        center.nowPlayingInfo = nowPlaying
+        // The lock screen's button reads this, not the rate: a pause the app made itself (another device in a
+        // Listen Together party) stopped the audio and left the button on Pause.
+        center.playbackState = playing ? .playing : .paused
     }
 
     // MARK: - Audio session & system events
@@ -1137,11 +1145,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             // iOS has already paused the player; remember it wasn't the user.
             pausedByInterruption = wasPlaying
             reportProgress()
+            if pausedByInterruption { listener?.onSystemPause() }
         case .ended:
             let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsRaw)
             if pausedByInterruption && options.contains(.shouldResume) {
-                resume()
+                requestPlaying(true)
             }
             pausedByInterruption = false
         @unknown default:
@@ -1155,6 +1164,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         // Headphones unplugged / Bluetooth disconnected: pause rather than blast the speaker.
         if reason == .oldDeviceUnavailable {
             pause()
+            listener?.onSystemPause()
         }
     }
 
@@ -1163,18 +1173,20 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func configureRemoteCommands() {
         let center = MPRemoteCommandCenter.shared()
 
+        // Through Kotlin, like the app's own button: a Listen Together party has to hear these, or its next
+        // reconcile puts the music straight back on.
         center.playCommand.addTarget { [weak self] _ in
             guard let self, self.player.currentItem != nil else { return .noActionableNowPlayingItem }
-            self.resume()
+            self.requestPlaying(true)
             return .success
         }
         center.pauseCommand.addTarget { [weak self] _ in
-            self?.pause()
+            self?.requestPlaying(false)
             return .success
         }
         center.togglePlayPauseCommand.addTarget { [weak self] _ in
             guard let self, self.player.currentItem != nil else { return .noActionableNowPlayingItem }
-            if self.player.timeControlStatus == .paused { self.resume() } else { self.pause() }
+            self.requestPlaying(self.player.timeControlStatus == .paused)
             return .success
         }
         center.nextTrackCommand.addTarget { [weak self] _ in
@@ -1187,11 +1199,16 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         }
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let self, let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-            self.seekTo(positionMs: Int64(event.positionTime * 1000))
+            let ms = Int64(event.positionTime * 1000)
+            if let listener = self.listener { listener.onRemoteSeek(positionMs: ms) } else { self.seekTo(positionMs: ms) }
             return .success
         }
         center.skipForwardCommand.isEnabled = false
         center.skipBackwardCommand.isEnabled = false
         UIApplication.shared.beginReceivingRemoteControlEvents()
+    }
+
+    private func requestPlaying(_ play: Bool) {
+        if let listener { listener.onRemotePlayPause(play: play) } else if play { resume() } else { pause() }
     }
 }
