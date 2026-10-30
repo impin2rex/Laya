@@ -24,7 +24,7 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
-        ref: development
+        ref: main
 
     - name: Add the release's IPA to sidestore/source.json
       env:

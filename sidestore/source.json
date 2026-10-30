@@ -3,9 +3,9 @@
   "identifier": "com.music.laya.source",
   "subtitle": "Laya for iOS, straight from GitHub releases.",
   "description": "Official SideStore / AltStore source for Laya. New versions appear here as soon as a GitHub release is published.",
-  "iconURL": "https://raw.githubusercontent.com/impin2rex/Laya/development/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+  "iconURL": "https://raw.githubusercontent.com/impin2rex/Laya/main/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
   "website": "https://github.com/impin2rex/Laya",
-  "sourceURL": "https://raw.githubusercontent.com/impin2rex/Laya/development/sidestore/source.json",
+  "sourceURL": "https://raw.githubusercontent.com/impin2rex/Laya/main/sidestore/source.json",
   "tintColor": "#000000",
   "apps": [
     {
@@ -14,7 +14,7 @@
       "developerName": "impin2rex",
       "subtitle": "Music player with lyrics, karaoke and Listen Together.",
       "localizedDescription": "Laya is a music player with synced lyrics, on-device karaoke, Listen Together, Atmos-style reverb and home-screen widgets.",
-      "iconURL": "https://raw.githubusercontent.com/impin2rex/Laya/development/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "iconURL": "https://raw.githubusercontent.com/impin2rex/Laya/main/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
       "tintColor": "#000000",
       "category": "entertainment",
       "screenshots": [],
