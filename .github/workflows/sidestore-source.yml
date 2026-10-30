@@ -1,0 +1,69 @@
+name: SideStore source
+
+on:
+  # Drafts from release.yml carry assets nobody can download yet; publishing one is what makes it installable.
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to add, e.g. v1.9.1 (defaults to the latest release)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sidestore-source
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        ref: development
+
+    - name: Add the release's IPA to sidestore/source.json
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      run: |
+        tag="${TAG:-$(gh release view --json tagName -q .tagName)}"
+        name=$(gh release view "$tag" --json assets -q '.assets[].name | select(endswith("-ios.ipa"))' | head -1)
+        if [ -z "$name" ]; then
+          echo "::error::$tag has no -ios.ipa asset yet; rerun this workflow once ios.yml has attached it"
+          exit 1
+        fi
+        gh release download "$tag" -p "$name" -O app.ipa
+        # Version and build come from the IPA itself, so SideStore compares against exactly what installs.
+        # SideStore treats the first entry as the latest, so the list is kept newest first even when an older tag is re-added.
+        unzip -p app.ipa 'Payload/Laya.app/Info.plist' > Info.plist
+        read -r ver build minos < <(python3 -c "import plistlib;p=plistlib.load(open('Info.plist','rb'));print(p['CFBundleShortVersionString'],p['CFBundleVersion'],p.get('MinimumOSVersion','16.0'))")
+        # Only the release notes' iOS section (a "## ... iOS" / "### ... iOS" heading, up to the next heading);
+        # a release with none still ships an IPA, so it reads as fixes.
+        notes=$(gh release view "$tag" --json body -q .body | tr -d '\r' \
+          | awk '/^##+ / { f = ($0 ~ /iOS|iPhone/); next } f' \
+          | sed -e '/./,$!d' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+        [ -n "$notes" ] || notes="Bug Fixes"
+        jq \
+          --arg v "$ver" --arg b "$build" --arg m "$minos" \
+          --arg d "$(gh release view "$tag" --json publishedAt -q .publishedAt)" \
+          --arg n "$notes" \
+          --arg u "https://github.com/$GITHUB_REPOSITORY/releases/download/$tag/$name" \
+          --argjson s "$(stat -c%s app.ipa)" \
+          '.apps[0].versions |= ([{version: $v, buildVersion: $b, date: $d, localizedDescription: $n, downloadURL: $u, size: $s, minOSVersion: $m}] + map(select(.version != $v)) | sort_by(.version | split(".") | map(tonumber)) | reverse)' \
+          sidestore/source.json > source.tmp
+        mv source.tmp sidestore/source.json
+        echo "Added $ver ($build) from $tag"
+
+    - name: Commit
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+        git add sidestore/source.json
+        if git diff --cached --quiet; then echo "source.json already up to date"; exit 0; fi
+        git commit -m "chore: SideStore source for ${{ github.event.release.tag_name || inputs.tag || 'latest release' }} [skip ci]"
+        git push
