@@ -223,4 +223,5 @@
     <string name="reverb_width">Ширина</string>
     <string name="reverb_width_help">Стереоширина хвоста, от моно до полной.</string>
     <string name="reverb_reset">Сбросить по умолчанию</string>
+    <string name="picture_in_picture">Картинка в картинке</string>
 </resources>

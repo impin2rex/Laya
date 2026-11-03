@@ -223,4 +223,5 @@
     <string name="reverb_width">ความกว้าง</string>
     <string name="reverb_width_help">การกระจายสเตอริโอของหางเสียง ตั้งแต่โมโนจนกว้างเต็มที่</string>
     <string name="reverb_reset">รีเซ็ตเป็นค่าเริ่มต้น</string>
+    <string name="picture_in_picture">ภาพซ้อนภาพ</string>
 </resources>

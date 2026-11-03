@@ -223,4 +223,5 @@
     <string name="reverb_width">Largeur</string>
     <string name="reverb_width_help">Largeur stéréo de la queue, du mono à la pleine largeur.</string>
     <string name="reverb_reset">Rétablir les valeurs par défaut</string>
+    <string name="picture_in_picture">Image dans l’image</string>
 </resources>

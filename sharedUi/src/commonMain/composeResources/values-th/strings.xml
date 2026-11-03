@@ -696,4 +696,5 @@
     <string name="your_lyrics_card">การ์ดเนื้อเพลงของคุณ</string>
     <string name="no_internet_connection">ไม่มีการเชื่อมต่ออินเทอร์เน็ต</string>
     <string name="something_went_wrong">เกิดข้อผิดพลาดบางอย่าง</string>
+    <string name="picture_in_picture">ภาพซ้อนภาพ</string>
 </resources>

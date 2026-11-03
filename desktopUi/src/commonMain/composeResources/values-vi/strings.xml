@@ -223,4 +223,5 @@
     <string name="reverb_width">Độ rộng</string>
     <string name="reverb_width_help">Độ rộng stereo của đuôi vang, từ mono đến rộng tối đa.</string>
     <string name="reverb_reset">Đặt lại mặc định</string>
+    <string name="picture_in_picture">Hình trong hình</string>
 </resources>

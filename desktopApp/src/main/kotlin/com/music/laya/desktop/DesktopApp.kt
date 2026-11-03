@@ -2013,6 +2013,28 @@ fun LayaDesktopApp() {
             }
         }
     }
+    // The floating picture-in-picture window: the player steps aside for it, its buttons come back
+    // here, and it goes when its video stops being the one watched.
+    val pictureInPicture by DesktopPictureInPicture.videoId.collectAsState()
+    LaunchedEffect(pictureInPicture) {
+        if (pictureInPicture != null) {
+            overlays.nowPlaying = false
+            // A full screen the video had is the window's to give back, not the home page's to fill.
+            DesktopWindowMode.exit()
+        }
+    }
+    LaunchedEffect(playback.song?.videoId, watching, pictureInPicture) {
+        val shown = pictureInPicture ?: return@LaunchedEffect
+        if (playback.song?.videoId != shown || watching != shown) DesktopPictureInPicture.close()
+    }
+    SideEffect {
+        DesktopPictureInPicture.onTogglePlay = ::togglePlayPauseFromUser
+        DesktopPictureInPicture.onReturn = {
+            DesktopPictureInPicture.close()
+            DesktopWindowVisibility.show()
+            overlays.nowPlaying = true
+        }
+    }
     val toggleVersion: (() -> Unit)? = playback.song?.let(::asPlayed)?.let { song ->
         val other = alternateVersion?.takeIf { (id, _) -> id == song.videoId }?.second
         when {

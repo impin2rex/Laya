@@ -48,6 +48,12 @@ interface PlayerHost {
     val musicVideoSupported: Boolean get() = false
 
     /**
+     * Shrinks the playing music video into a floating picture-in-picture window, the music
+     * going on; null where the platform has none, which leaves its button off the video.
+     */
+    val pictureInPicture: (() -> Unit)? get() = null
+
+    /**
      * The playing music video's picture, fitted into these bounds ([fit]) or
      * cropped to fill them. Draws nothing until a frame of [videoId] has
      * landed, reported through [onRenderedChanged], so the caller keeps its

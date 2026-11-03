@@ -223,4 +223,5 @@
     <string name="reverb_width">闊度</string>
     <string name="reverb_width_help">尾音的立體聲闊度，由單聲道到全闊。</string>
     <string name="reverb_reset">重設為預設值</string>
+    <string name="picture_in_picture">畫中畫</string>
 </resources>

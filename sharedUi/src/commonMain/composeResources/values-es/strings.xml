@@ -701,4 +701,5 @@
     <string name="your_lyrics_card">Tu tarjeta de letra</string>
     <string name="no_internet_connection">Sin conexión a Internet</string>
     <string name="something_went_wrong">Algo salió mal</string>
+    <string name="picture_in_picture">Imagen en imagen</string>
 </resources>

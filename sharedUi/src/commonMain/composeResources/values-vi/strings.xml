@@ -696,4 +696,5 @@
     <string name="your_lyrics_card">Thẻ lời bài hát của bạn</string>
     <string name="no_internet_connection">Không có kết nối internet</string>
     <string name="something_went_wrong">Đã xảy ra lỗi</string>
+    <string name="picture_in_picture">Hình trong hình</string>
 </resources>

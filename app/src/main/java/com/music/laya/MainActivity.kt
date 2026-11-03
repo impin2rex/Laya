@@ -366,6 +366,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        com.music.laya.ui.player.VideoPictureInPicture.attach(this)
         // Before the composition, so a cold launch from a widget's artwork has
         // the request already standing by the time LayaApp first reads it.
         PlayerDeepLink.consume(intent)
@@ -429,6 +430,11 @@ class MainActivity : AppCompatActivity() {
                         windowHeight = maxHeight,
                         appBackdrop = appBackdrop,
                     )
+                    // Over the app rather than in its place, so nothing in it is torn down
+                    // and it is all still there on the way back out of the window.
+                    val inPictureInPicture by com.music.laya.ui.player.VideoPictureInPicture.active
+                        .collectAsStateWithLifecycle()
+                    if (inPictureInPicture) com.music.laya.ui.player.PictureInPictureVideo()
                 }
                 }
             }
@@ -460,6 +466,11 @@ class MainActivity : AppCompatActivity() {
      * running a second tap on the widget does not rebuild anything — it arrives
      * here, and [onCreate] never runs again.
      */
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        com.music.laya.ui.player.VideoPictureInPicture.active.value = isInPictureInPictureMode
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         // Replaces what getIntent() returns, so the extra this consumes is the

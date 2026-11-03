@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.height
@@ -37,6 +38,7 @@ import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.video_quality
 import com.music.laya.sharedui.resources.video_quality_auto
 import com.music.laya.sharedui.resources.audio_short
+import com.music.laya.sharedui.resources.picture_in_picture
 import com.music.laya.sharedui.resources.switch_to_audio
 import com.music.laya.ui.icons.LayaIcons
 import androidx.compose.animation.core.animateFloatAsState
@@ -406,6 +408,23 @@ internal fun VideoCornerControls(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         VideoQualityBox(onClick = onOpenQuality)
+        PlayerPlatform.host.pictureInPicture?.let { enter ->
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Black.copy(alpha = 0.38f))
+                    .clickable(onClick = enter),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PictureInPictureAlt,
+                    contentDescription = stringResource(Res.string.picture_in_picture),
+                    tint = Color.White,
+                    modifier = Modifier.size(19.dp),
+                )
+            }
+        }
         Box(
             modifier = Modifier
                 .size(30.dp)

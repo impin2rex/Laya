@@ -64,6 +64,10 @@ internal object DesktopPlayerHost : PlayerHost {
 
     override val musicVideoSupported: Boolean get() = true
 
+    override val pictureInPicture: (() -> Unit)? = {
+        DesktopMusicVideo.playback?.value?.song?.videoId?.let(DesktopPictureInPicture::open)
+    }
+
     @Composable
     override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
         DesktopMusicVideoSurface(videoId, fit, onRenderedChanged, modifier)

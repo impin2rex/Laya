@@ -1,11 +1,18 @@
 package com.music.laya.ui.player
 
+import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Rational
 import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.viewinterop.AndroidView
@@ -50,6 +58,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.lang.ref.WeakReference
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -473,6 +482,61 @@ object MusicVideoEngine {
 }
 
 /**
+ * The phone's picture-in-picture for a playing music video, as YouTube's: the activity shrinks
+ * into the system's floating window, showing only the picture ([PictureInPictureVideo]), while
+ * the music goes on in the service. Tapping the window, or expanding it, brings the app back as
+ * it was.
+ */
+object VideoPictureInPicture {
+    private var activity: WeakReference<Activity>? = null
+
+    /** Whether the activity is in its picture-in-picture window now. */
+    val active = MutableStateFlow(false)
+
+    fun attach(activity: Activity) {
+        this.activity = WeakReference(activity)
+    }
+
+    fun supported(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            context.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+
+    fun enter() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val host = activity?.get() ?: return
+        // The window takes the picture's shape, within what the system allows (2.39:1 at most).
+        val aspect = MusicVideoEngine.aspect.value.coerceIn(1f / 2.39f, 2.39f)
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational((aspect * 1000).toInt(), 1000))
+            .build()
+        runCatching { host.enterPictureInPictureMode(params) }
+            .onFailure { TrackLog.w(TAG, "picture-in-picture refused: ${it.message}") }
+    }
+
+    private const val TAG = "Laya"
+}
+
+/** All the activity shows in its picture-in-picture window: the playing video, filling it. */
+@Composable
+fun PictureInPictureVideo() {
+    val shown by MusicVideoEngine.shownVideoId.collectAsStateWithLifecycle()
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        shown?.let { id ->
+            AndroidMusicVideo(
+                videoId = id,
+                fit = true,
+                onRenderedChanged = {},
+                modifier = Modifier.fillMaxSize(),
+                priority = PICTURE_IN_PICTURE_PRIORITY,
+            )
+        }
+    }
+}
+
+/** Above the full player's surface: while in its window, the picture is that window's. */
+private const val PICTURE_IN_PICTURE_PRIORITY = 3
+
+/**
  * Where the playing music video shows: [videoId]'s picture, fitted into or
  * cropped to these bounds. Shows nothing until a frame of that video has
  * landed here, so a caller keeps its still artwork underneath and the picture
@@ -488,7 +552,9 @@ internal fun AndroidMusicVideo(
     /** Which surface wins when two are mounted: the full player's, over the mini player's. */
     priority: Int = 1,
 ) {
-    val foreground = rememberIsForeground()
+    // Paused but on screen in its picture-in-picture window, which is all that window shows.
+    val inPictureInPicture by VideoPictureInPicture.active.collectAsStateWithLifecycle()
+    val foreground = rememberIsForeground() || inPictureInPicture
     var view by remember { mutableStateOf<TextureView?>(null) }
     DisposableEffect(view, foreground, priority) {
         val target = view

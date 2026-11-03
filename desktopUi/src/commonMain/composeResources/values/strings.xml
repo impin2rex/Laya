@@ -235,4 +235,5 @@
     <string name="switch_to_audio">Switch to Audio</string>
     <string name="switch_to_video">Switch to Video</string>
     <string name="audio_short">Audio</string>
+    <string name="picture_in_picture">Picture in picture</string>
 </resources>

@@ -701,4 +701,5 @@
     <string name="your_lyrics_card">כרטיס המילים שלך</string>
     <string name="no_internet_connection">אין חיבור אינטרנט</string>
     <string name="something_went_wrong">משהו השתבש</string>
+    <string name="picture_in_picture">תמונה בתוך תמונה</string>
 </resources>

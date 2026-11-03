@@ -95,6 +95,9 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
 
     override val musicVideoSupported: Boolean get() = true
 
+    override val pictureInPicture: (() -> Unit)? =
+        if (VideoPictureInPicture.supported(app)) VideoPictureInPicture::enter else null
+
     @Composable
     override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
         AndroidMusicVideo(videoId, fit, onRenderedChanged, modifier)

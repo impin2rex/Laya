@@ -680,4 +680,5 @@
     <string name="your_lyrics_card">আপনার লিরিক্স কার্ড</string>
     <string name="no_internet_connection">ইন্টারনেট সংযোগ নেই</string>
     <string name="something_went_wrong">কিছু একটা সমস্যা হয়েছে</string>
+    <string name="picture_in_picture">ছবির ভিতরে ছবি</string>
 </resources>
