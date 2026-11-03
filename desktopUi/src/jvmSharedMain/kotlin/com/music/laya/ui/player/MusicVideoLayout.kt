@@ -56,6 +56,9 @@ import androidx.compose.ui.semantics.semantics
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeSource
+import com.music.laya.ui.components.optimizedHazeEffect
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -133,14 +136,18 @@ internal fun FullscreenVideoPlayer(
                 onDoubleClick = onDoubleClick,
             ) { controlsShown = !controlsShown },
     ) {
-        // Black with a spinner until the picture's first frame lands.
-        if (!rendered) VideoLoadingBackdrop(artRequest, Modifier.fillMaxSize())
-        MusicVideoSurface(
-            videoId = song.videoId,
-            fit = true,
-            onRenderedChanged = onRenderedChanged,
-            modifier = Modifier.fillMaxSize(),
-        )
+        // What the glass pill frosts: the picture, or the thumbnail before it.
+        val pictureHaze = remember { HazeState() }
+        Box(Modifier.fillMaxSize().hazeSource(pictureHaze)) {
+            // Black with a spinner until the picture's first frame lands.
+            if (!rendered) VideoLoadingBackdrop(artRequest, Modifier.fillMaxSize())
+            MusicVideoSurface(
+                videoId = song.videoId,
+                fit = true,
+                onRenderedChanged = onRenderedChanged,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         AnimatedVisibility(
             visible = controlsShown,
@@ -195,7 +202,7 @@ internal fun FullscreenVideoPlayer(
                         )
                     }
                     if (onSwitchToAudio != null) {
-                        SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion)
+                        SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion, haze = pictureHaze)
                         Spacer(Modifier.width(8.dp))
                     }
                     VideoCornerControls(fullscreen = screenFilled, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
@@ -236,6 +243,8 @@ internal fun FullscreenVideoPlayer(
 internal fun SwitchToAudioPill(
     onClick: () -> Unit,
     switching: Boolean,
+    /** The picture behind the pill, for its glass to frost; null draws the plain pill. */
+    haze: HazeState?,
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberHaptics()
@@ -263,31 +272,14 @@ internal fun SwitchToAudioPill(
                     scaleX = scale
                     scaleY = scale
                 }
-                .shadow(elevation = 10.dp, shape = shape, ambientColor = Color.Black, spotColor = Color.Black)
-                .clip(shape)
-                .background(Color.Black.copy(alpha = 0.30f))
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.White.copy(alpha = 0.26f),
-                        0.5f to Color.White.copy(alpha = 0.12f),
-                        1f to Color.White.copy(alpha = 0.06f),
-                    ),
-                )
-                .border(
-                    width = 0.75.dp,
-                    brush = Brush.verticalGradient(
-                        0f to Color.White.copy(alpha = 0.60f),
-                        1f to Color.White.copy(alpha = 0.14f),
-                    ),
-                    shape = shape,
-                )
+                .videoGlass(haze, shape)
                 .clickable(interactionSource = interaction, indication = null, enabled = !switching) {
                     haptics.play(Haptic.Tap)
                     onClick()
                 }
                 .semantics { contentDescription = label }
-                .height(32.dp)
-                .padding(start = 10.dp, end = 13.dp),
+                .height(36.dp)
+                .padding(start = 12.dp, end = 15.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AnimatedContent(
@@ -320,6 +312,45 @@ internal fun SwitchToAudioPill(
             )
         }
     }
+}
+
+/**
+ * Apple's clear glass over the picture: what is behind frosted, with only a breath of white over
+ * it so the picture's own colour comes through, lit along its rim where light would catch the
+ * edge of a pane — brightest at the top left and the bottom right. Without [haze], the same pill
+ * as a translucent gradient.
+ */
+private fun Modifier.videoGlass(haze: HazeState?, shape: RoundedCornerShape): Modifier {
+    val frosted = shadow(elevation = 8.dp, shape = shape, ambientColor = Color.Black.copy(alpha = 0.5f), spotColor = Color.Black.copy(alpha = 0.5f))
+        .clip(shape)
+    val body = if (haze != null) {
+        frosted.optimizedHazeEffect(haze) {
+            blurRadius = 14.dp
+            tints = listOf(HazeTint(Color.White.copy(alpha = 0.10f)))
+            noiseFactor = 0f
+        }
+    } else {
+        frosted.background(Color.Black.copy(alpha = 0.22f))
+    }
+    return body
+        // The pane's thickness: light pooled toward the top, as through curved glass.
+        .background(
+            Brush.verticalGradient(
+                0f to Color.White.copy(alpha = 0.20f),
+                0.45f to Color.White.copy(alpha = 0.04f),
+                1f to Color.White.copy(alpha = 0.08f),
+            ),
+        )
+        .border(
+            width = 1.dp,
+            brush = Brush.linearGradient(
+                0f to Color.White.copy(alpha = 0.75f),
+                0.35f to Color.White.copy(alpha = 0.12f),
+                0.65f to Color.White.copy(alpha = 0.08f),
+                1f to Color.White.copy(alpha = 0.55f),
+            ),
+            shape = shape,
+        )
 }
 
 /**

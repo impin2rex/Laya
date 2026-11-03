@@ -139,6 +139,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.music.laya.ui.components.backdrop.backdrops.layerBackdrop
+import com.music.laya.ui.components.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -3262,23 +3264,27 @@ fun NowPlayingScreen(
                                             translationX = swipeSettle.value * (1f - p())
                                         },
                                 ) {
-                                    // The video's thumbnail and a spinner under the
-                                    // picture until its first frame lands.
-                                    if (!videoRendered) {
-                                        VideoLoadingBackdrop(
-                                            art.request,
-                                            Modifier
+                                    // What the glass pill frosts and bends.
+                                    val pictureBackdrop = rememberLayerBackdrop()
+                                    Box(Modifier.fillMaxSize().layerBackdrop(pictureBackdrop)) {
+                                        // The video's thumbnail and a spinner under the
+                                        // picture until its first frame lands.
+                                        if (!videoRendered) {
+                                            VideoLoadingBackdrop(
+                                                art.request,
+                                                Modifier
+                                                    .fillMaxSize()
+                                                    .clip(RoundedCornerShape(10.dp)),
+                                            )
+                                        }
+                                        MusicVideoSurface(
+                                            videoId = song.videoId,
+                                            onRenderedChanged = { videoRendered = it },
+                                            modifier = Modifier
                                                 .fillMaxSize()
                                                 .clip(RoundedCornerShape(10.dp)),
                                         )
                                     }
-                                    MusicVideoSurface(
-                                        videoId = song.videoId,
-                                        onRenderedChanged = { videoRendered = it },
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(RoundedCornerShape(10.dp)),
-                                    )
                                     VideoCornerControls(
                                         fullscreen = false,
                                         onToggleFullscreen = screenOrientation::landscape,
@@ -3294,6 +3300,7 @@ fun NowPlayingScreen(
                                         SwitchToAudioPill(
                                             onClick = switchToAudio,
                                             switching = versionSwitching,
+                                            backdrop = pictureBackdrop,
                                             modifier = Modifier
                                                 .align(Alignment.TopStart)
                                                 .padding(8.dp),

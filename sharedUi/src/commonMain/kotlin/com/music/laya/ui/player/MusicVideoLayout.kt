@@ -73,6 +73,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.music.laya.ui.components.backdrop.Backdrop
+import com.music.laya.ui.components.backdrop.backdrops.layerBackdrop
+import com.music.laya.ui.components.backdrop.backdrops.rememberLayerBackdrop
+import com.music.laya.ui.components.backdrop.drawBackdrop
+import com.music.laya.ui.components.backdrop.effects.blur
+import com.music.laya.ui.components.backdrop.effects.colorControls
+import com.music.laya.ui.components.backdrop.effects.lens
+import com.music.laya.ui.components.backdrop.highlight.Highlight
+import com.music.laya.ui.components.backdrop.shadow.Shadow
+import com.music.laya.ui.components.isGlassSupported
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -126,14 +136,18 @@ internal fun FullscreenVideoPlayer(
                 indication = null,
             ) { controlsShown = !controlsShown },
     ) {
-        // Black with a spinner until the picture's first frame lands.
-        if (!rendered) VideoLoadingBackdrop(artRequest, Modifier.fillMaxSize())
-        MusicVideoSurface(
-            videoId = song.videoId,
-            fit = true,
-            onRenderedChanged = onRenderedChanged,
-            modifier = Modifier.fillMaxSize(),
-        )
+        // What the glass pill frosts and bends: the picture, or the thumbnail before it.
+        val pictureBackdrop = rememberLayerBackdrop()
+        Box(Modifier.fillMaxSize().layerBackdrop(pictureBackdrop)) {
+            // Black with a spinner until the picture's first frame lands.
+            if (!rendered) VideoLoadingBackdrop(artRequest, Modifier.fillMaxSize())
+            MusicVideoSurface(
+                videoId = song.videoId,
+                fit = true,
+                onRenderedChanged = onRenderedChanged,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         AnimatedVisibility(
             visible = controlsShown,
@@ -188,7 +202,7 @@ internal fun FullscreenVideoPlayer(
                         )
                     }
                     if (onSwitchToAudio != null) {
-                        SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion)
+                        SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion, backdrop = pictureBackdrop)
                         Spacer(Modifier.width(8.dp))
                     }
                     VideoCornerControls(fullscreen = true, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
@@ -229,6 +243,8 @@ internal fun FullscreenVideoPlayer(
 internal fun SwitchToAudioPill(
     onClick: () -> Unit,
     switching: Boolean,
+    /** The picture behind the pill, for its glass to bend and frost; null draws the plain pill. */
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberHaptics()
@@ -256,31 +272,14 @@ internal fun SwitchToAudioPill(
                     scaleX = scale
                     scaleY = scale
                 }
-                .shadow(elevation = 10.dp, shape = shape, ambientColor = Color.Black, spotColor = Color.Black)
-                .clip(shape)
-                .background(Color.Black.copy(alpha = 0.30f))
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.White.copy(alpha = 0.26f),
-                        0.5f to Color.White.copy(alpha = 0.12f),
-                        1f to Color.White.copy(alpha = 0.06f),
-                    ),
-                )
-                .border(
-                    width = 0.75.dp,
-                    brush = Brush.verticalGradient(
-                        0f to Color.White.copy(alpha = 0.60f),
-                        1f to Color.White.copy(alpha = 0.14f),
-                    ),
-                    shape = shape,
-                )
+                .videoGlass(backdrop, shape)
                 .clickable(interactionSource = interaction, indication = null, enabled = !switching) {
                     haptics.play(Haptic.Tap)
                     onClick()
                 }
                 .semantics { contentDescription = label }
-                .height(32.dp)
-                .padding(start = 10.dp, end = 13.dp),
+                .height(36.dp)
+                .padding(start = 12.dp, end = 15.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AnimatedContent(
@@ -313,6 +312,53 @@ internal fun SwitchToAudioPill(
             )
         }
     }
+}
+
+/**
+ * Apple's clear glass over the picture: what is behind frosted, bent at the rim and lit along its
+ * edge, with only a breath of white over it so the picture's own colour comes through. Where the
+ * platform can't sample the picture (Android before 12), the same pill drawn as a translucent
+ * gradient with a lit hairline.
+ */
+@Composable
+private fun Modifier.videoGlass(backdrop: Backdrop?, shape: RoundedCornerShape): Modifier {
+    if (backdrop == null || !isGlassSupported()) {
+        return shadow(elevation = 10.dp, shape = shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .clip(shape)
+            .background(Color.Black.copy(alpha = 0.22f))
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.30f),
+                    0.5f to Color.White.copy(alpha = 0.16f),
+                    1f to Color.White.copy(alpha = 0.10f),
+                ),
+            )
+            .border(
+                width = 0.75.dp,
+                brush = Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.65f),
+                    1f to Color.White.copy(alpha = 0.18f),
+                ),
+                shape = shape,
+            )
+    }
+    return drawBackdrop(
+        backdrop = backdrop,
+        shape = { shape },
+        effects = {
+            colorControls(saturation = 1.4f)
+            blur(10.dp.toPx())
+            lens(
+                refractionHeight = 12.dp.toPx(),
+                refractionAmount = 18.dp.toPx(),
+                depthEffect = true,
+                chromaticAberration = true,
+            )
+        },
+        highlight = { Highlight.Default },
+        shadow = { Shadow.Default },
+        onDrawSurface = { drawRect(Color.White.copy(alpha = 0.10f)) },
+    )
 }
 
 /**

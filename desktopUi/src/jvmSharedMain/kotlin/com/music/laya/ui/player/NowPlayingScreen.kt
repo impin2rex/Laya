@@ -2144,17 +2144,20 @@ fun NowPlayingScreen(
                             // A music video plays in the sleeve, cropped to its square,
                             // with its corner controls; the cover shows until a frame lands.
                             if (videoMode) {
+                                // What the glass pill frosts.
+                                val pictureHaze = remember { HazeState() }
                                 MusicVideoSurface(
                                     videoId = song.videoId,
                                     fit = false,
                                     onRenderedChanged = { videoRendered = it },
-                                    modifier = Modifier.matchParentSize().clip(landscapeArtShape()),
+                                    modifier = Modifier.matchParentSize().clip(landscapeArtShape()).hazeSource(pictureHaze),
                                 )
                                 if (!panelOpen) {
                                     if (switchToAudio != null) {
                                         SwitchToAudioPill(
                                             onClick = switchToAudio,
                                             switching = versionSwitching,
+                                            haze = pictureHaze,
                                             modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
                                         )
                                     }
@@ -3450,23 +3453,27 @@ fun NowPlayingScreen(
                                             translationX = swipeSettle.value * (1f - p())
                                         },
                                 ) {
-                                    // The video's thumbnail and a spinner under the
-                                    // picture until its first frame lands.
-                                    if (!videoRendered) {
-                                        VideoLoadingBackdrop(
-                                            art.request,
-                                            Modifier
+                                    // What the glass pill frosts.
+                                    val pictureHaze = remember { HazeState() }
+                                    Box(Modifier.fillMaxSize().hazeSource(pictureHaze)) {
+                                        // The video's thumbnail and a spinner under the
+                                        // picture until its first frame lands.
+                                        if (!videoRendered) {
+                                            VideoLoadingBackdrop(
+                                                art.request,
+                                                Modifier
+                                                    .fillMaxSize()
+                                                    .clip(RoundedCornerShape(10.dp)),
+                                            )
+                                        }
+                                        MusicVideoSurface(
+                                            videoId = song.videoId,
+                                            onRenderedChanged = { videoRendered = it },
+                                            modifier = Modifier
                                                 .fillMaxSize()
                                                 .clip(RoundedCornerShape(10.dp)),
                                         )
                                     }
-                                    MusicVideoSurface(
-                                        videoId = song.videoId,
-                                        onRenderedChanged = { videoRendered = it },
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(RoundedCornerShape(10.dp)),
-                                    )
                                     VideoCornerControls(
                                         fullscreen = false,
                                         onToggleFullscreen = { videoTheater = true },
@@ -3482,6 +3489,7 @@ fun NowPlayingScreen(
                                         SwitchToAudioPill(
                                             onClick = switchToAudio,
                                             switching = versionSwitching,
+                                            haze = pictureHaze,
                                             modifier = Modifier
                                                 .align(Alignment.TopStart)
                                                 .padding(8.dp),
