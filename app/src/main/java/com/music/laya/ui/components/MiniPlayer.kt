@@ -64,6 +64,7 @@ import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
 import com.music.laya.ui.player.PlayerDock
 import com.music.laya.ui.player.AndroidMusicVideo
+import com.music.laya.ui.player.MusicVideoEngine
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.animation.core.animateDpAsState
@@ -232,15 +233,17 @@ fun MiniPlayer(
                     modifier = Modifier.fillMaxSize(),
                 )
                 // A music video keeps playing in the cover's place, cropped to
-                // it, as the web player's mini player does — the full player,
+                // it, as the web player's mini player does — at its lowest
+                // height, and only when asked for in Settings. The full player,
                 // when it is up, takes the picture over.
-                if (song.isVideo) {
+                val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
+                if (song.isVideo && miniPlayerVideo) {
                     AndroidMusicVideo(
                         videoId = song.videoId,
                         fit = false,
                         onRenderedChanged = {},
                         modifier = Modifier.fillMaxSize(),
-                        priority = 0,
+                        priority = MusicVideoEngine.MINI_PLAYER_PRIORITY,
                     )
                 }
             }

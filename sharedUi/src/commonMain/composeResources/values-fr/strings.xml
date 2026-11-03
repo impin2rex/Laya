@@ -375,6 +375,8 @@
     <string name="playback">Lecture</string>
     <string name="prefer_music_only">Préférer la version audio uniquement</string>
     <string name="prefer_music_only_subtitle">Pour les clips vidéo, afficher les détails de la vidéo tout en recherchant et en chargeant la version audio du catalogue</string>
+    <string name="mini_player_video">Vidéo dans le mini-lecteur</string>
+    <string name="mini_player_video_subtitle">Lit le clip dans le mini-lecteur en qualité minimale, pour économiser les données et la batterie</string>
     <string name="prefer_usb_dac">Préférer le DAC USB</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s par piste</string>

@@ -374,6 +374,8 @@
     <string name="playback">การเล่น</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">วิดีโอในมินิเพลเยอร์</string>
+    <string name="mini_player_video_subtitle">เล่นมิวสิกวิดีโอในมินิเพลเยอร์ที่คุณภาพต่ำสุด เพื่อประหยัดอินเทอร์เน็ตและแบตเตอรี่</string>
     <string name="prefer_usb_dac">Prefer USB DAC</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s ต่อแทร็ก</string>

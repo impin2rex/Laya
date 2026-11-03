@@ -354,6 +354,8 @@
     <string name="playback">প্লেব্যাক</string>
     <string name="prefer_music_only">শুধু গানের ভার্সন বেছে নিন</string>
     <string name="prefer_music_only_subtitle">মিউজিক ভিডিওর ক্ষেত্রে, ক্যাটালগের অডিও ভার্সন খুঁজে লোড করার সময় ভিডিওর বিবরণ দেখায়</string>
+    <string name="mini_player_video">মিনি প্লেয়ারে ভিডিও</string>
+    <string name="mini_player_video_subtitle">মিনি প্লেয়ারে মিউজিক ভিডিও সবচেয়ে কম কোয়ালিটিতে চালায়, ডেটা ও ব্যাটারি বাঁচাতে</string>
     <string name="prefer_usb_dac">USB DAC-কে অগ্রাধিকার দিন</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · প্রতি গানে %2$s</string>

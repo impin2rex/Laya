@@ -375,6 +375,8 @@
     <string name="playback">השמעה</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">וידאו בנגן המיני</string>
+    <string name="mini_player_video_subtitle">מנגן קליפ בנגן המיני באיכות הנמוכה ביותר, כדי לחסוך בנתונים ובסוללה</string>
     <string name="prefer_usb_dac">העדף USB DAC</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s לרצועה</string>

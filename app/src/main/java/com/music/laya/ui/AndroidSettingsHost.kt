@@ -79,6 +79,8 @@ import kotlinx.coroutines.launch
 
 object AndroidSettingsHost : SettingsHost {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    override val musicVideoInMiniPlayer: Boolean get() = true
     private var appContext: Context? = null
 
     fun install(context: Context) {

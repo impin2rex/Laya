@@ -377,6 +377,8 @@
     <string name="playback">Odtwarzanie</string>
     <string name="prefer_music_only">Preferuj wersję muzyczną</string>
     <string name="prefer_music_only_subtitle">Dla teledysków pokazuje szczegóły wideo podczas wyszukiwania i ładowania wersji audio z katalogu</string>
+    <string name="mini_player_video">Wideo w miniodtwarzaczu</string>
+    <string name="mini_player_video_subtitle">Odtwarza teledysk w miniodtwarzaczu w najniższej jakości, aby oszczędzać dane i baterię</string>
     <string name="prefer_usb_dac">Preferuj USB DAC</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s na utwór</string>

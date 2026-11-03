@@ -374,6 +374,8 @@
     <string name="playback">播放</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">迷你播放器中播放视频</string>
+    <string name="mini_player_video_subtitle">在迷你播放器中以最低画质播放音乐视频，节省流量和电量</string>
     <string name="prefer_usb_dac">首选 USB DAC</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · 每首曲目 %2$s</string>

@@ -248,6 +248,7 @@ object MusicVideoEngine {
             if (next != null) {
                 exo.setVideoTextureView(next)
                 repaint()
+                refresh()
             } else {
                 exo.clearVideoTextureView(view)
                 releaseJob = scope.launch {
@@ -291,7 +292,9 @@ object MusicVideoEngine {
             if (surfaces.isNotEmpty() || wanted()?.videoId != loadedId) unload()
             return
         }
-        if (song.videoId == loadedId) {
+        // Up from the mini player's thumbnail-sized picture to the full one; never back down
+        // mid-track, which would only reload a picture already in hand.
+        if (song.videoId == loadedId && capFor(song.videoId) <= loadedCap) {
             startSync()
             return
         }
@@ -331,6 +334,8 @@ object MusicVideoEngine {
 
     /** The height asked for: the held one, else what Auto opens at for this connection. */
     private fun capFor(videoId: String): Int {
+        // Seen only in the mini player's 40 dp slot: the lowest height is all it can show.
+        if (surfaces.isNotEmpty() && surfaces.all { it.priority <= MINI_PLAYER_PRIORITY }) return MINI_PLAYER_HEIGHT
         val metered = AppSettings.meteredConnection.value == true
         val auto = if (metered) METERED_HEIGHT else AUTO_HEIGHT
         val held = _quality.value.held ?: return auto
@@ -460,6 +465,10 @@ object MusicVideoEngine {
     /** Where Auto opens, as on the web player: the top of YouTube's H.264 ladder. */
     private const val AUTO_HEIGHT = 1080
     private const val METERED_HEIGHT = 480
+
+    /** The mini player's surface, below every full-size one — see [claim]. */
+    internal const val MINI_PLAYER_PRIORITY = 0
+    private const val MINI_PLAYER_HEIGHT = 144
     private const val KEY_QUALITY = "quality"
 }
 

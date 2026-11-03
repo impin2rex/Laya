@@ -375,6 +375,8 @@
     <string name="playback">Reproducción</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">Vídeo en el minirreproductor</string>
+    <string name="mini_player_video_subtitle">Reproduce el videoclip en el minirreproductor con la calidad más baja para ahorrar datos y batería</string>
     <string name="prefer_usb_dac">Preferir DAC USB</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s por canción</string>

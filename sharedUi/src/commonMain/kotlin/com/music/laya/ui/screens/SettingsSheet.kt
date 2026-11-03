@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BlurOff
@@ -226,6 +227,7 @@ fun SettingsScreen(
     val swipeToPlayNext by AppSettings.swipeToPlayNext.collectAsStateWithLifecycle()
     val dontRepeatSuggestions by AppSettings.dontRepeatSuggestions.collectAsStateWithLifecycle()
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
+    val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
     val smartVersionAlignment by AppSettings.smartVersionAlignment.collectAsStateWithLifecycle()
     val filterNonMusicAudio by AppSettings.filterNonMusicAudio.collectAsStateWithLifecycle()
     val localMusicFolderUri by AppSettings.localMusicFolderUri.collectAsStateWithLifecycle()
@@ -481,6 +483,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setPreferMusicOnly(!preferMusicOnly) },
+                )
+            }
+            val miniPlayerVideoTitle = stringResource(Res.string.mini_player_video)
+            row(miniPlayerVideoTitle, "video", "mini player", "music video", available = engineOptions && host.musicVideoInMiniPlayer) {
+                SettingsRow(
+                    icon = Icons.Rounded.PictureInPictureAlt,
+                    title = miniPlayerVideoTitle,
+                    subtitle = stringResource(Res.string.mini_player_video_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = miniPlayerVideo,
+                            onCheckedChange = AppSettings::setMiniPlayerVideo,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setMiniPlayerVideo(!miniPlayerVideo) },
                 )
             }
             if (outputStatus != null) {
