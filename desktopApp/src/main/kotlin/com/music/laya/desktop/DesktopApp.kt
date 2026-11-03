@@ -870,7 +870,7 @@ fun LayaDesktopApp() {
         persistence.saveHistory(history)
         playbackEngine.load(song, startPlaying)
         partySyncHolder[0]?.onLocalIntent(song.videoId)
-        scope.launch { DesktopScrobbling.updateNowPlaying(song) }
+        ListenIdentity.known(song)?.let { scope.launch { DesktopScrobbling.updateNowPlaying(it) } }
     }
 
     fun partyTrackChangeBlocked(): Boolean {
@@ -1615,7 +1615,7 @@ fun LayaDesktopApp() {
     playbackEngine = remember {
         DesktopPlaybackEngine(
             onEnded = {
-                selectedSong?.let(DesktopScrobbling::onPlaybackEnded)
+                selectedSong?.let(ListenIdentity::of)?.let(DesktopScrobbling::onPlaybackEnded)
                 if (DesktopSleepTimer.afterTrack.value) {
                     DesktopSleepTimer.cancel()
                 } else if (repeatMode == DesktopRepeatMode.ONE) {
@@ -1641,7 +1641,7 @@ fun LayaDesktopApp() {
                     selectedSong = song
                     history = (listOf(song) + history.filterNot { it.videoId == song.videoId }).take(50)
                     persistence.saveHistory(history)
-                    DesktopScrobbling.updateNowPlaying(song)
+                    ListenIdentity.known(song)?.let { DesktopScrobbling.updateNowPlaying(it) }
                     partySyncHolder[0]?.onLocalIntent()
                 }
             },
@@ -1969,6 +1969,12 @@ fun LayaDesktopApp() {
                     saveQueue()
                 }
                 if (selectedSong?.videoId == song.videoId) selectedSong = target
+                // The recently played list names the listen, as the account's history does.
+                val listened = ListenIdentity.of(target)
+                if (history.firstOrNull()?.videoId == song.videoId && listened.videoId != song.videoId) {
+                    history = (listOf(listened) + history.drop(1).filterNot { it.videoId == listened.videoId }).take(50)
+                    persistence.saveHistory(history)
+                }
             }
         }
     }
@@ -2186,8 +2192,28 @@ fun LayaDesktopApp() {
             rate = playbackSpeed.toDouble(),
         )
     }
+    // The track being listened to — its audio release whenever there is one; see [ListenIdentity].
+    // Null while a video's release is still being looked for, so nothing announces or records the
+    // video meanwhile; kept through a switch between versions, which is the same listen.
+    var listen by remember { mutableStateOf<Song?>(null) }
+    LaunchedEffect(playback.song?.videoId) {
+        val played = playback.song
+        listen = played?.let(ListenIdentity::known)
+        if (played != null && listen == null) {
+            val settled = ListenIdentity.resolve(played)
+            listen = settled
+            DesktopScrobbling.updateNowPlaying(settled)
+            // The recently played list names the listen, as the account's history does.
+            if (settled.videoId != played.videoId && history.firstOrNull()?.videoId == played.videoId) {
+                history = (listOf(settled) + history.drop(1).filterNot { it.videoId == settled.videoId }).take(50)
+                persistence.saveHistory(history)
+            }
+        }
+    }
+    LaunchedEffect(listen?.videoId, playback.isPlaying, playback.durationMs) {
+        DesktopScrobbling.onPlaybackStateChanged(playback.copy(song = listen ?: return@LaunchedEffect))
+    }
     LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs) {
-        DesktopScrobbling.onPlaybackStateChanged(playback)
         DesktopWindowsMedia.publish(playback)
     }
     // Refetched on opening the page rather than cached for the session: the
@@ -2207,13 +2233,13 @@ fun LayaDesktopApp() {
     }
     // Keyed on the same things, plus the rate: Discord counts the bar down on
     // its own clock, so only a change to what it was told is worth another push.
-    LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs, playbackSpeed, playback.streamFormat) {
-        DesktopDiscordRpc.onPlaybackStateChanged(playback, playbackSpeed)
+    LaunchedEffect(listen?.videoId, playback.isPlaying, playback.durationMs, playbackSpeed, playback.streamFormat) {
+        DesktopDiscordRpc.onPlaybackStateChanged(playback.copy(song = listen ?: return@LaunchedEffect), playbackSpeed)
     }
     // The account's own history on YouTube Music, which is what the home feed is built out of.
     // Keyed on the listen rather than the version playing, so switching between a track's audio
     // and its video is one play — see [ListenIdentity].
-    val listenId = playback.song?.let { ListenIdentity.of(it).videoId }
+    val listenId = listen?.videoId
     DisposableEffect(listenId) {
         val previous = playbackEngine.state.value.positionMs / 1_000
         onDispose { DesktopPlaybackTracker.onTrackChanged(previous) }

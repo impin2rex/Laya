@@ -123,6 +123,7 @@ import com.music.laya.data.TrackLog
 import com.music.laya.data.discord.DiscordRPC
 import com.music.laya.data.discord.discordAudioQualityLine
 import com.music.laya.data.innertube.PlaybackTracker
+import com.music.laya.data.stats.ListenIdentity
 import com.music.laya.data.stats.ListeningRecorder
 import com.music.laya.data.innertube.PlayerClient
 import com.music.laya.data.innertube.StreamResolver
@@ -918,9 +919,10 @@ class PlaybackService : MediaLibraryService() {
             // the artwork are known to be settled.
             publishWidgetState()
 
-            val song = exoPlayer.currentMediaItem?.toSong()
+            val song = listenSong(exoPlayer.currentMediaItem)
             val durationMs = exoPlayer.duration.takeIf { it > 0 }
             scrobbleManager?.onPlayerStateChanged(isPlaying, song, durationMs)
+            if (isPlaying) settleListen(exoPlayer.currentMediaItem?.toSong())
 
             // The listening record has to be told a pause happened, not merely
             // stop being told about play: its sampler measures the gap between
@@ -3508,8 +3510,33 @@ class PlaybackService : MediaLibraryService() {
             packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
     }
 
+    /** The track being listened to on [item] — its audio release whenever there is one; see [ListenIdentity]. */
+    private fun listenSong(item: MediaItem?): Song? = item?.toSong()?.let(ListenIdentity::of)
+
+    /**
+     * Announced while [played]'s audio release was still being looked for, the scrobblers and
+     * Discord were told the video; once the release is known they are told it instead, so they
+     * name the audio release from the start of the listen.
+     */
+    private fun settleListen(played: Song?) {
+        if (played == null || ListenIdentity.known(played) != null) return
+        scope.launch {
+            val listen = ListenIdentity.resolve(played)
+            val exo = player ?: return@launch
+            if (listen.videoId == played.videoId || exo.currentMediaItem?.mediaId != played.videoId) return@launch
+            val durationMs = exo.duration.takeIf { it > 0 }
+            scrobbleManager?.onSongStop()
+            if (exo.isPlaying) scrobbleManager?.onSongStart(listen, durationMs)
+            if (listenBrainzSong?.videoId == played.videoId) {
+                listenBrainzSong = listen
+                if (exo.isPlaying) submitListenBrainzPlayingNow(listen, exo.currentPosition, durationMs)
+            }
+            if (exo.isPlaying) pushDiscordPresence(exo)
+        }
+    }
+
     private fun registerCurrentPlay() {
-        player?.currentMediaItem?.mediaId?.let(PlaybackTracker::onPlaying)
+        player?.currentMediaItem?.toSong()?.let(PlaybackTracker::onPlaying)
     }
 
     /**
@@ -3675,11 +3702,12 @@ class PlaybackService : MediaLibraryService() {
         // this the second play through is a continuation of the first and is
         // never counted.
         ListeningRecorder.onStopped()
-        val newSong = mediaItem?.toSong()
+        val newSong = listenSong(mediaItem)
         val durationMs = exoPlayer.duration.takeIf { it > 0 }
         if (exoPlayer.isPlaying) {
             scrobbleManager?.onSongStart(newSong, durationMs)
         }
+        settleListen(mediaItem?.toSong())
 
         // ListenBrainz: submit finished for old song, playing_now for new song.
         // The finished listen only counts when the track actually ended —
@@ -6198,6 +6226,8 @@ class PlaybackService : MediaLibraryService() {
         // So whatever read-ahead writes for these can be named in the Cached
         // songs folder; its own requests carry nothing but an id.
         AudioCache.noteSongs(upcomingSongs)
+        // Its audio release looked for now, so history and scrobbles name it from the first second.
+        upcomingSongs.firstOrNull()?.let(ListenIdentity::prefetch)
         val preferAudio = AppSettings.preferMusicOnly.value
         val request = preferAudio to upcomingSongs.map { it.videoId }
         if (request == preferredPrefetchRequest) return
@@ -7340,7 +7370,7 @@ class PlaybackService : MediaLibraryService() {
      */
     private fun pushDiscordPresence(exoPlayer: ExoPlayer) {
         val rpc = discordRpc ?: return
-        val song = exoPlayer.currentMediaItem?.toSong() ?: return
+        val song = listenSong(exoPlayer.currentMediaItem) ?: return
         // Read on the main thread, before the push is handed to IO: by the time
         // a coroutine gets to run, the queue may have moved on, and ExoPlayer's
         // state is only legal to read from the thread it was built on.

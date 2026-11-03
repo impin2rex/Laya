@@ -62,9 +62,13 @@ object ListeningRecorder {
      * clear the thirty-second floor to count as a play.
      */
     fun onSample(played: Song, durationMs: Long) = synchronized(lock) {
-        // The listen's own track: switching to its video and back is one listen, credited to the
-        // audio release.
-        val song = ListenIdentity.of(played)
+        // The listen's own track — its audio release whenever there is one; switching to its video
+        // and back is one listen. A video whose release is still being looked for anchors nothing
+        // yet, so none of it is credited to the video.
+        val song = ListenIdentity.known(played) ?: run {
+            ListenIdentity.prefetch(played)
+            return@synchronized
+        }
         val now = currentTimeMillis()
         if (song.videoId != currentId) {
             // A new track anchors the clock and contributes nothing yet — see

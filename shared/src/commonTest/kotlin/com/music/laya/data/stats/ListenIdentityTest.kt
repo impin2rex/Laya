@@ -3,6 +3,7 @@ package com.music.laya.data.stats
 import com.music.laya.data.model.Song
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class ListenIdentityTest {
 
@@ -28,9 +29,11 @@ class ListenIdentityTest {
     fun videoToAudioBecomesTheAudio() {
         val video = song("videoVVVVV2", video = true)
         val audio = song("audioAAAAA2", video = false)
-        assertEquals(video.videoId, ListenIdentity.idOf(video.videoId))
+        // Not yet settled: nothing is to be credited to the video meanwhile.
+        assertNull(ListenIdentity.known(video))
         ListenIdentity.onVersionSwapped(video, audio)
         assertEquals(audio.videoId, ListenIdentity.idOf(video.videoId))
+        assertEquals(audio, ListenIdentity.known(video))
         // Back to the video to watch it: the listen stays the audio release's.
         ListenIdentity.onVersionSwapped(audio, video)
         assertEquals(audio.videoId, ListenIdentity.idOf(video.videoId))

@@ -63,13 +63,6 @@ object PlaybackTracker {
     private const val OPEN_RETRY_DELAY_MS = 2_000L
 
     /**
-     * How long a track plays before its play is registered. A video swapped for its audio release
-     * as it starts — the music-only preference, the desktop's video-as-audio — is then registered
-     * as the audio release it became, rather than leaving the video in the account's history too.
-     */
-    private const val REGISTER_AFTER_MS = 8_000L
-
-    /**
      * A videoId, as opposed to anything else that can be a media id.
      *
      * Local files carry their `content://` URI as an id, and a module source
@@ -120,9 +113,18 @@ object PlaybackTracker {
      * queue moves on. A no-op while the same track is already being tracked, so
      * a pause/resume does not register a second play.
      */
-    fun onPlaying(playedId: String) {
-        // The listen's own track — see [ListenIdentity] — not whichever version of it is playing.
-        val videoId = ListenIdentity.idOf(playedId)
+    fun onPlaying(played: Song) {
+        // The listen's own track — its audio release, whenever there is one; see [ListenIdentity]
+        // — not whichever version of it is playing. Settled before anything is registered.
+        val known = ListenIdentity.known(played)
+        if (known == null) {
+            scope.launch(TrackLog.about(played.videoId)) { register(ListenIdentity.resolve(played).videoId) }
+        } else {
+            register(known.videoId)
+        }
+    }
+
+    private fun register(videoId: String) {
         if (!VIDEO_ID.matches(videoId)) return
         if (Innertube.cookie == null) return
         // A downloaded track plays perfectly well with the radio off — the
@@ -138,7 +140,6 @@ object PlaybackTracker {
         opening = videoId
         scope.launch(TrackLog.about(videoId)) {
             try {
-                delay(REGISTER_AFTER_MS)
                 openWithRetries(videoId)
             } finally {
                 if (opening == videoId) opening = null
@@ -164,7 +165,7 @@ object PlaybackTracker {
                 runCatching { flush(closing, maxOf(closing.reportedSeconds, closing.flushingTo), final = true) }
             }
         }
-        onPlaying(listen)
+        register(listen)
     }
 
     /**
