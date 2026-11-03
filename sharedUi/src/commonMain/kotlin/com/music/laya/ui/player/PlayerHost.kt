@@ -63,6 +63,13 @@ interface PlayerHost {
     @Composable
     fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) = Unit
 
+    /**
+     * The playing music video in a mini player's cover slot, cropped to it, when the listener
+     * asked for that in Settings; nothing otherwise, which leaves the cover showing.
+     */
+    @Composable
+    fun MiniPlayerVideo(videoId: String, modifier: Modifier) = Unit
+
     /** The playing music video's width over its height. */
     val musicVideoAspect: StateFlow<Float> get() = DefaultVideoAspect
 

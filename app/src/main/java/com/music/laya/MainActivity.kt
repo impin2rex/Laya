@@ -3976,7 +3976,10 @@ private fun LayaApp(
 
         }
 
-        val playerRaised = showNowPlaying && playerSong != null
+        // The sheet is a window of its own, above the picture-in-picture video drawn over the
+        // app: it is left out while that window shows, and comes back up when it goes.
+        val inPictureInPicture by com.music.laya.ui.player.VideoPictureInPicture.active.collectAsStateWithLifecycle()
+        val playerRaised = showNowPlaying && playerSong != null && !inPictureInPicture
 
         // ---- Now Playing ----
         if (playerRaised) {

@@ -95,6 +95,14 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
 
     override val musicVideoSupported: Boolean get() = true
 
+    @Composable
+    override fun MiniPlayerVideo(videoId: String, modifier: Modifier) {
+        val wanted by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
+        if (wanted) {
+            AndroidMusicVideo(videoId, fit = false, onRenderedChanged = {}, modifier = modifier, priority = MusicVideoEngine.MINI_PLAYER_PRIORITY)
+        }
+    }
+
     override val pictureInPicture: (() -> Unit)? =
         if (VideoPictureInPicture.supported(app)) VideoPictureInPicture::enter else null
 
