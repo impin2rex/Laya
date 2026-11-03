@@ -14,7 +14,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.IntOffset
@@ -39,6 +38,17 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.ColorAlphaType
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import org.jetbrains.skia.ColorType
+import org.jetbrains.skia.FilterMipmap
+import org.jetbrains.skia.FilterMode
+import org.jetbrains.skia.FilterTileMode
+import org.jetbrains.skia.Matrix33
+import org.jetbrains.skia.MipmapMode
+import org.jetbrains.skia.RuntimeEffect
+import org.jetbrains.skia.RuntimeShaderBuilder
+import org.jetbrains.skia.Shader
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.ImageInfo
 import kotlin.math.roundToInt
@@ -241,10 +251,92 @@ private const val SLOW_WINDOW_MS = 20_000L
 /** How many decoded frames run ahead of the one on screen: a few hundred milliseconds of video. */
 private const val FRAMES_AHEAD = 8
 
-private class VideoFrame(val ptsMs: Long, val image: ImageBitmap)
+/**
+ * One frame as the GPU draws it: the decoder's own luma and chroma [planes], which [YuvShader]
+ * turns into colour and scales as it draws — or, for a format it doesn't take, a finished [rgb]
+ * bitmap. Native memory: [close] once it is off screen.
+ */
+private class VideoFrame(
+    val ptsMs: Long,
+    val width: Int,
+    val height: Int,
+    /** Y, U and V. Empty for [rgb]. */
+    val planes: List<Image> = emptyList(),
+    val bt709: Boolean = true,
+    val fullRange: Boolean = false,
+    val rgb: Image? = null,
+) {
+    fun close() {
+        planes.forEach(Image::close)
+        rgb?.close()
+    }
+}
+
+/**
+ * YUV to RGB on the GPU, sampled straight off the decoder's planes — the conversion and scaling
+ * that took most of a 4K frame's CPU, done as the picture is drawn. Coordinates are luma pixels;
+ * chroma is half size in both directions (4:2:0).
+ */
+private val YuvShader: RuntimeEffect by lazy {
+    RuntimeEffect.makeForShader(
+        """
+        uniform shader luma;
+        uniform shader chromaU;
+        uniform shader chromaV;
+        uniform float yOffset;
+        uniform float yScale;
+        uniform float cScale;
+        uniform float4 k; // R from V, G from U, G from V, B from U
+        half4 main(float2 p) {
+            float y = luma.eval(p).r;
+            float2 c = p * 0.5;
+            float u = chromaU.eval(c).r;
+            float v = chromaV.eval(c).r;
+            y = (y - yOffset) * yScale;
+            u = (u - 0.5) * cScale;
+            v = (v - 0.5) * cScale;
+            return half4(half(y + k.x * v), half(y - k.y * u - k.z * v), half(y + k.w * u), 1.0);
+        }
+        """.trimIndent(),
+    )
+}
+
+private val Bilinear = FilterMipmap(FilterMode.LINEAR, MipmapMode.NONE)
+
+/** [frame]'s planes as a shader filling a [w] by [h] box at [left], [top]. */
+private fun yuvShader(frame: VideoFrame, left: Float, top: Float, w: Float, h: Float): Shader {
+    val builder = RuntimeShaderBuilder(YuvShader)
+    val sampled = frame.planes.map { it.makeShader(FilterTileMode.CLAMP, FilterTileMode.CLAMP, Bilinear) }
+    builder.child("luma", sampled[0])
+    builder.child("chromaU", sampled[1])
+    builder.child("chromaV", sampled[2])
+    if (frame.fullRange) {
+        builder.uniform("yOffset", 0f)
+        builder.uniform("yScale", 1f)
+        builder.uniform("cScale", 1f)
+    } else {
+        builder.uniform("yOffset", 16f / 255f)
+        builder.uniform("yScale", 255f / 219f)
+        builder.uniform("cScale", 255f / 224f)
+    }
+    if (frame.bt709) builder.uniform("k", 1.5748f, 0.1873f, 0.4681f, 1.8556f)
+    else builder.uniform("k", 1.402f, 0.344136f, 0.714136f, 1.772f)
+    val shader = builder.makeShader(
+        Matrix33.makeTranslate(left, top).makeConcat(Matrix33.makeScale(w / frame.width, h / frame.height)),
+    )
+    builder.close()
+    sampled.forEach(Shader::close)
+    return shader
+}
 
 /** One run of the decoder from a point: its buffered frames, and the job filling them. */
-private class Decoding(val frames: Channel<VideoFrame>, val job: Job)
+private class Decoding(val frames: Channel<VideoFrame>, val job: Job) {
+    /** Stops the run and lets go of what it had buffered. */
+    suspend fun stop() {
+        job.cancelAndJoin()
+        while (true) frames.tryReceive().getOrNull()?.close() ?: break
+    }
+}
 
 /**
  * Decodes from [startMs] into a small buffer, dropping what comes before it so the first frame out
@@ -256,18 +348,51 @@ private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Lo
     val job = launch(Dispatchers.IO) {
         try {
             decoder.seek(startMs.coerceAtLeast(0L))
-            val pixels = ByteArray(decoder.width * decoder.height * 4)
-            val info = ImageInfo.makeN32(decoder.width, decoder.height, ColorAlphaType.OPAQUE)
             val from = startMs - decoder.frameIntervalMillis
-            while (isActive && decoder.nextFrame(pixels, skipBeforeMs = from)) {
-                // Handed to Skia rather than copied, so the next frame cannot be decoded into it.
-                frames.send(VideoFrame(decoder.framePtsMs, Image.makeRaster(info, pixels.copyOf(), decoder.width * 4).toComposeImageBitmap()))
+            // Reused frame to frame: Skia copies a raster image's bytes as it makes one.
+            var planes: VideoPlanes? = null
+            var pixels: ByteArray? = null
+            while (isActive) {
+                val frame = if (decoder.planarFormat) {
+                    val p = decoder.nextPlanes(planes, skipBeforeMs = from)
+                    if (p == null) {
+                        if (decoder.planarFormat) break else continue
+                    }
+                    planes = p
+                    planesFrame(p)
+                } else {
+                    val buffer = pixels ?: ByteArray(decoder.width * decoder.height * 4).also { pixels = it }
+                    if (!decoder.nextFrame(buffer, skipBeforeMs = from)) break
+                    val info = ImageInfo.makeN32(decoder.width, decoder.height, ColorAlphaType.OPAQUE)
+                    VideoFrame(decoder.framePtsMs, decoder.width, decoder.height, rgb = Image.makeRaster(info, buffer, decoder.width * 4))
+                }
+                try {
+                    frames.send(frame)
+                } catch (e: CancellationException) {
+                    frame.close()
+                    throw e
+                }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A frame the decoder or Skia couldn't take ends this run, not the app: the drawing
+            // side sees no more frames and restarts.
+            DesktopTrackLog.log("music video: decoding stopped: ${e.message}")
         } finally {
             frames.close()
         }
     }
     return Decoding(frames, job)
+}
+
+private fun planesFrame(p: VideoPlanes): VideoFrame {
+    val cw = (p.width + 1) / 2
+    val ch = (p.height + 1) / 2
+    val y = Image.makeRaster(ImageInfo(p.width, p.height, ColorType.GRAY_8, ColorAlphaType.OPAQUE), p.y, p.yStride)
+    val chroma = ImageInfo(cw, ch, ColorType.GRAY_8, ColorAlphaType.OPAQUE)
+    val planes = listOf(y, Image.makeRaster(chroma, p.u, p.cStride), Image.makeRaster(chroma, p.v, p.cStride))
+    return VideoFrame(p.ptsMs, p.width, p.height, planes, p.bt709, p.fullRange)
 }
 
 /**
@@ -278,7 +403,7 @@ private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Lo
  */
 private suspend fun CoroutineScope.playPicture(
     videoId: String,
-    onFrame: (ImageBitmap) -> Unit,
+    onFrame: (VideoFrame) -> Unit,
     onStepDown: () -> Unit,
 ) {
     val mountedAt = System.currentTimeMillis()
@@ -290,8 +415,8 @@ private suspend fun CoroutineScope.playPicture(
     var landed = false
     val startAt = DesktopMusicVideo.audioPositionMs() ?: 0L
     var decoding = decodeFrom(decoder, startAt + if (DesktopMusicVideo.audioPlaying()) leadMs else 0L)
+    var next: VideoFrame? = null
     try {
-        var next: VideoFrame? = null
         var shownPts = -1L
         // When the picture had to start over behind the audio, lately: twice in a short while
         // at a height above 1080p is a decoder that can't keep up, and it steps down. A seek's
@@ -307,7 +432,8 @@ private suspend fun CoroutineScope.playPicture(
             return fellBehindAt.size >= 2 && opened.stream.height > 1080 && DesktopMusicVideo.stepDown(videoId)
         }
         suspend fun restart(at: Long) {
-            decoding.job.cancelAndJoin()
+            decoding.stop()
+            next?.close()
             next = null
             landed = false
             restartedAt = System.currentTimeMillis()
@@ -349,7 +475,13 @@ private suspend fun CoroutineScope.playPicture(
                     var due: VideoFrame = candidate
                     while (true) {
                         val after = decoding.frames.tryReceive().getOrNull() ?: break
-                        if (after.ptsMs <= target + 8) due = after else { next = after; break }
+                        if (after.ptsMs <= target + 8) {
+                            due.close()
+                            due = after
+                        } else {
+                            next = after
+                            break
+                        }
                     }
                     if (next === candidate) next = null
                     if (!landed) {
@@ -357,7 +489,7 @@ private suspend fun CoroutineScope.playPicture(
                         landed = true
                         if (playing) leadMs = ((leadMs + System.currentTimeMillis() - restartedAt) / 2).coerceIn(150L, 2_500L)
                     }
-                    onFrame(due.image)
+                    onFrame(due)
                     shownPts = due.ptsMs
                 }
             }
@@ -365,7 +497,10 @@ private suspend fun CoroutineScope.playPicture(
             delay(wait)
         }
     } finally {
-        withContext(NonCancellable) { decoding.job.cancelAndJoin() }
+        withContext(NonCancellable) {
+            decoding.stop()
+            next?.close()
+        }
         withContext(NonCancellable + Dispatchers.IO) { decoder.close() }
     }
 }
@@ -382,7 +517,9 @@ internal fun DesktopMusicVideoSurface(
     onRenderedChanged: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
-    var frame by remember(videoId) { mutableStateOf<ImageBitmap?>(null) }
+    var frame by remember(videoId) { mutableStateOf<VideoFrame?>(null) }
+    // The frame on screen goes when it leaves, along with the surface.
+    DisposableEffect(videoId) { onDispose { frame?.close() } }
     val generation by DesktopMusicVideo.qualityGeneration.collectAsState()
     // Bumped when the picture steps down a height, to reopen at the lower one.
     var reopen by remember(videoId) { mutableStateOf(0) }
@@ -399,9 +536,12 @@ internal fun DesktopMusicVideoSurface(
             showing = launch {
                 playPicture(
                     videoId = videoId,
-                    onFrame = { image ->
+                    onFrame = { shown ->
                         if (previous?.isActive == true) previous.cancel()
-                        frame = image
+                        // Drawn on this same thread, so the old one is never in a draw when closed.
+                        val old = frame
+                        frame = shown
+                        if (old !== shown) old?.close()
                     },
                     onStepDown = { reopen++ },
                 )
@@ -419,8 +559,8 @@ internal fun DesktopMusicVideoSurface(
         label = "musicVideoAlpha",
     )
     Canvas(modifier.graphicsLayer { this.alpha = alpha; clip = true }) {
-        val image = frame ?: return@Canvas
-        val clipAspect = image.width.toFloat() / image.height
+        val shown = frame ?: return@Canvas
+        val clipAspect = shown.width.toFloat() / shown.height
         val viewAspect = size.width / size.height
         // Letterboxed into the bounds, or overflowing them and cropped by the clip.
         val (w, h) = if ((clipAspect > viewAspect) == fit) {
@@ -428,12 +568,23 @@ internal fun DesktopMusicVideoSurface(
         } else {
             size.height * clipAspect to size.height
         }
-        drawImage(
-            image = image,
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(image.width, image.height),
-            dstOffset = IntOffset(((size.width - w) / 2f).roundToInt(), ((size.height - h) / 2f).roundToInt()),
-            dstSize = IntSize(w.roundToInt(), h.roundToInt()),
-        )
+        val left = (size.width - w) / 2f
+        val top = (size.height - h) / 2f
+        val rgb = shown.rgb
+        if (rgb != null) {
+            drawImage(
+                image = rgb.toComposeImageBitmap(),
+                srcOffset = IntOffset.Zero,
+                srcSize = IntSize(rgb.width, rgb.height),
+                dstOffset = IntOffset(left.roundToInt(), top.roundToInt()),
+                dstSize = IntSize(w.roundToInt(), h.roundToInt()),
+            )
+        } else {
+            val shader = yuvShader(shown, left, top, w, h)
+            val paint = org.jetbrains.skia.Paint().apply { this.shader = shader }
+            drawIntoCanvas { it.nativeCanvas.drawRect(org.jetbrains.skia.Rect.makeXYWH(left, top, w, h), paint) }
+            paint.close()
+            shader.close()
+        }
     }
 }

@@ -9,6 +9,13 @@ import org.bytedeco.ffmpeg.global.avutil.AV_HWDEVICE_TYPE_D3D11VA
 import org.bytedeco.ffmpeg.global.avutil.AV_HWDEVICE_TYPE_VAAPI
 import org.bytedeco.ffmpeg.global.avutil.AV_HWDEVICE_TYPE_VIDEOTOOLBOX
 import org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_NONE
+import org.bytedeco.ffmpeg.global.avutil.AVCOL_RANGE_JPEG
+import org.bytedeco.ffmpeg.global.avutil.AVCOL_SPC_BT470BG
+import org.bytedeco.ffmpeg.global.avutil.AVCOL_SPC_BT709
+import org.bytedeco.ffmpeg.global.avutil.AVCOL_SPC_SMPTE170M
+import org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_NV12
+import org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_YUV420P
+import org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_YUVJ420P
 import org.bytedeco.ffmpeg.global.avutil.av_buffer_ref
 import org.bytedeco.ffmpeg.global.avutil.av_buffer_unref
 import org.bytedeco.ffmpeg.global.avutil.av_frame_unref
@@ -208,10 +215,103 @@ internal class DesktopCanvasDecoder(
      * seek, which at 4K is most of what a seek costs.
      */
     fun nextFrame(into: ByteArray, skipBeforeMs: Long = Long.MIN_VALUE): Boolean {
-        val container = format ?: return false
-        val context = codec ?: return false
-        val pkt = packet ?: return false
-        val decoded = frame ?: return false
+        val picture = nextPicture(skipBeforeMs) ?: return false
+        val converter = scalerFor(picture.format()) ?: return false
+        sws_scale(converter, picture.data(), picture.linesize(), 0, sourceHeight, planes, strides)
+        // Read through an explicit NIO view rewound each time rather than through the
+        // pointer's own `get`, whose starting offset is its position.
+        view?.let { pixels ->
+            pixels.rewind()
+            pixels.get(into, 0, minOf(into.size, width * height * 4))
+        }
+        return true
+    }
+
+    /**
+     * The next frame as its own luma and chroma planes, at full size, for the GPU to turn into
+     * colour and scale as it draws — no conversion or scaling here at all. Written into [reuse]
+     * when it is the same shape, so a stream of frames allocates nothing. Null at the end, or —
+     * [planarFormat] false — for a picture in some other format (10-bit, say), which
+     * [nextFrame] converts instead.
+     */
+    fun nextPlanes(reuse: VideoPlanes?, skipBeforeMs: Long = Long.MIN_VALUE): VideoPlanes? {
+        val picture = nextPicture(skipBeforeMs) ?: return null
+        val interleaved = when (picture.format()) {
+            AV_PIX_FMT_NV12 -> true
+            AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P -> false
+            else -> {
+                planarFormat = false
+                return null
+            }
+        }
+        val w = picture.width()
+        val h = picture.height()
+        val chromaWidth = (w + 1) / 2
+        val chromaRows = (h + 1) / 2
+        val yStride = picture.linesize(0)
+        // Skia takes one channel to an image, so the hardware's interleaved U/V plane is split in
+        // two here — a byte shuffle, nothing like the conversion it replaces.
+        val cStride = if (interleaved) chromaWidth else picture.linesize(1)
+        val out = reuse?.takeIf {
+            it.width == w && it.height == h && it.yStride == yStride && it.cStride == cStride
+        } ?: VideoPlanes(
+            width = w,
+            height = h,
+            y = ByteArray(yStride * h),
+            yStride = yStride,
+            u = ByteArray(cStride * chromaRows),
+            v = ByteArray(cStride * chromaRows),
+            cStride = cStride,
+        )
+        copyPlane(picture, 0, out.y)
+        if (interleaved) {
+            val uvStride = picture.linesize(1)
+            val uv = out.scratch?.takeIf { it.size == uvStride * chromaRows } ?: ByteArray(uvStride * chromaRows).also { out.scratch = it }
+            copyPlane(picture, 1, uv)
+            for (row in 0 until chromaRows) {
+                var from = row * uvStride
+                var to = row * cStride
+                repeat(chromaWidth) {
+                    out.u[to] = uv[from]
+                    out.v[to] = uv[from + 1]
+                    from += 2
+                    to++
+                }
+            }
+        } else {
+            copyPlane(picture, 1, out.u)
+            copyPlane(picture, 2, out.v)
+        }
+        out.ptsMs = framePtsMs
+        // YouTube tags HD as BT.709; an untagged picture is guessed by its size, as players do.
+        out.bt709 = when (picture.colorspace()) {
+            AVCOL_SPC_BT709 -> true
+            AVCOL_SPC_BT470BG, AVCOL_SPC_SMPTE170M -> false
+            else -> h >= 720
+        }
+        out.fullRange = picture.color_range() == AVCOL_RANGE_JPEG || picture.format() == AV_PIX_FMT_YUVJ420P
+        return out
+    }
+
+    /** Whether the stream's pictures come in a format [nextPlanes] hands over; false once one hasn't. */
+    var planarFormat: Boolean = true
+        private set
+
+    private fun copyPlane(picture: AVFrame, index: Int, into: ByteArray) {
+        val plane = picture.data(index)
+        plane.capacity(into.size.toLong())
+        plane.asByteBuffer().get(into, 0, into.size)
+    }
+
+    /**
+     * Decodes on to the next picture at or past [skipBeforeMs], looping at the end, and brings a
+     * hardware frame's finished picture back from the GPU. Valid until the next call.
+     */
+    private fun nextPicture(skipBeforeMs: Long): AVFrame? {
+        val container = format ?: return null
+        val context = codec ?: return null
+        val pkt = packet ?: return null
+        val decoded = frame ?: return null
         var looped = false
         while (true) {
             if (avcodec_receive_frame(context, decoded) == 0) {
@@ -219,27 +319,15 @@ internal class DesktopCanvasDecoder(
                 if (pts != AV_NOPTS_VALUE && timeBase > 0.0) framePtsMs = (pts * timeBase * 1_000).toLong()
                 if (framePtsMs < skipBeforeMs) continue
                 // A hardware frame lives in the GPU's memory: only the finished picture comes back.
-                val picture = if (hwDevice != null && decoded.format() == hwPixelFormat) {
-                    val copy = hwFrame ?: return false
-                    av_frame_unref(copy)
-                    if (av_hwframe_transfer_data(copy, decoded, 0) < 0) return false
-                    decodingInHardware = true
-                    copy
-                } else {
-                    decoded
-                }
-                val converter = scalerFor(picture.format()) ?: return false
-                sws_scale(converter, picture.data(), picture.linesize(), 0, sourceHeight, planes, strides)
-                // Read through an explicit NIO view rewound each time rather than through the
-                // pointer's own `get`, whose starting offset is its position.
-                view?.let { pixels ->
-                    pixels.rewind()
-                    pixels.get(into, 0, minOf(into.size, width * height * 4))
-                }
-                return true
+                if (hwDevice == null || decoded.format() != hwPixelFormat) return decoded
+                val copy = hwFrame ?: return null
+                av_frame_unref(copy)
+                if (av_hwframe_transfer_data(copy, decoded, 0) < 0) return null
+                decodingInHardware = true
+                return copy
             }
             if (av_read_frame(container, pkt) < 0) {
-                if (looped || !loop) return false
+                if (looped || !loop) return null
                 looped = true
                 av_seek_frame(container, streamIndex, 0, AVSEEK_FLAG_BACKWARD)
                 avcodec_flush_buffers(context)
@@ -360,6 +448,24 @@ internal class DesktopCanvasDecoder(
 }
 
 private typealias DoublePointer = org.bytedeco.javacpp.DoublePointer
+
+/** A picture's luma and chroma planes as decoded — see [DesktopCanvasDecoder.nextPlanes]. */
+internal class VideoPlanes(
+    val width: Int,
+    val height: Int,
+    val y: ByteArray,
+    val yStride: Int,
+    val u: ByteArray,
+    val v: ByteArray,
+    /** The row length of [u] and [v] alike. */
+    val cStride: Int,
+) {
+    /** Where an interleaved U/V plane lands before it is split, reused frame to frame. */
+    internal var scratch: ByteArray? = null
+    var ptsMs: Long = -1L
+    var bt709: Boolean = true
+    var fullRange: Boolean = false
+}
 
 /** [singleVariant]'s choice out of a master playlist's text; null when it lists no H.264 rendition. */
 internal fun pickVariant(manifest: String, manifestUrl: String, minEdge: Int = 540): String? {
