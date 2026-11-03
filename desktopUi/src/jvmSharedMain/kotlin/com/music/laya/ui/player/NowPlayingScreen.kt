@@ -876,10 +876,10 @@ fun NowPlayingScreen(
     // is the whole screen. The full-screen buttons turn the phone's screen
     // rather than switching a layout.
     val screenOrientation = rememberScreenOrientation()
-    // A desktop window has no sideways to turn to: the full-screen button puts the video over the
-    // whole player (a theater), and its exit button brings the player back with the video in the
-    // sleeve. Each video opens in the sleeve.
-    var videoTheater by remember(song.videoId) { mutableStateOf(false) }
+    // A desktop window has no sideways to turn to: a video opens over the whole player (a theater),
+    // its exit button brings the player back with the video in the sleeve, and the sleeve's
+    // full-screen button goes back in.
+    var videoTheater by remember(song.videoId) { mutableStateOf(true) }
     var canvasAspect by remember(canvas) { mutableFloatStateOf(0f) }
     // Whether the clip actually has a frame on screen right now, and one of
     // them — used to blow the sleeve out to the full-bleed hero treatment and
