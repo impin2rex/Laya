@@ -2160,7 +2160,7 @@ fun NowPlayingScreen(
                 val fullArtworkBackdropAlpha by animateFloatAsState(
                     targetValue = if (
                         !legacyMeshBackdrop &&
-                        (tabletArtworkBackdrop || lyricsOpen || queueOpen) &&
+                        (tabletArtworkBackdrop || lyricsOpen || queueOpen || videoMode) &&
                         (tabletArtworkBackdrop || fullArtworkBlurImage != null)
                     ) 1f else 0f,
                     animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
