@@ -3244,18 +3244,15 @@ fun NowPlayingScreen(
                                             translationX = swipeSettle.value * (1f - p())
                                         },
                                 ) {
-                                    // The video's still frame at the picture's own
-                                    // shape, under it until its first frame lands.
-                                    AsyncImage(
-                                        model = art.request,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(Color.Black.copy(alpha = 0.18f))
-                                            .drawWithContent { if (!videoRendered) drawContent() },
-                                    )
+                                    // Black with a spinner under the picture until
+                                    // its first frame lands.
+                                    if (!videoRendered) {
+                                        VideoLoadingBackdrop(
+                                            Modifier
+                                                .fillMaxSize()
+                                                .clip(RoundedCornerShape(10.dp)),
+                                        )
+                                    }
                                     MusicVideoSurface(
                                         videoId = song.videoId,
                                         onRenderedChanged = { videoRendered = it },
