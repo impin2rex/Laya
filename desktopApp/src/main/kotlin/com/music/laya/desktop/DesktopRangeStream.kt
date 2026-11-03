@@ -19,6 +19,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 /** Reads a remote file in bounded windows rather than as one open-ended request. */
 internal class DesktopRangeStream(
@@ -36,6 +37,9 @@ internal class DesktopRangeStream(
 
     /** Where [window] starts in the file; -1 when nothing is held. */
     private var windowStart = -1L
+
+    /** The window after the one held, already on its way: a read never waits on the network mid-file. */
+    private var ahead: Pair<Long, CompletableFuture<HttpResponse<ByteArray>?>>? = null
 
     /** Where the next read will come from. */
     fun position(): Long = position
@@ -64,22 +68,15 @@ internal class DesktopRangeStream(
     private fun holds(at: Long): Boolean =
         windowStart >= 0 && at >= windowStart && at < windowStart + window.size
 
-    /** Fetches the window containing [at]. */
+    /** Fetches the window containing [at], from the one fetched ahead when it is that one. */
     private fun fetchWindowFor(at: Long): Boolean {
         val start = at - (at % windowBytes)
-        val end = start + windowBytes - 1
-        val request = HttpRequest.newBuilder(URI.create(url))
-            .timeout(Duration.ofSeconds(20))
-            .header("Range", "bytes=$start-$end")
-            .header("Accept", "*/*")
-            // Anything else would arrive compressed and the byte offsets the caller is counting in
-            // would stop meaning anything.
-            .header("Accept-Encoding", "identity")
-        headers.forEach { (name, value) -> runCatching { request.header(name, value) } }
-
-        val response = runCatching {
-            client.send(request.GET().build(), HttpResponse.BodyHandlers.ofByteArray())
-        }.getOrNull() ?: return false
+        val pending = ahead?.takeIf { it.first == start }?.second
+        if (pending == null) ahead?.second?.cancel(true)
+        ahead = null
+        val response = pending?.let { runCatching { it.join() }.getOrNull() }
+            ?: runCatching { client.send(request(start), HttpResponse.BodyHandlers.ofByteArray()) }.getOrNull()
+            ?: return false
         if (response.statusCode() !in 200..299) {
             // A URL cleared before playback has been refused mid-track: tell the resolver, as the
             // phone's ChunkedDataSource does, so it forgets it and benches the client that minted it.
@@ -100,7 +97,30 @@ internal class DesktopRangeStream(
         }
         window = body
         if (length < 0) length = windowStart + body.size
+        val next = windowStart + body.size
+        if (stated != null && next < length) {
+            ahead = next to client.sendAsync(request(next), HttpResponse.BodyHandlers.ofByteArray())
+                .exceptionally { null }
+        }
         return body.isNotEmpty()
+    }
+
+    private fun request(start: Long): HttpRequest {
+        val request = HttpRequest.newBuilder(URI.create(url))
+            .timeout(Duration.ofSeconds(20))
+            .header("Range", "bytes=$start-${start + windowBytes - 1}")
+            .header("Accept", "*/*")
+            // Anything else would arrive compressed and the byte offsets the caller is counting in
+            // would stop meaning anything.
+            .header("Accept-Encoding", "identity")
+        headers.forEach { (name, value) -> runCatching { request.header(name, value) } }
+        return request.GET().build()
+    }
+
+    /** Lets go of the window on its way, for a stream no longer read. */
+    fun close() {
+        ahead?.second?.cancel(true)
+        ahead = null
     }
 
     private companion object {
@@ -153,6 +173,7 @@ internal class DesktopRangeIo(url: String, headers: Map<String, String>, windowB
     val context: AVFormatContext = avformat_alloc_context().also { it.pb(avio) }
 
     fun close() {
+        source.close()
         avio?.let {
             av_free(it.buffer())
             it.buffer(null as BytePointer?)

@@ -102,13 +102,15 @@ internal object DesktopMusicVideo {
     fun setQuality(height: Int?) {
         persistence.saveString(KEY_QUALITY, height?.toString().orEmpty())
         _quality.value = _quality.value.copy(held = height)
+        // A pick is the listener asking again: an earlier step down doesn't overrule it.
+        ceiling = Int.MAX_VALUE
         qualityGeneration.value++
     }
 
     /**
      * The tallest picture this machine has shown it can play: lowered to [STEP_DOWN_HEIGHT] the
      * first time a held height above it wouldn't open or keep up. What decodes in time is the
-     * machine's, not the video's, so it holds for every video for the rest of the session.
+     * machine's, not the video's, so it holds for every video until a height is picked again.
      */
     @Volatile
     private var ceiling = Int.MAX_VALUE
@@ -196,8 +198,7 @@ internal object DesktopMusicVideo {
         }
         _aspect.value = stream.aspect
         _quality.value = _quality.value.copy(heights = stream.heights, activeHeight = stream.height)
-        // Scaled to at most a 720p-class frame: the player shows it no bigger than the window, and
-        // every pixel past that is one more to convert on each frame.
+        // Full size on the GPU path; [MAX_FRAME_EDGE] only bounds the CPU-converted fallback.
         val decoder = DesktopCanvasDecoder(maxEdge = minOf(maxOf(stream.width, stream.height), MAX_FRAME_EDGE), loop = false, windowed = true, hardware = true)
         val opened = withContext(Dispatchers.IO) { decoder.open(stream.url, stream.headers) }
         if (opened.isFailure) {
@@ -450,6 +451,9 @@ private suspend fun CoroutineScope.playPicture(
                     restart(target + if (playing) leadMs else 0L)
                 candidate != null && target - candidate.ptsMs > DesktopMusicVideo.RESTART_BEHIND_MS -> {
                     if (landed && playing && tooSlow()) { onStepDown(); return }
+                    // A restart that came up behind took longer than it was aimed ahead for (a 4K
+                    // keyframe can be seconds away): aim the next one as far ahead as that took.
+                    if (!landed && playing) leadMs = ((System.currentTimeMillis() - restartedAt) * 5 / 4).coerceIn(150L, 5_000L)
                     restart(target + if (playing) leadMs else 0L)
                 }
                 // A restart that never landed: the decoder couldn't get from the keyframe to the
@@ -470,7 +474,9 @@ private suspend fun CoroutineScope.playPicture(
                     if (tooSlow()) { onStepDown(); return }
                     restart(target + leadMs)
                 }
-                candidate != null && candidate.ptsMs <= target + 8 -> {
+                // Paused, the first frame after a restart is the one to show even a frame past the
+                // audio: the audio isn't coming to it.
+                candidate != null && (candidate.ptsMs <= target + 8 || (!playing && !landed)) -> {
                     // Due: show the latest frame the audio has reached, skipping any it passed.
                     var due: VideoFrame = candidate
                     while (true) {
@@ -485,9 +491,9 @@ private suspend fun CoroutineScope.playPicture(
                     }
                     if (next === candidate) next = null
                     if (!landed) {
-                        if (shownPts < 0) DesktopTrackLog.log("music video: first frame ${System.currentTimeMillis() - mountedAt}ms after the player asked, ${opened.stream.height}p in ${if (decoder.decodingInHardware) "hardware" else "software"}")
+                        if (shownPts < 0) DesktopTrackLog.log("music video: first frame ${System.currentTimeMillis() - mountedAt}ms after the player asked, ${due.width}x${due.height} in ${if (decoder.decodingInHardware) "hardware" else "software"}")
                         landed = true
-                        if (playing) leadMs = ((leadMs + System.currentTimeMillis() - restartedAt) / 2).coerceIn(150L, 2_500L)
+                        if (playing) leadMs = ((leadMs + System.currentTimeMillis() - restartedAt) / 2).coerceIn(150L, 5_000L)
                     }
                     onFrame(due)
                     shownPts = due.ptsMs
