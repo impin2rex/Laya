@@ -432,8 +432,14 @@ object YtMusicRepository {
                 .orEmpty()
                 // A label's "Official Audio" upload is a still over the song, not a picture: a
                 // track with only that has no video to switch to.
-                .filterNot { it.isStillPictureUpload() }
-            TrackMatcher.best(candidates, target)?.let { match ->
+                .filterNot { it.isStillPictureUpload() || it.videoType == "ATV" }
+            // The official music video first. An upload only when it credits the track's own
+            // artist: a fan's re-upload of the song over its cover has the same title and, being
+            // the same audio, the same runtime, which the matcher otherwise lets stand in for a
+            // credit that disagrees.
+            val official = candidates.filter { it.videoType == "OMV" }
+            val uploads = candidates.filter { it.videoType != "OMV" && TrackMatcher.sharesArtist(song.artist, it.artist) }
+            (TrackMatcher.best(official, target) ?: TrackMatcher.best(uploads, target))?.let { match ->
                 Log.d(TAG, "video switch: '${song.title}' -> '${match.title}' ($query)")
                 videoVersionCache[song.videoId] = match
                 return match
