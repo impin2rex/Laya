@@ -141,6 +141,11 @@ object MusicVideoEngine {
     /** Videos whose held height wouldn't decode here, played at [AUTO_HEIGHT] instead. */
     private val stepDown = HashSet<String>()
 
+    private val _playing = MutableStateFlow(false)
+
+    /** Whether the audio the picture follows is playing — what keeps the screen awake. */
+    val playing: StateFlow<Boolean> = _playing.asStateFlow()
+
     private val _aspect = MutableStateFlow(16f / 9f)
 
     /** The picture's width over its height. */
@@ -148,7 +153,10 @@ object MusicVideoEngine {
 
     private val controllerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) = refresh()
-        override fun onIsPlayingChanged(isPlaying: Boolean) = sync()
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            _playing.value = isPlaying
+            sync()
+        }
         override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) = sync()
         override fun onPositionDiscontinuity(
             oldPosition: Player.PositionInfo,
@@ -204,6 +212,7 @@ object MusicVideoEngine {
         this.controller?.removeListener(controllerListener)
         this.controller = controller
         controller?.addListener(controllerListener)
+        _playing.value = controller?.isPlaying == true
         refresh()
     }
 
@@ -467,6 +476,12 @@ internal fun AndroidMusicVideo(
     val frameOn by MusicVideoEngine.frameOn.collectAsStateWithLifecycle()
     val aspect by MusicVideoEngine.aspect.collectAsStateWithLifecycle()
     val rendered = view != null && frameOn === view && shown == videoId
+    val playing by MusicVideoEngine.playing.collectAsStateWithLifecycle()
+
+    // A video being watched keeps the screen awake, as any video player does —
+    // only while it plays, and only on the surface its frames are reaching.
+    val awake = rendered && playing
+    LaunchedEffect(view, awake) { view?.keepScreenOn = awake }
 
     val report by rememberUpdatedState(onRenderedChanged)
     LaunchedEffect(rendered) { report(rendered) }

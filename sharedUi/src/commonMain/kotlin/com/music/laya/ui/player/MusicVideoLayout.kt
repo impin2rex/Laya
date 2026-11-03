@@ -27,13 +27,18 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.draw.clip
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.video_quality
+import com.music.laya.sharedui.resources.video_quality_auto
+import com.music.laya.ui.haptics.Haptic
+import com.music.laya.ui.haptics.rememberHaptics
+import dev.chrisbanes.haze.HazeState
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,6 +81,7 @@ internal fun FullscreenVideoPlayer(
     onRenderedChanged: (Boolean) -> Unit,
     rendered: Boolean,
     onExitFullscreen: () -> Unit,
+    onOpenQuality: () -> Unit,
     scrubber: @Composable () -> Unit,
     transport: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -169,7 +175,7 @@ internal fun FullscreenVideoPlayer(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    VideoCornerControls(fullscreen = true, onToggleFullscreen = onExitFullscreen)
+                    VideoCornerControls(fullscreen = true, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
                 }
                 Box(
                     Modifier
@@ -194,12 +200,13 @@ internal fun FullscreenVideoPlayer(
 /**
  * The two glass boxes in a music video's top-right corner: the quality box —
  * the web player's VideoQuality, which reads the rendition on screen and opens
- * the heights this video offers — and the full-screen button beside it.
+ * the quality drawer — and the full-screen button beside it.
  */
 @Composable
 internal fun VideoCornerControls(
     fullscreen: Boolean,
     onToggleFullscreen: () -> Unit,
+    onOpenQuality: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -207,7 +214,7 @@ internal fun VideoCornerControls(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        VideoQualityBox()
+        VideoQualityBox(onClick = onOpenQuality)
         Box(
             modifier = Modifier
                 .size(30.dp)
@@ -226,88 +233,133 @@ internal fun VideoCornerControls(
     }
 }
 
+/** What the quality box and drawer say is playing: the held height, else the one on screen. */
+private fun MusicVideoQualityUi.selected(): Int? =
+    if (held == null || held !in heights) activeHeight else held
+
 /**
  * The playing video's quality: 360p, 480p, HD, FullHD, 2K, 4K — what is on
  * screen, which is not always what was picked (4K held, then a video shot in
  * 1080p). Nothing until the renditions are known and there is a choice to make.
  */
 @Composable
-private fun VideoQualityBox() {
+private fun VideoQualityBox(onClick: () -> Unit) {
     val quality by PlayerPlatform.host.musicVideoQuality.collectAsStateWithLifecycle()
     if (quality.heights.size < 2) return
-    var open by remember { mutableStateOf(false) }
-    val held = quality.held
-    val selected = if (held == null || held !in quality.heights) quality.activeHeight else held
-    val label = selected?.let(::videoQualityLabel) ?: "Auto"
-    Box {
-        Box(
-            modifier = Modifier
-                .height(30.dp)
-                .widthIn(min = 44.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black.copy(alpha = 0.38f))
-                .clickable { open = true }
-                .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            AnimatedContent(
-                targetState = label,
-                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(220)) },
-                label = "videoQualityLabel",
-            ) { text ->
-                Text(
-                    text = text,
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.4.sp,
-                    maxLines = 1,
-                )
-            }
+    val label = quality.selected()?.let(::videoQualityLabel) ?: "Auto"
+    Box(
+        modifier = Modifier
+            .height(30.dp)
+            .widthIn(min = 44.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.38f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        AnimatedContent(
+            targetState = label,
+            transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(220)) },
+            label = "videoQualityLabel",
+        ) { text ->
+            Text(
+                text = text,
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.4.sp,
+                maxLines = 1,
+            )
         }
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            shape = RoundedCornerShape(14.dp),
-            containerColor = Color(0xFF2A2A2C),
+    }
+}
+
+/**
+ * The quality list, in the same drawer as the audio output: Auto, then every
+ * height this video offers, the one playing marked. Picking one holds it from
+ * now on — for the next video too, where that video has it.
+ */
+@Composable
+internal fun VideoQualitySheet(hazeState: HazeState, onDismiss: () -> Unit) {
+    val quality by PlayerPlatform.host.musicVideoQuality.collectAsStateWithLifecycle()
+    val selected = quality.selected()
+    PlayerDrawer(
+        hazeState = hazeState,
+        title = stringResource(Res.string.video_quality),
+        onDismiss = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             QualityRow(
-                name = "Auto",
-                detail = if (held == null) selected?.let(::videoQualityLabel) else null,
-                checked = held == null,
+                name = stringResource(Res.string.video_quality_auto),
+                detail = if (quality.held == null) selected?.let(::videoQualityLabel) else null,
+                active = quality.held == null,
             ) {
-                open = false
                 PlayerPlatform.host.setMusicVideoQuality(null)
+                onDismiss()
             }
-            HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             quality.heights.forEach { height ->
                 QualityRow(
                     name = videoQualityLabel(height),
                     detail = "${height}p",
-                    checked = held != null && selected == height,
+                    active = quality.held != null && selected == height,
                 ) {
-                    open = false
                     PlayerPlatform.host.setMusicVideoQuality(height)
+                    onDismiss()
                 }
             }
         }
     }
 }
 
+/** One row of [VideoQualitySheet], drawn as the audio output drawer draws an output. */
 @Composable
-private fun QualityRow(name: String, detail: String?, checked: Boolean, onClick: () -> Unit) {
-    DropdownMenuItem(
-        text = { Text(name, color = Color.White, fontSize = 15.sp) },
-        leadingIcon = {
-            Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-                if (checked) {
-                    Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                }
+private fun QualityRow(name: String, detail: String?, active: Boolean, onSelect: () -> Unit) {
+    val haptics = rememberHaptics()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(ROW_SHAPE)
+            .background(Color.White.copy(alpha = if (active) 0.10f else 0.05f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                enabled = !active,
+            ) {
+                haptics.play(Haptic.Select)
+                onSelect()
             }
-        },
-        trailingIcon = detail?.let {
-            { Text(it, color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp) }
-        },
-        onClick = onClick,
-    )
+            .padding(horizontal = 16.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+            ),
+            color = Color.White.copy(alpha = if (active) 1f else 0.85f),
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+        if (detail != null) {
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.55f),
+                modifier = Modifier.padding(horizontal = 10.dp),
+            )
+        }
+        Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+            if (active) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
 }
