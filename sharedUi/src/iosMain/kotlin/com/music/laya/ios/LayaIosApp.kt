@@ -110,6 +110,8 @@ import kotlinx.coroutines.delay
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.ShelfItem
 import com.music.laya.data.model.Song
+import kotlinx.coroutines.withContext
+import com.music.laya.platform.ioDispatcher
 import com.music.laya.data.model.UiState
 import com.music.laya.ui.LyricsProviderState
 import com.music.laya.ui.components.BottomTab
@@ -436,6 +438,39 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     var replayStory by remember { mutableStateOf<ReplayStoryPage?>(null) }
     var showReplayShare by remember { mutableStateOf(false) }
     var replaySharePage by remember { mutableStateOf<ReplayStoryPage?>(null) }
+    // The audio/video switch, as the phone's: the playing track's other cut — its music video or its
+    // audio-only release — looked up as it starts, and swapped in at the playhead. Pairs a switch has
+    // made are remembered, so the way back needs no second lookup. Never in a party: everyone in one
+    // hears the same cut.
+    val versionPairs = remember { mutableMapOf<String, Song>() }
+    var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
+    val inParty = com.music.laya.data.listentogether.ListenTogether.state.collectAsState().value.inParty
+    LaunchedEffect(player.song?.videoId, inParty) {
+        val song = player.song
+        alternateVersion = null
+        if (song == null || inParty || song.localUri != null) return@LaunchedEffect
+        val other = versionPairs[song.videoId] ?: withContext(ioDispatcher) {
+            runCatching {
+                if (song.isVideo) YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
+                else YtMusicRepository.resolveVideo(song)?.takeIf { it.videoId != song.videoId }
+            }.getOrNull()
+        }
+        if (other != null && player.song?.videoId == song.videoId) alternateVersion = song.videoId to other
+    }
+    val toggleVersion: (() -> Unit)? = alternateVersion
+        ?.takeIf { (id, _) -> id == player.song?.videoId }
+        ?.let { (_, other) ->
+            {
+                val from = player.song
+                if (from != null) player.swapVersion(other) { swapped ->
+                    if (swapped) {
+                        versionPairs[other.videoId] = from
+                        versionPairs[from.videoId] = other
+                    }
+                }
+            }
+        }
+
     // A track's own rating comes from its menu data; the playing track and the long-pressed one are looked up.
     LaunchedEffect(player.song?.videoId, signedIn) {
         val id = player.song?.videoId ?: return@LaunchedEffect
@@ -1351,7 +1386,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         isLoading = player.isLoading,
                                         position = player.position,
                                         durationMs = player.durationMs,
-                                        audioVersionSwitching = false,
+                                        audioVersionSwitching = player.versionSwitching,
+                                        onToggleVideo = toggleVersion,
                                         qualityUpgraded = false,
                                         queue = player.queue,
                                         queueIndex = player.index,

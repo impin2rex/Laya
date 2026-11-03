@@ -64,6 +64,16 @@ internal object IosPlayerHost : PlayerHost {
     @Composable
     override fun CanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) = IosCanvasVideo(spec, modifier)
 
+    override val musicVideoSupported: Boolean get() = true
+
+    @Composable
+    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        IosMusicVideoSurface(videoId, fit, onRenderedChanged, modifier)
+
+    override val musicVideoAspect get() = IosMusicVideo.aspect
+    override val musicVideoQuality get() = IosMusicVideo.quality
+    override fun setMusicVideoQuality(height: Int?) = IosMusicVideo.setQuality(height)
+
     @Composable
     override fun rememberRemoteArtworkUrl(song: Song?): String? = song?.thumbnailUrl
 

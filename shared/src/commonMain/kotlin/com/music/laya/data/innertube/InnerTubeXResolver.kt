@@ -17,7 +17,11 @@ import com.metrolist.innertubex.extraction.TokenProviderCapabilities
 import com.metrolist.innertubex.extraction.strategy.PoTokenProviderKind
 import com.metrolist.innertubex.extraction.YtConfigParserImpl
 import com.metrolist.innertubex.extraction.generateClientPlaybackNonce
+import com.metrolist.innertubex.models.YouTubeClient
 import com.metrolist.innertubex.models.YouTubeLocale
+import io.ktor.client.statement.bodyAsText
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import com.music.laya.data.TrackLog
 import com.music.laya.platform.ConcurrentMap
 import com.music.laya.platform.ioDispatcher
@@ -332,6 +336,20 @@ object InnerTubeXResolver {
                 .distinct()
                 .sortedDescending(),
         )
+    }
+
+    /**
+     * The HLS master playlist the visionOS client offers for [videoId]: what Apple's own player is
+     * made for — it starts at once, seeks without reading the file through, and picks its height
+     * from the variants. Null when the client offers none.
+     */
+    suspend fun videoHlsManifest(videoId: String): String? {
+        warmup?.join()
+        innerTube.cookie = Innertube.cookie
+        innerTube.visitorData = Innertube.ensureVisitorData()
+        innerTube.locale = YouTubeLocale(gl = Innertube.currentRegion, hl = Innertube.currentLanguage)
+        val root = Json.parseToJsonElement(innerTube.player(YouTubeClient.VISIONOS_0_1, videoId).bodyAsText()).jsonObject
+        return root["streamingData"]?.jsonObject?.get("hlsManifestUrl")?.jsonPrimitive?.content
     }
 
     /** Headers the media fetch for [url] must carry, when InnerTubeX minted it. */

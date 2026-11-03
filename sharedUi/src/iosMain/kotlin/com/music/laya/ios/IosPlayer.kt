@@ -186,6 +186,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     init {
         engine.setListener(this)
         IosCast.player = this
+        IosMusicVideo.player = this
         IosVolume.level.value = engine.systemVolume()
         IosVolume.setter = engine::setSystemVolume
         IosPlayerStore.load()?.let { s ->
@@ -688,6 +689,57 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
 
+    /** A switch between the playing track's music video and its audio-only release is under way. */
+    var versionSwitching by mutableStateOf(false); private set
+
+    /**
+     * The audio/video switch, as the phone's: the playing track becomes [target] — its music video
+     * or its audio-only release — from the moment it has reached, the engine crossfading the new
+     * copy in without a break ([AudioEngine.swapCurrent]). The same queue entry, so the queue and a
+     * party still see one item, and the same listen in history ([PlaybackTracker.onVersionSwapped]).
+     */
+    fun swapVersion(target: Song, onDone: (Boolean) -> Unit = {}) {
+        val s = song ?: return onDone(false)
+        if (versionSwitching || target.videoId == s.videoId) return onDone(false)
+        versionSwitching = true
+        val at = index
+        val swapped = target.copy(
+            queueTier = s.queueTier,
+            queueEntryId = s.queueEntryId,
+            radioName = s.radioName,
+            playbackSource = s.playbackSource,
+            playbackSourceType = s.playbackSourceType,
+            playbackSourceId = s.playbackSourceId,
+        )
+        scope.launch {
+            val ok = try {
+                val o = withContext(ioDispatcher) { youtube(swapped.videoId) }
+                if (song?.videoId != s.videoId || index != at) return@launch onDone(false)
+                PlaybackTracker.onVersionSwapped(s, swapped)
+                queue = queue.toMutableList().also { it[at] = swapped }
+                hand(swapped, o, next = false, swap = true)
+                announce()
+                preResolveNext() // the swap dropped the engine's queued item
+                IosPlayerStore.saveQueue(queue, index)
+                true
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                TrackLog.w("Laya", "iOS version switch failed for ${s.title}: ${e.message}", about = s.videoId)
+                false
+            } finally {
+                versionSwitching = false
+            }
+            onDone(ok)
+        }
+    }
+
+    /** Where the audio is now — the last reading run on by the time since while it plays — for the music video to follow. */
+    fun audioClockMs(): Long {
+        if (!isPlaying || isLoading) return position.positionMs
+        return position.positionMs + (com.music.laya.platform.nanoTime() - position.sampledAtNanos) / 1_000_000
+    }
+
     /** The player menu's "Revert to original": YouTube's own audio for this track from now on, swapped in without a break. */
     fun revertToOriginal() {
         val s = song ?: return
@@ -941,10 +993,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         lastListenTickAt = now
         song?.let { ListeningRecorder.onSample(it, durationMs) }
         // The account's history (PlaybackService's sampler): registers the play once audible, then reports watch time.
-        song?.videoId?.let { id ->
+        song?.let { s ->
             trackedSec = position.positionMs / 1000
-            PlaybackTracker.onPlaying(id)
-            PlaybackTracker.onProgress(id, trackedSec)
+            PlaybackTracker.onPlaying(s)
+            PlaybackTracker.onProgress(s.videoId, trackedSec)
         }
     }
 
