@@ -230,4 +230,9 @@
     <string name="reverb_width">Width</string>
     <string name="reverb_width_help">Stereo spread of the tail, from mono to full width.</string>
     <string name="reverb_reset">Reset to defaults</string>
+    <string name="video_quality">Video quality</string>
+    <string name="video_quality_auto">Auto</string>
+    <string name="switch_to_audio">Switch to Audio</string>
+    <string name="switch_to_video">Switch to Video</string>
+    <string name="audio_short">Audio</string>
 </resources>
