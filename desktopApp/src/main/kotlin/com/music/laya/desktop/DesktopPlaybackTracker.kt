@@ -54,6 +54,9 @@ internal object DesktopPlaybackTracker {
     )
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    /** How long a track plays before its play is registered. */
+    private const val REGISTER_AFTER_MS = 8_000L
     private val lock = Mutex()
 
     @Volatile
@@ -73,6 +76,9 @@ internal object DesktopPlaybackTracker {
         opening = videoId
         scope.launch {
             try {
+                // A few seconds in, as on the phone: a video swapped for its audio release as it
+                // starts is registered as that release — see [ListenIdentity].
+                delay(REGISTER_AFTER_MS)
                 openWithRetries(videoId)
             } finally {
                 if (opening == videoId) opening = null

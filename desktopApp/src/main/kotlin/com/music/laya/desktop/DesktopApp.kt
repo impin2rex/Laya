@@ -24,6 +24,7 @@ import com.music.laya.ui.replay.ReplayCreditCard
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import com.music.laya.data.YtMusicRepository
+import com.music.laya.data.stats.ListenIdentity
 import com.music.laya.data.model.EntityType
 import com.music.laya.data.model.SearchHistoryEntity
 import com.music.laya.ui.LocalPullToRefreshEnabled
@@ -1950,8 +1951,15 @@ fun LayaDesktopApp() {
             watching = target.videoId
             DesktopMusicVideo.prepare(target.videoId)
         }
+        // History follows the listen, not the version playing: told before the swap goes out, so
+        // the player's new id is never mistaken for a new track — see [ListenIdentity].
+        val listen = ListenIdentity.of(song)
+        ListenIdentity.onVersionSwapped(song, target)
         playbackEngine.swapVersion(target, fromStart) { swapped ->
-            if (!swapped) return@swapVersion
+            if (!swapped) {
+                ListenIdentity.revert(song, listen)
+                return@swapVersion
+            }
             scope.launch {
                 versionPairs[target.videoId] = song
                 versionPairs[song.videoId] = target
@@ -2203,37 +2211,40 @@ fun LayaDesktopApp() {
         DesktopDiscordRpc.onPlaybackStateChanged(playback, playbackSpeed)
     }
     // The account's own history on YouTube Music, which is what the home feed is built out of.
-    DisposableEffect(playback.song?.videoId) {
+    // Keyed on the listen rather than the version playing, so switching between a track's audio
+    // and its video is one play — see [ListenIdentity].
+    val listenId = playback.song?.let { ListenIdentity.of(it).videoId }
+    DisposableEffect(listenId) {
         val previous = playbackEngine.state.value.positionMs / 1_000
         onDispose { DesktopPlaybackTracker.onTrackChanged(previous) }
     }
-    LaunchedEffect(playback.song?.videoId, playback.isPlaying) {
-        val songId = playback.song?.videoId ?: return@LaunchedEffect
+    LaunchedEffect(listenId, playback.isPlaying) {
+        val songId = listenId ?: return@LaunchedEffect
         if (!playback.isPlaying) return@LaunchedEffect
         DesktopPlaybackTracker.onPlaying(songId)
         while (currentCoroutineContext().isActive) {
             delay(HISTORY_SAMPLE_MS)
             val snapshot = playbackEngine.state.value
-            if (snapshot.song?.videoId != songId) break
+            if (snapshot.song?.let { ListenIdentity.idOf(it.videoId) } != songId) break
             DesktopPlaybackTracker.onProgress(songId, snapshot.positionMs / 1_000)
         }
     }
-    LaunchedEffect(playback.song?.videoId, playback.isPlaying) {
-        val songId = playback.song?.videoId ?: return@LaunchedEffect
+    LaunchedEffect(listenId, playback.isPlaying) {
+        val songId = listenId ?: return@LaunchedEffect
         if (!playback.isPlaying) return@LaunchedEffect
         var previousPosition = playback.positionMs
         var countedAsPlay = songId in statsCountedSongs
         while (currentCoroutineContext().isActive) {
             delay(STATS_SAMPLE_MS)
             val snapshot = playbackEngine.state.value
-            if (!snapshot.isPlaying || snapshot.song?.videoId != songId) break
+            if (!snapshot.isPlaying || snapshot.song?.let { ListenIdentity.idOf(it.videoId) } != songId) break
             val position = snapshot.positionMs
             val delta = (position - previousPosition).takeIf { it in 1L..STATS_MAX_DELTA_MS } ?: 0L
             if (delta > 0L) {
                 val threshold = snapshot.durationMs.takeIf { it > 0L }?.let { minOf(it / 2L, SCROBBLE_THRESHOLD_MS) }
                     ?: SCROBBLE_THRESHOLD_MS
                 val reachedThreshold = !countedAsPlay && position >= threshold
-                DesktopListeningStats.record(snapshot.song, delta, reachedThreshold)
+                DesktopListeningStats.record(ListenIdentity.of(snapshot.song ?: break), delta, reachedThreshold)
                 if (reachedThreshold) {
                     countedAsPlay = true
                     statsCountedSongs = statsCountedSongs + songId

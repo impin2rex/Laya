@@ -1,6 +1,8 @@
 package com.music.laya.data.innertube
 
 import com.music.laya.data.TrackLog
+import com.music.laya.data.model.Song
+import com.music.laya.data.stats.ListenIdentity
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.platform.ioDispatcher
 import kotlin.concurrent.Volatile
@@ -61,6 +63,13 @@ object PlaybackTracker {
     private const val OPEN_RETRY_DELAY_MS = 2_000L
 
     /**
+     * How long a track plays before its play is registered. A video swapped for its audio release
+     * as it starts — the music-only preference, the desktop's video-as-audio — is then registered
+     * as the audio release it became, rather than leaving the video in the account's history too.
+     */
+    private const val REGISTER_AFTER_MS = 8_000L
+
+    /**
      * A videoId, as opposed to anything else that can be a media id.
      *
      * Local files carry their `content://` URI as an id, and a module source
@@ -72,7 +81,7 @@ object PlaybackTracker {
     private val VIDEO_ID = Regex("""[A-Za-z0-9_-]{11}""")
 
     private class Session(
-        var videoId: String,
+        val videoId: String,
         val cpn: String,
         val tracking: Innertube.PlaybackTracking,
     ) {
@@ -111,7 +120,9 @@ object PlaybackTracker {
      * queue moves on. A no-op while the same track is already being tracked, so
      * a pause/resume does not register a second play.
      */
-    fun onPlaying(videoId: String) {
+    fun onPlaying(playedId: String) {
+        // The listen's own track — see [ListenIdentity] — not whichever version of it is playing.
+        val videoId = ListenIdentity.idOf(playedId)
         if (!VIDEO_ID.matches(videoId)) return
         if (Innertube.cookie == null) return
         // A downloaded track plays perfectly well with the radio off — the
@@ -127,6 +138,7 @@ object PlaybackTracker {
         opening = videoId
         scope.launch(TrackLog.about(videoId)) {
             try {
+                delay(REGISTER_AFTER_MS)
                 openWithRetries(videoId)
             } finally {
                 if (opening == videoId) opening = null
@@ -135,13 +147,24 @@ object PlaybackTracker {
     }
 
     /**
-     * The playing track became its other video/audio version mid-play. It is
-     * the same listen, so the session already open (or opening) carries over
-     * to [toVideoId] instead of a second history entry being registered.
+     * The playing track became its other video/audio version mid-play. Still the same listen —
+     * see [ListenIdentity] — so switching to the video keeps the play the audio release's, with no
+     * second history entry. Switching from a video to its audio release makes the play the
+     * audio's: registered as that, the video's own play (if it had got that far) closed out.
      */
-    fun onVersionSwapped(fromVideoId: String, toVideoId: String) {
-        session?.takeIf { it.videoId == fromVideoId }?.videoId = toVideoId
-        if (opening == fromVideoId) opening = toVideoId
+    fun onVersionSwapped(from: Song, to: Song) {
+        val before = ListenIdentity.of(from).videoId
+        val listen = ListenIdentity.onVersionSwapped(from, to).videoId
+        if (listen == before) return
+        if (opening == before) opening = null
+        val closing = session?.takeIf { it.videoId == before }
+        if (closing != null) {
+            session = null
+            scope.launch(TrackLog.about(closing.videoId)) {
+                runCatching { flush(closing, maxOf(closing.reportedSeconds, closing.flushingTo), final = true) }
+            }
+        }
+        onPlaying(listen)
     }
 
     /**
@@ -165,7 +188,8 @@ object PlaybackTracker {
      * Cheap to call often — it only hits the network every
      * [REPORT_INTERVAL_SECONDS] of new audio.
      */
-    fun onProgress(videoId: String, positionSeconds: Long) {
+    fun onProgress(playedId: String, positionSeconds: Long) {
+        val videoId = ListenIdentity.idOf(playedId)
         val current = session ?: return
         if (current.videoId != videoId) return
         if (!current.atrSent && positionSeconds >= current.tracking.atrAfterSeconds) {

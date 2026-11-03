@@ -2163,7 +2163,7 @@ class PlaybackService : MediaLibraryService() {
             val mediaId = targetMediaItem.mediaId
             swappingMediaId = mediaId
             // Same listen in another cut: no second history entry for it.
-            PlaybackTracker.onVersionSwapped(sourceSong.videoId, mediaId)
+            PlaybackTracker.onVersionSwapped(sourceSong, targetSong)
             if (smartAlignEnabled) {
                 AppSettings.versionAlignmentInProgress.value = true
             }
@@ -2589,7 +2589,6 @@ class PlaybackService : MediaLibraryService() {
         // The new item has a different id, so the transition callback must be
         // told to treat it as the same listen, not a new track to record.
         swappingMediaId = targetVideoId
-        PlaybackTracker.onVersionSwapped(song.videoId, targetVideoId)
 
         // Create the target song with the appropriate flags
         val targetSong = song.copy(
@@ -2597,6 +2596,7 @@ class PlaybackService : MediaLibraryService() {
             isVideo = targetIsVideo,
             isVideoOrigin = if (targetIsVideo) false else song.isVideoOrigin,
         )
+        PlaybackTracker.onVersionSwapped(song, targetSong)
 
         activePlayer.replaceMediaItem(index, targetSong.toMediaItem())
         activePlayer.seekTo(index, position)
