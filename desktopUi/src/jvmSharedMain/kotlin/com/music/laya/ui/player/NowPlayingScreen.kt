@@ -3430,10 +3430,11 @@ fun NowPlayingScreen(
                                             translationX = swipeSettle.value * (1f - p())
                                         },
                                 ) {
-                                    // Black with a spinner under the picture until
-                                    // its first frame lands.
+                                    // The video's thumbnail and a spinner under the
+                                    // picture until its first frame lands.
                                     if (!videoRendered) {
                                         VideoLoadingBackdrop(
+                                            art.request,
                                             Modifier
                                                 .fillMaxSize()
                                                 .clip(RoundedCornerShape(10.dp)),

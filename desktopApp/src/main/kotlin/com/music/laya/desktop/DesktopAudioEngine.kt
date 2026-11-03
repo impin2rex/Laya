@@ -448,6 +448,7 @@ class DesktopPlaybackEngine(
         if (target.videoId == from.videoId || versionSwitching.value) return onDone(false)
         upgradeJob?.cancel()
         versionSwitching.value = true
+        val t0 = System.currentTimeMillis()
         scope.launch {
             val opened = DesktopMusicSources.resolve(target, audioQuality).mapCatching { stream ->
                 openTrack(target, stream, _state.value.positionMs).getOrThrow()
@@ -465,7 +466,7 @@ class DesktopPlaybackEngine(
                         track.startUs = latest.positionMs * 1_000
                         track.seekKaraoke(track.startUs)
                     }
-                    DesktopTrackLog.log("version switch: '${from.title}' (${from.videoId}) -> ${target.videoId}")
+                    DesktopTrackLog.log("version switch: '${from.title}' (${from.videoId}) -> ${target.videoId} in ${System.currentTimeMillis() - t0}ms")
                     commands += Command.ReplaceCurrent(track, playWhenReady = latest.isPlaying)
                     versionSwitching.value = false
                     onDone(true)

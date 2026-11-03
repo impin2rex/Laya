@@ -21,13 +21,21 @@ import androidx.compose.ui.unit.IntSize
 import com.music.laya.data.innertube.InnerTubeXResolver
 import com.music.laya.ui.player.MusicVideoQualityUi
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.Image
@@ -39,15 +47,22 @@ import kotlin.math.roundToInt
  * video-only stream, decoded silently by FFmpeg and held to the audio engine's playhead. The audio
  * stays where it is — the engine, the EQ, Automix, Listen Together — and stays the clock.
  *
- * The picture follows it: frames are drawn when the playhead reaches them, dropped when it has
- * passed them, and a jump (a seek, a version swap, a stall) seeks the decoder after it. It is only
- * fetched while a surface is on screen, so a video with the player shut costs no more than the song.
+ * Decoding runs on its own a few frames ahead into a small buffer, so a slow read or a heavy frame
+ * never holds up the one on screen; the drawing side only picks, from what is buffered, the frame
+ * the audio has reached. A jump (a seek, a version swap, a stall) restarts the decoding at the
+ * playhead, aimed ahead by what the last restart took to land.
+ *
+ * The slow parts — asking YouTube for the stream and opening it — are started early: the stream as
+ * soon as the player knows the track has a video, the decoder the moment the switch is pressed, so
+ * both are under way while the audio is still changing over.
  */
 internal object DesktopMusicVideo {
 
     /** The audio the picture follows — set by the window once its engine exists. */
     @Volatile
     var playback: StateFlow<DesktopPlaybackState>? = null
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _aspect = MutableStateFlow(16f / 9f)
     val aspect: StateFlow<Float> = _aspect.asStateFlow()
@@ -65,24 +80,84 @@ internal object DesktopMusicVideo {
     /** Tracks with no picture to show — a catalogue track's "video" is a still. */
     private val noPicture = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
+    /** Streams asked for, by video and height, with when — a googlevideo URL lives about six hours. */
+    private val streams = java.util.concurrent.ConcurrentHashMap<Pair<String, Int>, Pair<Long, Deferred<InnerTubeXResolver.VideoStream?>>>()
+
+    /** A decoder opened ahead of its surface, waiting to be taken. */
+    private var prepared: Pair<String, Deferred<Opened?>>? = null
+
+    internal class Opened(val stream: InnerTubeXResolver.VideoStream, val decoder: DesktopCanvasDecoder)
+
     fun setQuality(height: Int?) {
         persistence.saveString(KEY_QUALITY, height?.toString().orEmpty())
         _quality.value = _quality.value.copy(held = height)
         qualityGeneration.value++
     }
 
-    internal fun capFor(): Int = _quality.value.held ?: AUTO_HEIGHT
+    private fun capFor(): Int = _quality.value.held ?: AUTO_HEIGHT
 
-    internal suspend fun resolve(videoId: String): InnerTubeXResolver.VideoStream? {
+    /** Starts asking for [videoId]'s stream, if nothing has yet; cheap to call again. */
+    fun prefetch(videoId: String): Deferred<InnerTubeXResolver.VideoStream?>? {
         if (videoId in noPicture) return null
-        val stream = withContext(Dispatchers.IO) { InnerTubeXResolver.extractVideo(videoId, capFor()) }
+        val key = videoId to capFor()
+        val now = System.currentTimeMillis()
+        streams[key]?.let { (at, job) ->
+            val failed = job.isCompleted && job.getCompletionExceptionOrNull() != null
+            if (!failed && now - at < STREAM_TTL_MS) return job
+        }
+        while (streams.size > 8) streams.keys.firstOrNull()?.let(streams::remove)
+        val job = scope.async { InnerTubeXResolver.extractVideo(videoId, key.second) }
+        streams[key] = now to job
+        return job
+    }
+
+    /** Asks for [videoId]'s stream and opens it now, for the surface about to show it. */
+    fun prepare(videoId: String) {
+        val stale = prepared
+        if (stale?.first == videoId) return
+        prepared = videoId to scope.async { open(videoId) }
+        stale?.second?.let { job -> scope.launch { runCatching { job.await()?.decoder?.close() } } }
+    }
+
+    /** The decoder [prepare] opened for [videoId], or a fresh one. */
+    internal suspend fun take(videoId: String): Opened? {
+        val ready = prepared?.takeIf { it.first == videoId }?.second
+        if (ready != null) prepared = null
+        return ready?.await() ?: open(videoId)
+    }
+
+    private suspend fun open(videoId: String): Opened? {
+        // Retried a couple of times: right after launch the session is often not ready yet, and
+        // the first ask fails where the next one answers.
+        var stream: InnerTubeXResolver.VideoStream? = null
+        for (attempt in 1..3) {
+            stream = try {
+                prefetch(videoId)?.await()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DesktopTrackLog.log("music video: couldn't resolve the picture for $videoId (try $attempt): ${e.message}")
+                delay(1_500L * attempt)
+                continue
+            }
+            break
+        }
         if (stream == null || stream.aspect < MIN_VIDEO_ASPECT) {
-            noPicture += videoId
+            if (stream != null) noPicture += videoId
             return null
         }
         _aspect.value = stream.aspect
         _quality.value = _quality.value.copy(heights = stream.heights, activeHeight = stream.height)
-        return stream
+        // Scaled to at most a 720p-class frame: the player shows it no bigger than the window, and
+        // every pixel past that is one more to convert on each frame.
+        val decoder = DesktopCanvasDecoder(maxEdge = minOf(maxOf(stream.width, stream.height), MAX_FRAME_EDGE), loop = false, windowed = true)
+        val opened = withContext(Dispatchers.IO) { decoder.open(stream.url, stream.headers) }
+        if (opened.isFailure) {
+            DesktopTrackLog.log("music video: ${opened.exceptionOrNull()?.message}")
+            withContext(NonCancellable + Dispatchers.IO) { decoder.close() }
+            return null
+        }
+        return Opened(stream, decoder)
     }
 
     /** Where the audio is now: the last reading, run on by the time since while it plays. */
@@ -92,20 +167,56 @@ internal object DesktopMusicVideo {
         return state.positionMs + (System.nanoTime() - state.positionSampledAtNanos) / 1_000_000
     }
 
-    /** Past this the decoder seeks to the audio rather than decoding its way there. */
-    internal const val SEEK_BEHIND_MS = 1_500L
-    internal const val SEEK_AHEAD_MS = 400L
+    internal fun audioPlaying(): Boolean = playback?.value?.isPlaying == true
+
+    /** Past this the decoder restarts at the audio rather than catching up frame by frame. */
+    internal const val RESTART_BEHIND_MS = 1_200L
+    internal const val RESTART_AHEAD_MS = 600L
 
     /** Narrower than this is a cover held still, not a picture worth showing. */
     private const val MIN_VIDEO_ASPECT = 1.2f
 
-    /** Where Auto opens, as on the phone: the top of YouTube's H.264 ladder. */
-    private const val AUTO_HEIGHT = 1080
+    /** Where Auto opens: 720p starts quickly and decodes easily; a held height goes higher. */
+    private const val AUTO_HEIGHT = 720
+    private const val STREAM_TTL_MS = 60 * 60 * 1000L
     private const val KEY_QUALITY = "music_video_quality"
 }
 
 /** The longest edge frames are scaled to. */
 private const val MAX_FRAME_EDGE = 1280
+
+/** How many decoded frames run ahead of the one on screen: a few hundred milliseconds of video. */
+private const val FRAMES_AHEAD = 8
+
+private class VideoFrame(val ptsMs: Long, val image: ImageBitmap)
+
+/** One run of the decoder from a point: its buffered frames, and the job filling them. */
+private class Decoding(val frames: Channel<VideoFrame>, val job: Job)
+
+/**
+ * Decodes from [startMs] into a small buffer, dropping what comes before it so the first frame out
+ * is the one asked for. The decoder is native and single-threaded: a run must be over (joined)
+ * before the next one touches it.
+ */
+private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Long): Decoding {
+    val frames = Channel<VideoFrame>(FRAMES_AHEAD)
+    val job = launch(Dispatchers.IO) {
+        try {
+            decoder.seek(startMs.coerceAtLeast(0L))
+            val pixels = ByteArray(decoder.width * decoder.height * 4)
+            val info = ImageInfo.makeN32(decoder.width, decoder.height, ColorAlphaType.OPAQUE)
+            val from = startMs - decoder.frameIntervalMillis
+            while (isActive && decoder.nextFrame(pixels)) {
+                if (decoder.framePtsMs < from) continue
+                // Handed to Skia rather than copied, so the next frame cannot be decoded into it.
+                frames.send(VideoFrame(decoder.framePtsMs, Image.makeRaster(info, pixels.copyOf(), decoder.width * 4).toComposeImageBitmap()))
+            }
+        } finally {
+            frames.close()
+        }
+    }
+    return Decoding(frames, job)
+}
 
 /**
  * Where the playing music video shows on the desktop: [videoId]'s picture fitted into ([fit]) or
@@ -124,74 +235,64 @@ internal fun DesktopMusicVideoSurface(
     val report by rememberUpdatedState(onRenderedChanged)
 
     LaunchedEffect(videoId, generation) {
-        val stream = try {
-            DesktopMusicVideo.resolve(videoId)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            DesktopTrackLog.log("music video: couldn't resolve the picture for $videoId: ${e.message}")
-            null
-        } ?: return@LaunchedEffect
-        // Scaled to at most a 720p-class frame: the player shows it no bigger than the window, and
-        // every pixel past that is one more to convert on each frame.
-        val decoder = DesktopCanvasDecoder(maxEdge = minOf(maxOf(stream.width, stream.height), MAX_FRAME_EDGE), loop = false)
-        val opened = withContext(Dispatchers.IO) { decoder.open(stream.url, stream.headers) }
-        if (opened.isFailure) {
-            DesktopTrackLog.log("music video: ${opened.exceptionOrNull()?.message}")
-            withContext(Dispatchers.IO) { decoder.close() }
-            return@LaunchedEffect
-        }
-        DesktopTrackLog.log("music video: ${decoder.width}x${decoder.height} for $videoId")
+        val mountedAt = System.currentTimeMillis()
+        val opened = DesktopMusicVideo.take(videoId) ?: return@LaunchedEffect
+        val decoder = opened.decoder
+        // What the last restart took to land, so the next is aimed where the audio will be.
+        var leadMs = 400L
+        var restartedAt = System.currentTimeMillis()
+        var landed = false
+        val startAt = DesktopMusicVideo.audioPositionMs() ?: 0L
+        var decoding = decodeFrom(decoder, startAt + if (DesktopMusicVideo.audioPlaying()) leadMs else 0L)
         try {
-            val pixels = ByteArray(decoder.width * decoder.height * 4)
-            val info = ImageInfo.makeN32(decoder.width, decoder.height, ColorAlphaType.OPAQUE)
-            var seekLeadMs = 800L
+            var next: VideoFrame? = null
+            var shownPts = -1L
+            suspend fun restart(at: Long) {
+                decoding.job.cancelAndJoin()
+                next = null
+                landed = false
+                restartedAt = System.currentTimeMillis()
+                decoding = decodeFrom(decoder, at)
+            }
             while (isActive) {
-                val target = DesktopMusicVideo.audioPositionMs() ?: run { delay(100); continue }
-                val pts = decoder.framePtsMs
-                val drawn = withContext(Dispatchers.IO) {
-                    // A jump on the audio, or a picture too far adrift: start again from the
-                    // keyframe before the playhead and decode up to it.
-                    if (pts < 0 || target - pts > DesktopMusicVideo.SEEK_BEHIND_MS ||
-                        // Ahead by up to the lead is a seek still landing: waited out, not redone.
-                        pts - target > DesktopMusicVideo.SEEK_AHEAD_MS + seekLeadMs
-                    ) {
-                        // Aimed ahead by what the last one took to land: the audio moves on
-                        // while the decoder works its way up from the keyframe. Paused, it doesn't.
-                        val playing = DesktopMusicVideo.playback?.value?.isPlaying == true
-                        val aim = target + if (playing) seekLeadMs else 0L
-                        val started = System.currentTimeMillis()
-                        if (pts >= 0 || aim > 0) decoder.seek(aim)
-                        if (pts >= 0) DesktopTrackLog.log("music video: resync, ${pts - target}ms off the audio")
-                        var any = false
-                        while (decoder.nextFrame(pixels)) {
-                            any = true
-                            if (decoder.framePtsMs >= aim - decoder.frameIntervalMillis) break
+                val target = DesktopMusicVideo.audioPositionMs() ?: run { delay(50); continue }
+                val playing = DesktopMusicVideo.audioPlaying()
+                if (next == null) next = decoding.frames.tryReceive().getOrNull()
+                val candidate = next
+                when {
+                    // The audio jumped back, or far ahead of anything buffered: start over there.
+                    candidate != null && candidate.ptsMs - target > DesktopMusicVideo.RESTART_AHEAD_MS + leadMs ->
+                        restart(target + if (playing) leadMs else 0L)
+                    candidate != null && target - candidate.ptsMs > DesktopMusicVideo.RESTART_BEHIND_MS ->
+                        restart(target + if (playing) leadMs else 0L)
+                    // Starved after it had caught up — a stall on the network: start again ahead.
+                    // Not before a restart has landed, which would only start it over again.
+                    landed && candidate == null && target - shownPts > DesktopMusicVideo.RESTART_BEHIND_MS * 2 -> {
+                        DesktopTrackLog.log("music video: fell ${target - shownPts}ms behind; restarting")
+                        restart(target + leadMs)
+                    }
+                    candidate != null && candidate.ptsMs <= target + 8 -> {
+                        // Due: show the latest frame the audio has reached, skipping any it passed.
+                        var due: VideoFrame = candidate
+                        while (true) {
+                            val after = decoding.frames.tryReceive().getOrNull() ?: break
+                            if (after.ptsMs <= target + 8) due = after else { next = after; break }
                         }
-                        if (playing) {
-                            seekLeadMs = ((seekLeadMs + System.currentTimeMillis() - started) / 2).coerceIn(0L, 3_000L)
+                        if (next === candidate) next = null
+                        if (!landed) {
+                            if (shownPts < 0) DesktopTrackLog.log("music video: first frame ${System.currentTimeMillis() - mountedAt}ms after the player asked")
+                            landed = true
+                            if (playing) leadMs = ((leadMs + System.currentTimeMillis() - restartedAt) / 2).coerceIn(150L, 2_500L)
                         }
-                        any
-                    } else if (pts + decoder.frameIntervalMillis / 2 < target) {
-                        // Behind by a frame or more: drop to the one the audio is on.
-                        var any = false
-                        while (decoder.nextFrame(pixels)) {
-                            any = true
-                            if (decoder.framePtsMs + decoder.frameIntervalMillis / 2 >= target) break
-                        }
-                        any
-                    } else {
-                        false
+                        frame = due.image
+                        shownPts = due.ptsMs
                     }
                 }
-                if (drawn) {
-                    // Handed to Skia rather than copied, so the next frame cannot be decoded into it.
-                    frame = Image.makeRaster(info, pixels.copyOf(), decoder.width * 4).toComposeImageBitmap()
-                }
-                // Past the video's end the decoder has nothing more and this idles at frame pace.
-                delay((decoder.framePtsMs - target).coerceIn(4L, decoder.frameIntervalMillis))
+                val wait = next?.let { (it.ptsMs - target).coerceIn(2L, 16L) } ?: 8L
+                delay(wait)
             }
         } finally {
+            withContext(NonCancellable) { decoding.job.cancelAndJoin() }
             withContext(NonCancellable + Dispatchers.IO) { decoder.close() }
         }
     }

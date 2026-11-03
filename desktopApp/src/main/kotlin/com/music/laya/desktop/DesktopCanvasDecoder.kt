@@ -47,7 +47,11 @@ import org.bytedeco.javacpp.PointerPointer
 internal class DesktopCanvasDecoder(
     private val maxEdge: Int = MAX_EDGE,
     private val loop: Boolean = true,
+    /** Read in bounded windows — see [DesktopRangeIo]. For googlevideo, which throttles one long request. */
+    private val windowed: Boolean = false,
 ) {
+    private var rangeIo: DesktopRangeIo? = null
+
 
     private var format: AVFormatContext? = null
     private var codec: AVCodecContext? = null
@@ -92,8 +96,8 @@ internal class DesktopCanvasDecoder(
         }
         av_dict_set(options, "rw_timeout", "15000000", 0)
 
-        val opened = AVFormatContext(null)
-        val source = singleVariant(url, headers) ?: url
+        val opened = if (windowed) DesktopRangeIo(url, headers).also { rangeIo = it }.context else AVFormatContext(null)
+        val source = if (windowed) null else singleVariant(url, headers) ?: url
         check(avformat_open_input(opened, source, null, options) >= 0) { "could not open the clip" }
         format = opened
         check(avformat_find_stream_info(opened, null as AVDictionary?) >= 0) { "no stream info" }
@@ -218,6 +222,8 @@ internal class DesktopCanvasDecoder(
         scaler?.let { sws_freeContext(it) }
         codec?.let { avcodec_free_context(it) }
         format?.let { avformat_close_input(it) }
+        rangeIo?.close()
+        rangeIo = null
         buffer?.deallocate()
         strides?.deallocate()
         frame = null

@@ -314,6 +314,21 @@ object MusicVideoEngine {
         load(id)
     }
 
+    /**
+     * Asks for [videoId]'s picture before any surface wants it — the track has a video the switch
+     * may go to — so pressing it finds the stream already in hand. Any thread.
+     */
+    fun prefetch(videoId: String) {
+        scope.launch {
+            val cap = capFor(videoId)
+            if (videoId in noPicture || videoId == loadedId || cachedStream(videoId, cap) != null) return@launch
+            val stream = runCatching {
+                withContext(Dispatchers.IO) { InnerTubeXResolver.extractVideo(videoId, cap) }
+            }.getOrNull() ?: return@launch
+            if (streams[videoId] == null) streams[videoId] = Triple(stream, cap, System.currentTimeMillis())
+        }
+    }
+
     /** The height asked for: the held one, else what Auto opens at for this connection. */
     private fun capFor(videoId: String): Int {
         val metered = AppSettings.meteredConnection.value == true

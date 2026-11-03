@@ -282,6 +282,9 @@ object InnerTubeXResolver {
      *   catalogue track (a still image as its "video") is the normal answer.
      */
     suspend fun extractVideo(videoId: String, maxHeight: Int): VideoStream? {
+        // Asked early (a prefetch as the app opens), a video extraction raced the warm-up's
+        // player config and both failed, leaving every later one without it: wait it out.
+        warmup?.join()
         innerTube.cookie = Innertube.cookie
         innerTube.visitorData = Innertube.ensureVisitorData()
         innerTube.locale = YouTubeLocale(gl = Innertube.currentRegion, hl = Innertube.currentLanguage)

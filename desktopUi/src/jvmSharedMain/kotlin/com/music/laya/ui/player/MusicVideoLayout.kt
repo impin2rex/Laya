@@ -127,7 +127,7 @@ internal fun FullscreenVideoPlayer(
             ) { controlsShown = !controlsShown },
     ) {
         // Black with a spinner until the picture's first frame lands.
-        if (!rendered) VideoLoadingBackdrop(Modifier.fillMaxSize())
+        if (!rendered) VideoLoadingBackdrop(artRequest, Modifier.fillMaxSize())
         MusicVideoSurface(
             videoId = song.videoId,
             fit = true,
@@ -316,13 +316,24 @@ internal fun SwitchToAudioPill(
 }
 
 /**
- * What stands in for a music video until its first frame lands: black, with a
- * spinner, rather than the still artwork. Shared by the portrait card and the
- * fullscreen landscape player.
+ * What stands in for a music video until its first frame lands, as YouTube
+ * does it: the video's own thumbnail, darkened, with a spinner over it — the
+ * picture is there at once, and the frames take over from it. Black with the
+ * spinner when there is no thumbnail. Shared by the portrait card and the
+ * full-screen player.
  */
 @Composable
-internal fun VideoLoadingBackdrop(modifier: Modifier = Modifier) {
+internal fun VideoLoadingBackdrop(artRequest: ImageRequest?, modifier: Modifier = Modifier) {
     Box(modifier.background(Color.Black), contentAlignment = Alignment.Center) {
+        if (artRequest != null) {
+            AsyncImage(
+                model = artRequest,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
+        }
         CircularProgressIndicator(
             color = Color.White,
             strokeWidth = 3.dp,

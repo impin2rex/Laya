@@ -1921,6 +1921,7 @@ fun LayaDesktopApp() {
         val song = playback.song
         alternateVersion = null
         if (song == null || partyState.inParty || song.localUri != null) return@LaunchedEffect
+        if (song.isVideo) DesktopMusicVideo.prefetch(song.videoId)
         val other = versionPairs[song.videoId] ?: withContext(Dispatchers.IO) {
             runCatching {
                 if (song.isVideo) {
@@ -1932,6 +1933,8 @@ fun LayaDesktopApp() {
         }
         if (other != null && playbackEngine.state.value.song?.videoId == song.videoId) {
             alternateVersion = song.videoId to other
+            // Asked now, so a press of the switch finds the video's stream already in hand.
+            if (other.isVideo) DesktopMusicVideo.prefetch(other.videoId)
         }
     }
     val toggleVersion: (() -> Unit)? = alternateVersion
@@ -1950,6 +1953,8 @@ fun LayaDesktopApp() {
                         playbackSourceType = song.playbackSourceType,
                         playbackSourceId = song.playbackSourceId,
                     )
+                    // The picture opens while the audio changes over, not after it.
+                    if (target.isVideo) DesktopMusicVideo.prepare(target.videoId)
                     playbackEngine.swapVersion(target) { swapped ->
                         if (!swapped) return@swapVersion
                         scope.launch {

@@ -1555,7 +1555,8 @@ private fun LayaApp(
                 }.getOrDefault(false)
             } else {
                 runCatching {
-                    YtMusicRepository.resolveVideo(song) != null
+                    // Its stream is asked for now, so the switch opens on a picture already found.
+                    YtMusicRepository.resolveVideo(song)?.also { MusicVideoEngine.prefetch(it.videoId) } != null
                 }.getOrDefault(false)
             }
         }
