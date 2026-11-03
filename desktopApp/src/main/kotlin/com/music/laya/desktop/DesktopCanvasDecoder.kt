@@ -1,6 +1,19 @@
 package com.music.laya.desktop
 
+import org.bytedeco.ffmpeg.avcodec.AVCodec
 import org.bytedeco.ffmpeg.avcodec.AVCodecContext
+import org.bytedeco.ffmpeg.avutil.AVBufferRef
+import org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX
+import org.bytedeco.ffmpeg.global.avcodec.avcodec_get_hw_config
+import org.bytedeco.ffmpeg.global.avutil.AV_HWDEVICE_TYPE_D3D11VA
+import org.bytedeco.ffmpeg.global.avutil.AV_HWDEVICE_TYPE_VAAPI
+import org.bytedeco.ffmpeg.global.avutil.AV_HWDEVICE_TYPE_VIDEOTOOLBOX
+import org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_NONE
+import org.bytedeco.ffmpeg.global.avutil.av_buffer_ref
+import org.bytedeco.ffmpeg.global.avutil.av_buffer_unref
+import org.bytedeco.ffmpeg.global.avutil.av_frame_unref
+import org.bytedeco.ffmpeg.global.avutil.av_hwdevice_ctx_create
+import org.bytedeco.ffmpeg.global.avutil.av_hwframe_transfer_data
 import org.bytedeco.ffmpeg.avcodec.AVPacket
 import org.bytedeco.ffmpeg.avformat.AVFormatContext
 import org.bytedeco.ffmpeg.avutil.AVDictionary
@@ -49,8 +62,21 @@ internal class DesktopCanvasDecoder(
     private val loop: Boolean = true,
     /** Read in bounded windows — see [DesktopRangeIo]. For googlevideo, which throttles one long request. */
     private val windowed: Boolean = false,
+    /**
+     * Decode on the machine's video hardware where it has a decoder for the stream — VideoToolbox,
+     * D3D11 or VA-API — as a browser does; a 4K VP9 picture is beyond the CPU in real time. Falls
+     * back to software, silently, where there is none.
+     */
+    private val hardware: Boolean = false,
 ) {
     private var rangeIo: DesktopRangeIo? = null
+    private var hwDevice: AVBufferRef? = null
+    private var hwPixelFormat = AV_PIX_FMT_NONE
+    private var hwFrame: AVFrame? = null
+
+    /** Whether frames are coming off the video hardware; known once the first has. */
+    var decodingInHardware: Boolean = false
+        private set
 
 
     private var format: AVFormatContext? = null
@@ -96,7 +122,11 @@ internal class DesktopCanvasDecoder(
         }
         av_dict_set(options, "rw_timeout", "15000000", 0)
 
-        val opened = if (windowed) DesktopRangeIo(url, headers).also { rangeIo = it }.context else AVFormatContext(null)
+        val opened = if (windowed) {
+            DesktopRangeIo(url, headers, VIDEO_WINDOW_BYTES).also { rangeIo = it }.context
+        } else {
+            AVFormatContext(null)
+        }
         val source = if (windowed) null else singleVariant(url, headers) ?: url
         check(avformat_open_input(opened, source, null, options) >= 0) { "could not open the clip" }
         format = opened
@@ -112,8 +142,10 @@ internal class DesktopCanvasDecoder(
         val decoder = avcodec_find_decoder(parameters.codec_id()) ?: error("no decoder for this clip")
         val context = avcodec_alloc_context3(decoder)
         check(avcodec_parameters_to_context(context, parameters) >= 0) { "bad codec parameters" }
-        // Every core FFmpeg can use: a 1080p VP9 music video is beyond one thread in real time.
-        context.thread_count(0)
+        if (hardware) attachHardware(decoder, context)
+        // Every core FFmpeg can use: a 1080p VP9 music video is beyond one thread in real time. On
+        // the hardware path one thread feeds it; frame threads only contend for the one session.
+        context.thread_count(if (hwDevice != null) 1 else 0)
         check(avcodec_open2(context, decoder, null as AVDictionary?) >= 0) { "decoder refused to open" }
         codec = context
 
@@ -144,10 +176,38 @@ internal class DesktopCanvasDecoder(
         ) { "could not lay out the frame buffer" }
         packet = av_packet_alloc()
         frame = av_frame_alloc()
+        if (hwDevice != null) hwFrame = av_frame_alloc()
     }.onFailure { close() }
 
-    /** The next frame as BGRA bytes, looping at the end. */
-    fun nextFrame(into: ByteArray): Boolean {
+    /**
+     * Hands [context] the platform's hardware device, if [decoder] has a configuration for it. The
+     * decoder's default format negotiation then picks the hardware format by itself.
+     */
+    private fun attachHardware(decoder: AVCodec, context: AVCodecContext) {
+        val type = when {
+            DesktopPlatform.isMac -> AV_HWDEVICE_TYPE_VIDEOTOOLBOX
+            DesktopPlatform.isWindows -> AV_HWDEVICE_TYPE_D3D11VA
+            else -> AV_HWDEVICE_TYPE_VAAPI
+        }
+        var index = 0
+        while (true) {
+            val config = avcodec_get_hw_config(decoder, index++) ?: return
+            if (config.device_type() != type || config.methods() and AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX == 0) continue
+            val device = AVBufferRef()
+            if (av_hwdevice_ctx_create(device, type, null as String?, null, 0) < 0) return
+            hwDevice = device
+            hwPixelFormat = config.pix_fmt()
+            context.hw_device_ctx(av_buffer_ref(device))
+            return
+        }
+    }
+
+    /**
+     * The next frame as BGRA bytes, looping at the end. Frames before [skipBeforeMs] are decoded
+     * and let go without being copied back or converted — the catch-up from a keyframe after a
+     * seek, which at 4K is most of what a seek costs.
+     */
+    fun nextFrame(into: ByteArray, skipBeforeMs: Long = Long.MIN_VALUE): Boolean {
         val container = format ?: return false
         val context = codec ?: return false
         val pkt = packet ?: return false
@@ -155,10 +215,21 @@ internal class DesktopCanvasDecoder(
         var looped = false
         while (true) {
             if (avcodec_receive_frame(context, decoded) == 0) {
-                val converter = scalerFor(decoded.format()) ?: return false
                 val pts = decoded.best_effort_timestamp()
                 if (pts != AV_NOPTS_VALUE && timeBase > 0.0) framePtsMs = (pts * timeBase * 1_000).toLong()
-                sws_scale(converter, decoded.data(), decoded.linesize(), 0, sourceHeight, planes, strides)
+                if (framePtsMs < skipBeforeMs) continue
+                // A hardware frame lives in the GPU's memory: only the finished picture comes back.
+                val picture = if (hwDevice != null && decoded.format() == hwPixelFormat) {
+                    val copy = hwFrame ?: return false
+                    av_frame_unref(copy)
+                    if (av_hwframe_transfer_data(copy, decoded, 0) < 0) return false
+                    decodingInHardware = true
+                    copy
+                } else {
+                    decoded
+                }
+                val converter = scalerFor(picture.format()) ?: return false
+                sws_scale(converter, picture.data(), picture.linesize(), 0, sourceHeight, planes, strides)
                 // Read through an explicit NIO view rewound each time rather than through the
                 // pointer's own `get`, whose starting offset is its position.
                 view?.let { pixels ->
@@ -218,6 +289,11 @@ internal class DesktopCanvasDecoder(
 
     fun close() {
         frame?.let { av_frame_free(it) }
+        hwFrame?.let { av_frame_free(it) }
+        hwFrame = null
+        hwDevice?.let { av_buffer_unref(it) }
+        hwDevice = null
+        hwPixelFormat = AV_PIX_FMT_NONE
         packet?.let { av_packet_free(it) }
         scaler?.let { sws_freeContext(it) }
         codec?.let { avcodec_free_context(it) }
@@ -271,6 +347,12 @@ internal class DesktopCanvasDecoder(
             }.getOrNull() ?: return null
             return pickVariant(manifest, url, MAX_EDGE)
         }
+
+        /**
+         * The windows a music video is read in: a 4K picture runs 20-40 Mbit/s, so the audio's
+         * 512 KB windows were a round trip every ~0.1s of video, and a seek waited on dozens.
+         */
+        const val VIDEO_WINDOW_BYTES = 4 * 1024 * 1024
 
         /** Thirty frames a second is motion; sixty is just more bitmaps. */
         const val MIN_INTERVAL_MS = 33L

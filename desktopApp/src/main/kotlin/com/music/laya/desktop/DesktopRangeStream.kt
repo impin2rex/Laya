@@ -120,8 +120,8 @@ internal class DesktopRangeStream(
  * open-ended request is throttled to about real time. [close] after the context is closed —
  * custom I/O is not freed by avformat_close_input.
  */
-internal class DesktopRangeIo(url: String, headers: Map<String, String>) {
-    private val source = DesktopRangeStream(url, headers)
+internal class DesktopRangeIo(url: String, headers: Map<String, String>, windowBytes: Int? = null) {
+    private val source = if (windowBytes != null) DesktopRangeStream(url, headers, windowBytes) else DesktopRangeStream(url, headers)
     private val scratch = ByteArray(IO_BUFFER_BYTES)
     private var read: Read_packet_Pointer_BytePointer_int? = object : Read_packet_Pointer_BytePointer_int() {
         override fun call(opaque: Pointer?, buffer: BytePointer?, size: Int): Int {
