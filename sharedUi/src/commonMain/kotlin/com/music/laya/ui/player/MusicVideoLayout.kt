@@ -36,6 +36,22 @@ import androidx.compose.material3.MaterialTheme
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.video_quality
 import com.music.laya.sharedui.resources.video_quality_auto
+import com.music.laya.sharedui.resources.audio_short
+import com.music.laya.sharedui.resources.switch_to_audio
+import com.music.laya.ui.icons.LayaIcons
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
 import dev.chrisbanes.haze.HazeState
@@ -86,6 +102,9 @@ internal fun FullscreenVideoPlayer(
     scrubber: @Composable () -> Unit,
     transport: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    /** Back to the song's audio-only cut, where it has one — see [SwitchToAudioPill]. */
+    onSwitchToAudio: (() -> Unit)? = null,
+    switchingVersion: Boolean = false,
 ) {
     HideSystemBars(true)
     var controlsShown by remember { mutableStateOf(true) }
@@ -168,6 +187,10 @@ internal fun FullscreenVideoPlayer(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
+                    if (onSwitchToAudio != null) {
+                        SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion)
+                        Spacer(Modifier.width(8.dp))
+                    }
                     VideoCornerControls(fullscreen = true, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
                 }
                 Box(
@@ -186,6 +209,108 @@ internal fun FullscreenVideoPlayer(
                     scrubber()
                 }
             }
+        }
+    }
+}
+
+/**
+ * The way back from a music video to the song alone: a small capsule of
+ * frosted glass floating on the picture's corner, rather than a row of the
+ * player given over to it.
+ *
+ * Glass by layering, not by blur: the picture underneath is a hardware video
+ * surface the blur can't sample, so the frost is a dark translucent body (what
+ * keeps white text legible on a bright frame), a lit top edge, and a hairline
+ * rim that catches the light on a dark one — with a soft shadow lifting it
+ * off either. It eases in, gives a little under the finger, and swaps its
+ * glyph for a spinner while the audio cut is being found and lined up.
+ */
+@Composable
+internal fun SwitchToAudioPill(
+    onClick: () -> Unit,
+    switching: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val haptics = rememberHaptics()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
+        label = "switchToAudioPress",
+    )
+    val shape = RoundedCornerShape(percent = 50)
+    val label = stringResource(Res.string.switch_to_audio)
+    // Mounted with the video, so it arrives with it rather than popping in.
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    AnimatedVisibility(
+        visible = entered,
+        enter = fadeIn(tween(260)) + scaleIn(tween(260), initialScale = 0.85f),
+        exit = fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.85f),
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = Modifier
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .shadow(elevation = 10.dp, shape = shape, ambientColor = Color.Black, spotColor = Color.Black)
+                .clip(shape)
+                .background(Color.Black.copy(alpha = 0.30f))
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.26f),
+                        0.5f to Color.White.copy(alpha = 0.12f),
+                        1f to Color.White.copy(alpha = 0.06f),
+                    ),
+                )
+                .border(
+                    width = 0.75.dp,
+                    brush = Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.60f),
+                        1f to Color.White.copy(alpha = 0.14f),
+                    ),
+                    shape = shape,
+                )
+                .clickable(interactionSource = interaction, indication = null, enabled = !switching) {
+                    haptics.play(Haptic.Tap)
+                    onClick()
+                }
+                .semantics { contentDescription = label }
+                .height(32.dp)
+                .padding(start = 10.dp, end = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AnimatedContent(
+                targetState = switching,
+                transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(140)) },
+                label = "switchToAudioGlyph",
+            ) { busy ->
+                if (busy) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        strokeWidth = 1.75.dp,
+                        modifier = Modifier.size(15.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = LayaIcons.MusicNote,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = stringResource(Res.string.audio_short),
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
         }
     }
 }

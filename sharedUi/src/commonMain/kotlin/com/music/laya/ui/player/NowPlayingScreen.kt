@@ -727,6 +727,13 @@ fun NowPlayingScreen(
      * the sheet is the caller's business.
      */
     onListenTogether: () -> Unit,
+    /**
+     * Switches the playing track between its music video and its audio-only
+     * cut, from the same moment. Null where it has no other cut to switch to,
+     * in a party (everyone hears one cut), or where the platform can't show a
+     * video — the capsule's segment and the glass "Audio" pill go with it.
+     */
+    onToggleVideo: (() -> Unit)? = null,
     lyrics: List<LyricLine>?,
     lyricsSource: LyricsSource?,
     lyricsProviderStates: Map<LyricsSource, LyricsProviderState>,
@@ -820,6 +827,14 @@ fun NowPlayingScreen(
     // A music video plays its own picture where the sleeve is — see
     // [MusicVideoSurface] — and takes the place of any animated cover.
     val videoMode = showsMusicVideo(song)
+    // Read once for both the capsule's segment and the glass pill on the video.
+    val versionSwitchAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
+    val versionSwitching = audioVersionSwitching || versionSwitchAligning
+    val videoToggle = onToggleVideo
+        ?.takeIf { PlayerPlatform.host.musicVideoSupported }
+        ?.let { VideoToggle(video = song.isVideo, switching = versionSwitching, onToggle = it) }
+    // Only a video that is actually showing offers the way back from it.
+    val switchToAudio = videoToggle?.takeIf { videoMode }?.onToggle
     val canvas = rememberCanvasArtwork(song)?.takeUnless { videoMode }
     // Whether the picture has a frame on screen; the still frame shows until then.
     var videoRendered by remember(song.videoId) { mutableStateOf(false) }
@@ -1532,6 +1547,7 @@ fun NowPlayingScreen(
             onOpenOutput = openAudioOutput,
             onListenTogether = onListenTogether,
             onOpenListenTogetherMembers = openListenTogetherMembers,
+            videoToggle = videoToggle,
         )
         // Keep the current output caption visible in every state.
         Spacer(Modifier.height(18.dp))
@@ -1773,6 +1789,8 @@ fun NowPlayingScreen(
                     onRenderedChanged = { videoRendered = it },
                     onExitFullscreen = screenOrientation::portrait,
                     onOpenQuality = { showVideoQuality = true },
+                    onSwitchToAudio = switchToAudio,
+                    switchingVersion = versionSwitching,
                     scrubber = {
                         PlayerScrubber(
                             shown = shown,
@@ -3268,6 +3286,18 @@ fun NowPlayingScreen(
                                             .align(Alignment.TopEnd)
                                             .padding(8.dp),
                                     )
+                                    // Opposite the quality and full-screen boxes, so
+                                    // the picture's corners hold all of its controls
+                                    // and none of the player below gives up room.
+                                    if (switchToAudio != null) {
+                                        SwitchToAudioPill(
+                                            onClick = switchToAudio,
+                                            switching = versionSwitching,
+                                            modifier = Modifier
+                                                .align(Alignment.TopStart)
+                                                .padding(8.dp),
+                                        )
+                                    }
                                 }
                             }
                         }

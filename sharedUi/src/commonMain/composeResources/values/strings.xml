@@ -718,4 +718,7 @@
     <string name="something_went_wrong">Something went wrong</string>
     <string name="video_quality">Video quality</string>
     <string name="video_quality_auto">Auto</string>
+    <string name="switch_to_audio">Switch to Audio</string>
+    <string name="switch_to_video">Switch to Video</string>
+    <string name="audio_short">Audio</string>
 </resources>
