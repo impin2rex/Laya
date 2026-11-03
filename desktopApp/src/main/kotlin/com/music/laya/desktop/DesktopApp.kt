@@ -1907,6 +1907,65 @@ fun LayaDesktopApp() {
         }
     }
     val playback by playbackEngine.state.collectAsState()
+    // The music video follows this engine's playhead — see DesktopMusicVideo.
+    DesktopMusicVideo.playback = playbackEngine.state
+
+    // The audio/video switch, as the phone's: the playing track's other cut — its music video or
+    // its audio-only release — looked up as it starts, and swapped in at the playhead. Pairs a
+    // switch has already made are remembered, so the way back needs no second lookup. Never in a
+    // party: everyone in one hears the same cut.
+    val versionSwitching by playbackEngine.versionSwitching.collectAsState()
+    val versionPairs = remember { mutableMapOf<String, Song>() }
+    var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
+    LaunchedEffect(playback.song?.videoId, partyState.inParty) {
+        val song = playback.song
+        alternateVersion = null
+        if (song == null || partyState.inParty || song.localUri != null) return@LaunchedEffect
+        val other = versionPairs[song.videoId] ?: withContext(Dispatchers.IO) {
+            runCatching {
+                if (song.isVideo) {
+                    YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
+                } else {
+                    YtMusicRepository.resolveVideo(song)?.takeIf { it.videoId != song.videoId }
+                }
+            }.getOrNull()
+        }
+        if (other != null && playbackEngine.state.value.song?.videoId == song.videoId) {
+            alternateVersion = song.videoId to other
+        }
+    }
+    val toggleVersion: (() -> Unit)? = alternateVersion
+        ?.takeIf { (id, _) -> id == playback.song?.videoId }
+        ?.let { (_, other) ->
+            {
+                val song = playback.song
+                if (song != null && !versionSwitching) {
+                    // The same queue entry in its other cut, so the queue, the history and the
+                    // party's running order still see one item.
+                    val target = other.copy(
+                        queueTier = song.queueTier,
+                        queueEntryId = song.queueEntryId,
+                        radioName = song.radioName,
+                        playbackSource = song.playbackSource,
+                        playbackSourceType = song.playbackSourceType,
+                        playbackSourceId = song.playbackSourceId,
+                    )
+                    playbackEngine.swapVersion(target) { swapped ->
+                        if (!swapped) return@swapVersion
+                        scope.launch {
+                            versionPairs[target.videoId] = song
+                            versionPairs[song.videoId] = target
+                            val at = liveQueue.index
+                            if (liveQueue.current?.videoId == song.videoId) {
+                                liveQueue = liveQueue.copy(songs = liveQueue.songs.toMutableList().also { it[at] = target })
+                                saveQueue()
+                            }
+                            if (selectedSong?.videoId == song.videoId) selectedSong = target
+                        }
+                    }
+                }
+            }
+        }
 
     // The shared player reads the playhead off this one object, and only where it
     // draws it — see PlaybackPosition — so a tick never recomposes the player.
@@ -3481,7 +3540,8 @@ fun LayaDesktopApp() {
                             isLoading = playback.isLoading,
                             position = playerPosition,
                             durationMs = playback.durationMs,
-                            audioVersionSwitching = false,
+                            audioVersionSwitching = versionSwitching,
+                            onToggleVideo = toggleVersion,
                             qualityUpgraded = false,
                             queue = liveQueue.songs,
                             queueIndex = liveQueue.index,

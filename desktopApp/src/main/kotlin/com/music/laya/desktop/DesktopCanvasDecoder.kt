@@ -24,6 +24,7 @@ import org.bytedeco.ffmpeg.global.avformat.avformat_find_stream_info
 import org.bytedeco.ffmpeg.global.avformat.AVSEEK_FLAG_BACKWARD
 import org.bytedeco.ffmpeg.global.avformat.avformat_open_input
 import org.bytedeco.ffmpeg.global.avutil.AVMEDIA_TYPE_VIDEO
+import org.bytedeco.ffmpeg.global.avutil.AV_NOPTS_VALUE
 import org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_BGRA
 import org.bytedeco.ffmpeg.global.avutil.av_dict_set
 import org.bytedeco.ffmpeg.global.avutil.av_frame_alloc
@@ -39,8 +40,14 @@ import org.bytedeco.javacpp.BytePointer
 import org.bytedeco.javacpp.IntPointer
 import org.bytedeco.javacpp.PointerPointer
 
-/** The motion artwork, decoded here rather than played by a second media stack. */
-internal class DesktopCanvasDecoder {
+/**
+ * The motion artwork, decoded here rather than played by a second media stack — and a music
+ * video's picture, which asks for a bigger [maxEdge], no [loop], and seeks.
+ */
+internal class DesktopCanvasDecoder(
+    private val maxEdge: Int = MAX_EDGE,
+    private val loop: Boolean = true,
+) {
 
     private var format: AVFormatContext? = null
     private var codec: AVCodecContext? = null
@@ -55,6 +62,11 @@ internal class DesktopCanvasDecoder {
     private var sourceWidth = 0
     private var sourceHeight = 0
     private var streamIndex = -1
+    private var timeBase = 0.0
+
+    /** Where in the stream the last frame handed back sits, in milliseconds; -1 before one. */
+    var framePtsMs: Long = -1L
+        private set
 
     /** Seconds per frame, from the stream's own rate; used to pace playback. */
     var frameIntervalMillis: Long = 40L
@@ -91,10 +103,13 @@ internal class DesktopCanvasDecoder {
         check(streamIndex >= 0) { "no video stream" }
 
         val stream = opened.streams(streamIndex)
+        stream.time_base().let { if (it.den() > 0) timeBase = it.num().toDouble() / it.den() }
         val parameters = stream.codecpar()
         val decoder = avcodec_find_decoder(parameters.codec_id()) ?: error("no decoder for this clip")
         val context = avcodec_alloc_context3(decoder)
         check(avcodec_parameters_to_context(context, parameters) >= 0) { "bad codec parameters" }
+        // Every core FFmpeg can use: a 1080p VP9 music video is beyond one thread in real time.
+        context.thread_count(0)
         check(avcodec_open2(context, decoder, null as AVDictionary?) >= 0) { "decoder refused to open" }
         codec = context
 
@@ -103,7 +118,7 @@ internal class DesktopCanvasDecoder {
         check(sourceWidth > 0 && sourceHeight > 0) { "the clip has no size" }
 
         // Scaled down on the way out.
-        val scale = minOf(1.0, MAX_EDGE.toDouble() / maxOf(sourceWidth, sourceHeight))
+        val scale = minOf(1.0, maxEdge.toDouble() / maxOf(sourceWidth, sourceHeight))
         width = ((sourceWidth * scale).toInt() / 2) * 2
         height = ((sourceHeight * scale).toInt() / 2) * 2
 
@@ -137,6 +152,8 @@ internal class DesktopCanvasDecoder {
         while (true) {
             if (avcodec_receive_frame(context, decoded) == 0) {
                 val converter = scalerFor(decoded.format()) ?: return false
+                val pts = decoded.best_effort_timestamp()
+                if (pts != AV_NOPTS_VALUE && timeBase > 0.0) framePtsMs = (pts * timeBase * 1_000).toLong()
                 sws_scale(converter, decoded.data(), decoded.linesize(), 0, sourceHeight, planes, strides)
                 // Read through an explicit NIO view rewound each time rather than through the
                 // pointer's own `get`, whose starting offset is its position.
@@ -147,7 +164,7 @@ internal class DesktopCanvasDecoder {
                 return true
             }
             if (av_read_frame(container, pkt) < 0) {
-                if (looped) return false
+                if (looped || !loop) return false
                 looped = true
                 av_seek_frame(container, streamIndex, 0, AVSEEK_FLAG_BACKWARD)
                 avcodec_flush_buffers(context)
@@ -156,6 +173,21 @@ internal class DesktopCanvasDecoder {
             if (pkt.stream_index() == streamIndex) avcodec_send_packet(context, pkt)
             av_packet_unref(pkt)
         }
+    }
+
+    /**
+     * Jumps to the keyframe at or before [positionMs]; the frames after it decode on from there,
+     * so a caller wanting an exact moment reads on until [framePtsMs] reaches it.
+     */
+    fun seek(positionMs: Long): Boolean {
+        val container = format ?: return false
+        val context = codec ?: return false
+        if (timeBase <= 0.0) return false
+        val target = (positionMs.coerceAtLeast(0L) / 1_000.0 / timeBase).toLong()
+        if (av_seek_frame(container, streamIndex, target, AVSEEK_FLAG_BACKWARD) < 0) return false
+        avcodec_flush_buffers(context)
+        framePtsMs = -1L
+        return true
     }
 
     /** The converter for the format frames are actually arriving in. */
@@ -199,6 +231,7 @@ internal class DesktopCanvasDecoder {
         planes = null
         strides = null
         streamIndex = -1
+        framePtsMs = -1L
         sourceWidth = 0
         sourceHeight = 0
     }

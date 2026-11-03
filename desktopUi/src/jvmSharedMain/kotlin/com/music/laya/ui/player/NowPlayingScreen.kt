@@ -876,6 +876,10 @@ fun NowPlayingScreen(
     // is the whole screen. The full-screen buttons turn the phone's screen
     // rather than switching a layout.
     val screenOrientation = rememberScreenOrientation()
+    // A desktop window has no sideways to turn to: the full-screen button puts the video over the
+    // whole player (a theater), and its exit button brings the player back with the video in the
+    // sleeve. Each video opens in the sleeve.
+    var videoTheater by remember(song.videoId) { mutableStateOf(false) }
     var canvasAspect by remember(canvas) { mutableFloatStateOf(0f) }
     // Whether the clip actually has a frame on screen right now, and one of
     // them — used to blow the sleeve out to the full-bleed hero treatment and
@@ -1924,7 +1928,7 @@ fun NowPlayingScreen(
         label = "playerTint",
     )
     CompositionLocalProvider(LocalPlayerTint provides playerTint) {
-        if (landscape && videoMode) {
+        if (videoMode && videoTheater) {
             val versionAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
             val transitionWindow by PlayerSettings.smartTransitionWindow.collectAsStateWithLifecycle()
             Box(modifier = modifier.fillMaxSize().then(dockHost)) {
@@ -1934,7 +1938,7 @@ fun NowPlayingScreen(
                     artRequest = art.request,
                     rendered = videoRendered,
                     onRenderedChanged = { videoRendered = it },
-                    onExitFullscreen = screenOrientation::portrait,
+                    onExitFullscreen = { videoTheater = false },
                     onOpenQuality = { showVideoQuality = true },
                     onSwitchToAudio = switchToAudio,
                     switchingVersion = versionSwitching,
@@ -2117,6 +2121,31 @@ fun NowPlayingScreen(
                                     closeLyrics()
                                 },
                         ) {
+                            // A music video plays in the sleeve, cropped to its square,
+                            // with its corner controls; the cover shows until a frame lands.
+                            if (videoMode) {
+                                MusicVideoSurface(
+                                    videoId = song.videoId,
+                                    fit = false,
+                                    onRenderedChanged = { videoRendered = it },
+                                    modifier = Modifier.matchParentSize().clip(landscapeArtShape()),
+                                )
+                                if (!panelOpen) {
+                                    if (switchToAudio != null) {
+                                        SwitchToAudioPill(
+                                            onClick = switchToAudio,
+                                            switching = versionSwitching,
+                                            modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+                                        )
+                                    }
+                                    VideoCornerControls(
+                                        fullscreen = false,
+                                        onToggleFullscreen = { videoTheater = true },
+                                        onOpenQuality = { showVideoQuality = true },
+                                        modifier = Modifier.align(Alignment.TopEnd).padding(10.dp),
+                                    )
+                                }
+                            }
                             // The stats belong to the player, not to the sleeve, so
                             // they leave it along with the rest of the player.
                             SleeveNerdStats(
@@ -3419,7 +3448,7 @@ fun NowPlayingScreen(
                                     )
                                     VideoCornerControls(
                                         fullscreen = false,
-                                        onToggleFullscreen = screenOrientation::landscape,
+                                        onToggleFullscreen = { videoTheater = true },
                                         onOpenQuality = { showVideoQuality = true },
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)

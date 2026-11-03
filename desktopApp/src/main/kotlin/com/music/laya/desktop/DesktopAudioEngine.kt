@@ -432,6 +432,54 @@ class DesktopPlaybackEngine(
         }
     }
 
+    /** Whether [swapVersion] is finding and opening the other cut. */
+    val versionSwitching = MutableStateFlow(false)
+
+    /**
+     * Plays [target] — the playing track's other cut, its music video or its audio-only release —
+     * from where the playhead is, as the same listen rather than a new track: the seam a quality
+     * upgrade hands over on, with the song itself changing. [onDone] says whether it took.
+     *
+     * ponytail: same timestamp, not aligned — a video's intro can shift it a few seconds; the
+     * phone's VersionAudioAligner is the upgrade path if that shows.
+     */
+    fun swapVersion(target: Song, onDone: (Boolean) -> Unit = {}) {
+        val from = _state.value.song ?: return onDone(false)
+        if (target.videoId == from.videoId || versionSwitching.value) return onDone(false)
+        upgradeJob?.cancel()
+        versionSwitching.value = true
+        scope.launch {
+            val opened = DesktopMusicSources.resolve(target, audioQuality).mapCatching { stream ->
+                openTrack(target, stream, _state.value.positionMs).getOrThrow()
+            }
+            val latest = _state.value
+            opened.fold(
+                onSuccess = { track ->
+                    if (latest.song?.videoId != from.videoId) {
+                        track.decoder.close()
+                        versionSwitching.value = false
+                        return@fold onDone(false)
+                    }
+                    if (kotlin.math.abs(latest.positionMs - track.startUs / 1_000) >= UPGRADE_RESEEK_THRESHOLD_MS) {
+                        track.decoder.seek(latest.positionMs * 1_000)
+                        track.startUs = latest.positionMs * 1_000
+                        track.seekKaraoke(track.startUs)
+                    }
+                    DesktopTrackLog.log("version switch: '${from.title}' (${from.videoId}) -> ${target.videoId}")
+                    commands += Command.ReplaceCurrent(track, playWhenReady = latest.isPlaying)
+                    versionSwitching.value = false
+                    onDone(true)
+                },
+                onFailure = { failure ->
+                    DesktopTrackLog.log("version switch failed for '${from.title}': ${failure.message}")
+                    _state.update { it.copy(error = "Could not switch version: ${failure.message ?: "that copy would not open"}") }
+                    versionSwitching.value = false
+                    onDone(false)
+                },
+            )
+        }
+    }
+
     /** Re-opens the current track, keeping the playhead. */
     fun reloadCurrent(forceSourceRefresh: Boolean = false) {
         val current = _state.value
