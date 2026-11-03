@@ -70,6 +70,28 @@ internal object DesktopWindowMode {
             if (!on) DesktopWindowBackdrop.apply()
             return
         }
+        // A Mac window drawn in its own frame is borderless, and AppKit gives a borderless window no
+        // full screen of its own — Fullscreen placement and toggleFullScreen: are both ignored. AWT's
+        // full-screen window covers the whole display, menu bar and Dock with it, borderless or not.
+        if (DesktopPlatform.isMac && DesktopPlatform.drawsOwnWindowFrame) {
+            val window = DesktopWindowVisibility.window
+            if (window != null) {
+                java.awt.EventQueue.invokeLater {
+                    val device = window.graphicsConfiguration?.device ?: return@invokeLater
+                    if (on) {
+                        device.fullScreenWindow = window
+                        // The window covers the display, but its content keeps laying out at the
+                        // old height until it is told the new size outright.
+                        val screen = window.graphicsConfiguration.bounds
+                        window.setBounds(screen)
+                        window.validate()
+                    } else if (device.fullScreenWindow === window) {
+                        device.fullScreenWindow = null
+                    }
+                }
+                return
+            }
+        }
         set(if (on) fillsScreen else WindowPlacement.Floating)
     }
 

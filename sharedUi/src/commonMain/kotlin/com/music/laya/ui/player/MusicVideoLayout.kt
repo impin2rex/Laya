@@ -378,9 +378,15 @@ internal fun VideoCornerControls(
     }
 }
 
-/** What the quality box and drawer say is playing: the held height, else the one on screen. */
-private fun MusicVideoQualityUi.selected(): Int? =
-    if (held == null || held !in heights) activeHeight else held
+/**
+ * What the quality box and drawer say is playing: the held height, else the one on screen — and
+ * the one on screen when it is lower than the pick, which this device couldn't play.
+ */
+private fun MusicVideoQualityUi.selected(): Int? = when {
+    held == null || held !in heights -> activeHeight
+    activeHeight != null && activeHeight < held -> activeHeight
+    else -> held
+}
 
 /**
  * The playing video's quality: 360p, 480p, HD, FullHD, 2K, 4K — what is on

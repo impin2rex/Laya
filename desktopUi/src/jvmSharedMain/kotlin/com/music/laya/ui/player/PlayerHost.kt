@@ -65,6 +65,12 @@ interface PlayerHost {
     /** Holds the picture at [height] from now on, or lets it choose with null. Remembered. */
     fun setMusicVideoQuality(height: Int?) = Unit
 
+    /** Whether the window fills the screen — a music video's full screen. */
+    val windowFullScreen: StateFlow<Boolean> get() = NoFullScreen
+
+    /** Puts the window into full screen or out of it. */
+    fun setWindowFullScreen(on: Boolean) = Unit
+
     /**
      * Artwork for [song], resolving covers that live inside a remote file
      * (WebDAV, SMB) where the platform can. Returns [Song.thumbnailUrl] otherwise.
@@ -151,6 +157,8 @@ private val NoCast = MutableStateFlow(CastUi())
 private val DefaultVideoAspect = MutableStateFlow(16f / 9f)
 
 private val NoVideoQuality = MutableStateFlow(MusicVideoQualityUi())
+
+private val NoFullScreen = MutableStateFlow(false)
 
 /** What the video quality box draws — the web player's VideoQuality, by the same rules. */
 data class MusicVideoQualityUi(

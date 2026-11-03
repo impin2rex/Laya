@@ -7,6 +7,7 @@ import com.music.laya.ui.components.ShelfRow
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.pointer.isBackPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -3368,8 +3369,20 @@ fun LayaDesktopApp() {
                             openSettings()
                             true
                         }
+                        // Full screen, as a Mac app does it — ahead of ⌘F, which is search.
+                        DesktopPlatform.isMac && event.isMetaPressed && event.isCtrlPressed && event.key == Key.F -> {
+                            DesktopWindowMode.toggle()
+                            true
+                        }
                         DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.F -> {
                             searchFocusRequested = true
+                            true
+                        }
+                        // F alone, as in any video player — only over a music video in the player,
+                        // so it is never a letter typed somewhere else.
+                        event.key == Key.F && !event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed &&
+                            overlays.nowPlaying && playbackEngine.state.value.song?.isVideo == true -> {
+                            DesktopWindowMode.toggle()
                             true
                         }
                         DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.W -> {
@@ -3383,6 +3396,11 @@ fun LayaDesktopApp() {
                         // One layer at a time, innermost first: the player's own side panel, then
                         // the player.
                         event.key == Key.Escape -> when {
+                            // Out of full screen before anything else, as a video player does.
+                            overlays.nowPlaying && DesktopWindowMode.fullScreen.value -> {
+                                DesktopWindowMode.exit()
+                                true
+                            }
                             // The player's own layers first — the lyrics, the queue, a
                             // drawer — in the order Android's back reaches them.
                             overlays.nowPlaying && PlayerBack.dispatch() -> true

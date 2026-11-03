@@ -94,12 +94,33 @@ internal object DesktopMusicVideo {
         qualityGeneration.value++
     }
 
-    private fun capFor(): Int = _quality.value.held ?: AUTO_HEIGHT
+    /**
+     * The tallest picture this machine has shown it can play: lowered to [STEP_DOWN_HEIGHT] the
+     * first time a held height above it wouldn't open or keep up. What decodes in time is the
+     * machine's, not the video's, so it holds for every video for the rest of the session.
+     */
+    @Volatile
+    private var ceiling = Int.MAX_VALUE
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun capFor(videoId: String): Int = minOf(_quality.value.held ?: AUTO_HEIGHT, ceiling)
+
+    /**
+     * The held height couldn't keep up — a 4K VP9 or AV1 picture decoded in software. Played at
+     * [STEP_DOWN_HEIGHT] from now on, as the phone steps down a height its decoder refuses.
+     * Returns whether there was anything lower to go to.
+     */
+    internal fun stepDown(videoId: String): Boolean {
+        if (capFor(videoId) <= STEP_DOWN_HEIGHT) return false
+        ceiling = STEP_DOWN_HEIGHT
+        DesktopTrackLog.log("music video: ${_quality.value.held}p is too heavy here ($videoId); playing up to ${STEP_DOWN_HEIGHT}p")
+        return true
+    }
 
     /** Starts asking for [videoId]'s stream, if nothing has yet; cheap to call again. */
-    fun prefetch(videoId: String): Deferred<InnerTubeXResolver.VideoStream?>? {
+    fun prefetch(videoId: String, cap: Int = capFor(videoId)): Deferred<InnerTubeXResolver.VideoStream?>? {
         if (videoId in noPicture) return null
-        val key = videoId to capFor()
+        val key = videoId to cap
         val now = System.currentTimeMillis()
         streams[key]?.let { (at, job) ->
             val failed = job.isCompleted && job.getCompletionExceptionOrNull() != null
@@ -126,13 +147,29 @@ internal object DesktopMusicVideo {
         return ready?.await() ?: open(videoId)
     }
 
+    /**
+     * Opens [videoId]'s picture at its held height, stepping down the ladder — 1080p, then 720p —
+     * when that one won't open here (an AV1 stream with no decoder for it, say), so a high pick
+     * plays lower rather than never.
+     */
     private suspend fun open(videoId: String): Opened? {
+        val first = capFor(videoId)
+        for (cap in listOf(first, STEP_DOWN_HEIGHT, AUTO_HEIGHT).filter { it <= first }.distinct()) {
+            openAt(videoId, cap)?.let { return it }
+            if (videoId in noPicture) return null
+            // Next time it starts lower, rather than failing at the top again.
+            if (cap > STEP_DOWN_HEIGHT) ceiling = STEP_DOWN_HEIGHT
+        }
+        return null
+    }
+
+    private suspend fun openAt(videoId: String, cap: Int): Opened? {
         // Retried a couple of times: right after launch the session is often not ready yet, and
         // the first ask fails where the next one answers.
         var stream: InnerTubeXResolver.VideoStream? = null
         for (attempt in 1..3) {
             stream = try {
-                prefetch(videoId)?.await()
+                prefetch(videoId, cap)?.await()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -153,7 +190,7 @@ internal object DesktopMusicVideo {
         val decoder = DesktopCanvasDecoder(maxEdge = minOf(maxOf(stream.width, stream.height), MAX_FRAME_EDGE), loop = false, windowed = true)
         val opened = withContext(Dispatchers.IO) { decoder.open(stream.url, stream.headers) }
         if (opened.isFailure) {
-            DesktopTrackLog.log("music video: ${opened.exceptionOrNull()?.message}")
+            DesktopTrackLog.log("music video: ${stream.height}p ${stream.mimeType} won't open here: ${opened.exceptionOrNull()?.message}")
             withContext(NonCancellable + Dispatchers.IO) { decoder.close() }
             return null
         }
@@ -169,6 +206,9 @@ internal object DesktopMusicVideo {
 
     internal fun audioPlaying(): Boolean = playback?.value?.isPlaying == true
 
+    /** Bumped by every deliberate jump of the audio's playhead. */
+    internal fun seekCount(): Int = playback?.value?.seeks ?: 0
+
     /** Past this the decoder restarts at the audio rather than catching up frame by frame. */
     internal const val RESTART_BEHIND_MS = 1_200L
     internal const val RESTART_AHEAD_MS = 600L
@@ -178,12 +218,24 @@ internal object DesktopMusicVideo {
 
     /** Where Auto opens: 720p starts quickly and decodes easily; a held height goes higher. */
     private const val AUTO_HEIGHT = 720
+
+    /** Where a held height too heavy to open or keep up with steps down to. */
+    private const val STEP_DOWN_HEIGHT = 1080
     private const val STREAM_TTL_MS = 60 * 60 * 1000L
     private const val KEY_QUALITY = "music_video_quality"
 }
 
-/** The longest edge frames are scaled to. */
-private const val MAX_FRAME_EDGE = 1280
+/**
+ * The longest edge frames are scaled to: a 1080p frame, enough for a full-screen picture; past it,
+ * each frame is only more bytes to convert and copy for a screen that can't tell.
+ */
+private const val MAX_FRAME_EDGE = 1920
+
+/** A restart with no frame after this has not landed, and starts over. */
+private const val LANDING_TIMEOUT_MS = 6_000L
+
+/** Two restarts behind the audio inside this, at a height past 1080p, and it steps down. */
+private const val SLOW_WINDOW_MS = 20_000L
 
 /** How many decoded frames run ahead of the one on screen: a few hundred milliseconds of video. */
 private const val FRAMES_AHEAD = 8
@@ -232,9 +284,11 @@ internal fun DesktopMusicVideoSurface(
 ) {
     var frame by remember(videoId) { mutableStateOf<ImageBitmap?>(null) }
     val generation by DesktopMusicVideo.qualityGeneration.collectAsState()
+    // Bumped when the picture steps down a height, to reopen at the lower one.
+    var reopen by remember(videoId) { mutableStateOf(0) }
     val report by rememberUpdatedState(onRenderedChanged)
 
-    LaunchedEffect(videoId, generation) {
+    LaunchedEffect(videoId, generation, reopen) {
         val mountedAt = System.currentTimeMillis()
         val opened = DesktopMusicVideo.take(videoId) ?: return@LaunchedEffect
         val decoder = opened.decoder
@@ -247,6 +301,19 @@ internal fun DesktopMusicVideoSurface(
         try {
             var next: VideoFrame? = null
             var shownPts = -1L
+            // When the picture had to start over behind the audio, lately: twice in a short while
+            // at a height above 1080p is a decoder that can't keep up, and it steps down. A seek's
+            // restart is the listener's doing, not the decoder's, and isn't counted.
+            val fellBehindAt = ArrayDeque<Long>()
+            var seeks = DesktopMusicVideo.seekCount()
+            fun tooSlow(): Boolean {
+                val now0 = DesktopMusicVideo.seekCount()
+                if (now0 != seeks) { seeks = now0; return false }
+                val now = System.currentTimeMillis()
+                fellBehindAt.addLast(now)
+                while (fellBehindAt.first() < now - SLOW_WINDOW_MS) fellBehindAt.removeFirst()
+                return fellBehindAt.size >= 2 && opened.stream.height > 1080 && DesktopMusicVideo.stepDown(videoId)
+            }
             suspend fun restart(at: Long) {
                 decoding.job.cancelAndJoin()
                 next = null
@@ -263,12 +330,26 @@ internal fun DesktopMusicVideoSurface(
                     // The audio jumped back, or far ahead of anything buffered: start over there.
                     candidate != null && candidate.ptsMs - target > DesktopMusicVideo.RESTART_AHEAD_MS + leadMs ->
                         restart(target + if (playing) leadMs else 0L)
-                    candidate != null && target - candidate.ptsMs > DesktopMusicVideo.RESTART_BEHIND_MS ->
+                    candidate != null && target - candidate.ptsMs > DesktopMusicVideo.RESTART_BEHIND_MS -> {
+                        if (landed && playing && tooSlow()) { reopen++; return@LaunchedEffect }
                         restart(target + if (playing) leadMs else 0L)
+                    }
+                    // A restart that never landed: the decoder couldn't get from the keyframe to the
+                    // audio before the audio moved on (4K decoded in software), or the read stalled.
+                    // Above 1080p that is a picture too heavy for here, and it steps down at once.
+                    !landed && System.currentTimeMillis() - restartedAt > LANDING_TIMEOUT_MS -> {
+                        DesktopTrackLog.log("music video: no frame ${System.currentTimeMillis() - restartedAt}ms after restarting; ${opened.stream.height}p")
+                        if (playing && opened.stream.height > 1080 && DesktopMusicVideo.stepDown(videoId)) {
+                            reopen++
+                            return@LaunchedEffect
+                        }
+                        restart(target + leadMs)
+                    }
                     // Starved after it had caught up — a stall on the network: start again ahead.
                     // Not before a restart has landed, which would only start it over again.
                     landed && candidate == null && target - shownPts > DesktopMusicVideo.RESTART_BEHIND_MS * 2 -> {
                         DesktopTrackLog.log("music video: fell ${target - shownPts}ms behind; restarting")
+                        if (tooSlow()) { reopen++; return@LaunchedEffect }
                         restart(target + leadMs)
                     }
                     candidate != null && candidate.ptsMs <= target + 8 -> {

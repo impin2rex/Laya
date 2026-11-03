@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,6 +91,7 @@ private const val VIDEO_CONTROLS_IDLE_MS = 3_500L
  * down again a few seconds after the last touch while it plays, as in every
  * video player. [onExitFullscreen] goes back to the ordinary landscape player.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun FullscreenVideoPlayer(
     song: Song,
@@ -105,6 +107,10 @@ internal fun FullscreenVideoPlayer(
     /** Back to the song's audio-only cut, where it has one — see [SwitchToAudioPill]. */
     onSwitchToAudio: (() -> Unit)? = null,
     switchingVersion: Boolean = false,
+    /** Whether the window fills the screen — which way the corner button points. */
+    screenFilled: Boolean = true,
+    /** A double-click on the picture, as in any video player: full screen in and out. */
+    onDoubleClick: (() -> Unit)? = null,
 ) {
     HideSystemBars(true)
     var controlsShown by remember { mutableStateOf(true) }
@@ -121,9 +127,10 @@ internal fun FullscreenVideoPlayer(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable(
+            .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
+                onDoubleClick = onDoubleClick,
             ) { controlsShown = !controlsShown },
     ) {
         // Black with a spinner until the picture's first frame lands.
@@ -191,7 +198,7 @@ internal fun FullscreenVideoPlayer(
                         SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion)
                         Spacer(Modifier.width(8.dp))
                     }
-                    VideoCornerControls(fullscreen = true, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
+                    VideoCornerControls(fullscreen = screenFilled, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
                 }
                 Box(
                     Modifier
@@ -378,9 +385,15 @@ internal fun VideoCornerControls(
     }
 }
 
-/** What the quality box and drawer say is playing: the held height, else the one on screen. */
-private fun MusicVideoQualityUi.selected(): Int? =
-    if (held == null || held !in heights) activeHeight else held
+/**
+ * What the quality box and drawer say is playing: the held height, else the one on screen — and
+ * the one on screen when it is lower than the pick, which this device couldn't play.
+ */
+private fun MusicVideoQualityUi.selected(): Int? = when {
+    held == null || held !in heights -> activeHeight
+    activeHeight != null && activeHeight < held -> activeHeight
+    else -> held
+}
 
 /**
  * The playing video's quality: 360p, 480p, HD, FullHD, 2K, 4K — what is on

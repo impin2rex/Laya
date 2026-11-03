@@ -880,6 +880,22 @@ fun NowPlayingScreen(
     // its exit button brings the player back with the video in the sleeve, and the sleeve's
     // full-screen button goes back in.
     var videoTheater by remember(song.videoId) { mutableStateOf(true) }
+    // The real full screen, on top of the theater: the corner button, a double-click, F or
+    // ⌃⌘F. Esc steps out of it first, then out of the theater into the sleeve.
+    val windowFullScreen by PlayerPlatform.host.windowFullScreen.collectAsStateWithLifecycle()
+    val toggleFullScreen = { PlayerPlatform.host.setWindowFullScreen(!windowFullScreen) }
+    PlayerBackHandler(enabled = videoMode && videoTheater && !windowFullScreen) { videoTheater = false }
+    // A full screen the video asked for goes when the video does — switched to the song, or the
+    // track moving on to one without a picture.
+    var fullScreenForVideo by remember { mutableStateOf(false) }
+    LaunchedEffect(windowFullScreen, videoMode) {
+        if (windowFullScreen && videoMode) fullScreenForVideo = true
+        if (!windowFullScreen) fullScreenForVideo = false
+        if (windowFullScreen && !videoMode && fullScreenForVideo) {
+            fullScreenForVideo = false
+            PlayerPlatform.host.setWindowFullScreen(false)
+        }
+    }
     var canvasAspect by remember(canvas) { mutableFloatStateOf(0f) }
     // Whether the clip actually has a frame on screen right now, and one of
     // them — used to blow the sleeve out to the full-bleed hero treatment and
@@ -1928,7 +1944,7 @@ fun NowPlayingScreen(
         label = "playerTint",
     )
     CompositionLocalProvider(LocalPlayerTint provides playerTint) {
-        if (videoMode && videoTheater) {
+        if (videoMode && (videoTheater || windowFullScreen)) {
             val versionAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
             val transitionWindow by PlayerSettings.smartTransitionWindow.collectAsStateWithLifecycle()
             Box(modifier = modifier.fillMaxSize().then(dockHost)) {
@@ -1938,7 +1954,9 @@ fun NowPlayingScreen(
                     artRequest = art.request,
                     rendered = videoRendered,
                     onRenderedChanged = { videoRendered = it },
-                    onExitFullscreen = { videoTheater = false },
+                    onExitFullscreen = toggleFullScreen,
+                    screenFilled = windowFullScreen,
+                    onDoubleClick = toggleFullScreen,
                     onOpenQuality = { showVideoQuality = true },
                     onSwitchToAudio = switchToAudio,
                     switchingVersion = versionSwitching,

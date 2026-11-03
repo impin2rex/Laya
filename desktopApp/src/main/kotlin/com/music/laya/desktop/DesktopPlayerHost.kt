@@ -74,6 +74,12 @@ internal object DesktopPlayerHost : PlayerHost {
 
     override fun setMusicVideoQuality(height: Int?) = DesktopMusicVideo.setQuality(height)
 
+    override val windowFullScreen: StateFlow<Boolean> get() = DesktopWindowMode.fullScreen
+
+    override fun setWindowFullScreen(on: Boolean) {
+        if (on != DesktopWindowMode.fullScreen.value) DesktopWindowMode.toggle()
+    }
+
     // Local files carry their art on the row already; there is no remote store to ask.
     @Composable
     override fun rememberRemoteArtworkUrl(song: Song?): String? = song?.thumbnailUrl

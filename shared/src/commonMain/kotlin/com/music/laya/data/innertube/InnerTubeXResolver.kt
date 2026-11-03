@@ -285,17 +285,32 @@ object InnerTubeXResolver {
         // Asked early (a prefetch as the app opens), a video extraction raced the warm-up's
         // player config and both failed, leaving every later one without it: wait it out.
         warmup?.join()
-        innerTube.cookie = Innertube.cookie
-        innerTube.visitorData = Innertube.ensureVisitorData()
-        innerTube.locale = YouTubeLocale(gl = Innertube.currentRegion, hl = Innertube.currentLanguage)
-        val stream = extractor.extract(
-            videoId = videoId,
-            hints = ContentHints(wantVideo = true, maxVideoHeight = maxHeight)
-                .withStreamCapabilities(allowHls = false, allowSabr = false, allowBoundedRange = true),
-            excludedClients = excludedFor(videoId),
-            audioQuality = AudioQuality.LOW,
-            clientPlaybackNonce = generateClientPlaybackNonce(),
-        ) ?: return null
+        suspend fun extract() = run {
+            innerTube.cookie = Innertube.cookie
+            innerTube.visitorData = Innertube.ensureVisitorData()
+            innerTube.locale = YouTubeLocale(gl = Innertube.currentRegion, hl = Innertube.currentLanguage)
+            extractor.extract(
+                videoId = videoId,
+                hints = ContentHints(wantVideo = true, maxVideoHeight = maxHeight)
+                    .withStreamCapabilities(allowHls = false, allowSabr = false, allowBoundedRange = true),
+                excludedClients = excludedFor(videoId),
+                audioQuality = AudioQuality.LOW,
+                clientPlaybackNonce = generateClientPlaybackNonce(),
+            )
+        }
+        val stream = try {
+            extract()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A warm-up that failed (around signing in, as the app opens) leaves the extractor with
+            // no player config, and only the clients that need none — none of which serve a
+            // picture — answer until it is warmed again. So: warm again, and ask once more.
+            TrackLog.w(TAG, "video: ${e.message}; warming InnerTubeX again and retrying", about = videoId)
+            warm(0)
+            warmup?.join()
+            extract()
+        } ?: return null
         val url = stream.videoUrl ?: return null
         val width = stream.videoWidth ?: 0
         val height = stream.videoHeight ?: 0
