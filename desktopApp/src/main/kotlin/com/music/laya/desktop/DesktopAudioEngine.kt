@@ -443,7 +443,7 @@ class DesktopPlaybackEngine(
      * ponytail: same timestamp, not aligned — a video's intro can shift it a few seconds; the
      * phone's VersionAudioAligner is the upgrade path if that shows.
      */
-    fun swapVersion(target: Song, onDone: (Boolean) -> Unit = {}) {
+    fun swapVersion(target: Song, fromStart: Boolean = false, onDone: (Boolean) -> Unit = {}) {
         val from = _state.value.song ?: return onDone(false)
         if (target.videoId == from.videoId || versionSwitching.value) return onDone(false)
         upgradeJob?.cancel()
@@ -451,7 +451,7 @@ class DesktopPlaybackEngine(
         val t0 = System.currentTimeMillis()
         scope.launch {
             val opened = DesktopMusicSources.resolve(target, audioQuality).mapCatching { stream ->
-                openTrack(target, stream, _state.value.positionMs).getOrThrow()
+                openTrack(target, stream, if (fromStart) 0L else _state.value.positionMs).getOrThrow()
             }
             val latest = _state.value
             opened.fold(
@@ -461,7 +461,7 @@ class DesktopPlaybackEngine(
                         versionSwitching.value = false
                         return@fold onDone(false)
                     }
-                    if (kotlin.math.abs(latest.positionMs - track.startUs / 1_000) >= UPGRADE_RESEEK_THRESHOLD_MS) {
+                    if (!fromStart && kotlin.math.abs(latest.positionMs - track.startUs / 1_000) >= UPGRADE_RESEEK_THRESHOLD_MS) {
                         track.decoder.seek(latest.positionMs * 1_000)
                         track.startUs = latest.positionMs * 1_000
                         track.seekKaraoke(track.startUs)

@@ -14,6 +14,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import com.music.laya.ui.components.PAGE_GUTTER
 import com.music.laya.ui.components.SourceQualityBadge
 import com.music.laya.ui.components.sourceQualityBadge
@@ -369,6 +370,9 @@ private val LocalDesktopBottomInset = staticCompositionLocalOf { 0.dp }
 /** Android's own edge on these bars: `Color.White.copy(alpha = 0.10f)`. */
 private val DesktopBarEdge = Color(0x1AFFFFFF)
 private const val POSITION_SAVE_INTERVAL_MS = 5_000L
+
+/** A video swapped for its audio release before this far in starts the release from its top. */
+private const val AUTO_AUDIO_FROM_START_MS = 15_000L
 internal val DesktopAccent = Color.White
 
 /** Deleting, signing out, and anything that failed — the one place a colour survives, as on Android. */
@@ -1915,63 +1919,108 @@ fun LayaDesktopApp() {
     // its audio-only release — looked up as it starts, and swapped in at the playhead. Pairs a
     // switch has already made are remembered, so the way back needs no second lookup. Never in a
     // party: everyone in one hears the same cut.
+    //
+    // A video plays as audio unless the listener asked to watch it: as its audio release when
+    // there is one, swapped in from its start, or else as itself with the picture hidden, the
+    // switch then only showing it.
     val versionSwitching by playbackEngine.versionSwitching.collectAsState()
     val versionPairs = remember { mutableMapOf<String, Song>() }
     var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
+    // The video the listener asked to watch.
+    var watching by remember { mutableStateOf<String?>(null) }
+    // Video uploads that came without their video flag — rows from history, a lyric video found
+    // as a song — told apart by their video lookup finding themselves.
+    val videoUploads = remember { mutableStateMapOf<String, Boolean>() }
+    fun asPlayed(song: Song): Song = if (!song.isVideo && videoUploads[song.videoId] == true) song.copy(isVideo = true) else song
+    fun swapTo(other: Song, fromStart: Boolean) {
+        val song = playback.song?.let(::asPlayed) ?: return
+        if (versionSwitching) return
+        // The same queue entry in its other cut, so the queue, the history and the
+        // party's running order still see one item.
+        val target = other.copy(
+            queueTier = song.queueTier,
+            queueEntryId = song.queueEntryId,
+            radioName = song.radioName,
+            playbackSource = song.playbackSource,
+            playbackSourceType = song.playbackSourceType,
+            playbackSourceId = song.playbackSourceId,
+        )
+        // The picture opens while the audio changes over, not after it.
+        if (target.isVideo) {
+            watching = target.videoId
+            DesktopMusicVideo.prepare(target.videoId)
+        }
+        playbackEngine.swapVersion(target, fromStart) { swapped ->
+            if (!swapped) return@swapVersion
+            scope.launch {
+                versionPairs[target.videoId] = song
+                versionPairs[song.videoId] = target
+                val at = liveQueue.index
+                if (liveQueue.current?.videoId == song.videoId) {
+                    liveQueue = liveQueue.copy(songs = liveQueue.songs.toMutableList().also { it[at] = target })
+                    saveQueue()
+                }
+                if (selectedSong?.videoId == song.videoId) selectedSong = target
+            }
+        }
+    }
     LaunchedEffect(playback.song?.videoId, partyState.inParty) {
-        val song = playback.song
+        val playing = playback.song
         alternateVersion = null
-        if (song == null || partyState.inParty || song.localUri != null) return@LaunchedEffect
-        if (song.isVideo) DesktopMusicVideo.prefetch(song.videoId)
+        if (playing == null || partyState.inParty || playing.localUri != null) return@LaunchedEffect
+        if (playing.isVideo) DesktopMusicVideo.prefetch(playing.videoId)
+        var song = asPlayed(playing)
         val other = versionPairs[song.videoId] ?: withContext(Dispatchers.IO) {
             runCatching {
+                suspend fun audioOf(video: Song) =
+                    YtMusicRepository.resolveAudio(video).takeIf { it.videoId != video.videoId }
                 if (song.isVideo) {
-                    YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
+                    audioOf(song)
                 } else {
-                    YtMusicRepository.resolveVideo(song)?.takeIf { it.videoId != song.videoId }
+                    val video = YtMusicRepository.resolveVideo(song)
+                    if (video?.videoId == song.videoId) {
+                        song = song.copy(isVideo = true)
+                        withContext(Dispatchers.Main) { videoUploads[song.videoId] = true }
+                        DesktopMusicVideo.prefetch(song.videoId)
+                        audioOf(song)
+                    } else {
+                        video
+                    }
                 }
             }.getOrNull()
         }
         if (other != null && playbackEngine.state.value.song?.videoId == song.videoId) {
             alternateVersion = song.videoId to other
-            // Asked now, so a press of the switch finds the video's stream already in hand.
-            if (other.isVideo) DesktopMusicVideo.prefetch(other.videoId)
+            if (song.isVideo && watching != song.videoId) {
+                swapTo(other, fromStart = playbackEngine.state.value.positionMs < AUTO_AUDIO_FROM_START_MS)
+            } else if (other.isVideo) {
+                // Asked now, so a press of the switch finds the video's stream already in hand.
+                DesktopMusicVideo.prefetch(other.videoId)
+            }
         }
     }
-    val toggleVersion: (() -> Unit)? = alternateVersion
-        ?.takeIf { (id, _) -> id == playback.song?.videoId }
-        ?.let { (_, other) ->
-            {
-                val song = playback.song
-                if (song != null && !versionSwitching) {
-                    // The same queue entry in its other cut, so the queue, the history and the
-                    // party's running order still see one item.
-                    val target = other.copy(
-                        queueTier = song.queueTier,
-                        queueEntryId = song.queueEntryId,
-                        radioName = song.radioName,
-                        playbackSource = song.playbackSource,
-                        playbackSourceType = song.playbackSourceType,
-                        playbackSourceId = song.playbackSourceId,
-                    )
-                    // The picture opens while the audio changes over, not after it.
-                    if (target.isVideo) DesktopMusicVideo.prepare(target.videoId)
-                    playbackEngine.swapVersion(target) { swapped ->
-                        if (!swapped) return@swapVersion
-                        scope.launch {
-                            versionPairs[target.videoId] = song
-                            versionPairs[song.videoId] = target
-                            val at = liveQueue.index
-                            if (liveQueue.current?.videoId == song.videoId) {
-                                liveQueue = liveQueue.copy(songs = liveQueue.songs.toMutableList().also { it[at] = target })
-                                saveQueue()
-                            }
-                            if (selectedSong?.videoId == song.videoId) selectedSong = target
-                        }
+    val toggleVersion: (() -> Unit)? = playback.song?.let(::asPlayed)?.let { song ->
+        val other = alternateVersion?.takeIf { (id, _) -> id == song.videoId }?.second
+        when {
+            other != null && !(song.isVideo && watching != song.videoId) -> {
+                {
+                    if (!other.isVideo) watching = null
+                    swapTo(other, fromStart = false)
+                }
+            }
+            song.isVideo && song.localUri == null -> {
+                {
+                    watching = if (watching == song.videoId) {
+                        null
+                    } else {
+                        DesktopMusicVideo.prepare(song.videoId)
+                        song.videoId
                     }
                 }
             }
+            else -> null
         }
+    }
 
     // The shared player reads the playhead off this one object, and only where it
     // draws it — see PlaybackPosition — so a tick never recomposes the player.
@@ -3381,7 +3430,7 @@ fun LayaDesktopApp() {
                         // F alone, as in any video player — only over a music video in the player,
                         // so it is never a letter typed somewhere else.
                         event.key == Key.F && !event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed &&
-                            overlays.nowPlaying && playbackEngine.state.value.song?.isVideo == true -> {
+                            overlays.nowPlaying && watching != null && playbackEngine.state.value.song?.videoId == watching -> {
                             DesktopWindowMode.toggle()
                             true
                         }
@@ -3558,13 +3607,14 @@ fun LayaDesktopApp() {
                             }
                             ?: current
                         NowPlayingScreen(
-                            song = playerSong,
+                            song = asPlayed(playerSong),
                             isPlaying = playback.isPlaying,
                             isLoading = playback.isLoading,
                             position = playerPosition,
                             durationMs = playback.durationMs,
                             audioVersionSwitching = versionSwitching,
                             onToggleVideo = toggleVersion,
+                            pictureShown = watching == playerSong.videoId,
                             qualityUpgraded = false,
                             queue = liveQueue.songs,
                             queueIndex = liveQueue.index,

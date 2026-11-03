@@ -738,6 +738,8 @@ fun NowPlayingScreen(
      * video — the capsule's segment and the glass "Audio" pill go with it.
      */
     onToggleVideo: (() -> Unit)? = null,
+    /** Whether a playing video shows its picture; false plays it as audio, [onToggleVideo] showing it. */
+    pictureShown: Boolean = true,
     lyrics: List<LyricLine>?,
     lyricsSource: LyricsSource?,
     lyricsProviderStates: Map<LyricsSource, LyricsProviderState>,
@@ -857,13 +859,13 @@ fun NowPlayingScreen(
     val mixing by PlayerSettings.smartMixInProgress.collectAsStateWithLifecycle()
     // A music video plays its own picture where the sleeve is — see
     // [MusicVideoSurface] — and takes the place of any animated cover.
-    val videoMode = showsMusicVideo(song)
+    val videoMode = showsMusicVideo(song) && pictureShown
     // Read once for both the capsule's segment and the glass pill on the video.
     val versionSwitchAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
     val versionSwitching = audioVersionSwitching || versionSwitchAligning
     val videoToggle = onToggleVideo
         ?.takeIf { PlayerPlatform.host.musicVideoSupported }
-        ?.let { VideoToggle(video = song.isVideo, switching = versionSwitching, onToggle = it) }
+        ?.let { VideoToggle(video = videoMode, switching = versionSwitching, onToggle = it) }
     // Only a video that is actually showing offers the way back from it.
     val switchToAudio = videoToggle?.takeIf { videoMode }?.onToggle
     val canvas = rememberCanvasArtwork(song)?.takeUnless { videoMode }
