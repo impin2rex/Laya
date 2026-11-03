@@ -1,5 +1,7 @@
 package com.music.laya.ui.components
 
+import com.music.laya.ui.components.trackArtSize
+import androidx.compose.ui.layout.ContentScale
 import com.music.laya.R
 
 import android.net.Uri
@@ -940,8 +942,9 @@ internal fun SheetTrackHeader(
         AsyncImage(
             model = song.artworkAt(ROW_ART_PX),
             contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(52.dp)
+                .trackArtSize(52.dp, song.isVideo)
                 .clip(RoundedCornerShape(8.dp))
                 .thumbnailBorder(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),

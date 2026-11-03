@@ -279,6 +279,7 @@ import com.music.laya.ui.icons.LayaIcons
 import androidx.media3.common.Player
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.ui.player.NowPlayingScreen
+import com.music.laya.ui.player.MusicVideoEngine
 import com.music.laya.ui.player.PlayerSheetMotion
 import com.music.laya.ui.player.attachWindow
 import com.music.laya.ui.player.PlayerSheetShape
@@ -926,6 +927,11 @@ private fun LayaApp(
     }
     val controller = rememberMediaController()
     val player = rememberPlayerState(controller)
+    // A music video's picture follows this controller's clock — see [MusicVideoEngine].
+    DisposableEffect(controller) {
+        MusicVideoEngine.attach(controller)
+        onDispose { MusicVideoEngine.attach(null) }
+    }
     // A resume in a party is performed on the instant the server schedules, not
     // when it was pressed, and nothing about the player moves in between — so
     // the transport spends that round trip drawn as though the tap never landed.
@@ -1227,6 +1233,7 @@ private fun LayaApp(
             // to release the loading state and resume it immediately.
             if (audio == null || audio.videoId == song.videoId) {
                 TrackLog.w("Player", "audio switch found no distinct official song", song.videoId)
+                if (stillCurrent && !pauseWhileResolving) showQueueNotice(context.getString(R.string.no_audio_version))
                 if (stillCurrent && resumeAfterResolution) c.play()
                 return
             }
@@ -1293,6 +1300,7 @@ private fun LayaApp(
 
             if (video == null || video.videoId == song.videoId) {
                 TrackLog.w("Player", "video switch found no distinct video", song.videoId)
+                if (stillCurrent) showQueueNotice(context.getString(R.string.no_video_version))
                 if (stillCurrent && resumeAfterResolution) c.play()
                 return
             }

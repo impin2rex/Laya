@@ -1,5 +1,7 @@
 package com.music.laya.ui.player
 
+import com.music.laya.ui.components.trackArtSize
+import androidx.compose.ui.layout.ContentScale
 import com.music.laya.sharedui.resources.*
 import com.music.laya.ui.components.ExplicitSongTitle
 
@@ -772,8 +774,9 @@ private fun InlineQueueRow(
         AsyncImage(
             model = rememberRemoteArtworkUrl(song),
             contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(44.dp)
+                .trackArtSize(44.dp, song.isVideo)
                 .clip(RoundedCornerShape(6.dp))
                 .thumbnailBorder(RoundedCornerShape(6.dp))
                 .background(Color.White.copy(alpha = 0.08f)),
