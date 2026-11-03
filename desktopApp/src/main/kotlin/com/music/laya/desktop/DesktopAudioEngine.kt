@@ -236,6 +236,8 @@ class DesktopPlaybackEngine(
 
     fun load(song: Song, playWhenReady: Boolean = true, startAtMs: Long = 0L) {
         retryingSongId = null
+        // A new track: what its predecessor's versions were playing is no longer wanted.
+        versionStreams.clear()
         loadInternal(
             song,
             playWhenReady,
@@ -448,9 +450,16 @@ class DesktopPlaybackEngine(
         if (target.videoId == from.videoId || versionSwitching.value) return onDone(false)
         upgradeJob?.cancel()
         versionSwitching.value = true
+        // Kept for the way back: the copy this version is playing — the FLAC or AAC a source
+        // upgraded it to, not just YouTube's — so switching back opens it again rather than
+        // looking it up and upgrading anew.
+        current?.takeIf { it.song.videoId == from.videoId }?.let { versionStreams[from.videoId] = it.stream }
+        val kept = versionStreams[target.videoId]
         val t0 = System.currentTimeMillis()
         scope.launch {
-            val opened = DesktopMusicSources.resolve(target, audioQuality).mapCatching { stream ->
+            val stream = kept?.let { Result.success(it) } ?: DesktopMusicSources.resolve(target, audioQuality)
+            if (kept != null) DesktopTrackLog.log("version switch: '${target.title}' back on the ${kept.format.summary.ifBlank { "copy" }} it was playing")
+            val opened = stream.mapCatching { stream ->
                 openTrack(target, stream, if (fromStart) 0L else _state.value.positionMs).getOrThrow()
             }
             val latest = _state.value
@@ -775,7 +784,14 @@ class DesktopPlaybackEngine(
 
     // ---- the audio thread -----------------------------------------------
 
+    @Volatile
     private var current: Track? = null
+
+    /**
+     * The stream each version of the playing track was on when it was switched away from, by
+     * its id, for the length of the track — see [swapVersion].
+     */
+    private val versionStreams = java.util.concurrent.ConcurrentHashMap<String, DesktopStream>()
     private var upcoming: Track? = null
     private var speedProcessor: DesktopAudioSpeed? = null
     /** One widener per side of a mix, because widening is a property of a track. */

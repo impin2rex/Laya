@@ -623,7 +623,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
-        if (!next) alignLyrics(song, o) else queuedOpened = song.videoId to o
+        if (!next) { alignLyrics(song, o); playingOpened = song.videoId to o } else queuedOpened = song.videoId to o
         if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
         else if (swap) engine.swapCurrent(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
         else {
@@ -689,6 +689,16 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
 
+    /** What the engine was last handed for the playing track — the copy a switch away keeps. */
+    private var playingOpened: Pair<String, Opened>? = null
+
+    /**
+     * The copy each version of the playing track was on when it was switched away from — the
+     * FLAC or AAC a source found, not just YouTube's — so switching back opens it again rather
+     * than looking it up anew. For the length of the track.
+     */
+    private val versionOpened = mutableMapOf<String, Opened>()
+
     /** A switch between the playing track's music video and its audio-only release is under way. */
     var versionSwitching by mutableStateOf(false); private set
 
@@ -713,7 +723,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         scope.launch {
             val ok = try {
-                val o = withContext(ioDispatcher) { youtube(swapped.videoId) }
+                playingOpened?.takeIf { it.first == s.videoId }?.let { versionOpened[s.videoId] = it.second }
+                val o = versionOpened[swapped.videoId] ?: withContext(ioDispatcher) { youtube(swapped.videoId) }
                 if (song?.videoId != s.videoId || index != at) return@launch onDone(false)
                 PlaybackTracker.onVersionSwapped(s, swapped)
                 queue = queue.toMutableList().also { it[at] = swapped }
@@ -793,6 +804,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun start(i: Int, fromMs: Long = 0) {
+        // A track starting: what the last one's versions were playing is no longer wanted.
+        versionOpened.clear()
         val song = queue.getOrNull(i) ?: return
         ListeningRecorder.onStopped() // as PlaybackService on a transition: repeat-one's second pass must not continue the first
         // YouTube history: close the outgoing play. A retry of the same track mid-way (recover) is not a new play.

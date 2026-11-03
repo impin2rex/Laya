@@ -1023,6 +1023,8 @@ class PlaybackService : MediaLibraryService() {
                 swappingMediaId = null
                 return
             }
+            // A different track: what the last one's versions were playing is no longer wanted.
+            versionItems.clear()
 
             // A receiver, if it is the speaker, is put on whatever became
             // current — or it is the one that moved, and this is the phone
@@ -2129,7 +2131,7 @@ class PlaybackService : MediaLibraryService() {
      * audible stutter, gap, pause or loading hiccup.
      */
     private fun smoothSwapCurrentTrackVersion(
-        targetMediaItem: MediaItem,
+        requestedMediaItem: MediaItem,
         onSwapCommitted: (() -> Unit)? = null,
     ) {
         val activePlayer = player ?: return
@@ -2154,6 +2156,7 @@ class PlaybackService : MediaLibraryService() {
             TrackLog.d("Laya", "version swap deferred: Automix is mid-transition", about = currentItem.mediaId)
             return
         }
+        val targetMediaItem = keptVersion(currentItem, requestedMediaItem)
 
         val sourceSong = currentItem.toSong()
         val targetSong = targetMediaItem.toSong()
@@ -2600,7 +2603,7 @@ class PlaybackService : MediaLibraryService() {
         )
         PlaybackTracker.onVersionSwapped(song, targetSong)
 
-        activePlayer.replaceMediaItem(index, targetSong.toMediaItem())
+        activePlayer.replaceMediaItem(index, keptVersion(activePlayer.currentMediaItem ?: return, targetSong.toMediaItem()))
         activePlayer.seekTo(index, position)
         if (wasPlaying) activePlayer.play()
         refreshCustomLayouts()
@@ -3508,6 +3511,25 @@ class PlaybackService : MediaLibraryService() {
         getSystemService(android.app.UiModeManager::class.java)?.currentModeType ==
             android.content.res.Configuration.UI_MODE_TYPE_TELEVISION ||
             packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+    }
+
+    /**
+     * The item each version of the playing track was on when it was switched away from, by media
+     * id, for the length of the track — the FLAC or AAC a source upgraded it to, whose URI names
+     * that copy and its cache entry, not just the plain item a switch back would build.
+     */
+    private val versionItems = HashMap<String, MediaItem>()
+
+    /**
+     * What a version switch from [current] to [requested] plays: [requested]'s own item as it was
+     * last playing, when it was, so switching back reopens the copy already found and cached
+     * rather than looking it up and upgrading anew. [current] is kept for the way back.
+     */
+    private fun keptVersion(current: MediaItem, requested: MediaItem): MediaItem {
+        versionItems[current.mediaId] = current
+        val kept = versionItems[requested.mediaId] ?: return requested
+        TrackLog.d("Laya", "version switch back onto the copy it was playing", about = requested.mediaId)
+        return kept
     }
 
     /** The track being listened to on [item] — its audio release whenever there is one; see [ListenIdentity]. */
