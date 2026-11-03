@@ -430,6 +430,9 @@ object YtMusicRepository {
                 ?.filterIsInstance<SearchResult.Track>()
                 ?.map { it.song }
                 .orEmpty()
+                // A label's "Official Audio" upload is a still over the song, not a picture: a
+                // track with only that has no video to switch to.
+                .filterNot { it.isStillPictureUpload() }
             TrackMatcher.best(candidates, target)?.let { match ->
                 Log.d(TAG, "video switch: '${song.title}' -> '${match.title}' ($query)")
                 videoVersionCache[song.videoId] = match
@@ -440,6 +443,16 @@ object YtMusicRepository {
         videoVersionCache[song.videoId] = null
         return null
     }
+
+    /** An upload its title says is audio over a still picture, unless it also says it is a video. */
+    internal fun Song.isStillPictureUpload(): Boolean =
+        STILL_PICTURE.containsMatchIn(title) && !SAYS_VIDEO.containsMatchIn(title)
+
+    private val STILL_PICTURE = Regex(
+        """\b(official\s+audio|audio\s+(song|track|only|jukebox)|full\s+audio|visuali[sz]er)\b|[(\[]\s*audio\s*[)\]]""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val SAYS_VIDEO = Regex("""\b(music\s+)?video\b""", RegexOption.IGNORE_CASE)
 
     /** Signed-in profile for the settings header. Null when signed out. */
     suspend fun account(): Result<Account> = call("account") {

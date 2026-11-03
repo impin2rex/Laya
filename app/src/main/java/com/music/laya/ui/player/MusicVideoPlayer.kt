@@ -341,6 +341,28 @@ object MusicVideoEngine {
         }
     }
 
+    /**
+     * Whether [videoId] has a picture to show: its stream resolves and isn't a cover held still.
+     * Asked before the switch to it is offered, so a track whose only "video" is nothing to watch
+     * shows no switch rather than one that loads forever. The stream it finds is kept, as
+     * [prefetch]'s is. Any thread.
+     */
+    suspend fun hasPicture(videoId: String): Boolean = withContext(Dispatchers.Main) {
+        if (videoId in noPicture) return@withContext false
+        val cap = capFor(videoId)
+        val stream = cachedStream(videoId, cap) ?: runCatching {
+            withContext(Dispatchers.IO) { InnerTubeXResolver.extractVideo(videoId, cap) }
+        }.getOrNull()?.also { streams[videoId] = Triple(it, cap, System.currentTimeMillis()) }
+        when {
+            stream == null -> false
+            stream.aspect < MIN_VIDEO_ASPECT -> {
+                noPicture += videoId
+                false
+            }
+            else -> true
+        }
+    }
+
     /** The height asked for: the held one, else what Auto opens at for this connection. */
     private fun capFor(videoId: String): Int {
         // Seen only in the mini player's 40 dp slot: the lowest height is all it can show.

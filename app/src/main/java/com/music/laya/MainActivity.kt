@@ -1305,7 +1305,9 @@ private fun LayaApp(
         if (pauseWhileResolving) c.pause()
         try {
             TrackLog.d("Player", "video switch requested for '${song.title}'", song.videoId)
-            val video = runCatching { YtMusicRepository.resolveVideo(song) }.getOrNull()
+            val video = runCatching {
+                YtMusicRepository.resolveVideo(song)?.takeIf { MusicVideoEngine.hasPicture(it.videoId) }
+            }.getOrNull()
             val stillCurrent = c.currentMediaItemIndex == index &&
                 c.currentMediaItem?.mediaId == song.videoId
 
@@ -1567,7 +1569,7 @@ private fun LayaApp(
             } else {
                 runCatching {
                     // Its stream is asked for now, so the switch opens on a picture already found.
-                    YtMusicRepository.resolveVideo(song)?.also { MusicVideoEngine.prefetch(it.videoId) } != null
+                    YtMusicRepository.resolveVideo(song)?.let { MusicVideoEngine.hasPicture(it.videoId) } == true
                 }.getOrDefault(false)
             }
         }

@@ -136,7 +136,8 @@ fun TvNowPlayingScreen(
                 if (song.isVideo) {
                     com.music.laya.data.YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
                 } else {
-                    com.music.laya.data.YtMusicRepository.resolveVideo(song)?.takeIf { it.videoId != song.videoId }
+                    com.music.laya.data.YtMusicRepository.resolveVideo(song)
+                        ?.takeIf { it.videoId != song.videoId && com.music.laya.ui.player.MusicVideoEngine.hasPicture(it.videoId) }
                 }
             }.getOrNull()
         }

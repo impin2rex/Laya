@@ -372,6 +372,9 @@ private val LocalDesktopBottomInset = staticCompositionLocalOf { 0.dp }
 private val DesktopBarEdge = Color(0x1AFFFFFF)
 private const val POSITION_SAVE_INTERVAL_MS = 5_000L
 
+/** Narrower than this, a video's picture is a cover held still, not one to switch to. */
+private const val MIN_VIDEO_ASPECT = 1.2f
+
 /** A video swapped for its audio release before this far in starts the release from its top. */
 private const val AUTO_AUDIO_FROM_START_MS = 15_000L
 internal val DesktopAccent = Color.White
@@ -1998,7 +2001,10 @@ fun LayaDesktopApp() {
                         DesktopMusicVideo.prefetch(song.videoId)
                         audioOf(song)
                     } else {
-                        video
+                        // Only a picture worth watching is offered: a still cover isn't one.
+                        video?.takeIf { v ->
+                            DesktopMusicVideo.prefetch(v.videoId)?.await()?.let { it.aspect >= MIN_VIDEO_ASPECT } == true
+                        }
                     }
                 }
             }.getOrNull()

@@ -452,7 +452,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val other = versionPairs[song.videoId] ?: withContext(ioDispatcher) {
             runCatching {
                 if (song.isVideo) YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
-                else YtMusicRepository.resolveVideo(song)?.takeIf { it.videoId != song.videoId }
+                else YtMusicRepository.resolveVideo(song)?.takeIf { it.videoId != song.videoId && IosMusicVideo.manifest(it.videoId) != null }
             }.getOrNull()
         }
         if (other != null && player.song?.videoId == song.videoId) alternateVersion = song.videoId to other
