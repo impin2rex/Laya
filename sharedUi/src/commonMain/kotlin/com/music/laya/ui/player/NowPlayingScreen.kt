@@ -2972,6 +2972,15 @@ fun NowPlayingScreen(
                                     scaleY = scale
                                     translationX = swipeSettle.value * (1f - p()) * (1f - share) * t
                                 }
+                                // The haze below records its content into a layer of
+                                // its own, which iOS keeps by value: read each video
+                                // frame here, inside the layer drawing it, so a new
+                                // frame records it again and the collapsed header's
+                                // picture doesn't freeze.
+                                .drawWithContent {
+                                    if (videoMode) videoFrames?.value
+                                    drawContent()
+                                }
                                 // Haze must observe the drawable layer itself, the
                                 // banner included — a source on the surrounding layout
                                 // only captured its mesh backdrop.
@@ -2987,7 +2996,10 @@ fun NowPlayingScreen(
                                         // picture box stands in, still frame first.
                                         // The sleeve is only the collapsed header's
                                         // thumbnail, and what flies to the mini player.
-                                        (if (!videoMode || docking()) 1f else (p() * 2f - 1f).coerceIn(0f, 1f))
+                                        // Collapsing into the lyrics or the queue, it carries
+                                        // the playing picture itself (see below), so it is
+                                        // whole from the first frame and the box hands over.
+                                        (if (!videoMode || docking() || p() > 0f) 1f else 0f)
                                 }
                                 .graphicsLayer {
                                     val shown = sleeveShown()
@@ -3173,10 +3185,11 @@ fun NowPlayingScreen(
 
                             // A music video flies as itself: the picture already playing,
                             // handed to the sleeve for the trip between the mini player
-                            // and the player, so it never stops or turns back into its
-                            // thumbnail on the way. Only for the trip — at rest the
-                            // picture box below shows it.
-                            if (videoMode && dockMoving) {
+                            // and the player, and for the collapse into the lyrics or the
+                            // queue — and the header thumbnail they leave — so it never
+                            // stops or turns back into its thumbnail on the way. At rest
+                            // in the player the picture box below shows it.
+                            if (videoMode && (dockMoving || collapseStarted)) {
                                 // Lands as what the mini player shows: the picture where it plays
                                 // there too, else handed over to the cover on the way, so the
                                 // landing isn't a cut from a moving frame to a still one.
@@ -3308,6 +3321,8 @@ fun NowPlayingScreen(
                                             onRenderedChanged = { videoRendered = it },
                                             modifier = Modifier
                                                 .fillMaxSize()
+                                                // The sleeve has the picture once a collapse starts.
+                                                .graphicsLayer { if (p() > 0f) alpha = 0f }
                                                 .clip(RoundedCornerShape(10.dp)),
                                         )
                                     }
