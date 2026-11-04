@@ -326,4 +326,14 @@ private fun AppIconPicker() {
             }
         }
     }
+    // Game Booster's pop-up apps read the manifest's enabled flag rather than the runtime
+    // one, and only Default is declared enabled (see AppIcon): any other icon hides Laya there.
+    if (selectedIcon != AppIcon.Default && android.os.Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+        Text(
+            text = stringResource(R.string.app_icon_game_booster_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+        )
+    }
 }

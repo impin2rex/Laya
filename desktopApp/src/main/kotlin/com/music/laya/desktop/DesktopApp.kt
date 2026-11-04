@@ -1984,6 +1984,9 @@ fun LayaDesktopApp() {
     LaunchedEffect(playback.song?.videoId, partyState.inParty) {
         val playing = playback.song
         alternateVersion = null
+        // Watching is for the track it was asked on: another track — next, previous, or back to
+        // this one later — starts as music again. A switch to the video names it before it plays.
+        if (watching != playing?.videoId) watching = null
         if (playing == null || partyState.inParty || playing.localUri != null) return@LaunchedEffect
         if (playing.isVideo) DesktopMusicVideo.prefetch(playing.videoId)
         var song = asPlayed(playing)
@@ -3542,6 +3545,7 @@ fun LayaDesktopApp() {
                     DesktopTopBar(
                         compact = compact,
                         song = selectedSong,
+                        videoId = watching?.takeIf { it == selectedSong?.videoId },
                         isPlaying = playback.isPlaying,
                         isLoading = playback.isLoading,
                         previousEnabled = liveQueue.hasPrevious ||
@@ -3608,6 +3612,7 @@ fun LayaDesktopApp() {
                         compact = compact,
                         destination = destination,
                         song = selectedSong,
+                        videoId = watching?.takeIf { it == selectedSong?.videoId },
                         isPlaying = playback.isPlaying,
                         onDestinationSelected = ::selectDestination,
                         onExpand = { overlays.nowPlaying = true },
@@ -4673,6 +4678,8 @@ fun LayaDesktopApp() {
 private fun DesktopTopBar(
     compact: Boolean,
     song: Song?,
+    /** The music video playing as [song], for the cover slot — see [DesktopMiniPlayerVideo]. */
+    videoId: String?,
     isPlaying: Boolean,
     isLoading: Boolean,
     previousEnabled: Boolean,
@@ -4846,11 +4853,10 @@ private fun DesktopTopBar(
                                     }
                                 } else {
                                     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                                        DesktopArtwork(
-                                            song.thumbnailUrl,
-                                            Modifier.size(44.dp).clip(RoundedCornerShape(3.dp)),
-                                            px = ROW_ART_PX,
-                                        )
+                                        Box(Modifier.size(44.dp).clip(RoundedCornerShape(3.dp))) {
+                                            DesktopArtwork(song.thumbnailUrl, Modifier.matchParentSize(), px = ROW_ART_PX)
+                                            DesktopMiniPlayerVideo(videoId, Modifier.matchParentSize())
+                                        }
                                         Column(
                                             Modifier.weight(1f).padding(start = 12.dp, end = 56.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -5281,6 +5287,7 @@ private fun DesktopBottomChrome(
     compact: Boolean,
     destination: DesktopDestination,
     song: Song?,
+    videoId: String?,
     isPlaying: Boolean,
     onDestinationSelected: (DesktopDestination) -> Unit,
     onExpand: () -> Unit,
@@ -5297,6 +5304,7 @@ private fun DesktopBottomChrome(
         if (compact) {
             DesktopMiniPlayer(
                 song = song,
+                videoId = videoId,
                 isPlaying = isPlaying,
                 onExpand = onExpand,
                 onPlayPause = onPlayPause,
@@ -5358,6 +5366,8 @@ private fun DesktopFloatingNavigation(
 @Composable
 private fun DesktopMiniPlayer(
     song: Song?,
+    /** The music video playing as [song], for the cover slot — see [DesktopMiniPlayerVideo]. */
+    videoId: String?,
     isPlaying: Boolean,
     onExpand: () -> Unit,
     onPlayPause: () -> Unit,
@@ -5386,7 +5396,10 @@ private fun DesktopMiniPlayer(
             }
             Spacer(Modifier.weight(1f))
         } else {
-            DesktopArtwork(song.thumbnailUrl, Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)), px = ROW_ART_PX)
+            Box(Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))) {
+                DesktopArtwork(song.thumbnailUrl, Modifier.matchParentSize(), px = ROW_ART_PX)
+                DesktopMiniPlayerVideo(videoId, Modifier.matchParentSize())
+            }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
@@ -6797,6 +6810,13 @@ private fun DesktopSettingsScreen(
                         ],
                         automaticUpdates,
                         DesktopUpdater::setAutomatic,
+                    )
+                    val miniPlayerVideo by DesktopAppearanceSettings.miniPlayerVideo.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["mini_player_video", "Video in mini player"],
+                        DesktopStrings["d_mini_player_video_subtitle", "Play a music video in the mini player's cover"],
+                        miniPlayerVideo,
+                        DesktopAppearanceSettings::setMiniPlayerVideo,
                     )
                     val hideVolumeBar by DesktopAppearanceSettings.hideVolumeBar.collectAsState()
                     SettingsToggle(

@@ -72,6 +72,8 @@ internal object DesktopPlayerHost : PlayerHost {
     override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
         DesktopMusicVideoSurface(videoId, fit, onRenderedChanged, modifier)
 
+    override fun musicVideoRendered(videoId: String): Boolean = com.music.laya.desktop.musicVideoRendered(videoId)
+
     override val musicVideoAspect: StateFlow<Float> get() = DesktopMusicVideo.aspect
 
     override val musicVideoQuality: StateFlow<MusicVideoQualityUi> get() = DesktopMusicVideo.quality

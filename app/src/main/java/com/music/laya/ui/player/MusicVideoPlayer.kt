@@ -55,6 +55,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -161,7 +162,12 @@ object MusicVideoEngine {
     val aspect: StateFlow<Float> = _aspect.asStateFlow()
 
     private val controllerListener = object : Player.Listener {
-        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) = refresh()
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            // A new track starts as music: the floating window has nothing of it to show. The
+            // same one again (repeat one) keeps it.
+            if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) VideoPictureInPicture.close()
+            refresh()
+        }
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             _playing.value = isPlaying
             sync()
@@ -301,8 +307,7 @@ object MusicVideoEngine {
             if (surfaces.isNotEmpty() || wanted()?.videoId != loadedId) unload()
             return
         }
-        // Up from the mini player's thumbnail-sized picture to the full one; never back down
-        // mid-track, which would only reload a picture already in hand.
+        // Never reloaded mid-track for a surface change: the picture in hand moves to it.
         if (song.videoId == loadedId && capFor(song.videoId) <= loadedCap) {
             startSync()
             return
@@ -365,8 +370,8 @@ object MusicVideoEngine {
 
     /** The height asked for: the held one, else what Auto opens at for this connection. */
     private fun capFor(videoId: String): Int {
-        // Seen only in the mini player's 40 dp slot: the lowest height is all it can show.
-        if (surfaces.isNotEmpty() && surfaces.all { it.priority <= MINI_PLAYER_PRIORITY }) return MINI_PLAYER_HEIGHT
+        // The mini player asks for the same height as the full one: expanding it then hands the
+        // playing picture to the bigger surface, rather than reloading it a size up.
         val metered = AppSettings.meteredConnection.value == true
         val auto = if (metered) METERED_HEIGHT else AUTO_HEIGHT
         val held = _quality.value.held ?: return auto
@@ -499,7 +504,6 @@ object MusicVideoEngine {
 
     /** The mini player's surface, below every full-size one — see [claim]. */
     internal const val MINI_PLAYER_PRIORITY = 0
-    private const val MINI_PLAYER_HEIGHT = 144
     private const val KEY_QUALITY = "quality"
 }
 
@@ -511,28 +515,69 @@ object MusicVideoEngine {
  */
 object VideoPictureInPicture {
     private var activity: WeakReference<Activity>? = null
+    private val scope = MainScope()
+    private var watcher: Job? = null
 
     /** Whether the activity is in its picture-in-picture window now. */
     val active = MutableStateFlow(false)
 
+    /**
+     * Whether leaving the app floats the picture, as YouTube does: while a music video's frames
+     * are on screen and it plays. A paused one, or music alone, leaves the app as any app leaves.
+     */
+    private var autoEnter = false
+
     fun attach(activity: Activity) {
         this.activity = WeakReference(activity)
+        if (!supported(activity)) return
+        watcher?.cancel()
+        watcher = scope.launch {
+            combine(MusicVideoEngine.frameOn, MusicVideoEngine.playing, MusicVideoEngine.aspect) { frameOn, playing, _ ->
+                frameOn != null && playing
+            }.collect { showing ->
+                autoEnter = showing
+                // From Android 12 the system floats the window itself as the app is left, with
+                // the animation out of the picture; it only has to be told ahead of time.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    runCatching { this@VideoPictureInPicture.activity?.get()?.setPictureInPictureParams(params()) }
+                }
+            }
+        }
+    }
+
+    /** Before Android 12, from the activity leaving for the home screen or another app. */
+    fun onUserLeaveHint() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && autoEnter && !active.value) enter()
     }
 
     fun supported(context: Context): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             context.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
 
+    /**
+     * Puts the floating window away, the music going on in the service: the task goes behind
+     * whatever is in front, as the window's own close button does. Nothing when not floating.
+     */
+    fun close() {
+        if (!active.value) return
+        activity?.get()?.moveTaskToBack(true)
+    }
+
     fun enter() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val host = activity?.get() ?: return
+        runCatching { host.enterPictureInPictureMode(params()) }
+            .onFailure { TrackLog.w(TAG, "picture-in-picture refused: ${it.message}") }
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    private fun params(): PictureInPictureParams {
         // The window takes the picture's shape, within what the system allows (2.39:1 at most).
         val aspect = MusicVideoEngine.aspect.value.coerceIn(1f / 2.39f, 2.39f)
-        val params = PictureInPictureParams.Builder()
+        val builder = PictureInPictureParams.Builder()
             .setAspectRatio(Rational((aspect * 1000).toInt(), 1000))
-            .build()
-        runCatching { host.enterPictureInPictureMode(params) }
-            .onFailure { TrackLog.w(TAG, "picture-in-picture refused: ${it.message}") }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setAutoEnterEnabled(autoEnter)
+        return builder.build()
     }
 
     private const val TAG = "Laya"
@@ -588,6 +633,9 @@ internal fun AndroidMusicVideo(
     val frameOn by MusicVideoEngine.frameOn.collectAsStateWithLifecycle()
     val aspect by MusicVideoEngine.aspect.collectAsStateWithLifecycle()
     val rendered = view != null && frameOn === view && shown == videoId
+    // Already playing on another surface (the mini player, before the full one took it): the
+    // picture is in hand and lands here on the next frame, so no thumbnail and no fade-in for it.
+    val handedOver = view != null && shown == videoId
     val playing by MusicVideoEngine.playing.collectAsStateWithLifecycle()
 
     // A video being watched keeps the screen awake, as any video player does —
@@ -596,11 +644,11 @@ internal fun AndroidMusicVideo(
     LaunchedEffect(view, awake) { view?.keepScreenOn = awake }
 
     val report by rememberUpdatedState(onRenderedChanged)
-    LaunchedEffect(rendered) { report(rendered) }
+    LaunchedEffect(handedOver) { report(handedOver) }
     DisposableEffect(Unit) { onDispose { report(false) } }
 
     val alpha by animateFloatAsState(
-        targetValue = if (rendered) 1f else 0f,
+        targetValue = if (handedOver) 1f else 0f,
         animationSpec = tween(durationMillis = 320),
         label = "musicVideoAlpha",
     )

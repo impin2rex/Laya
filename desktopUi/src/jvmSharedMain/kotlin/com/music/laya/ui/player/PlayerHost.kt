@@ -62,6 +62,12 @@ interface PlayerHost {
     @Composable
     fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) = Unit
 
+    /**
+     * Whether [videoId]'s picture already has a frame up — elsewhere on screen, or a moment ago —
+     * so a [MusicVideo] opening on it draws it at once, with no thumbnail or spinner first.
+     */
+    fun musicVideoRendered(videoId: String): Boolean = false
+
     /** The playing music video's width over its height. */
     val musicVideoAspect: StateFlow<Float> get() = DefaultVideoAspect
 

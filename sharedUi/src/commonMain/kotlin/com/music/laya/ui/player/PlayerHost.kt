@@ -70,6 +70,13 @@ interface PlayerHost {
     @Composable
     fun MiniPlayerVideo(videoId: String, modifier: Modifier) = Unit
 
+    /**
+     * Changes with each new frame of the playing music video, where a recorded layer holding the
+     * picture would otherwise keep the frame it was recorded with: the player re-records the
+     * artwork flying to and from the mini player on it. Null where a recording stays live.
+     */
+    val musicVideoFrames: StateFlow<Any?>? get() = null
+
     /** The playing music video's width over its height. */
     val musicVideoAspect: StateFlow<Float> get() = DefaultVideoAspect
 

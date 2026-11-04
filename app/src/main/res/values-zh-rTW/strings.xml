@@ -1279,6 +1279,7 @@
     <string name="search_addons_none">尚未啟用任何外掛。請在「設定 → 來源」中新增。</string>
     <string name="app_icon">應用程式圖示</string>
     <string name="app_icon_default">預設</string>
+    <string name="app_icon_game_booster_note">只有使用預設圖示時，Samsung Game Booster 才會在彈出式應用程式中列出 Laya。</string>
     <string name="show_queue_history">顯示佇列記錄</string>
     <string name="show_queue_history_subtitle">在佇列中「正在播放」上方顯示最多 25 首已播放的歌曲</string>
     <string name="not_enough_this_week">本週再多播放幾首歌曲即可解鎖你的 Replay。</string>

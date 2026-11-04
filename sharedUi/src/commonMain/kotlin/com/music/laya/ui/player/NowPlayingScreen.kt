@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.AppSettings
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.constrainHeight
@@ -1717,6 +1718,9 @@ fun NowPlayingScreen(
     val dockFade: () -> Float = { ((dockT() - DOCK_FADE_LEAD) / (1f - DOCK_FADE_LEAD)).coerceIn(0f, 1f) }
     // The sleeve, drawn over the faded player while it docks — see the sleeve.
     val sleeveLayer = rememberGraphicsLayer()
+    // Read in the two draws below while a music video docks, so each of its frames re-records the
+    // sleeve and redraws it — where a recording keeps the frame it was made with, see the host.
+    val videoFrames = PlayerPlatform.host.musicVideoFrames?.collectAsStateWithLifecycle()
 
     // The player's own end of the docking, for whichever shape it takes: where
     // it sits on screen, the fade, and the artwork drawn over that fade.
@@ -1754,6 +1758,7 @@ fun NowPlayingScreen(
         .drawWithContent {
             drawContent()
             if (docking()) {
+                if (videoMode) videoFrames?.value
                 translate(dockFrame.portalLeft, dockFrame.portalTop) {
                     val portalScale = dockFrame.portalScale
                     scale(portalScale, portalScale, pivot = Offset.Zero) { drawLayer(sleeveLayer) }
@@ -2947,6 +2952,7 @@ fun NowPlayingScreen(
                                 // where its pixels land changes.
                                 .drawWithContent {
                                     if (docking()) {
+                                        if (videoMode) videoFrames?.value
                                         sleeveLayer.record { this@drawWithContent.drawContent() }
                                     } else {
                                         drawContent()
@@ -3163,6 +3169,26 @@ fun NowPlayingScreen(
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
+                            }
+
+                            // A music video flies as itself: the picture already playing,
+                            // handed to the sleeve for the trip between the mini player
+                            // and the player, so it never stops or turns back into its
+                            // thumbnail on the way. Only for the trip — at rest the
+                            // picture box below shows it.
+                            if (videoMode && dockMoving) {
+                                // Lands as what the mini player shows: the picture where it plays
+                                // there too, else handed over to the cover on the way, so the
+                                // landing isn't a cut from a moving frame to a still one.
+                                val miniVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
+                                MusicVideoSurface(
+                                    videoId = song.videoId,
+                                    // Cropped: the sleeve morphs from the picture's shape to the cover's square.
+                                    fit = false,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer { if (!miniVideo) alpha = dockT() },
+                                )
                             }
                         }
 

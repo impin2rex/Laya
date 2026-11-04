@@ -1225,6 +1225,7 @@
     <string name="search_addons_none">Chưa bật addon nào. Hãy thêm một addon trong Cài đặt → Nguồn.</string>
     <string name="app_icon">Biểu tượng ứng dụng</string>
     <string name="app_icon_default">Mặc định</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster chỉ hiện Laya trong ứng dụng cửa sổ bật lên khi dùng biểu tượng mặc định.</string>
     <string name="show_queue_history">Hiện lịch sử hàng đợi</string>
     <string name="show_queue_history_subtitle">Hiện tối đa 25 bài đã phát phía trên “Đang phát” trong hàng đợi</string>
     <string name="not_enough_this_week">Hãy nghe thêm vài bài trong tuần này để mở khóa Replay của bạn.</string>

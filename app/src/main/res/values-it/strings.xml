@@ -1247,6 +1247,7 @@
     <string name="search_addons_none">Nessun addon attivo. Aggiungine uno in Impostazioni → Fonti.</string>
     <string name="app_icon">Icona dell’app</string>
     <string name="app_icon_default">Predefinita</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster mostra Laya tra le app pop-up solo con l’icona predefinita.</string>
     <string name="show_queue_history">Mostra cronologia della coda</string>
     <string name="show_queue_history_subtitle">Mostra fino a 25 brani riprodotti sopra «In riproduzione» nella coda</string>
     <string name="not_enough_this_week">Ascolta ancora qualche brano questa settimana per sbloccare il tuo Replay.</string>

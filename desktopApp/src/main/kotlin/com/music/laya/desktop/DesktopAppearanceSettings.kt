@@ -19,6 +19,7 @@ internal object DesktopAppearanceSettings {
     private val _hideVolumeBar = flag(KEY_HIDE_VOLUME_BAR, false)
     private val _ambientBackdrop = flag(KEY_AMBIENT_BACKDROP, false)
     private val _systemFont = flag(KEY_SYSTEM_FONT, false)
+    private val _miniPlayerVideo = flag(KEY_MINI_PLAYER_VIDEO, false)
 
     /** Freezes the main player's gradient instead of drifting. */
     val reduceAnimation: StateFlow<Boolean> = _reduceAnimation
@@ -35,6 +36,9 @@ internal object DesktopAppearanceSettings {
     /** Sets the UI in the OS's default font instead of SF Pro. */
     val systemFont: StateFlow<Boolean> = _systemFont
 
+    /** Plays a music video's picture in the mini player's cover slot. */
+    val miniPlayerVideo: StateFlow<Boolean> = _miniPlayerVideo
+
     fun setReduceAnimation(value: Boolean) = write(KEY_REDUCE_ANIMATION, value, _reduceAnimation)
 
     fun setReduceDynamicBlur(value: Boolean) = write(KEY_REDUCE_DYNAMIC_BLUR, value, _reduceDynamicBlur)
@@ -44,6 +48,8 @@ internal object DesktopAppearanceSettings {
     fun setAmbientBackdrop(value: Boolean) = write(KEY_AMBIENT_BACKDROP, value, _ambientBackdrop)
 
     fun setSystemFont(value: Boolean) = write(KEY_SYSTEM_FONT, value, _systemFont)
+
+    fun setMiniPlayerVideo(value: Boolean) = write(KEY_MINI_PLAYER_VIDEO, value, _miniPlayerVideo)
 
     private fun write(key: String, value: Boolean, into: MutableStateFlow<Boolean>) {
         DesktopPersistence().saveBoolean(key, value)
@@ -55,4 +61,5 @@ internal object DesktopAppearanceSettings {
     internal const val KEY_HIDE_VOLUME_BAR = "hide_volume_bar"
     internal const val KEY_AMBIENT_BACKDROP = "ambient_backdrop"
     internal const val KEY_SYSTEM_FONT = "system_font"
+    internal const val KEY_MINI_PLAYER_VIDEO = "mini_player_video"
 }

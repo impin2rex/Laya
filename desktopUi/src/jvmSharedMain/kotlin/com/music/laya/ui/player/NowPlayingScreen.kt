@@ -869,8 +869,9 @@ fun NowPlayingScreen(
     // Only a video that is actually showing offers the way back from it.
     val switchToAudio = videoToggle?.takeIf { videoMode }?.onToggle
     val canvas = rememberCanvasArtwork(song)?.takeUnless { videoMode }
-    // Whether the picture has a frame on screen; the still frame shows until then.
-    var videoRendered by remember(song.videoId) { mutableStateOf(false) }
+    // Whether the picture has a frame on screen; the still frame shows until then. Already true
+    // when the picture is playing elsewhere (the mini player, a moment ago), which carries over.
+    var videoRendered by remember(song.videoId) { mutableStateOf(PlayerPlatform.host.musicVideoRendered(song.videoId)) }
     // The picture's shape, read only at layout (see the sleeve's card rect), so
     // a new aspect re-lays the sleeve out without recomposing the player.
     val videoAspectState = PlayerPlatform.host.musicVideoAspect.collectAsStateWithLifecycle()

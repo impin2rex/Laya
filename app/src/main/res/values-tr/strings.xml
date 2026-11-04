@@ -1274,6 +1274,7 @@
     <string name="search_addons_none">Etkin eklenti yok. Ayarlar → Kaynaklar bölümünden bir tane ekleyin.</string>
     <string name="app_icon">Uygulama simgesi</string>
     <string name="app_icon_default">Varsayılan</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster, Laya’yı açılır pencere uygulamalarında yalnızca varsayılan simgeyle gösterir.</string>
     <string name="show_queue_history">Sıra geçmişini göster</string>
     <string name="show_queue_history_subtitle">Sırada “Şimdi çalıyor” öğesinin üstünde daha önce çalınan en fazla 25 şarkıyı gösterir</string>
     <string name="not_enough_this_week">Replay’inizin kilidini açmak için bu hafta birkaç şarkı daha dinleyin.</string>

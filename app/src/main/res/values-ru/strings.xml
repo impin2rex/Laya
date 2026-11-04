@@ -1340,6 +1340,7 @@
     <string name="search_addons_none">Нет включённых аддонов. Добавьте аддон в Настройки → Источники.</string>
     <string name="app_icon">Значок приложения</string>
     <string name="app_icon_default">По умолчанию</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster показывает Laya во всплывающих приложениях только со стандартным значком.</string>
     <string name="show_queue_history">Показывать историю очереди</string>
     <string name="show_queue_history_subtitle">Показывать в очереди до 25 ранее прослушанных треков над текущим</string>
     <string name="not_enough_this_week">Послушайте на этой неделе ещё несколько треков, чтобы открыть свой Replay.</string>

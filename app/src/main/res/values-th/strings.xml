@@ -1291,6 +1291,7 @@
     <string name="search_addons_none">ยังไม่ได้เปิดใช้แอดออน เพิ่มได้ที่ การตั้งค่า → แหล่งที่มา</string>
     <string name="app_icon">ไอคอนแอป</string>
     <string name="app_icon_default">ค่าเริ่มต้น</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster จะแสดง Laya ในแอปป๊อปอัปเฉพาะเมื่อใช้ไอคอนเริ่มต้นเท่านั้น</string>
     <string name="show_queue_history">แสดงประวัติคิว</string>
     <string name="show_queue_history_subtitle">แสดงเพลงที่เล่นไปแล้วสูงสุด 25 เพลงเหนือ “กำลังเล่น” ในคิว</string>
     <string name="not_enough_this_week">ฟังเพลงอีกสักหน่อยในสัปดาห์นี้เพื่อปลดล็อก Replay ของคุณ</string>

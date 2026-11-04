@@ -4,20 +4,17 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.RememberObserver
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import com.music.laya.data.innertube.InnerTubeXResolver
 import com.music.laya.ui.player.MusicVideoQualityUi
 import kotlinx.coroutines.CancellationException
@@ -34,6 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,14 +42,13 @@ import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.FilterMipmap
 import org.jetbrains.skia.FilterMode
 import org.jetbrains.skia.FilterTileMode
-import org.jetbrains.skia.Matrix33
 import org.jetbrains.skia.MipmapMode
+import org.jetbrains.skia.Paint
 import org.jetbrains.skia.RuntimeEffect
 import org.jetbrains.skia.RuntimeShaderBuilder
 import org.jetbrains.skia.Shader
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.ImageInfo
-import kotlin.math.roundToInt
 
 /**
  * A music video's picture on the desktop, the way the phone's MusicVideoEngine plays one: the
@@ -148,7 +145,8 @@ internal object DesktopMusicVideo {
     /** Asks for [videoId]'s stream and opens it now, for the surface about to show it. */
     fun prepare(videoId: String) {
         val stale = prepared
-        if (stale?.first == videoId) return
+        // Already decoding — on screen, or kept a moment after: its surface takes that one.
+        if (stale?.first == videoId || videoId in pictures) return
         prepared = videoId to scope.async { open(videoId) }
         stale?.second?.let { job -> scope.launch { runCatching { job.await()?.decoder?.close() } } }
     }
@@ -267,7 +265,20 @@ private class VideoFrame(
     val fullRange: Boolean = false,
     val rgb: Image? = null,
 ) {
+    /**
+     * [planes] as [YuvShader] draws them, made at the frame's first draw and kept for every draw
+     * after — however many surfaces show it, and however often they redraw before the next one.
+     */
+    private var _paint: Paint? = null
+    val paint: Paint
+        get() = _paint ?: Paint().also { paint ->
+            // The paint keeps its own reference to the shader.
+            yuvShader(this).let { paint.shader = it; it.close() }
+            _paint = paint
+        }
+
     fun close() {
+        _paint?.close()
         planes.forEach(Image::close)
         rgb?.close()
     }
@@ -304,8 +315,8 @@ private val YuvShader: RuntimeEffect by lazy {
 
 private val Bilinear = FilterMipmap(FilterMode.LINEAR, MipmapMode.NONE)
 
-/** [frame]'s planes as a shader filling a [w] by [h] box at [left], [top]. */
-private fun yuvShader(frame: VideoFrame, left: Float, top: Float, w: Float, h: Float): Shader {
+/** [frame]'s planes as a shader, in the frame's own pixels. */
+private fun yuvShader(frame: VideoFrame): Shader {
     val builder = RuntimeShaderBuilder(YuvShader)
     val sampled = frame.planes.map { it.makeShader(FilterTileMode.CLAMP, FilterTileMode.CLAMP, Bilinear) }
     builder.child("luma", sampled[0])
@@ -322,9 +333,7 @@ private fun yuvShader(frame: VideoFrame, left: Float, top: Float, w: Float, h: F
     }
     if (frame.bt709) builder.uniform("k", 1.5748f, 0.1873f, 0.4681f, 1.8556f)
     else builder.uniform("k", 1.402f, 0.344136f, 0.714136f, 1.772f)
-    val shader = builder.makeShader(
-        Matrix33.makeTranslate(left, top).makeConcat(Matrix33.makeScale(w / frame.width, h / frame.height)),
-    )
+    val shader = builder.makeShader()
     builder.close()
     sampled.forEach(Shader::close)
     return shader
@@ -511,33 +520,39 @@ private suspend fun CoroutineScope.playPicture(
     }
 }
 
+/** Where a [PictureSession] runs: the UI thread, so a frame is never closed in the middle of a draw. */
+private val PictureScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+/** Every video being decoded, by its id. Touched only on the UI thread. */
+private val pictures = HashMap<String, PictureSession>()
+
 /**
- * Where the playing music video shows on the desktop: [videoId]'s picture fitted into ([fit]) or
- * cropped to these bounds. Nothing until a frame has landed, reported through [onRenderedChanged],
- * so the caller's backdrop shows until then and the picture fades in over it.
+ * After the last surface leaves a video, how long its decoding is kept: long enough for a surface
+ * taking over (the player opening from the mini player, the theater giving way to the sleeve,
+ * picture-in-picture) to find it still playing — as the phone's MusicVideoEngine keeps its player.
  */
-@Composable
-internal fun DesktopMusicVideoSurface(
-    videoId: String,
-    fit: Boolean,
-    onRenderedChanged: (Boolean) -> Unit,
-    modifier: Modifier,
-) {
-    var frame by remember(videoId) { mutableStateOf<VideoFrame?>(null) }
-    // The frame on screen goes when it leaves, along with the surface.
-    DisposableEffect(videoId) { onDispose { frame?.close() } }
-    val generation by DesktopMusicVideo.qualityGeneration.collectAsState()
-    // Bumped when the picture steps down a height, to reopen at the lower one.
-    var reopen by remember(videoId) { mutableStateOf(0) }
-    val report by rememberUpdatedState(onRenderedChanged)
+private const val RELEASE_GRACE_MS = 4_000L
+
+/**
+ * One video's picture, decoded once for every surface showing it — the full player, the mini
+ * player, picture-in-picture — so moving between them only moves where it is drawn: no decoder
+ * opened again, no first frame waited for, the thumbnail never back in between.
+ */
+private class PictureSession(val videoId: String) {
+    /** The frame the audio is on, drawn by every surface. Closed only here. */
+    var frame by mutableStateOf<VideoFrame?>(null)
+    var surfaces = 0
+    var release: Job? = null
 
     // Each quality is its own run of the picture. A new one — a pick in the quality drawer, or a
     // step down — starts beside the one on screen, which keeps playing until the new one's first
     // frame is ready, as YouTube changes quality: no blank, no freeze, and a height that never
     // comes up simply leaves the old one playing.
-    LaunchedEffect(videoId) {
+    val job = PictureScope.launch {
+        // Bumped when the picture steps down a height, to reopen at the lower one.
+        val reopen = MutableStateFlow(0)
         var showing: Job? = null
-        snapshotFlow { generation to reopen }.collect {
+        combine(DesktopMusicVideo.qualityGeneration, reopen) { generation, step -> generation to step }.collect {
             val previous = showing
             showing = launch {
                 playPicture(
@@ -549,23 +564,77 @@ internal fun DesktopMusicVideoSurface(
                         frame = shown
                         if (old !== shown) old?.close()
                     },
-                    onStepDown = { reopen++ },
+                    onStepDown = { reopen.value++ },
                 )
             }
         }
     }
+}
 
-    val rendered = frame != null
+/** [videoId]'s picture for one more surface: the one already decoding, or a new one. */
+private fun attachPicture(videoId: String): PictureSession {
+    val session = pictures.getOrPut(videoId) { PictureSession(videoId) }
+    session.release?.cancel()
+    session.release = null
+    session.surfaces++
+    return session
+}
+
+/**
+ * One surface fewer on [session]; the last one out lets it go after [RELEASE_GRACE_MS] — at once
+ * when the audio has moved off the video, so it isn't left chasing another track's playhead.
+ */
+private fun detachPicture(session: PictureSession) {
+    if (--session.surfaces > 0) return
+    val playing = DesktopMusicVideo.playback?.value?.song?.videoId == session.videoId
+    session.release = PictureScope.launch {
+        if (playing) delay(RELEASE_GRACE_MS)
+        pictures.remove(session.videoId)
+        session.job.cancelAndJoin()
+        session.frame?.close()
+        session.frame = null
+    }
+}
+
+/** Holds a surface's place on its [PictureSession] for as long as the surface is composed. */
+private class PictureUse(videoId: String) : RememberObserver {
+    val session = attachPicture(videoId)
+    override fun onRemembered() = Unit
+    override fun onForgotten() = detachPicture(session)
+    override fun onAbandoned() = detachPicture(session)
+}
+
+/** Whether [videoId]'s picture has a frame up now — a surface opening on it shows it at once. */
+internal fun musicVideoRendered(videoId: String): Boolean = pictures[videoId]?.frame != null
+
+/**
+ * Where the playing music video shows on the desktop: [videoId]'s picture fitted into ([fit]) or
+ * cropped to these bounds. Nothing until a frame has landed, reported through [onRenderedChanged],
+ * so the caller's backdrop shows until then and the picture fades in over it. Every surface on the
+ * same video draws the one [PictureSession], so one opening where another was picks it up as is.
+ */
+@Composable
+internal fun DesktopMusicVideoSurface(
+    videoId: String,
+    fit: Boolean,
+    onRenderedChanged: (Boolean) -> Unit,
+    modifier: Modifier,
+) {
+    val session = remember(videoId) { PictureUse(videoId) }.session
+    val report by rememberUpdatedState(onRenderedChanged)
+
+    // Derived, so a new frame redraws the canvas without recomposing the surface.
+    val rendered by remember(session) { derivedStateOf { session.frame != null } }
     LaunchedEffect(rendered) { report(rendered) }
-    DisposableEffect(Unit) { onDispose { report(false) } }
 
+    // From 1 at once when the video already has a frame up: nothing to fade in.
     val alpha by animateFloatAsState(
         targetValue = if (rendered) 1f else 0f,
         animationSpec = tween(durationMillis = 320),
         label = "musicVideoAlpha",
     )
     Canvas(modifier.graphicsLayer { this.alpha = alpha; clip = true }) {
-        val shown = frame ?: return@Canvas
+        val shown = session.frame ?: return@Canvas
         val clipAspect = shown.width.toFloat() / shown.height
         val viewAspect = size.width / size.height
         // Letterboxed into the bounds, or overflowing them and cropped by the clip.
@@ -576,21 +645,37 @@ internal fun DesktopMusicVideoSurface(
         }
         val left = (size.width - w) / 2f
         val top = (size.height - h) / 2f
-        val rgb = shown.rgb
-        if (rgb != null) {
-            drawImage(
-                image = rgb.toComposeImageBitmap(),
-                srcOffset = IntOffset.Zero,
-                srcSize = IntSize(rgb.width, rgb.height),
-                dstOffset = IntOffset(left.roundToInt(), top.roundToInt()),
-                dstSize = IntSize(w.roundToInt(), h.roundToInt()),
-            )
-        } else {
-            val shader = yuvShader(shown, left, top, w, h)
-            val paint = org.jetbrains.skia.Paint().apply { this.shader = shader }
-            drawIntoCanvas { it.nativeCanvas.drawRect(org.jetbrains.skia.Rect.makeXYWH(left, top, w, h), paint) }
-            paint.close()
-            shader.close()
+        drawIntoCanvas { canvas ->
+            val native = canvas.nativeCanvas
+            val rgb = shown.rgb
+            if (rgb != null) {
+                native.drawImageRect(
+                    rgb,
+                    org.jetbrains.skia.Rect.makeWH(rgb.width.toFloat(), rgb.height.toFloat()),
+                    org.jetbrains.skia.Rect.makeXYWH(left, top, w, h),
+                    Bilinear,
+                    null,
+                    true,
+                )
+            } else {
+                // The frame's own shader, in its own pixels, scaled here to the box.
+                native.save()
+                native.translate(left, top)
+                native.scale(w / shown.width, h / shown.height)
+                native.drawRect(org.jetbrains.skia.Rect.makeWH(shown.width.toFloat(), shown.height.toFloat()), shown.paint)
+                native.restore()
+            }
         }
     }
+}
+
+/**
+ * The playing music video in a mini player's cover slot, cropped to it, when asked for in
+ * Settings; nothing for a track with no picture ([videoId] null), so the cover under it stays.
+ * The same [PictureSession] as the full player's, so opening the player carries the picture over.
+ */
+@Composable
+internal fun DesktopMiniPlayerVideo(videoId: String?, modifier: Modifier) {
+    val wanted by DesktopAppearanceSettings.miniPlayerVideo.collectAsState()
+    if (wanted && videoId != null) DesktopMusicVideoSurface(videoId, fit = false, onRenderedChanged = {}, modifier = modifier)
 }

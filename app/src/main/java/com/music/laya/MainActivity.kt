@@ -466,6 +466,12 @@ class MainActivity : AppCompatActivity() {
      * running a second tap on the widget does not rebuild anything — it arrives
      * here, and [onCreate] never runs again.
      */
+    // Leaving with a music video playing floats it, before Android 12 — see VideoPictureInPicture.
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        com.music.laya.ui.player.VideoPictureInPicture.onUserLeaveHint()
+    }
+
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         com.music.laya.ui.player.VideoPictureInPicture.active.value = isInPictureInPictureMode
@@ -1525,6 +1531,22 @@ private fun LayaApp(
             switchingAudioVersion = false
         }
         if (player.song?.videoId != convertedVideoId) {
+            // Left a track switched to its video: its queue entry goes back to the audio it was,
+            // so coming back to it — next, then previous — plays music again. Done here, while
+            // it isn't the one playing, rather than as a version swap on the way back in: that
+            // swap's alignment and fade ran against a track still loading, and could leave it
+            // stuck at 0:00.
+            val video = convertedVideoId
+            val audio = convertedFromAudio
+            val c = controller
+            if (video != null && audio != null && c != null) {
+                val entry = (0 until c.mediaItemCount).firstOrNull { i ->
+                    i != c.currentMediaItemIndex && c.getMediaItemAt(i).let {
+                        it.mediaId == video && (audio.queueEntryId == null || it.toSong().queueEntryId == audio.queueEntryId)
+                    }
+                }
+                if (entry != null) c.replaceMediaItem(entry, audio.toMediaItem())
+            }
             convertedFromAudio = null
             convertedVideoId = null
             switchingAudioVersion = false

@@ -1310,6 +1310,7 @@
     <string name="search_addons_none">אין תוספים מופעלים. אפשר להוסיף אחד בהגדרות ← מקורות.</string>
     <string name="app_icon">סמל האפליקציה</string>
     <string name="app_icon_default">ברירת מחדל</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster מציג את Laya באפליקציות הקופצות רק עם סמל ברירת המחדל.</string>
     <string name="show_queue_history">הצגת היסטוריית התור</string>
     <string name="show_queue_history_subtitle">מציג עד 25 שירים שהושמעו מעל \"מתנגן עכשיו\" בתור</string>
     <string name="not_enough_this_week">השמיעו עוד כמה שירים השבוע כדי לפתוח את ה-Replay שלכם.</string>

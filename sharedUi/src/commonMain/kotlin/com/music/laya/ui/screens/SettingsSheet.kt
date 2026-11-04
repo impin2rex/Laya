@@ -486,7 +486,7 @@ fun SettingsScreen(
                 )
             }
             val miniPlayerVideoTitle = stringResource(Res.string.mini_player_video)
-            row(miniPlayerVideoTitle, "video", "mini player", "music video", available = engineOptions && host.musicVideoInMiniPlayer) {
+            row(miniPlayerVideoTitle, "video", "mini player", "music video", available = host.musicVideoInMiniPlayer) {
                 SettingsRow(
                     icon = Icons.Rounded.PictureInPictureAlt,
                     title = miniPlayerVideoTitle,

@@ -285,7 +285,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         val cur = song ?: return
         val next = queue.getOrNull(autoNext())
         val dur = durationMs.takeIf { it > 0 } ?: return
-        if (next == null || cur.isVideoOrigin || next.isVideoOrigin) {
+        // A video's own audio only; one switched to its audio release mixes as music.
+        if (next == null || cur.isVideo || next.isVideo) {
             AppSettings.smartTransitionWindow.value = null
             noTransition()
             return

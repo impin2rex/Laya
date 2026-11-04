@@ -444,10 +444,16 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     // hears the same cut.
     val versionPairs = remember { mutableMapOf<String, Song>() }
     var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
+    // Videos the listener switched to. The switch replaces the queue entry, so coming back to that
+    // track later — next, then previous — finds the video: it starts as music again. [watching] is
+    // the one switched to just now, playing on until the track changes.
+    val switchedToVideo = remember { mutableSetOf<String>() }
+    val watching = remember { arrayOfNulls<String>(1) }
     val inParty = com.music.laya.data.listentogether.ListenTogether.state.collectAsState().value.inParty
     LaunchedEffect(player.song?.videoId, inParty) {
         val song = player.song
         alternateVersion = null
+        if (watching[0] != song?.videoId) watching[0] = null
         if (song == null || inParty || song.localUri != null) return@LaunchedEffect
         val other = versionPairs[song.videoId] ?: withContext(ioDispatcher) {
             runCatching {
@@ -455,13 +461,27 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 else YtMusicRepository.resolveVideo(song)?.takeIf { it.videoId != song.videoId && IosMusicVideo.manifest(it.videoId) != null }
             }.getOrNull()
         }
-        if (other != null && player.song?.videoId == song.videoId) alternateVersion = song.videoId to other
+        if (other != null && player.song?.videoId == song.videoId) {
+            alternateVersion = song.videoId to other
+            if (song.isVideo && !other.isVideo && song.videoId in switchedToVideo && watching[0] != song.videoId) {
+                player.swapVersion(other) { swapped ->
+                    if (swapped) {
+                        versionPairs[other.videoId] = song
+                        versionPairs[song.videoId] = other
+                    }
+                }
+            }
+        }
     }
     val toggleVersion: (() -> Unit)? = alternateVersion
         ?.takeIf { (id, _) -> id == player.song?.videoId }
         ?.let { (_, other) ->
             {
                 val from = player.song
+                if (other.isVideo) {
+                    switchedToVideo += other.videoId
+                    watching[0] = other.videoId
+                }
                 if (from != null) player.swapVersion(other) { swapped ->
                     if (swapped) {
                         versionPairs[other.videoId] = from
