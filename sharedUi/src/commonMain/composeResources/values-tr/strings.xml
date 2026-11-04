@@ -375,6 +375,8 @@
     <string name="playback">Oynatma</string>
     <string name="prefer_music_only">Yalnızca müzik sürümünü tercih et</string>
     <string name="prefer_music_only_subtitle">Müzik videolarında, katalogdaki ses sürümü bulunup yüklenirken video ayrıntılarını gösterir</string>
+    <string name="mini_player_video">Mini oynatıcıda video</string>
+    <string name="mini_player_video_subtitle">Veri ve pil tasarrufu için müzik videosunu mini oynatıcıda en düşük kalitede oynatır</string>
     <string name="prefer_usb_dac">USB DAC tercih et</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · parça başına %2$s</string>
@@ -699,4 +701,5 @@
     <string name="your_lyrics_card">Şarkı sözü kartın</string>
     <string name="no_internet_connection">İnternet bağlantısı yok</string>
     <string name="something_went_wrong">Bir şeyler ters gitti</string>
+    <string name="picture_in_picture">Resim içinde resim</string>
 </resources>

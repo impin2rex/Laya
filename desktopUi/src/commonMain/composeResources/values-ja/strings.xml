@@ -223,4 +223,5 @@
     <string name="reverb_width">広がり</string>
     <string name="reverb_width_help">残響のステレオの広がり。モノラルから最大まで。</string>
     <string name="reverb_reset">デフォルトに戻す</string>
+    <string name="picture_in_picture">ピクチャー イン ピクチャー</string>
 </resources>

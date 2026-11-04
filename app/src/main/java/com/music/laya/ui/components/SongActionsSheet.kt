@@ -1,5 +1,7 @@
 package com.music.laya.ui.components
 
+import com.music.laya.ui.components.trackArtSize
+import androidx.compose.ui.layout.ContentScale
 import com.music.laya.R
 
 import android.net.Uri
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -501,7 +504,8 @@ private fun TintedSheet(
             washFraction = 0.75f,
             artPx = ROW_ART_PX,
         )
-        Column(Modifier.fillMaxWidth().heightIn(max = maxHeight)) {
+        // Rows clear of the navigation bar; the backdrop above runs on under it.
+        Column(Modifier.fillMaxWidth().heightIn(max = maxHeight).navigationBarsPadding()) {
             // Drawn rather than taken from BottomSheetDefaults, whose handle
             // carries 22dp of padding on each side — half a row's worth of
             // nothing between the grip and the track it is about. Kept outside
@@ -940,8 +944,9 @@ internal fun SheetTrackHeader(
         AsyncImage(
             model = song.artworkAt(ROW_ART_PX),
             contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(52.dp)
+                .trackArtSize(52.dp, song.isVideo)
                 .clip(RoundedCornerShape(8.dp))
                 .thumbnailBorder(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),

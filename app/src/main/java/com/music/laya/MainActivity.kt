@@ -279,6 +279,7 @@ import com.music.laya.ui.icons.LayaIcons
 import androidx.media3.common.Player
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.ui.player.NowPlayingScreen
+import com.music.laya.ui.player.MusicVideoEngine
 import com.music.laya.ui.player.PlayerSheetMotion
 import com.music.laya.ui.player.attachWindow
 import com.music.laya.ui.player.PlayerSheetShape
@@ -365,6 +366,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        com.music.laya.ui.player.VideoPictureInPicture.attach(this)
         // Before the composition, so a cold launch from a widget's artwork has
         // the request already standing by the time LayaApp first reads it.
         PlayerDeepLink.consume(intent)
@@ -428,6 +430,11 @@ class MainActivity : AppCompatActivity() {
                         windowHeight = maxHeight,
                         appBackdrop = appBackdrop,
                     )
+                    // Over the app rather than in its place, so nothing in it is torn down
+                    // and it is all still there on the way back out of the window.
+                    val inPictureInPicture by com.music.laya.ui.player.VideoPictureInPicture.active
+                        .collectAsStateWithLifecycle()
+                    if (inPictureInPicture) com.music.laya.ui.player.PictureInPictureVideo()
                 }
                 }
             }
@@ -459,6 +466,17 @@ class MainActivity : AppCompatActivity() {
      * running a second tap on the widget does not rebuild anything — it arrives
      * here, and [onCreate] never runs again.
      */
+    // Leaving with a music video playing floats it, before Android 12 — see VideoPictureInPicture.
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        com.music.laya.ui.player.VideoPictureInPicture.onUserLeaveHint()
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        com.music.laya.ui.player.VideoPictureInPicture.active.value = isInPictureInPictureMode
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         // Replaces what getIntent() returns, so the extra this consumes is the
@@ -926,6 +944,11 @@ private fun LayaApp(
     }
     val controller = rememberMediaController()
     val player = rememberPlayerState(controller)
+    // A music video's picture follows this controller's clock — see [MusicVideoEngine].
+    DisposableEffect(controller) {
+        MusicVideoEngine.attach(controller)
+        onDispose { MusicVideoEngine.attach(null) }
+    }
     // A resume in a party is performed on the instant the server schedules, not
     // when it was pressed, and nothing about the player moves in between — so
     // the transport spends that round trip drawn as though the tap never landed.
@@ -1227,6 +1250,7 @@ private fun LayaApp(
             // to release the loading state and resume it immediately.
             if (audio == null || audio.videoId == song.videoId) {
                 TrackLog.w("Player", "audio switch found no distinct official song", song.videoId)
+                if (stillCurrent && !pauseWhileResolving) showQueueNotice(context.getString(R.string.no_audio_version))
                 if (stillCurrent && resumeAfterResolution) c.play()
                 return
             }
@@ -1287,12 +1311,15 @@ private fun LayaApp(
         if (pauseWhileResolving) c.pause()
         try {
             TrackLog.d("Player", "video switch requested for '${song.title}'", song.videoId)
-            val video = runCatching { YtMusicRepository.resolveVideo(song) }.getOrNull()
+            val video = runCatching {
+                YtMusicRepository.resolveVideo(song)?.takeIf { MusicVideoEngine.hasPicture(it.videoId) }
+            }.getOrNull()
             val stillCurrent = c.currentMediaItemIndex == index &&
                 c.currentMediaItem?.mediaId == song.videoId
 
             if (video == null || video.videoId == song.videoId) {
                 TrackLog.w("Player", "video switch found no distinct video", song.videoId)
+                if (stillCurrent) showQueueNotice(context.getString(R.string.no_video_version))
                 if (stillCurrent && resumeAfterResolution) c.play()
                 return
             }
@@ -1328,6 +1355,94 @@ private fun LayaApp(
         } finally {
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
             switchingAudioVersion = false
+        }
+    }
+
+    /**
+     * The playing [song]'s switch to its other cut — music video or audio-only
+     * — from the same moment, or null when there is nothing to switch to: no
+     * other cut found, a switch already running, or [song] no longer playing.
+     * Shared by the track menu's row and the player's audio/video toggle.
+     */
+    fun versionToggleFor(song: Song): (() -> Unit)? {
+        if (!hasAlternateVersion || controller?.currentMediaItem?.mediaId != song.videoId) return null
+        // An in-flight optimistic swap is read off [optimisticVersionSong], so
+        // a switch asked for mid-switch describes the version actually
+        // becoming current, not the one about to be left.
+        val versionEffectiveSong = optimisticVersionSong?.takeIf {
+            it.videoId == convertedAudioId || it.videoId == convertedVideoId || it.videoId == keepVideoId ||
+                it.videoId == YtMusicRepository.cachedAudioVersion(song.videoId)?.videoId ||
+                it.videoId == YtMusicRepository.cachedVideoVersion(song.videoId)?.videoId
+        } ?: song
+        fun versionAlignmentPending(targetId: String): Boolean =
+            AppSettings.smartVersionAlignment.value &&
+                VersionAudioAligner.getCachedOffsetMs(song.videoId, targetId) == null
+        return toggle@{
+            songActions = null
+            // Offered through a switch already running, so the player's toggle
+            // can show it working; a second tap meanwhile does nothing.
+            if (switchingAudioVersion) return@toggle
+            val c = controller
+            val original = convertedFromVideo
+            val originalAudio = convertedFromAudio
+            when {
+                original != null && (
+                    convertedAudioId == song.videoId ||
+                        convertedAudioId == versionEffectiveSong.videoId ||
+                        convertedAudioId == optimisticVersionSong?.videoId
+                    ) -> {
+                    keepVideoId = original.videoId
+                    convertedFromVideo = null
+                    convertedAudioId = null
+                    if (!versionAlignmentPending(original.videoId)) optimisticVersionSong = original
+                    c.swapToVersion(original)
+                }
+                originalAudio != null && (
+                    convertedVideoId == song.videoId ||
+                        convertedVideoId == versionEffectiveSong.videoId ||
+                        convertedVideoId == optimisticVersionSong?.videoId
+                    ) -> {
+                    convertedFromAudio = null
+                    convertedVideoId = null
+                    if (!versionAlignmentPending(originalAudio.videoId)) optimisticVersionSong = originalAudio
+                    c.swapToVersion(originalAudio)
+                }
+                versionEffectiveSong.isVideo || song.isVideo -> {
+                    val cached = YtMusicRepository.cachedAudioVersion(song.videoId)
+                        ?: YtMusicRepository.cachedAudioVersion(versionEffectiveSong.videoId)
+                    if (cached != null && cached.videoId != song.videoId &&
+                        !versionAlignmentPending(cached.videoId)
+                    ) {
+                        optimisticVersionSong = cached.copy(
+                            isVideoOrigin = true,
+                            queueTier = song.queueTier,
+                            queueEntryId = song.queueEntryId,
+                            radioName = song.radioName,
+                            playbackSource = song.playbackSource,
+                            playbackSourceType = song.playbackSourceType,
+                            playbackSourceId = song.playbackSourceId,
+                        )
+                    }
+                    scope.launch { switchToMusicOnly(song, pauseWhileResolving = false) }
+                }
+                else -> {
+                    val cached = YtMusicRepository.cachedVideoVersion(song.videoId)
+                        ?: YtMusicRepository.cachedVideoVersion(versionEffectiveSong.videoId)
+                    if (cached != null && cached.videoId != song.videoId &&
+                        !versionAlignmentPending(cached.videoId)
+                    ) {
+                        optimisticVersionSong = cached.copy(
+                            queueTier = song.queueTier,
+                            queueEntryId = song.queueEntryId,
+                            radioName = song.radioName,
+                            playbackSource = song.playbackSource,
+                            playbackSourceType = song.playbackSourceType,
+                            playbackSourceId = song.playbackSourceId,
+                        )
+                    }
+                    scope.launch { switchToVideo(song, pauseWhileResolving = false) }
+                }
+            }
         }
     }
 
@@ -1416,6 +1531,22 @@ private fun LayaApp(
             switchingAudioVersion = false
         }
         if (player.song?.videoId != convertedVideoId) {
+            // Left a track switched to its video: its queue entry goes back to the audio it was,
+            // so coming back to it — next, then previous — plays music again. Done here, while
+            // it isn't the one playing, rather than as a version swap on the way back in: that
+            // swap's alignment and fade ran against a track still loading, and could leave it
+            // stuck at 0:00.
+            val video = convertedVideoId
+            val audio = convertedFromAudio
+            val c = controller
+            if (video != null && audio != null && c != null) {
+                val entry = (0 until c.mediaItemCount).firstOrNull { i ->
+                    i != c.currentMediaItemIndex && c.getMediaItemAt(i).let {
+                        it.mediaId == video && (audio.queueEntryId == null || it.toSong().queueEntryId == audio.queueEntryId)
+                    }
+                }
+                if (entry != null) c.replaceMediaItem(entry, audio.toMediaItem())
+            }
             convertedFromAudio = null
             convertedVideoId = null
             switchingAudioVersion = false
@@ -1427,7 +1558,8 @@ private fun LayaApp(
     // A failed/identical match simply resumes this untouched video.
     LaunchedEffect(player.song?.videoId, preferMusicOnly) {
         val song = player.song ?: return@LaunchedEffect
-        if (preferMusicOnly && song.isVideo && song.videoId != keepVideoId) {
+        // Not a video the listener just switched to on purpose.
+        if (preferMusicOnly && song.isVideo && song.videoId != keepVideoId && song.videoId != convertedVideoId) {
             switchToMusicOnly(song, pauseWhileResolving = true)
         }
     }
@@ -1458,7 +1590,8 @@ private fun LayaApp(
                 }.getOrDefault(false)
             } else {
                 runCatching {
-                    YtMusicRepository.resolveVideo(song) != null
+                    // Its stream is asked for now, so the switch opens on a picture already found.
+                    YtMusicRepository.resolveVideo(song)?.let { MusicVideoEngine.hasPicture(it.videoId) } == true
                 }.getOrDefault(false)
             }
         }
@@ -2318,6 +2451,7 @@ private fun LayaApp(
             durationMs = player.durationMs,
             audioVersionSwitching = switchingAudioVersion,
             qualityUpgraded = player.isQualityUpgraded,
+            onToggleVideo = player.song?.let(::versionToggleFor),
             onPlayPause = {
                 togglePlayPause()
             },
@@ -3866,7 +4000,10 @@ private fun LayaApp(
 
         }
 
-        val playerRaised = showNowPlaying && playerSong != null
+        // The sheet is a window of its own, above the picture-in-picture video drawn over the
+        // app: it is left out while that window shows, and comes back up when it goes.
+        val inPictureInPicture by com.music.laya.ui.player.VideoPictureInPicture.active.collectAsStateWithLifecycle()
+        val playerRaised = showNowPlaying && playerSong != null && !inPictureInPicture
 
         // ---- Now Playing ----
         if (playerRaised) {
@@ -4087,101 +4224,12 @@ private fun LayaApp(
                 val art = song.thumbnailUrl.takeUnless { type == BrowseType.ARTIST }
                 viewModel.openDetail(id, title, sub, art, type)
             }
-            // Video vs audio, moved here from the player's own controls: it is
-            // the same kind of choice as Revert to original / Upgrade
-            // quality just above it — which recording is playing — so it now
-            // sits in the same list rather than as a control of its own.
-            //
-            // Mirrors what the pill used to compute, keyed to this sheet's
-            // own [song] rather than a `nowPlaying` lambda parameter: an
-            // in-flight optimistic swap is still read off [optimisticVersionSong]
-            // so a menu opened mid-switch describes the version actually
-            // becoming current, not the one about to be left.
-            val versionEffectiveSong = optimisticVersionSong?.takeIf {
-                it.videoId == convertedAudioId || it.videoId == convertedVideoId || it.videoId == keepVideoId ||
-                    it.videoId == YtMusicRepository.cachedAudioVersion(song.videoId)?.videoId ||
-                    it.videoId == YtMusicRepository.cachedVideoVersion(song.videoId)?.videoId
-            } ?: song
-            fun versionAlignmentPending(targetId: String): Boolean =
-                AppSettings.smartVersionAlignment.value &&
-                    VersionAudioAligner.getCachedOffsetMs(song.videoId, targetId) == null
             val menuIsAudioVersion = if (optimisticVersionSong != null) {
                 !optimisticVersionSong!!.isVideo
             } else {
                 !song.isVideo && convertedVideoId != song.videoId
             }
-            val onToggleVersion: (() -> Unit)? = if (fromPlayer &&
-                hasAlternateVersion &&
-                !switchingAudioVersion &&
-                controller?.currentMediaItem?.mediaId == song.videoId
-            ) {
-                {
-                    songActions = null
-                    val c = controller
-                    val original = convertedFromVideo
-                    val originalAudio = convertedFromAudio
-                    when {
-                        original != null && (
-                            convertedAudioId == song.videoId ||
-                                convertedAudioId == versionEffectiveSong.videoId ||
-                                convertedAudioId == optimisticVersionSong?.videoId
-                            ) -> {
-                            keepVideoId = original.videoId
-                            convertedFromVideo = null
-                            convertedAudioId = null
-                            if (!versionAlignmentPending(original.videoId)) optimisticVersionSong = original
-                            c.swapToVersion(original)
-                        }
-                        originalAudio != null && (
-                            convertedVideoId == song.videoId ||
-                                convertedVideoId == versionEffectiveSong.videoId ||
-                                convertedVideoId == optimisticVersionSong?.videoId
-                            ) -> {
-                            convertedFromAudio = null
-                            convertedVideoId = null
-                            if (!versionAlignmentPending(originalAudio.videoId)) optimisticVersionSong = originalAudio
-                            c.swapToVersion(originalAudio)
-                        }
-                        versionEffectiveSong.isVideo || song.isVideo -> {
-                            val cached = YtMusicRepository.cachedAudioVersion(song.videoId)
-                                ?: YtMusicRepository.cachedAudioVersion(versionEffectiveSong.videoId)
-                            if (cached != null && cached.videoId != song.videoId &&
-                                !versionAlignmentPending(cached.videoId)
-                            ) {
-                                optimisticVersionSong = cached.copy(
-                                    isVideoOrigin = true,
-                                    queueTier = song.queueTier,
-                                    queueEntryId = song.queueEntryId,
-                                    radioName = song.radioName,
-                                    playbackSource = song.playbackSource,
-                                    playbackSourceType = song.playbackSourceType,
-                                    playbackSourceId = song.playbackSourceId,
-                                )
-                            }
-                            scope.launch { switchToMusicOnly(song, pauseWhileResolving = false) }
-                        }
-                        else -> {
-                            val cached = YtMusicRepository.cachedVideoVersion(song.videoId)
-                                ?: YtMusicRepository.cachedVideoVersion(versionEffectiveSong.videoId)
-                            if (cached != null && cached.videoId != song.videoId &&
-                                !versionAlignmentPending(cached.videoId)
-                            ) {
-                                optimisticVersionSong = cached.copy(
-                                    queueTier = song.queueTier,
-                                    queueEntryId = song.queueEntryId,
-                                    radioName = song.radioName,
-                                    playbackSource = song.playbackSource,
-                                    playbackSourceType = song.playbackSourceType,
-                                    playbackSourceId = song.playbackSourceId,
-                                )
-                            }
-                            scope.launch { switchToVideo(song, pauseWhileResolving = false) }
-                        }
-                    }
-                }
-            } else {
-                null
-            }
+            val onToggleVersion: (() -> Unit)? = if (fromPlayer) versionToggleFor(song) else null
             // The library toggle needs tokens only YouTube can mint, and the
             // rating it comes back with is more authoritative than anything
             // the library feed knew — so the menu asks as it opens.
@@ -4388,6 +4436,10 @@ private fun LayaApp(
                 // and drag handle included — see SongActionsSheet.
                 containerColor = Color.Transparent,
                 dragHandle = null,
+                // The sheet keeps clear of the navigation bar itself, its colours
+                // running on under it: padded out here, the transparent container
+                // left a see-through strip below the last row.
+                contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
             ) {
                 songMenuBody(song, SongActionsPresentation.Sheet)
             }

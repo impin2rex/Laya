@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.AppSettings
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.constrainHeight
@@ -139,11 +140,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.music.laya.ui.components.backdrop.backdrops.layerBackdrop
+import com.music.laya.ui.components.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.music.laya.ui.components.ExplicitBadge
 import com.music.laya.ui.theme.HideStatusBar
+import com.music.laya.ui.theme.rememberScreenOrientation
 import com.music.laya.ui.theme.StatusBarIcons
 import com.music.laya.ui.theme.stableStatusBarInsets
 import com.music.laya.ui.theme.rememberArtworkTopBandLuminance
@@ -726,6 +730,13 @@ fun NowPlayingScreen(
      * the sheet is the caller's business.
      */
     onListenTogether: () -> Unit,
+    /**
+     * Switches the playing track between its music video and its audio-only
+     * cut, from the same moment. Null where it has no other cut to switch to,
+     * in a party (everyone hears one cut), or where the platform can't show a
+     * video — the capsule's segment and the glass "Audio" pill go with it.
+     */
+    onToggleVideo: (() -> Unit)? = null,
     lyrics: List<LyricLine>?,
     lyricsSource: LyricsSource?,
     lyricsProviderStates: Map<LyricsSource, LyricsProviderState>,
@@ -782,6 +793,7 @@ fun NowPlayingScreen(
     // being let go of, or left up as the player moved — kept the flag set, and
     // setting it again did nothing: the button looked dead.
     var audioOutputOpenings by remember { mutableStateOf(0) }
+    var showVideoQuality by remember { mutableStateOf(false) }
     var showLyricsProviders by remember { mutableStateOf(false) }
     // Asks for the Bluetooth permission the first time — see [rememberOutputPicker].
     val openAudioOutput = rememberOutputPicker {
@@ -815,7 +827,27 @@ fun NowPlayingScreen(
     // track" check lives.
     val spotifyCanvasAutoHide by PlayerSettings.spotifyCanvasAutoHide.collectAsStateWithLifecycle()
     val mixing by PlayerSettings.smartMixInProgress.collectAsStateWithLifecycle()
-    val canvas = rememberCanvasArtwork(song)
+    // A music video plays its own picture where the sleeve is — see
+    // [MusicVideoSurface] — and takes the place of any animated cover.
+    val videoMode = showsMusicVideo(song)
+    // Read once for both the capsule's segment and the glass pill on the video.
+    val versionSwitchAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
+    val versionSwitching = audioVersionSwitching || versionSwitchAligning
+    val videoToggle = onToggleVideo
+        ?.takeIf { PlayerPlatform.host.musicVideoSupported }
+        ?.let { VideoToggle(video = song.isVideo, switching = versionSwitching, onToggle = it) }
+    // Only a video that is actually showing offers the way back from it.
+    val switchToAudio = videoToggle?.takeIf { videoMode }?.onToggle
+    val canvas = rememberCanvasArtwork(song)?.takeUnless { videoMode }
+    // Whether the picture has a frame on screen; the still frame shows until then.
+    var videoRendered by remember(song.videoId) { mutableStateOf(false) }
+    // The picture's shape, read only at layout (see the sleeve's card rect), so
+    // a new aspect re-lays the sleeve out without recomposing the player.
+    val videoAspectState = PlayerPlatform.host.musicVideoAspect.collectAsStateWithLifecycle()
+    // One rule for a music video: held upright it is the player, sideways it
+    // is the whole screen. The full-screen buttons turn the phone's screen
+    // rather than switching a layout.
+    val screenOrientation = rememberScreenOrientation()
     var canvasAspect by remember(canvas) { mutableFloatStateOf(0f) }
     // Whether the clip actually has a frame on screen right now, and one of
     // them — used to blow the sleeve out to the full-bleed hero treatment and
@@ -1032,6 +1064,8 @@ fun NowPlayingScreen(
     // under it.
     PlayerBackHandler(enabled = showAudioOutput) { showAudioOutput = false }
 
+    PlayerBackHandler(enabled = showVideoQuality) { showVideoQuality = false }
+
     PlayerBackHandler(enabled = showLyricsProviders) { showLyricsProviders = false }
 
     PlayerBackHandler(enabled = showListenTogetherMembers) { showListenTogetherMembers = false }
@@ -1234,8 +1268,11 @@ fun NowPlayingScreen(
     // Spotify Canvas is the player background on a phone, independent of the
     // still-art full-bleed preference. Other providers and static artwork keep
     // answering to that preference exactly as before.
-    val heroMode = spotifyCanvasOnPhone ||
-        (fullBleedArt && playerFillsWindow(windowWidth))
+    // A music video sits in the card's place at its own 16:9, never full bleed.
+    val heroMode = !videoMode && (
+        spotifyCanvasOnPhone ||
+            (fullBleedArt && playerFillsWindow(windowWidth))
+        )
 
     // Whether there's a still image to blow out — a placeholder tile is a card
     // or it is nothing, and going full-bleed with one would just tint the top
@@ -1513,6 +1550,7 @@ fun NowPlayingScreen(
             onOpenOutput = openAudioOutput,
             onListenTogether = onListenTogether,
             onOpenListenTogetherMembers = openListenTogetherMembers,
+            videoToggle = videoToggle,
         )
         // Keep the current output caption visible in every state.
         Spacer(Modifier.height(18.dp))
@@ -1532,6 +1570,12 @@ fun NowPlayingScreen(
     // whichever layout is on screen — they are overlays over the player, not
     // part of either shape of it.
     val playerOverlays: @Composable () -> Unit = {
+        if (showVideoQuality) {
+            VideoQualitySheet(
+                hazeState = playerHaze,
+                onDismiss = { showVideoQuality = false },
+            )
+        }
         if (showAudioOutput) {
             key(audioOutputOpenings) {
                 AudioOutputSheet(
@@ -1674,6 +1718,9 @@ fun NowPlayingScreen(
     val dockFade: () -> Float = { ((dockT() - DOCK_FADE_LEAD) / (1f - DOCK_FADE_LEAD)).coerceIn(0f, 1f) }
     // The sleeve, drawn over the faded player while it docks — see the sleeve.
     val sleeveLayer = rememberGraphicsLayer()
+    // Read in the two draws below while a music video docks, so each of its frames re-records the
+    // sleeve and redraws it — where a recording keeps the frame it was made with, see the host.
+    val videoFrames = PlayerPlatform.host.musicVideoFrames?.collectAsStateWithLifecycle()
 
     // The player's own end of the docking, for whichever shape it takes: where
     // it sits on screen, the fade, and the artwork drawn over that fade.
@@ -1711,6 +1758,7 @@ fun NowPlayingScreen(
         .drawWithContent {
             drawContent()
             if (docking()) {
+                if (videoMode) videoFrames?.value
                 translate(dockFrame.portalLeft, dockFrame.portalTop) {
                     val portalScale = dockFrame.portalScale
                     scale(portalScale, portalScale, pivot = Offset.Zero) { drawLayer(sleeveLayer) }
@@ -1736,7 +1784,57 @@ fun NowPlayingScreen(
         label = "playerTint",
     )
     CompositionLocalProvider(LocalPlayerTint provides playerTint) {
-        if (landscape) {
+        if (landscape && videoMode) {
+            val versionAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
+            val transitionWindow by PlayerSettings.smartTransitionWindow.collectAsStateWithLifecycle()
+            Box(modifier = modifier.fillMaxSize().then(dockHost)) {
+                FullscreenVideoPlayer(
+                    song = song,
+                    isPlaying = isPlaying,
+                    artRequest = art.request,
+                    rendered = videoRendered,
+                    onRenderedChanged = { videoRendered = it },
+                    onExitFullscreen = screenOrientation::portrait,
+                    onOpenQuality = { showVideoQuality = true },
+                    onSwitchToAudio = switchToAudio,
+                    switchingVersion = versionSwitching,
+                    scrubber = {
+                        PlayerScrubber(
+                            shown = shown,
+                            durationMs = durationMs,
+                            loading = versionAligning || audioVersionSwitching,
+                            mixing = mixing && !scrub.scrubbing,
+                            transitionWindow = transitionWindow
+                                ?.takeIf { !scrub.scrubbing && it.end > it.start }
+                                ?.let { it.start..it.end },
+                            onScrub = onScrub,
+                            onScrubFinished = onScrubFinished,
+                        ) {
+                            PlaybackQualityLabel(
+                                song = song,
+                                isLoading = isLoading,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(horizontal = 8.dp),
+                            )
+                        }
+                    },
+                    transport = {
+                        TransportRow(
+                            isPlaying = isPlaying,
+                            isLoading = isLoading || audioVersionSwitching,
+                            previousEnabled = !controlsLocked && (hasPrevious || pastRestartPoint),
+                            nextEnabled = !controlsLocked && hasNext,
+                            onPrevious = onPrevious,
+                            onPlayPause = onPlayPause,
+                            onNext = onNext,
+                            compact = true,
+                        )
+                    },
+                )
+                playerOverlays()
+            }
+        } else if (landscape) {
             // Paused always wins outright over a scrub in progress — see
             // [ARTWORK_PAUSE_SHRINK_SCALE].
             val landscapeArtScale by animateFloatAsState(
@@ -2087,7 +2185,7 @@ fun NowPlayingScreen(
                 val fullArtworkBackdropAlpha by animateFloatAsState(
                     targetValue = if (
                         !legacyMeshBackdrop &&
-                        (tabletArtworkBackdrop || lyricsOpen || queueOpen) &&
+                        (tabletArtworkBackdrop || lyricsOpen || queueOpen || videoMode) &&
                         (tabletArtworkBackdrop || fullArtworkBlurImage != null)
                     ) 1f else 0f,
                     animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
@@ -2195,7 +2293,7 @@ fun NowPlayingScreen(
                 // A subview replaces that hero with an artwork-derived mesh, so it gets
                 // only a modest floor rather than an opaque status-bar surface.
                 val playerSubviewOpen = lyricsOpen || queueOpen || lyricsOffsetOpen ||
-                    showAudioPipeline || showCast || showAudioOutput || showLyricsProviders ||
+                    showAudioPipeline || showCast || showAudioOutput || showVideoQuality || showLyricsProviders ||
                     lyricsShare != null
                 val topGradientAlpha = if (playerSubviewOpen) {
                     maxOf(artworkStatusScrimAlpha, SUBVIEW_STATUS_SCRIM_MIN_ALPHA)
@@ -2723,13 +2821,26 @@ fun NowPlayingScreen(
                         // rather than a fade chained after it.
                         fun bannerShown(): Float = bannerShare() * (1f - p())
                         // The card's paused shrink, let go of as it collapses.
-                        fun cardScale(): Float = artScale + (1f - artScale) * p()
+                        // None for a music video: a video doesn't breathe.
+                        fun cardScale(): Float = if (videoMode) 1f else artScale + (1f - artScale) * p()
                         fun cardRect(): Rect = with(density) {
                             val side = artSize().roundToPx().toFloat()
-                            Rect(
+                            val square = Rect(
                                 offset = Offset(artStart().roundToPx().toFloat(), artTop().roundToPx().toFloat()),
                                 size = Size(side, side),
                             )
+                            if (!videoMode) return@with square
+                            // A music video's card is its picture box: the
+                            // player's full width at the video's shape, centred
+                            // on the square's slot — the frame the sleeve flies
+                            // to and from the mini player, and morphs from into
+                            // the square header thumbnail as the player collapses.
+                            val height = boxWidthPx / videoAspectState.value.coerceIn(1f, 2.4f)
+                            val video = Rect(
+                                offset = Offset(0f, square.center.y - height / 2f),
+                                size = Size(boxWidthPx.toFloat(), height),
+                            )
+                            lerp(video, square, p())
                         }
                         fun sleeveRect(): Rect {
                             val card = cardRect()
@@ -2841,6 +2952,7 @@ fun NowPlayingScreen(
                                 // where its pixels land changes.
                                 .drawWithContent {
                                     if (docking()) {
+                                        if (videoMode) videoFrames?.value
                                         sleeveLayer.record { this@drawWithContent.drawContent() }
                                     } else {
                                         drawContent()
@@ -2860,6 +2972,15 @@ fun NowPlayingScreen(
                                     scaleY = scale
                                     translationX = swipeSettle.value * (1f - p()) * (1f - share) * t
                                 }
+                                // The haze below records its content into a layer of
+                                // its own, which iOS keeps by value: read each video
+                                // frame here, inside the layer drawing it, so a new
+                                // frame records it again and the collapsed header's
+                                // picture doesn't freeze.
+                                .drawWithContent {
+                                    if (videoMode) videoFrames?.value
+                                    drawContent()
+                                }
                                 // Haze must observe the drawable layer itself, the
                                 // banner included — a source on the surrounding layout
                                 // only captured its mesh backdrop.
@@ -2870,7 +2991,15 @@ fun NowPlayingScreen(
                                     // is no clip mounted to hand it to. The clip is gone
                                     // by the collapse's half, so the sleeve is whole
                                     // again by the time it unmounts.
-                                    alpha = if (heroClip != null) 1f - canvasCover.floatValue else 1f
+                                    alpha = (if (heroClip != null) 1f - canvasCover.floatValue else 1f) *
+                                        // A music video has no square sleeve: its
+                                        // picture box stands in, still frame first.
+                                        // The sleeve is only the collapsed header's
+                                        // thumbnail, and what flies to the mini player.
+                                        // Collapsing into the lyrics or the queue, it carries
+                                        // the playing picture itself (see below), so it is
+                                        // whole from the first frame and the box hands over.
+                                        (if (!videoMode || docking() || p() > 0f) 1f else 0f)
                                 }
                                 .graphicsLayer {
                                     val shown = sleeveShown()
@@ -3053,6 +3182,27 @@ fun NowPlayingScreen(
                                     )
                                 }
                             }
+
+                            // A music video flies as itself: the picture already playing,
+                            // handed to the sleeve for the trip between the mini player
+                            // and the player, and for the collapse into the lyrics or the
+                            // queue — and the header thumbnail they leave — so it never
+                            // stops or turns back into its thumbnail on the way. At rest
+                            // in the player the picture box below shows it.
+                            if (videoMode && (dockMoving || collapseStarted)) {
+                                // Lands as what the mini player shows: the picture where it plays
+                                // there too, else handed over to the cover on the way, so the
+                                // landing isn't a cut from a moving frame to a still one.
+                                val miniVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
+                                MusicVideoSurface(
+                                    videoId = song.videoId,
+                                    // Cropped: the sleeve morphs from the picture's shape to the cover's square.
+                                    fit = false,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer { if (!miniVideo) alpha = dockT() },
+                                )
+                            }
                         }
 
                         // The card's slot: where the sleeve sits as a card, whether or
@@ -3119,6 +3269,85 @@ fun NowPlayingScreen(
                                             alpha = (1f - p() * 2f) * spotifyChromeAlpha
                                         },
                                 )
+                            }
+                        }
+
+                        // The music video, across the player's whole width — the
+                        // same gutters as everything under it — at its own shape,
+                        // centred where the sleeve's square sits. Not the sleeve's
+                        // width: that square is bounded by the screen's height, so
+                        // on a phone it is narrower than the screen. Nor its paused
+                        // shrink: a video doesn't breathe. Put away for the
+                        // collapse into the lyrics or the queue, where the thumbnail
+                        // is the still sleeve, and for the trip to the mini player,
+                        // which takes the picture over.
+                        if (videoMode) {
+                            WhileShown({ !collapsePastHalf && !docking() }) {
+                                val videoAspect by PlayerPlatform.host.musicVideoAspect
+                                    .collectAsStateWithLifecycle()
+                                val aspect = videoAspect.coerceIn(1f, 2.4f)
+                                Box(
+                                    modifier = Modifier
+                                        .offset {
+                                            val height = (boxWidthPx / aspect).roundToInt()
+                                            val centre = (artTop() + artSize() / 2).roundToPx()
+                                            IntOffset(0, centre - height / 2)
+                                        }
+                                        .layout { measurable, _ ->
+                                            val height = (boxWidthPx / aspect).roundToInt()
+                                            val placeable = measurable.measure(Constraints.fixed(boxWidthPx, height))
+                                            layout(boxWidthPx, height) { placeable.placeRelative(0, 0) }
+                                        }
+                                        .graphicsLayer {
+                                            alpha = (1f - p() * 2f).coerceIn(0f, 1f)
+                                            translationX = swipeSettle.value * (1f - p())
+                                        },
+                                ) {
+                                    // What the glass pill frosts and bends.
+                                    val pictureBackdrop = rememberLayerBackdrop()
+                                    Box(Modifier.fillMaxSize().layerBackdrop(pictureBackdrop)) {
+                                        // The video's thumbnail and a spinner under the
+                                        // picture until its first frame lands.
+                                        if (!videoRendered) {
+                                            VideoLoadingBackdrop(
+                                                art.request,
+                                                Modifier
+                                                    .fillMaxSize()
+                                                    .clip(RoundedCornerShape(10.dp)),
+                                            )
+                                        }
+                                        MusicVideoSurface(
+                                            videoId = song.videoId,
+                                            onRenderedChanged = { videoRendered = it },
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                // The sleeve has the picture once a collapse starts.
+                                                .graphicsLayer { if (p() > 0f) alpha = 0f }
+                                                .clip(RoundedCornerShape(10.dp)),
+                                        )
+                                    }
+                                    VideoCornerControls(
+                                        fullscreen = false,
+                                        onToggleFullscreen = screenOrientation::landscape,
+                                        onOpenQuality = { showVideoQuality = true },
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(8.dp),
+                                    )
+                                    // Opposite the quality and full-screen boxes, so
+                                    // the picture's corners hold all of its controls
+                                    // and none of the player below gives up room.
+                                    if (switchToAudio != null) {
+                                        SwitchToAudioPill(
+                                            onClick = switchToAudio,
+                                            switching = versionSwitching,
+                                            backdrop = pictureBackdrop,
+                                            modifier = Modifier
+                                                .align(Alignment.TopStart)
+                                                .padding(8.dp),
+                                        )
+                                    }
+                                }
                             }
                         }
 

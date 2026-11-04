@@ -18,6 +18,7 @@ import com.music.laya.data.settings.TransitionWindow
 import com.music.laya.ui.player.AudioOutputDevice
 import com.music.laya.ui.player.AudioOutputKind
 import com.music.laya.ui.player.CanvasVideoSpec
+import com.music.laya.ui.player.MusicVideoQualityUi
 import com.music.laya.ui.player.LyricsRomanizationResult
 import com.music.laya.ui.player.LyricsTranslationResult
 import com.music.laya.ui.player.MAX_LYRICS_OFFSET_MS
@@ -60,6 +61,30 @@ internal object DesktopPlayerHost : PlayerHost {
 
     @Composable
     override fun CanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) = DesktopCanvasVideo(spec, modifier)
+
+    override val musicVideoSupported: Boolean get() = true
+
+    override val pictureInPicture: (() -> Unit)? = {
+        DesktopMusicVideo.playback?.value?.song?.videoId?.let(DesktopPictureInPicture::open)
+    }
+
+    @Composable
+    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        DesktopMusicVideoSurface(videoId, fit, onRenderedChanged, modifier)
+
+    override fun musicVideoRendered(videoId: String): Boolean = com.music.laya.desktop.musicVideoRendered(videoId)
+
+    override val musicVideoAspect: StateFlow<Float> get() = DesktopMusicVideo.aspect
+
+    override val musicVideoQuality: StateFlow<MusicVideoQualityUi> get() = DesktopMusicVideo.quality
+
+    override fun setMusicVideoQuality(height: Int?) = DesktopMusicVideo.setQuality(height)
+
+    override val windowFullScreen: StateFlow<Boolean> get() = DesktopWindowMode.fullScreen
+
+    override fun setWindowFullScreen(on: Boolean) {
+        if (on != DesktopWindowMode.fullScreen.value) DesktopWindowMode.toggle()
+    }
 
     // Local files carry their art on the row already; there is no remote store to ask.
     @Composable

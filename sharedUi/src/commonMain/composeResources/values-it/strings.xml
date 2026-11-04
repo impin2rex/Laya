@@ -375,6 +375,8 @@
     <string name="playback">Riproduzione</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">Video nel mini player</string>
+    <string name="mini_player_video_subtitle">Riproduce il videoclip nel mini player alla qualità più bassa, per risparmiare dati e batteria</string>
     <string name="prefer_usb_dac">Preferisci DAC USB</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s per brano</string>
@@ -699,4 +701,5 @@
     <string name="your_lyrics_card">La tua scheda di testo</string>
     <string name="no_internet_connection">Nessuna connessione a internet</string>
     <string name="something_went_wrong">Qualcosa è andato storto</string>
+    <string name="picture_in_picture">Picture-in-picture</string>
 </resources>

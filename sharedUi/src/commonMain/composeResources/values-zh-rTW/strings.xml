@@ -374,6 +374,8 @@
     <string name="playback">播放</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">在迷你播放器播放影片</string>
+    <string name="mini_player_video_subtitle">在迷你播放器以最低畫質播放音樂影片，節省行動數據和電量</string>
     <string name="prefer_usb_dac">首選 USB DAC</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · 每首曲目 %2$s</string>
@@ -694,4 +696,5 @@
     <string name="your_lyrics_card">你的歌詞卡片</string>
     <string name="no_internet_connection">無網路連線</string>
     <string name="something_went_wrong">出了點問題</string>
+    <string name="picture_in_picture">子母畫面</string>
 </resources>

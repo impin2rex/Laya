@@ -66,6 +66,41 @@ internal object DesktopMacFrame {
         }
     }
 
+    /** Whether the menu bar and Dock are put away — read by [presentationCallbackRef] on AppKit's thread. */
+    @Volatile
+    private var presentationHidden = false
+
+    private val presentationCallbackRef = object : ActionCallback {
+        override fun invoke(self: Pointer, _cmd: Pointer, arg: Pointer) {
+            runCatching {
+                val o = objc ?: return
+                val send = msgSend ?: return
+                val app = send.invokePointer(arrayOf(o.objc_getClass("NSApplication") ?: return, o.sel_registerName("sharedApplication"))) ?: return
+                val options = if (presentationHidden) NS_PRESENTATION_HIDE_DOCK or NS_PRESENTATION_HIDE_MENU_BAR else 0L
+                send.invoke(arrayOf(app, o.sel_registerName("setPresentationOptions:"), options))
+            }.onFailure {
+                DesktopTrackLog.log("DesktopMacFrame presentation main thread error: ${it.message}")
+            }
+        }
+    }
+
+    /**
+     * Puts the menu bar and Dock away for a window filling the display, or brings them back. The
+     * window is borderless, so AppKit offers it no full screen of its own; this, and the window
+     * sized to the display, is what a borderless app's full screen is.
+     */
+    fun hideMenuBarAndDock(hidden: Boolean): Boolean {
+        if (!DesktopPlatform.isMac) return false
+        val tu = threadUtilities ?: return false
+        val helper = helperInstance ?: return false
+        val selPerform = selPerformOnMain ?: return false
+        val send = msgSend ?: return false
+        val selAction = objc?.sel_registerName("setPresentation:") ?: return false
+        presentationHidden = hidden
+        send.invoke(arrayOf(tu, selPerform, selAction, helper, helper, false))
+        return true
+    }
+
     private val helperInstance: Pointer? by lazy {
         initHelper()
     }
@@ -99,6 +134,7 @@ internal object DesktopMacFrame {
             o.class_addMethod(cls, sel, callbackRef, "v@:@")
             val selActivate = o.sel_registerName("activateApp:")
             o.class_addMethod(cls, selActivate, activateCallbackRef, "v@:@")
+            o.class_addMethod(cls, o.sel_registerName("setPresentation:"), presentationCallbackRef, "v@:@")
             o.objc_registerClassPair(cls)
         }
         val selAlloc = o.sel_registerName("alloc")
@@ -547,4 +583,8 @@ internal object DesktopMacFrame {
             send.invoke(arrayOf(constraint, selSetActive, true))
         }
     }
+
+    /** NSApplicationPresentationHideDock and NSApplicationPresentationHideMenuBar. */
+    private const val NS_PRESENTATION_HIDE_DOCK = 1L shl 1
+    private const val NS_PRESENTATION_HIDE_MENU_BAR = 1L shl 3
 }

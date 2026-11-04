@@ -377,6 +377,8 @@
     <string name="playback">Воспроизведение</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">Видео в мини-плеере</string>
+    <string name="mini_player_video_subtitle">Воспроизводит клип в мини-плеере в самом низком качестве, чтобы экономить трафик и заряд</string>
     <string name="prefer_usb_dac">Предпочитать USB ЦАП</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s за трек</string>
@@ -706,4 +708,5 @@
     <string name="your_lyrics_card">Ваша карточка с текстом</string>
     <string name="no_internet_connection">Нет подключения к интернету</string>
     <string name="something_went_wrong">Что-то пошло не так</string>
+    <string name="picture_in_picture">Картинка в картинке</string>
 </resources>

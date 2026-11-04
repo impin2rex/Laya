@@ -1308,6 +1308,7 @@
     <string name="search_addons_none">कोई ऐडऑन चालू नहीं है। सेटिंग → स्रोत में जाकर एक जोड़ें।</string>
     <string name="app_icon">ऐप आइकन</string>
     <string name="app_icon_default">डिफ़ॉल्ट</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster अपने पॉप-अप ऐप्स में Laya को सिर्फ़ डिफ़ॉल्ट आइकन के साथ दिखाता है।</string>
     <string name="show_queue_history">कतार का इतिहास दिखाएँ</string>
     <string name="show_queue_history_subtitle">कतार में “अभी चल रहा है” के ऊपर पहले चले 25 तक गाने दिखाएँ</string>
     <string name="not_enough_this_week">अपना Replay अनलॉक करने के लिए इस हफ़्ते कुछ और गाने सुनें।</string>
@@ -1373,4 +1374,7 @@
     <string name="song_info_error">कुछ जानकारी लोड नहीं हो सकी।</string>
     <string name="song_info_retry">फिर से कोशिश करें</string>
     <string name="user_agent">यूज़र-एजेंट</string>
+    <string name="no_audio_version">इस वीडियो का ऑडियो वर्शन नहीं मिला</string>
+    <string name="no_video_version">इस गाने का वीडियो वर्शन नहीं मिला</string>
+    <string name="version_switch_in_party">साथ में सुनें में सभी को एक ही वर्शन सुनाई देता है</string>
 </resources>

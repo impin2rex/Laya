@@ -36,6 +36,7 @@ internal object IosSettingsHost : SettingsHost {
     override val party = IosParty.info
     override val hasDownloads = true
     override val hasExportDownloads = false // no shared Music folder on iOS; downloads stay in the app
+    override val musicVideoInMiniPlayer = true
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
     override val appIconRow: (@Composable () -> Unit)?
         get() = if (IosAppIcon.supported) ({ IosAppIconPicker() }) else null
@@ -63,6 +64,27 @@ internal object IosPlayerHost : PlayerHost {
 
     @Composable
     override fun CanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) = IosCanvasVideo(spec, modifier)
+
+    override val musicVideoSupported: Boolean get() = true
+
+    @Composable
+    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        IosMusicVideoSurface(videoId, fit, onRenderedChanged, modifier)
+
+    @Composable
+    override fun MiniPlayerVideo(videoId: String, modifier: Modifier) {
+        if (AppSettings.miniPlayerVideo.collectAsState().value) IosMusicVideoSurface(videoId, fit = false, onRenderedChanged = {}, modifier, mini = true)
+    }
+
+    override val pictureInPicture: (() -> Unit)? =
+        if (IosMusicVideo.pictureInPictureSupported) IosMusicVideo::enterPictureInPicture else null
+
+    // Skia records a layer drawn into another by value: a new frame alone doesn't reach the sleeve.
+    override val musicVideoFrames get() = IosMusicVideo.frame
+
+    override val musicVideoAspect get() = IosMusicVideo.aspect
+    override val musicVideoQuality get() = IosMusicVideo.quality
+    override fun setMusicVideoQuality(height: Int?) = IosMusicVideo.setQuality(height)
 
     @Composable
     override fun rememberRemoteArtworkUrl(song: Song?): String? = song?.thumbnailUrl

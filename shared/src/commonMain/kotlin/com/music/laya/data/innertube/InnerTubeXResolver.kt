@@ -17,7 +17,11 @@ import com.metrolist.innertubex.extraction.TokenProviderCapabilities
 import com.metrolist.innertubex.extraction.strategy.PoTokenProviderKind
 import com.metrolist.innertubex.extraction.YtConfigParserImpl
 import com.metrolist.innertubex.extraction.generateClientPlaybackNonce
+import com.metrolist.innertubex.models.YouTubeClient
 import com.metrolist.innertubex.models.YouTubeLocale
+import io.ktor.client.statement.bodyAsText
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import com.music.laya.data.TrackLog
 import com.music.laya.platform.ConcurrentMap
 import com.music.laya.platform.ioDispatcher
@@ -257,6 +261,95 @@ object InnerTubeXResolver {
         if (minted.size >= MAX_REMEMBERED) minted.clear()
         minted[extracted.url] = extracted
         return extracted
+    }
+
+    /** A music video's picture: a video-only stream, and the identity its fetch has to wear. */
+    class VideoStream(
+        val videoId: String,
+        val url: String,
+        val width: Int,
+        val height: Int,
+        val mimeType: String,
+        val headers: Map<String, String>,
+        /** Every height this video is offered at, largest first — what a quality picker lists. */
+        val heights: List<Int>,
+    ) {
+        val aspect: Float get() = if (height > 0) width.toFloat() / height else 0f
+    }
+
+    /**
+     * The picture for [videoId], at most [maxHeight] tall, for the player to
+     * show over its own audio — as the web player's videoDeck does. The audio
+     * this resolves alongside is ignored: the main player already has its own.
+     *
+     * @return null when InnerTubeX found no video-only stream, which for a
+     *   catalogue track (a still image as its "video") is the normal answer.
+     */
+    suspend fun extractVideo(videoId: String, maxHeight: Int): VideoStream? {
+        // Asked early (a prefetch as the app opens), a video extraction raced the warm-up's
+        // player config and both failed, leaving every later one without it: wait it out.
+        warmup?.join()
+        suspend fun extract() = run {
+            innerTube.cookie = Innertube.cookie
+            innerTube.visitorData = Innertube.ensureVisitorData()
+            innerTube.locale = YouTubeLocale(gl = Innertube.currentRegion, hl = Innertube.currentLanguage)
+            extractor.extract(
+                videoId = videoId,
+                hints = ContentHints(wantVideo = true, maxVideoHeight = maxHeight)
+                    .withStreamCapabilities(allowHls = false, allowSabr = false, allowBoundedRange = true),
+                excludedClients = excludedFor(videoId),
+                audioQuality = AudioQuality.LOW,
+                clientPlaybackNonce = generateClientPlaybackNonce(),
+            )
+        }
+        val stream = try {
+            extract()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A warm-up that failed (around signing in, as the app opens) leaves the extractor with
+            // no player config, and only the clients that need none — none of which serve a
+            // picture — answer until it is warmed again. So: warm again, and ask once more.
+            TrackLog.w(TAG, "video: ${e.message}; warming InnerTubeX again and retrying", about = videoId)
+            warm(0)
+            warmup?.join()
+            extract()
+        } ?: return null
+        val url = stream.videoUrl ?: return null
+        val width = stream.videoWidth ?: 0
+        val height = stream.videoHeight ?: 0
+        val mime = stream.videoMimeType.orEmpty()
+        TrackLog.d(
+            TAG,
+            "video: ${width}x$height $mime ${stream.videoCodecs.orEmpty()} via ${stream.clientName}",
+            about = videoId,
+        )
+        return VideoStream(
+            videoId = videoId,
+            url = url,
+            width = width,
+            height = height,
+            mimeType = mime,
+            headers = stream.headers,
+            heights = (stream.availableVideoHeights.orEmpty() + height)
+                .filter { it > 0 }
+                .distinct()
+                .sortedDescending(),
+        )
+    }
+
+    /**
+     * The HLS master playlist the visionOS client offers for [videoId]: what Apple's own player is
+     * made for — it starts at once, seeks without reading the file through, and picks its height
+     * from the variants. Null when the client offers none.
+     */
+    suspend fun videoHlsManifest(videoId: String): String? {
+        warmup?.join()
+        innerTube.cookie = Innertube.cookie
+        innerTube.visitorData = Innertube.ensureVisitorData()
+        innerTube.locale = YouTubeLocale(gl = Innertube.currentRegion, hl = Innertube.currentLanguage)
+        val root = Json.parseToJsonElement(innerTube.player(YouTubeClient.VISIONOS_0_1, videoId).bodyAsText()).jsonObject
+        return root["streamingData"]?.jsonObject?.get("hlsManifestUrl")?.jsonPrimitive?.content
     }
 
     /** Headers the media fetch for [url] must carry, when InnerTubeX minted it. */

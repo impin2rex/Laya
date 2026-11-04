@@ -12,6 +12,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.background
+import com.music.laya.playback.swapToVersion
+import com.music.laya.data.model.Song
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -112,6 +115,50 @@ fun TvNowPlayingScreen(
             album = song.albumName,
         )
     }
+
+    // A music video's picture follows this controller — see MusicVideoEngine.
+    androidx.compose.runtime.DisposableEffect(mediaController) {
+        com.music.laya.ui.player.MusicVideoEngine.attach(mediaController)
+        onDispose { com.music.laya.ui.player.MusicVideoEngine.attach(null) }
+    }
+    // The other cut of this track — its music video, or the song itself — looked up as it starts,
+    // and swapped in at the playhead on the transport's switch. Never in a party: everyone in one
+    // hears the same cut.
+    val inParty = com.music.laya.data.listentogether.ListenTogether.state.collectAsState().value.inParty
+    val versionSwitching by AppSettings.versionAlignmentInProgress.collectAsState()
+    val versionPairs = remember { mutableMapOf<String, Song>() }
+    var alternate by remember(song.videoId) { mutableStateOf<Song?>(null) }
+    LaunchedEffect(song.videoId, inParty) {
+        alternate = null
+        if (inParty || song.localUri != null) return@LaunchedEffect
+        alternate = versionPairs[song.videoId] ?: kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                if (song.isVideo) {
+                    com.music.laya.data.YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
+                } else {
+                    com.music.laya.data.YtMusicRepository.resolveVideo(song)
+                        ?.takeIf { it.videoId != song.videoId && com.music.laya.ui.player.MusicVideoEngine.hasPicture(it.videoId) }
+                }
+            }.getOrNull()
+        }
+    }
+    val toggleVideo: (() -> Unit)? = alternate?.let { other ->
+        {
+            val target = other.copy(
+                isVideoOrigin = song.isVideo,
+                queueTier = song.queueTier,
+                queueEntryId = song.queueEntryId,
+                radioName = song.radioName,
+                playbackSource = song.playbackSource,
+                playbackSourceType = song.playbackSourceType,
+                playbackSourceId = song.playbackSourceId,
+            )
+            versionPairs[target.videoId] = song
+            mediaController?.swapToVersion(target)
+        }
+    }
+    val videoMode = song.isVideo
+    var videoRendered by remember(song.videoId) { mutableStateOf(false) }
 
     var lyricsHidden by rememberSaveable { mutableStateOf(false) }
     val hasLyrics = !lyrics.isNullOrEmpty()
@@ -243,7 +290,24 @@ fun TvNowPlayingScreen(
         )
 
         val dim by animateFloatAsState(if (upNextOpen) 0.12f else 1f, tween(280), label = "stageDim")
-        TvNowPlayingStage(
+        // A music video is the whole stage, letterboxed in black; the cover holds it until the
+        // first frame lands.
+        if (videoMode) {
+            androidx.compose.foundation.layout.Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = if (videoRendered) dim else 0f }
+                    .background(androidx.compose.ui.graphics.Color.Black),
+            )
+            com.music.laya.ui.player.AndroidMusicVideo(
+                videoId = song.videoId,
+                fit = true,
+                onRenderedChanged = { videoRendered = it },
+                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = dim },
+                priority = 2,
+            )
+        }
+        if (!videoMode || !videoRendered) TvNowPlayingStage(
             song = song,
             isPlaying = isPlaying,
             position = position,
@@ -284,6 +348,9 @@ fun TvNowPlayingScreen(
                 onToggleLyrics = { lyricsHidden = !lyricsHidden },
                 onToggleUpNext = { upNextOpen = !upNextOpen },
                 onMore = { sheet = PlayerSheet.Menu },
+                onToggleVideo = toggleVideo,
+                playingVideo = videoMode,
+                versionSwitching = versionSwitching,
                 upNext = {
                     TvUpNext(
                         queue = playerState.queue,

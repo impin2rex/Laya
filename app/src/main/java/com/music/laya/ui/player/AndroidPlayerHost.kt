@@ -93,6 +93,29 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
     @Composable
     override fun CanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) = AndroidCanvasVideo(spec, modifier)
 
+    override val musicVideoSupported: Boolean get() = true
+
+    @Composable
+    override fun MiniPlayerVideo(videoId: String, modifier: Modifier) {
+        val wanted by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
+        if (wanted) {
+            AndroidMusicVideo(videoId, fit = false, onRenderedChanged = {}, modifier = modifier, priority = MusicVideoEngine.MINI_PLAYER_PRIORITY)
+        }
+    }
+
+    override val pictureInPicture: (() -> Unit)? =
+        if (VideoPictureInPicture.supported(app)) VideoPictureInPicture::enter else null
+
+    @Composable
+    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        AndroidMusicVideo(videoId, fit, onRenderedChanged, modifier)
+
+    override val musicVideoAspect: StateFlow<Float> get() = MusicVideoEngine.aspect
+
+    override val musicVideoQuality: StateFlow<MusicVideoQualityUi> get() = MusicVideoEngine.quality
+
+    override fun setMusicVideoQuality(height: Int?) = MusicVideoEngine.setQuality(height)
+
     @Composable
     override fun rememberRemoteArtworkUrl(song: Song?): String? =
         com.music.laya.ui.components.rememberRemoteArtworkUrl(song)

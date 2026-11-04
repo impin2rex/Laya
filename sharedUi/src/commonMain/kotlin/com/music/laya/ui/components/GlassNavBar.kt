@@ -20,6 +20,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import com.music.laya.ui.player.PlayerPlatform
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -362,9 +363,7 @@ private fun GlassNowPlaying(
                     vertical = if (isInline) 4.dp else 8.dp,
                 ),
         ) {
-            AsyncImage(
-                model = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX),
-                contentDescription = null,
+            Box(
                 modifier = Modifier
                     .size(artSize)
                     // Whichever of the two densities is on screen is the one
@@ -372,7 +371,15 @@ private fun GlassNowPlaying(
                     .playerDockArt(dock, artCorner)
                     .clip(RoundedCornerShape(artCorner))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
+            ) {
+                AsyncImage(
+                    model = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize(),
+                )
+                // The music video in the cover's place, when asked for in Settings.
+                if (song.isVideo) PlayerPlatform.host.MiniPlayerVideo(song.videoId, Modifier.matchParentSize())
+            }
             Spacer(Modifier.width(if (isInline) 8.dp else 10.dp))
             if (isInline) {
                 Text(

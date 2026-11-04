@@ -186,6 +186,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     init {
         engine.setListener(this)
         IosCast.player = this
+        IosMusicVideo.player = this
         IosVolume.level.value = engine.systemVolume()
         IosVolume.setter = engine::setSystemVolume
         IosPlayerStore.load()?.let { s ->
@@ -284,7 +285,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         val cur = song ?: return
         val next = queue.getOrNull(autoNext())
         val dur = durationMs.takeIf { it > 0 } ?: return
-        if (next == null || cur.isVideoOrigin || next.isVideoOrigin) {
+        // A video's own audio only; one switched to its audio release mixes as music.
+        if (next == null || cur.isVideo || next.isVideo) {
             AppSettings.smartTransitionWindow.value = null
             noTransition()
             return
@@ -622,7 +624,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
-        if (!next) alignLyrics(song, o) else queuedOpened = song.videoId to o
+        if (!next) { alignLyrics(song, o); playingOpened = song.videoId to o } else queuedOpened = song.videoId to o
         if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
         else if (swap) engine.swapCurrent(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
         else {
@@ -688,6 +690,68 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
 
+    /** What the engine was last handed for the playing track — the copy a switch away keeps. */
+    private var playingOpened: Pair<String, Opened>? = null
+
+    /**
+     * The copy each version of the playing track was on when it was switched away from — the
+     * FLAC or AAC a source found, not just YouTube's — so switching back opens it again rather
+     * than looking it up anew. For the length of the track.
+     */
+    private val versionOpened = mutableMapOf<String, Opened>()
+
+    /** A switch between the playing track's music video and its audio-only release is under way. */
+    var versionSwitching by mutableStateOf(false); private set
+
+    /**
+     * The audio/video switch, as the phone's: the playing track becomes [target] — its music video
+     * or its audio-only release — from the moment it has reached, the engine crossfading the new
+     * copy in without a break ([AudioEngine.swapCurrent]). The same queue entry, so the queue and a
+     * party still see one item, and the same listen in history ([PlaybackTracker.onVersionSwapped]).
+     */
+    fun swapVersion(target: Song, onDone: (Boolean) -> Unit = {}) {
+        val s = song ?: return onDone(false)
+        if (versionSwitching || target.videoId == s.videoId) return onDone(false)
+        versionSwitching = true
+        val at = index
+        val swapped = target.copy(
+            queueTier = s.queueTier,
+            queueEntryId = s.queueEntryId,
+            radioName = s.radioName,
+            playbackSource = s.playbackSource,
+            playbackSourceType = s.playbackSourceType,
+            playbackSourceId = s.playbackSourceId,
+        )
+        scope.launch {
+            val ok = try {
+                playingOpened?.takeIf { it.first == s.videoId }?.let { versionOpened[s.videoId] = it.second }
+                val o = versionOpened[swapped.videoId] ?: withContext(ioDispatcher) { youtube(swapped.videoId) }
+                if (song?.videoId != s.videoId || index != at) return@launch onDone(false)
+                PlaybackTracker.onVersionSwapped(s, swapped)
+                queue = queue.toMutableList().also { it[at] = swapped }
+                hand(swapped, o, next = false, swap = true)
+                announce()
+                preResolveNext() // the swap dropped the engine's queued item
+                IosPlayerStore.saveQueue(queue, index)
+                true
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                TrackLog.w("Laya", "iOS version switch failed for ${s.title}: ${e.message}", about = s.videoId)
+                false
+            } finally {
+                versionSwitching = false
+            }
+            onDone(ok)
+        }
+    }
+
+    /** Where the audio is now — the last reading run on by the time since while it plays — for the music video to follow. */
+    fun audioClockMs(): Long {
+        if (!isPlaying || isLoading) return position.positionMs
+        return position.positionMs + (com.music.laya.platform.nanoTime() - position.sampledAtNanos) / 1_000_000
+    }
+
     /** The player menu's "Revert to original": YouTube's own audio for this track from now on, swapped in without a break. */
     fun revertToOriginal() {
         val s = song ?: return
@@ -741,6 +805,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun start(i: Int, fromMs: Long = 0) {
+        // A track starting: what the last one's versions were playing is no longer wanted.
+        versionOpened.clear()
         val song = queue.getOrNull(i) ?: return
         ListeningRecorder.onStopped() // as PlaybackService on a transition: repeat-one's second pass must not continue the first
         // YouTube history: close the outgoing play. A retry of the same track mid-way (recover) is not a new play.
@@ -941,10 +1007,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         lastListenTickAt = now
         song?.let { ListeningRecorder.onSample(it, durationMs) }
         // The account's history (PlaybackService's sampler): registers the play once audible, then reports watch time.
-        song?.videoId?.let { id ->
+        song?.let { s ->
             trackedSec = position.positionMs / 1000
-            PlaybackTracker.onPlaying(id)
-            PlaybackTracker.onProgress(id, trackedSec)
+            PlaybackTracker.onPlaying(s)
+            PlaybackTracker.onProgress(s.videoId, trackedSec)
         }
     }
 
@@ -1065,6 +1131,11 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     override fun onSystemPause() = party.onSystemPause()
     override fun onRemoteNext() = next()
     override fun onRemotePrevious() = previous()
+    override fun onRemoteLike() { onRemoteLike?.invoke() }
+
+    /** The app's own like toggle, for the lock screen's Like / Favorite. Set by the UI, which owns likes. */
+    var onRemoteLike: (() -> Unit)? = null
+    fun setLockScreenLike(available: Boolean, liked: Boolean) = engine.setLikeState(available, liked)
 }
 
 /** The member a party's AutoPlay queue comes from: the host, else the lowest id among those connected. */

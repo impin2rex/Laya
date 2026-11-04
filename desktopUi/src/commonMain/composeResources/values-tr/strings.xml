@@ -223,4 +223,5 @@
     <string name="reverb_width">Genişlik</string>
     <string name="reverb_width_help">Kuyruğun stereo genişliği, monodan tam genişliğe.</string>
     <string name="reverb_reset">Varsayılanlara sıfırla</string>
+    <string name="picture_in_picture">Resim içinde resim</string>
 </resources>

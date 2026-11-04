@@ -223,4 +223,5 @@
     <string name="reverb_width">Szerokość</string>
     <string name="reverb_width_help">Szerokość stereo ogona pogłosu, od mono do pełnej.</string>
     <string name="reverb_reset">Przywróć domyślne</string>
+    <string name="picture_in_picture">Obraz w obrazie</string>
 </resources>

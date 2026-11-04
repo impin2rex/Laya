@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Waves
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -343,6 +344,10 @@ internal fun TvTransport(
     onToggleUpNext: () -> Unit,
     onMore: () -> Unit,
     upNext: @Composable () -> Unit,
+    /** Switches between the song and its music video, from the same moment; null when there is no other cut. */
+    onToggleVideo: (() -> Unit)? = null,
+    playingVideo: Boolean = false,
+    versionSwitching: Boolean = false,
 ) {
     val showStats by AppSettings.showNerdStats.collectAsState()
     val reverbOn by AppSettings.reverbEnabled.collectAsState()
@@ -384,6 +389,16 @@ internal fun TvTransport(
                     contentDescription = if (isLiked) "Unlove" else "Love",
                     onClick = onToggleLike,
                 )
+                // Audio or video: lit while the video plays, and showing what a press gives.
+                if (onToggleVideo != null) {
+                    TvTransportButton(
+                        icon = if (playingVideo) LayaIcons.MusicNote else Icons.Rounded.Videocam,
+                        contentDescription = if (playingVideo) "Switch to Audio" else "Switch to Video",
+                        active = playingVideo,
+                        enabled = !versionSwitching,
+                        onClick = onToggleVideo,
+                    )
+                }
                 TvTransportButton(
                     icon = LayaIcons.LyricsQuote,
                     contentDescription = "Lyrics",

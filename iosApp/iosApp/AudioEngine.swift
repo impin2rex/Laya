@@ -352,6 +352,15 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         center.previousTrackCommand.isEnabled = hasPrevious
     }
 
+    // Like and Favorite (bookmark) both stand for the app's one like: whichever the system chooses to draw.
+    func setLikeState(available: Bool, liked: Bool) {
+        let center = MPRemoteCommandCenter.shared()
+        for command in [center.likeCommand, center.bookmarkCommand] {
+            command.isEnabled = available
+            command.isActive = liked
+        }
+    }
+
     // MARK: - System volume
 
     private var volumeObservation: NSKeyValueObservation?
@@ -1203,6 +1212,19 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             if let listener = self.listener { listener.onRemoteSeek(positionMs: ms) } else { self.seekTo(positionMs: ms) }
             return .success
         }
+        center.likeCommand.localizedTitle = "Like"
+        center.likeCommand.localizedShortTitle = "Like"
+        center.bookmarkCommand.localizedTitle = "Favorite"
+        center.bookmarkCommand.localizedShortTitle = "Favorite"
+        for command in [center.likeCommand, center.bookmarkCommand] {
+            command.isEnabled = false // until Kotlin says the track can be liked (setLikeState)
+            command.addTarget { [weak self] _ in
+                guard let listener = self?.listener else { return .commandFailed }
+                listener.onRemoteLike()
+                return .success
+            }
+        }
+        center.dislikeCommand.isEnabled = false
         center.skipForwardCommand.isEnabled = false
         center.skipBackwardCommand.isEnabled = false
         UIApplication.shared.beginReceivingRemoteControlEvents()
