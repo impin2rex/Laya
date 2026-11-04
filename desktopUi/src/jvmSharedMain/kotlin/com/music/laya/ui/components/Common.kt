@@ -397,13 +397,18 @@ fun SwipeToQueueBox(
     var boxWidth by remember { mutableFloatStateOf(0f) }
 
     val currentOnSwipeToQueue by rememberUpdatedState(onSwipeToQueue)
+    // Once per swipe: the box asks [confirmValueChange] again as the drag
+    // crosses its anchors and as it settles, and refused, it asks again. Let go
+    // of once the row is back at rest.
+    val queuedThisSwipe = remember { booleanArrayOf(false) }
 
     val swipeState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value != SwipeToDismissBoxValue.Settled) {
                 val offset = try { swipeStateHolder.value?.requireOffset() ?: 0f } catch (e: Exception) { 0f }
                 // Only queue if the physical drag reached half the box width, ignoring short accidental flings.
-                if (abs(offset) >= boxWidth * 0.45f) {
+                if (abs(offset) >= boxWidth * 0.45f && !queuedThisSwipe[0]) {
+                    queuedThisSwipe[0] = true
                     haptics.play(Haptic.Select)
                     currentOnSwipeToQueue()
                 }
@@ -425,6 +430,7 @@ fun SwipeToQueueBox(
         snapshotFlow { try { swipeState.requireOffset() } catch (e: Exception) { 0f } }
             .collect { offset ->
                 val travelled = abs(offset)
+                if (travelled < 1f) queuedThisSwipe[0] = false
                 when {
                     !armed && travelled >= armAt -> {
                         armed = true
