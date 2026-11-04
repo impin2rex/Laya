@@ -1374,4 +1374,7 @@
     <string name="song_info_error">Einige Informationen konnten nicht geladen werden.</string>
     <string name="song_info_retry">Erneut versuchen</string>
     <string name="user_agent">User-Agent</string>
+    <string name="no_audio_version">Keine Audioversion für dieses Video gefunden</string>
+    <string name="no_video_version">Keine Videoversion für diesen Song gefunden</string>
+    <string name="version_switch_in_party">Bei „Gemeinsam hören“ hören alle dieselbe Version</string>
 </resources>

@@ -1376,4 +1376,7 @@
     <string name="song_info_error">לא ניתן לטעון חלק מהמידע.</string>
     <string name="song_info_retry">ניסיון חוזר</string>
     <string name="user_agent">סוכן משתמש</string>
+    <string name="no_audio_version">לא נמצאה גרסת אודיו לסרטון הזה</string>
+    <string name="no_video_version">לא נמצאה גרסת וידאו לשיר הזה</string>
+    <string name="version_switch_in_party">ב„להאזין ביחד” כולם שומעים את אותה הגרסה</string>
 </resources>

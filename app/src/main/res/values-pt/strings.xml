@@ -1376,4 +1376,7 @@
     <string name="song_info_error">Não foi possível carregar algumas informações.</string>
     <string name="song_info_retry">Tentar novamente</string>
     <string name="user_agent">Agente do usuário</string>
+    <string name="no_audio_version">Nenhuma versão em áudio encontrada para este vídeo</string>
+    <string name="no_video_version">Nenhuma versão em vídeo encontrada para esta música</string>
+    <string name="version_switch_in_party">No Ouvir junto, todos ouvem a mesma versão</string>
 </resources>

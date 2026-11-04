@@ -1411,4 +1411,7 @@
     <string name="song_info_error">Nie udało się wczytać części informacji.</string>
     <string name="song_info_retry">Spróbuj ponownie</string>
     <string name="user_agent">Agent użytkownika</string>
+    <string name="no_audio_version">Nie znaleziono wersji audio tego teledysku</string>
+    <string name="no_video_version">Nie znaleziono wersji wideo tego utworu</string>
+    <string name="version_switch_in_party">W Słuchajcie razem wszyscy słyszą tę samą wersję</string>
 </resources>

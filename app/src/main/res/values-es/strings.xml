@@ -1346,4 +1346,7 @@
     <string name="song_info_error">No se pudo cargar parte de la información.</string>
     <string name="song_info_retry">Reintentar</string>
     <string name="user_agent">Agente de usuario</string>
+    <string name="no_audio_version">No se encontró una versión de audio para este video</string>
+    <string name="no_video_version">No se encontró una versión en video de esta canción</string>
+    <string name="version_switch_in_party">En Escuchar juntos, todos oyen la misma versión</string>
 </resources>

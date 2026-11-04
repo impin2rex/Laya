@@ -1352,4 +1352,7 @@
     <string name="song_info_error">一部の情報を読み込めませんでした。</string>
     <string name="song_info_retry">再試行</string>
     <string name="user_agent">ユーザーエージェント</string>
+    <string name="no_audio_version">この動画の音声バージョンが見つかりません</string>
+    <string name="no_video_version">この曲の動画バージョンが見つかりません</string>
+    <string name="version_switch_in_party">一緒に聴くでは全員が同じバージョンを聴きます</string>
 </resources>

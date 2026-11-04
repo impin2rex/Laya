@@ -1291,4 +1291,7 @@
     <string name="song_info_error">Không thể tải một số thông tin.</string>
     <string name="song_info_retry">Thử lại</string>
     <string name="user_agent">Tác nhân người dùng</string>
+    <string name="no_audio_version">Không tìm thấy phiên bản âm thanh cho video này</string>
+    <string name="no_video_version">Không tìm thấy phiên bản video cho bài hát này</string>
+    <string name="version_switch_in_party">Mọi người trong Listen together đều nghe cùng một phiên bản</string>
 </resources>

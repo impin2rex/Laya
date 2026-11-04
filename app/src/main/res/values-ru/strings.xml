@@ -1406,4 +1406,7 @@
     <string name="song_info_error">Не удалось загрузить часть информации.</string>
     <string name="song_info_retry">Повторить</string>
     <string name="user_agent">Агент пользователя</string>
+    <string name="no_audio_version">Аудиоверсия этого видео не найдена</string>
+    <string name="no_video_version">Видеоверсия этой песни не найдена</string>
+    <string name="version_switch_in_party">В режиме «Слушать вместе» все слышат одну и ту же версию</string>
 </resources>

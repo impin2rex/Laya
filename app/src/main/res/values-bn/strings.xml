@@ -1142,4 +1142,7 @@
     <string name="song_info_error">কিছু তথ্য লোড করা যায়নি।</string>
     <string name="song_info_retry">আবার চেষ্টা করুন</string>
     <string name="user_agent">ইউজার-এজেন্ট</string>
+    <string name="no_audio_version">এই ভিডিওর অডিও সংস্করণ পাওয়া যায়নি</string>
+    <string name="no_video_version">এই গানের ভিডিও সংস্করণ পাওয়া যায়নি</string>
+    <string name="version_switch_in_party">একসাথে শুনুন-এ সবাই একই সংস্করণ শোনেন</string>
 </resources>

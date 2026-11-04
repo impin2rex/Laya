@@ -1331,4 +1331,7 @@
     <string name="wear_os_done">Bitti</string>
     <string name="signed_by">%1$s tarafından imzalandı</string>
     <string name="user_agent">Kullanıcı aracısı</string>
+    <string name="no_audio_version">Bu videonun ses sürümü bulunamadı</string>
+    <string name="no_video_version">Bu şarkının video sürümü bulunamadı</string>
+    <string name="version_switch_in_party">Birlikte dinle\'de herkes aynı sürümü duyar</string>
 </resources>

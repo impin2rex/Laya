@@ -1351,4 +1351,7 @@
     <string name="song_info_error">Sebagian informasi tidak dapat dimuat.</string>
     <string name="song_info_retry">Coba lagi</string>
     <string name="user_agent">Agen pengguna</string>
+    <string name="no_audio_version">Versi audio untuk video ini tidak ditemukan</string>
+    <string name="no_video_version">Versi video untuk lagu ini tidak ditemukan</string>
+    <string name="version_switch_in_party">Semua orang di Dengar bersama mendengar versi yang sama</string>
 </resources>

@@ -1351,4 +1351,7 @@
     <string name="artist_signatures_test_failed">無法連線至該網址的 API</string>
     <string name="signed_by">%1$s 的簽名</string>
     <string name="user_agent">使用者代理</string>
+    <string name="no_audio_version">找不到此影片的音訊版本</string>
+    <string name="no_video_version">找不到此歌曲的影片版本</string>
+    <string name="version_switch_in_party">一起聽時，所有人聽到的是同一版本</string>
 </resources>

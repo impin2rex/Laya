@@ -1313,4 +1313,7 @@
     <string name="song_info_error">Impossibile caricare alcune informazioni.</string>
     <string name="song_info_retry">Riprova</string>
     <string name="user_agent">Agente utente</string>
+    <string name="no_audio_version">Nessuna versione audio trovata per questo video</string>
+    <string name="no_video_version">Nessuna versione video trovata per questo brano</string>
+    <string name="version_switch_in_party">In Ascoltare insieme tutti sentono la stessa versione</string>
 </resources>
