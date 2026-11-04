@@ -223,4 +223,5 @@
     <string name="reverb_width">चौड़ाई</string>
     <string name="reverb_width_help">टेल का स्टीरियो फैलाव, मोनो से पूरी चौड़ाई तक।</string>
     <string name="reverb_reset">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="picture_in_picture">पिक्चर-इन-पिक्चर</string>
 </resources>

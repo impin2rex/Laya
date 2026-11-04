@@ -374,6 +374,8 @@
     <string name="playback">Phát nhạc</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">Video trong trình phát mini</string>
+    <string name="mini_player_video_subtitle">Phát video âm nhạc trong trình phát mini ở chất lượng thấp nhất để tiết kiệm dữ liệu và pin</string>
     <string name="prefer_usb_dac">Ưu tiên DAC USB</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s mỗi bài</string>
@@ -694,4 +696,5 @@
     <string name="your_lyrics_card">Thẻ lời bài hát của bạn</string>
     <string name="no_internet_connection">Không có kết nối internet</string>
     <string name="something_went_wrong">Đã xảy ra lỗi</string>
+    <string name="picture_in_picture">Hình trong hình</string>
 </resources>

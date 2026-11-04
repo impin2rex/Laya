@@ -374,6 +374,8 @@
     <string name="playback">Pemutaran</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">Video di pemutar mini</string>
+    <string name="mini_player_video_subtitle">Putar video musik di pemutar mini dengan kualitas terendah untuk menghemat data dan baterai</string>
     <string name="prefer_usb_dac">Pilih DAC USB</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · %2$s per trek</string>
@@ -694,4 +696,5 @@
     <string name="your_lyrics_card">Kartu lirikmu</string>
     <string name="no_internet_connection">Tidak ada koneksi internet</string>
     <string name="something_went_wrong">Terjadi kesalahan</string>
+    <string name="picture_in_picture">Gambar dalam gambar</string>
 </resources>

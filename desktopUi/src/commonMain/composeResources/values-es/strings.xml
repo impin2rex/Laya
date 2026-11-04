@@ -223,4 +223,5 @@
     <string name="reverb_width">Amplitud</string>
     <string name="reverb_width_help">Apertura estéreo de la cola, de mono a ancho completo.</string>
     <string name="reverb_reset">Restablecer valores predeterminados</string>
+    <string name="picture_in_picture">Imagen en imagen</string>
 </resources>

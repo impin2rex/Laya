@@ -1308,6 +1308,7 @@
     <string name="search_addons_none">Es sind keine Addons aktiviert. Füge eines unter Einstellungen → Quellen hinzu.</string>
     <string name="app_icon">App-Symbol</string>
     <string name="app_icon_default">Standard</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster zeigt Laya in den Pop-up-Apps nur mit dem Standardsymbol an.</string>
     <string name="show_queue_history">Wiedergabeverlauf anzeigen</string>
     <string name="show_queue_history_subtitle">Bis zu 25 zuletzt gespielte Songs über „Aktuelle Wiedergabe“ in der Warteschlange anzeigen</string>
     <string name="not_enough_this_week">Höre diese Woche noch ein paar Songs mehr, um dein Replay freizuschalten.</string>
@@ -1373,4 +1374,7 @@
     <string name="song_info_error">Einige Informationen konnten nicht geladen werden.</string>
     <string name="song_info_retry">Erneut versuchen</string>
     <string name="user_agent">User-Agent</string>
+    <string name="no_audio_version">Keine Audioversion für dieses Video gefunden</string>
+    <string name="no_video_version">Keine Videoversion für diesen Song gefunden</string>
+    <string name="version_switch_in_party">Bei „Gemeinsam hören“ hören alle dieselbe Version</string>
 </resources>

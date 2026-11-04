@@ -236,6 +236,8 @@ class DesktopPlaybackEngine(
 
     fun load(song: Song, playWhenReady: Boolean = true, startAtMs: Long = 0L) {
         retryingSongId = null
+        // A new track: what its predecessor's versions were playing is no longer wanted.
+        versionStreams.clear()
         loadInternal(
             song,
             playWhenReady,
@@ -432,6 +434,62 @@ class DesktopPlaybackEngine(
         }
     }
 
+    /** Whether [swapVersion] is finding and opening the other cut. */
+    val versionSwitching = MutableStateFlow(false)
+
+    /**
+     * Plays [target] — the playing track's other cut, its music video or its audio-only release —
+     * from where the playhead is, as the same listen rather than a new track: the seam a quality
+     * upgrade hands over on, with the song itself changing. [onDone] says whether it took.
+     *
+     * ponytail: same timestamp, not aligned — a video's intro can shift it a few seconds; the
+     * phone's VersionAudioAligner is the upgrade path if that shows.
+     */
+    fun swapVersion(target: Song, fromStart: Boolean = false, onDone: (Boolean) -> Unit = {}) {
+        val from = _state.value.song ?: return onDone(false)
+        if (target.videoId == from.videoId || versionSwitching.value) return onDone(false)
+        upgradeJob?.cancel()
+        versionSwitching.value = true
+        // Kept for the way back: the copy this version is playing — the FLAC or AAC a source
+        // upgraded it to, not just YouTube's — so switching back opens it again rather than
+        // looking it up and upgrading anew.
+        current?.takeIf { it.song.videoId == from.videoId }?.let { versionStreams[from.videoId] = it.stream }
+        val kept = versionStreams[target.videoId]
+        val t0 = System.currentTimeMillis()
+        scope.launch {
+            val stream = kept?.let { Result.success(it) } ?: DesktopMusicSources.resolve(target, audioQuality)
+            if (kept != null) DesktopTrackLog.log("version switch: '${target.title}' back on the ${kept.format.summary.ifBlank { "copy" }} it was playing")
+            val opened = stream.mapCatching { stream ->
+                openTrack(target, stream, if (fromStart) 0L else _state.value.positionMs).getOrThrow()
+            }
+            val latest = _state.value
+            opened.fold(
+                onSuccess = { track ->
+                    if (latest.song?.videoId != from.videoId) {
+                        track.decoder.close()
+                        versionSwitching.value = false
+                        return@fold onDone(false)
+                    }
+                    if (!fromStart && kotlin.math.abs(latest.positionMs - track.startUs / 1_000) >= UPGRADE_RESEEK_THRESHOLD_MS) {
+                        track.decoder.seek(latest.positionMs * 1_000)
+                        track.startUs = latest.positionMs * 1_000
+                        track.seekKaraoke(track.startUs)
+                    }
+                    DesktopTrackLog.log("version switch: '${from.title}' (${from.videoId}) -> ${target.videoId} in ${System.currentTimeMillis() - t0}ms")
+                    commands += Command.ReplaceCurrent(track, playWhenReady = latest.isPlaying)
+                    versionSwitching.value = false
+                    onDone(true)
+                },
+                onFailure = { failure ->
+                    DesktopTrackLog.log("version switch failed for '${from.title}': ${failure.message}")
+                    _state.update { it.copy(error = "Could not switch version: ${failure.message ?: "that copy would not open"}") }
+                    versionSwitching.value = false
+                    onDone(false)
+                },
+            )
+        }
+    }
+
     /** Re-opens the current track, keeping the playhead. */
     fun reloadCurrent(forceSourceRefresh: Boolean = false) {
         val current = _state.value
@@ -559,7 +617,7 @@ class DesktopPlaybackEngine(
         nextLocalStream = local
         // Measured on YouTube Opus (or the file) whatever will end up serving it, so Automix has
         // its analysis without anything being fetched from the source that will play it.
-        if (automixEnabled && !song.isVideoOrigin) {
+        if (automixEnabled && !song.isVideo) {
             analyzer.request(song, local, song.durationText.durationSeconds())
         }
         if (local == null && DesktopMusicSources.mayServeFromAddon(song)) {
@@ -726,7 +784,14 @@ class DesktopPlaybackEngine(
 
     // ---- the audio thread -----------------------------------------------
 
+    @Volatile
     private var current: Track? = null
+
+    /**
+     * The stream each version of the playing track was on when it was switched away from, by
+     * its id, for the length of the track — see [swapVersion].
+     */
+    private val versionStreams = java.util.concurrent.ConcurrentHashMap<String, DesktopStream>()
     private var upcoming: Track? = null
     private var speedProcessor: DesktopAudioSpeed? = null
     /** One widener per side of a mix, because widening is a property of a track. */
@@ -1511,7 +1576,8 @@ class DesktopPlaybackEngine(
         val next = upcoming
         // A track held back from read-ahead has no decoder yet, but is measured all the same.
         val held = if (next == null) nextSong else null
-        if (track.song.isVideoOrigin || next?.song?.isVideoOrigin == true || held?.isVideoOrigin == true) return
+        // A video's own audio only; one switched to its audio release mixes as music.
+        if (track.song.isVideo || next?.song?.isVideo == true || held?.isVideo == true) return
         requestAnalysis(track)
         next?.let(::requestAnalysis)
         held?.let { analyzer.request(it, nextLocalStream, it.durationText.durationSeconds()) }

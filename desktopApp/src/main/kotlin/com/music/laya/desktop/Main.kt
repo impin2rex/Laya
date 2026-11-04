@@ -185,6 +185,7 @@ private fun desktopMain() = application {
             LayaDesktopApp()
         }
     }
+    DesktopPictureInPictureWindow()
 }
 
 // The now-playing screen's two-column layout starts at 560dp wide (LANDSCAPE_PLAYER_MIN_WIDTH in

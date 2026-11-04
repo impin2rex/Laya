@@ -29,6 +29,9 @@ internal object DesktopWindowVisibility {
         windowRef = WeakReference(window)
     }
 
+    /** The app's window, while it is open. */
+    internal val window: Window? get() = windowRef?.get()
+
     /**
      * Installs system-level reopen hooks (e.g. macOS Dock click when window is closed).
      */

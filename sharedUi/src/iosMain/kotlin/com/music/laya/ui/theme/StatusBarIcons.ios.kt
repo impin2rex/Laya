@@ -12,4 +12,7 @@ actual fun StatusBarIcons(dark: Boolean) = Unit
 actual fun HideStatusBar(hidden: Boolean) = Unit
 
 @Composable
+actual fun HideSystemBars(hidden: Boolean) = Unit
+
+@Composable
 actual fun stableStatusBarInsets(): WindowInsets = WindowInsets.statusBars

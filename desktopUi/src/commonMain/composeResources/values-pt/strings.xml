@@ -223,4 +223,5 @@
     <string name="reverb_width">Largura</string>
     <string name="reverb_width_help">Abertura estéreo da cauda, de mono à largura total.</string>
     <string name="reverb_reset">Restaurar padrões</string>
+    <string name="picture_in_picture">Picture-in-picture</string>
 </resources>

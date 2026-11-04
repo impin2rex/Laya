@@ -574,6 +574,13 @@ val MediaItem.isVideoOrigin: Boolean
     get() = mediaMetadata.extras?.getBoolean(EXTRA_VIDEO_ORIGIN) == true ||
         mediaMetadata.extras?.getBoolean(EXTRA_IS_VIDEO) == true
 
+/**
+ * Whether this item plays a music video's own audio — not one converted to its audio release,
+ * which [isVideoOrigin] still counts and which is music like any other.
+ */
+val MediaItem.isVideo: Boolean
+    get() = mediaMetadata.extras?.getBoolean(EXTRA_IS_VIDEO) == true
+
 fun MediaController.autoplaySectionStart(): Int = autoplaySectionStart(
     fromAutoplay = (0 until mediaItemCount).map { getMediaItemAt(it).fromAutoplay },
     currentIndex = currentMediaItemIndex,

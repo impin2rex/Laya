@@ -64,6 +64,8 @@ import androidx.compose.material.icons.automirrored.rounded.VolumeDown
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Videocam
+import androidx.compose.runtime.Immutable
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -414,7 +416,7 @@ internal fun SleeveNerdStats(song: Song, modifier: Modifier = Modifier) {
                     // not, so naming the video limitation there would describe
                     // a rule that is not the one in force.
                     inParty -> stringResource(Res.string.automix_stopped_in_party)
-                    song.isVideoOrigin ->
+                    song.isVideo ->
                         stringResource(Res.string.automix_not_supported_video)
                     else -> stringResource(
                         Res.string.automix_analysis_status,
@@ -584,6 +586,8 @@ internal fun PlayerActionRow(
      * and keeps only the middle pill; every other caller shows all three.
      */
     showLyricsAndQueue: Boolean = true,
+    /** The audio/video switch beside Listen Together — see [OutputPartyPill]. */
+    videoToggle: VideoToggle? = null,
 ) {
     if (!showLyricsAndQueue) {
         // The desktop overflow: with no lyrics or queue glyph there is nothing to
@@ -598,6 +602,7 @@ internal fun PlayerActionRow(
                 onOutput = onOpenOutput,
                 onParty = onListenTogether,
                 onOpenMembers = onOpenListenTogetherMembers,
+                videoToggle = videoToggle,
             )
             PlaybackModesPill(
                 shuffleEnabled = shuffleEnabled,
@@ -685,6 +690,7 @@ internal fun PlayerActionRow(
                         onOutput = onOpenOutput,
                         onParty = onListenTogether,
                         onOpenMembers = onOpenListenTogetherMembers,
+                        videoToggle = videoToggle,
                     )
                 }
             }
@@ -957,6 +963,7 @@ private fun OutputPartyPill(
     onParty: () -> Unit,
     /** Who's in it, before the settings page — see [ListenTogetherMembersSheet]. */
     onOpenMembers: () -> Unit,
+    videoToggle: VideoToggle? = null,
 ) {
     val badge = rememberPartyBadge()
     Pill {
@@ -988,8 +995,37 @@ private fun OutputPartyPill(
             highlighted = badge.inParty,
             trailingLabel = badge.members.takeIf { badge.inParty }?.toString(),
         )
+        // Same track, the other cut: the music video, or back to the song.
+        // Beside the party segment, the other "how is this being heard"
+        // choice. It shows what tapping it gives you, the way the lyrics and
+        // queue glyphs do, and spins while that cut is found and lined up.
+        if (videoToggle != null) {
+            PillDivider()
+            PillSegment(
+                icon = if (videoToggle.video) LayaIcons.MusicNote else Icons.Rounded.Videocam,
+                contentDescription = stringResource(
+                    if (videoToggle.video) Res.string.switch_to_audio else Res.string.switch_to_video,
+                ),
+                onClick = videoToggle.onToggle,
+                highlighted = videoToggle.video,
+                loading = videoToggle.switching,
+                haptic = if (videoToggle.video) Haptic.ToggleOff else Haptic.ToggleOn,
+            )
+        }
     }
 }
+
+/**
+ * The audio/video switch for the playing track. [video] is whether its music
+ * video is what's playing now; [switching] while the other cut is being found
+ * and lined up.
+ */
+@Immutable
+internal class VideoToggle(
+    val video: Boolean,
+    val switching: Boolean,
+    val onToggle: () -> Unit,
+)
 
 /**
  * One control inside a [Pill] — [BottomGlyph]'s twin, squared off.

@@ -1285,6 +1285,7 @@
     <string name="search_addons_none">Tidak ada addon yang aktif. Tambahkan satu di Pengaturan → Sumber.</string>
     <string name="app_icon">Ikon aplikasi</string>
     <string name="app_icon_default">Default</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster hanya menampilkan Laya di aplikasi pop-up-nya dengan ikon Default.</string>
     <string name="show_queue_history">Tampilkan riwayat antrean</string>
     <string name="show_queue_history_subtitle">Menampilkan hingga 25 lagu yang sudah diputar di atas “Sedang diputar” di antrean</string>
     <string name="not_enough_this_week">Putar beberapa lagu lagi minggu ini untuk membuka Replay Anda.</string>
@@ -1350,4 +1351,7 @@
     <string name="song_info_error">Sebagian informasi tidak dapat dimuat.</string>
     <string name="song_info_retry">Coba lagi</string>
     <string name="user_agent">Agen pengguna</string>
+    <string name="no_audio_version">Versi audio untuk video ini tidak ditemukan</string>
+    <string name="no_video_version">Versi video untuk lagu ini tidak ditemukan</string>
+    <string name="version_switch_in_party">Semua orang di Dengar bersama mendengar versi yang sama</string>
 </resources>

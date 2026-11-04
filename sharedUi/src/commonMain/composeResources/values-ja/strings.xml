@@ -374,6 +374,8 @@
     <string name="playback">再生</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">ミニプレーヤーで動画を再生</string>
+    <string name="mini_player_video_subtitle">データとバッテリーを節約するため、ミュージックビデオをミニプレーヤーで最低画質で再生します</string>
     <string name="prefer_usb_dac">USB DAC を優先</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · 1トラックあたり%2$s</string>
@@ -694,4 +696,5 @@
     <string name="your_lyrics_card">歌詞カード</string>
     <string name="no_internet_connection">インターネット接続がありません</string>
     <string name="something_went_wrong">問題が発生しました</string>
+    <string name="picture_in_picture">ピクチャー イン ピクチャー</string>
 </resources>

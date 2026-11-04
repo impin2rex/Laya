@@ -699,6 +699,7 @@ object InnertubeParser {
             // art where a catalogue track has square album cover art.
             isVideo = rowType == "video" || thumbnails.isNotSquare(),
             isExplicit = renderer.hasExplicitBadge(),
+            videoType = renderer.findString("musicVideoType")?.removePrefix("MUSIC_VIDEO_TYPE_"),
         )
     }
 
@@ -742,6 +743,7 @@ object InnertubeParser {
             albumName = credits.albumName,
             isVideo = rowType == "video" || thumbnails.isNotSquare(),
             isExplicit = renderer["subtitleBadges"].hasExplicitBadge(),
+            videoType = renderer.findString("musicVideoType")?.removePrefix("MUSIC_VIDEO_TYPE_"),
         )
     }
 

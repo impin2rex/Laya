@@ -1286,6 +1286,7 @@
     <string name="search_addons_none">有効なアドオンがありません。設定 → ソースで追加してください。</string>
     <string name="app_icon">アプリアイコン</string>
     <string name="app_icon_default">デフォルト</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster のポップアップアプリに Laya が表示されるのは、デフォルトのアイコンを選んでいるときだけです。</string>
     <string name="show_queue_history">キューの履歴を表示</string>
     <string name="show_queue_history_subtitle">キューの「再生中」の上に、再生済みの曲を最大25曲表示します</string>
     <string name="not_enough_this_week">今週もう少し曲を再生するとReplayが解放されます。</string>
@@ -1351,4 +1352,7 @@
     <string name="song_info_error">一部の情報を読み込めませんでした。</string>
     <string name="song_info_retry">再試行</string>
     <string name="user_agent">ユーザーエージェント</string>
+    <string name="no_audio_version">この動画の音声バージョンが見つかりません</string>
+    <string name="no_video_version">この曲の動画バージョンが見つかりません</string>
+    <string name="version_switch_in_party">一緒に聴くでは全員が同じバージョンを聴きます</string>
 </resources>

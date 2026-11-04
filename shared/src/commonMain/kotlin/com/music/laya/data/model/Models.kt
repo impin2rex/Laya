@@ -135,6 +135,12 @@ data class Song(
     val playbackSourceType: PlaybackSourceType? = null,
     /** Browse id for an album, playlist, or other source page. */
     val playbackSourceId: String? = null,
+    /**
+     * What kind of video YouTube Music says a search row is: `OMV` an official music video,
+     * `UGC` an upload, `ATV` the audio track; null where the row doesn't say. Read where the
+     * player looks for a track's music video, and not kept anywhere.
+     */
+    val videoType: String? = null,
 ) {
     /** Legacy derived property: true if and only if [queueTier] is [QueueTier.AUTOPLAY]. */
     val fromAutoplay: Boolean get() = queueTier == QueueTier.AUTOPLAY

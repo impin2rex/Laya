@@ -375,6 +375,8 @@
     <string name="playback">प्लेबैक</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="mini_player_video">मिनी प्लेयर में वीडियो</string>
+    <string name="mini_player_video_subtitle">डेटा और बैटरी बचाने के लिए मिनी प्लेयर में म्यूज़िक वीडियो सबसे कम क्वालिटी पर चलाएँ</string>
     <string name="prefer_usb_dac">USB DAC को प्राथमिकता दें</string>
     <string name="quality_hourly">%1$s · %2$s</string>
     <string name="quality_per_track">%1$s · प्रति ट्रैक %2$s</string>
@@ -699,4 +701,5 @@
     <string name="your_lyrics_card">आपका शब्द कार्ड</string>
     <string name="no_internet_connection">इंटरनेट कनेक्शन नहीं है</string>
     <string name="something_went_wrong">कुछ गड़बड़ हो गई</string>
+    <string name="picture_in_picture">पिक्चर-इन-पिक्चर</string>
 </resources>

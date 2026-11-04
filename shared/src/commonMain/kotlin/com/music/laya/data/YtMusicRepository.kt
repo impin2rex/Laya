@@ -430,7 +430,16 @@ object YtMusicRepository {
                 ?.filterIsInstance<SearchResult.Track>()
                 ?.map { it.song }
                 .orEmpty()
-            TrackMatcher.best(candidates, target)?.let { match ->
+                // A label's "Official Audio" upload is a still over the song, not a picture: a
+                // track with only that has no video to switch to.
+                .filterNot { it.isStillPictureUpload() || it.videoType == "ATV" }
+            // The official music video first. An upload only when it credits the track's own
+            // artist: a fan's re-upload of the song over its cover has the same title and, being
+            // the same audio, the same runtime, which the matcher otherwise lets stand in for a
+            // credit that disagrees.
+            val official = candidates.filter { it.videoType == "OMV" }
+            val uploads = candidates.filter { it.videoType != "OMV" && TrackMatcher.sharesArtist(song.artist, it.artist) }
+            (TrackMatcher.best(official, target) ?: TrackMatcher.best(uploads, target))?.let { match ->
                 Log.d(TAG, "video switch: '${song.title}' -> '${match.title}' ($query)")
                 videoVersionCache[song.videoId] = match
                 return match
@@ -440,6 +449,16 @@ object YtMusicRepository {
         videoVersionCache[song.videoId] = null
         return null
     }
+
+    /** An upload its title says is audio over a still picture, unless it also says it is a video. */
+    internal fun Song.isStillPictureUpload(): Boolean =
+        STILL_PICTURE.containsMatchIn(title) && !SAYS_VIDEO.containsMatchIn(title)
+
+    private val STILL_PICTURE = Regex(
+        """\b(official\s+audio|audio\s+(song|track|only|jukebox)|full\s+audio|visuali[sz]er)\b|[(\[]\s*audio\s*[)\]]""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val SAYS_VIDEO = Regex("""\b(music\s+)?video\b""", RegexOption.IGNORE_CASE)
 
     /** Signed-in profile for the settings header. Null when signed out. */
     suspend fun account(): Result<Account> = call("account") {

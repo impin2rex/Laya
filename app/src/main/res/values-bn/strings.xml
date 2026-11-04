@@ -317,6 +317,7 @@
     <string name="show_nerd_stats_subtitle">প্লেয়ারে কোডেক, বিটরেট আর স্যাম্পল রেট</string>
     <string name="app_icon">অ্যাপ আইকন</string>
     <string name="app_icon_default">ডিফল্ট</string>
+    <string name="app_icon_game_booster_note">শুধু ডিফল্ট আইকন থাকলেই Samsung Game Booster তার পপ-আপ অ্যাপে Laya দেখায়।</string>
     <string name="theme">থিম</string>
     <string name="reduce_animation">অ্যানিমেশন কমান</string>
     <string name="reduce_animation_subtitle">মেন প্লেয়ারের গ্রেডিয়েন্ট না সরে স্থির থাকে</string>
@@ -1141,4 +1142,7 @@
     <string name="song_info_error">কিছু তথ্য লোড করা যায়নি।</string>
     <string name="song_info_retry">আবার চেষ্টা করুন</string>
     <string name="user_agent">ইউজার-এজেন্ট</string>
+    <string name="no_audio_version">এই ভিডিওর অডিও সংস্করণ পাওয়া যায়নি</string>
+    <string name="no_video_version">এই গানের ভিডিও সংস্করণ পাওয়া যায়নি</string>
+    <string name="version_switch_in_party">একসাথে শুনুন-এ সবাই একই সংস্করণ শোনেন</string>
 </resources>

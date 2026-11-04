@@ -29,6 +29,9 @@ internal object DesktopWindowMode {
     private val fillsScreen: WindowPlacement =
         if (DesktopPlatform.drawsOwnWindowFrame) WindowPlacement.Maximized else WindowPlacement.Fullscreen
 
+    /** Where the window sat before a Mac full screen, to go back to. */
+    private var restoreBounds: java.awt.Rectangle? = null
+
     fun toggle() = setFullScreen(!_fullScreen.value)
 
     /**
@@ -69,6 +72,26 @@ internal object DesktopWindowMode {
             // back over it so the window is exactly as it was before fullscreen.
             if (!on) DesktopWindowBackdrop.apply()
             return
+        }
+        // A Mac window drawn in its own frame is borderless, and AppKit gives a borderless window no
+        // full screen of its own — Fullscreen placement and toggleFullScreen: are both ignored, and
+        // AWT's full-screen window leaves Compose drawing at the old height. So: the menu bar and
+        // Dock put away, and the window sized to the whole display — an ordinary resize, which
+        // Compose follows — then put back where it was.
+        if (DesktopPlatform.isMac && DesktopPlatform.drawsOwnWindowFrame) {
+            val window = DesktopWindowVisibility.window
+            if (window != null && DesktopMacFrame.hideMenuBarAndDock(on)) {
+                java.awt.EventQueue.invokeLater {
+                    if (on) {
+                        if (restoreBounds == null) restoreBounds = window.bounds
+                        window.bounds = window.graphicsConfiguration.bounds
+                    } else {
+                        restoreBounds?.let { window.bounds = it }
+                        restoreBounds = null
+                    }
+                }
+                return
+            }
         }
         set(if (on) fillsScreen else WindowPlacement.Floating)
     }

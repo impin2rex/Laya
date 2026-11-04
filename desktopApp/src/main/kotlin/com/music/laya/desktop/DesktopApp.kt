@@ -7,12 +7,14 @@ import com.music.laya.ui.components.ShelfRow
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.pointer.isBackPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import com.music.laya.ui.components.PAGE_GUTTER
 import com.music.laya.ui.components.SourceQualityBadge
 import com.music.laya.ui.components.sourceQualityBadge
@@ -22,6 +24,7 @@ import com.music.laya.ui.replay.ReplayCreditCard
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import com.music.laya.data.YtMusicRepository
+import com.music.laya.data.stats.ListenIdentity
 import com.music.laya.data.model.EntityType
 import com.music.laya.data.model.SearchHistoryEntity
 import com.music.laya.ui.LocalPullToRefreshEnabled
@@ -368,6 +371,12 @@ private val LocalDesktopBottomInset = staticCompositionLocalOf { 0.dp }
 /** Android's own edge on these bars: `Color.White.copy(alpha = 0.10f)`. */
 private val DesktopBarEdge = Color(0x1AFFFFFF)
 private const val POSITION_SAVE_INTERVAL_MS = 5_000L
+
+/** Narrower than this, a video's picture is a cover held still, not one to switch to. */
+private const val MIN_VIDEO_ASPECT = 1.2f
+
+/** A video swapped for its audio release before this far in starts the release from its top. */
+private const val AUTO_AUDIO_FROM_START_MS = 15_000L
 internal val DesktopAccent = Color.White
 
 /** Deleting, signing out, and anything that failed — the one place a colour survives, as on Android. */
@@ -864,7 +873,7 @@ fun LayaDesktopApp() {
         persistence.saveHistory(history)
         playbackEngine.load(song, startPlaying)
         partySyncHolder[0]?.onLocalIntent(song.videoId)
-        scope.launch { DesktopScrobbling.updateNowPlaying(song) }
+        ListenIdentity.known(song)?.let { scope.launch { DesktopScrobbling.updateNowPlaying(it) } }
     }
 
     fun partyTrackChangeBlocked(): Boolean {
@@ -1609,7 +1618,7 @@ fun LayaDesktopApp() {
     playbackEngine = remember {
         DesktopPlaybackEngine(
             onEnded = {
-                selectedSong?.let(DesktopScrobbling::onPlaybackEnded)
+                selectedSong?.let(ListenIdentity::of)?.let(DesktopScrobbling::onPlaybackEnded)
                 if (DesktopSleepTimer.afterTrack.value) {
                     DesktopSleepTimer.cancel()
                 } else if (repeatMode == DesktopRepeatMode.ONE) {
@@ -1635,7 +1644,7 @@ fun LayaDesktopApp() {
                     selectedSong = song
                     history = (listOf(song) + history.filterNot { it.videoId == song.videoId }).take(50)
                     persistence.saveHistory(history)
-                    DesktopScrobbling.updateNowPlaying(song)
+                    ListenIdentity.known(song)?.let { DesktopScrobbling.updateNowPlaying(it) }
                     partySyncHolder[0]?.onLocalIntent()
                 }
             },
@@ -1907,6 +1916,156 @@ fun LayaDesktopApp() {
         }
     }
     val playback by playbackEngine.state.collectAsState()
+    // The music video follows this engine's playhead — see DesktopMusicVideo.
+    DesktopMusicVideo.playback = playbackEngine.state
+
+    // The audio/video switch, as the phone's: the playing track's other cut — its music video or
+    // its audio-only release — looked up as it starts, and swapped in at the playhead. Pairs a
+    // switch has already made are remembered, so the way back needs no second lookup. Never in a
+    // party: everyone in one hears the same cut.
+    //
+    // A video plays as audio unless the listener asked to watch it: as its audio release when
+    // there is one, swapped in from its start, or else as itself with the picture hidden, the
+    // switch then only showing it.
+    val versionSwitching by playbackEngine.versionSwitching.collectAsState()
+    val versionPairs = remember { mutableMapOf<String, Song>() }
+    var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
+    // The video the listener asked to watch.
+    var watching by remember { mutableStateOf<String?>(null) }
+    // Video uploads that came without their video flag — rows from history, a lyric video found
+    // as a song — told apart by their video lookup finding themselves.
+    val videoUploads = remember { mutableStateMapOf<String, Boolean>() }
+    fun asPlayed(song: Song): Song = if (!song.isVideo && videoUploads[song.videoId] == true) song.copy(isVideo = true) else song
+    fun swapTo(other: Song, fromStart: Boolean) {
+        val song = playback.song?.let(::asPlayed) ?: return
+        if (versionSwitching) return
+        // The same queue entry in its other cut, so the queue, the history and the
+        // party's running order still see one item.
+        val target = other.copy(
+            queueTier = song.queueTier,
+            queueEntryId = song.queueEntryId,
+            radioName = song.radioName,
+            playbackSource = song.playbackSource,
+            playbackSourceType = song.playbackSourceType,
+            playbackSourceId = song.playbackSourceId,
+        )
+        // The picture opens while the audio changes over, not after it.
+        if (target.isVideo) {
+            watching = target.videoId
+            DesktopMusicVideo.prepare(target.videoId)
+        }
+        // History follows the listen, not the version playing: told before the swap goes out, so
+        // the player's new id is never mistaken for a new track — see [ListenIdentity].
+        val listen = ListenIdentity.of(song)
+        ListenIdentity.onVersionSwapped(song, target)
+        playbackEngine.swapVersion(target, fromStart) { swapped ->
+            if (!swapped) {
+                ListenIdentity.revert(song, listen)
+                return@swapVersion
+            }
+            scope.launch {
+                versionPairs[target.videoId] = song
+                versionPairs[song.videoId] = target
+                val at = liveQueue.index
+                if (liveQueue.current?.videoId == song.videoId) {
+                    liveQueue = liveQueue.copy(songs = liveQueue.songs.toMutableList().also { it[at] = target })
+                    saveQueue()
+                }
+                if (selectedSong?.videoId == song.videoId) selectedSong = target
+                // The recently played list names the listen, as the account's history does.
+                val listened = ListenIdentity.of(target)
+                if (history.firstOrNull()?.videoId == song.videoId && listened.videoId != song.videoId) {
+                    history = (listOf(listened) + history.drop(1).filterNot { it.videoId == listened.videoId }).take(50)
+                    persistence.saveHistory(history)
+                }
+            }
+        }
+    }
+    LaunchedEffect(playback.song?.videoId, partyState.inParty) {
+        val playing = playback.song
+        alternateVersion = null
+        // Watching is for the track it was asked on: another track — next, previous, or back to
+        // this one later — starts as music again. A switch to the video names it before it plays.
+        if (watching != playing?.videoId) watching = null
+        if (playing == null || partyState.inParty || playing.localUri != null) return@LaunchedEffect
+        if (playing.isVideo) DesktopMusicVideo.prefetch(playing.videoId)
+        var song = asPlayed(playing)
+        val other = versionPairs[song.videoId] ?: withContext(Dispatchers.IO) {
+            runCatching {
+                suspend fun audioOf(video: Song) =
+                    YtMusicRepository.resolveAudio(video).takeIf { it.videoId != video.videoId }
+                if (song.isVideo) {
+                    audioOf(song)
+                } else {
+                    val video = YtMusicRepository.resolveVideo(song)
+                    if (video?.videoId == song.videoId) {
+                        song = song.copy(isVideo = true)
+                        withContext(Dispatchers.Main) { videoUploads[song.videoId] = true }
+                        DesktopMusicVideo.prefetch(song.videoId)
+                        audioOf(song)
+                    } else {
+                        // Only a picture worth watching is offered: a still cover isn't one.
+                        video?.takeIf { v ->
+                            DesktopMusicVideo.prefetch(v.videoId)?.await()?.let { it.aspect >= MIN_VIDEO_ASPECT } == true
+                        }
+                    }
+                }
+            }.getOrNull()
+        }
+        if (other != null && playbackEngine.state.value.song?.videoId == song.videoId) {
+            alternateVersion = song.videoId to other
+            if (song.isVideo && watching != song.videoId) {
+                swapTo(other, fromStart = playbackEngine.state.value.positionMs < AUTO_AUDIO_FROM_START_MS)
+            } else if (other.isVideo) {
+                // Asked now, so a press of the switch finds the video's stream already in hand.
+                DesktopMusicVideo.prefetch(other.videoId)
+            }
+        }
+    }
+    // The floating picture-in-picture window: the player steps aside for it, its buttons come back
+    // here, and it goes when its video stops being the one watched.
+    val pictureInPicture by DesktopPictureInPicture.videoId.collectAsState()
+    LaunchedEffect(pictureInPicture) {
+        if (pictureInPicture != null) {
+            overlays.nowPlaying = false
+            // A full screen the video had is the window's to give back, not the home page's to fill.
+            DesktopWindowMode.exit()
+        }
+    }
+    LaunchedEffect(playback.song?.videoId, watching, pictureInPicture) {
+        val shown = pictureInPicture ?: return@LaunchedEffect
+        if (playback.song?.videoId != shown || watching != shown) DesktopPictureInPicture.close()
+    }
+    SideEffect {
+        DesktopPictureInPicture.onTogglePlay = ::togglePlayPauseFromUser
+        DesktopPictureInPicture.onReturn = {
+            DesktopPictureInPicture.close()
+            DesktopWindowVisibility.show()
+            overlays.nowPlaying = true
+        }
+    }
+    val toggleVersion: (() -> Unit)? = playback.song?.let(::asPlayed)?.let { song ->
+        val other = alternateVersion?.takeIf { (id, _) -> id == song.videoId }?.second
+        when {
+            other != null && !(song.isVideo && watching != song.videoId) -> {
+                {
+                    if (!other.isVideo) watching = null
+                    swapTo(other, fromStart = false)
+                }
+            }
+            song.isVideo && song.localUri == null -> {
+                {
+                    watching = if (watching == song.videoId) {
+                        null
+                    } else {
+                        DesktopMusicVideo.prepare(song.videoId)
+                        song.videoId
+                    }
+                }
+            }
+            else -> null
+        }
+    }
 
     // The shared player reads the playhead off this one object, and only where it
     // draws it — see PlaybackPosition — so a tick never recomposes the player.
@@ -2064,8 +2223,28 @@ fun LayaDesktopApp() {
             rate = playbackSpeed.toDouble(),
         )
     }
+    // The track being listened to — its audio release whenever there is one; see [ListenIdentity].
+    // Null while a video's release is still being looked for, so nothing announces or records the
+    // video meanwhile; kept through a switch between versions, which is the same listen.
+    var listen by remember { mutableStateOf<Song?>(null) }
+    LaunchedEffect(playback.song?.videoId) {
+        val played = playback.song
+        listen = played?.let(ListenIdentity::known)
+        if (played != null && listen == null) {
+            val settled = ListenIdentity.resolve(played)
+            listen = settled
+            DesktopScrobbling.updateNowPlaying(settled)
+            // The recently played list names the listen, as the account's history does.
+            if (settled.videoId != played.videoId && history.firstOrNull()?.videoId == played.videoId) {
+                history = (listOf(settled) + history.drop(1).filterNot { it.videoId == settled.videoId }).take(50)
+                persistence.saveHistory(history)
+            }
+        }
+    }
+    LaunchedEffect(listen?.videoId, playback.isPlaying, playback.durationMs) {
+        DesktopScrobbling.onPlaybackStateChanged(playback.copy(song = listen ?: return@LaunchedEffect))
+    }
     LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs) {
-        DesktopScrobbling.onPlaybackStateChanged(playback)
         DesktopWindowsMedia.publish(playback)
     }
     // Refetched on opening the page rather than cached for the session: the
@@ -2085,41 +2264,44 @@ fun LayaDesktopApp() {
     }
     // Keyed on the same things, plus the rate: Discord counts the bar down on
     // its own clock, so only a change to what it was told is worth another push.
-    LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs, playbackSpeed, playback.streamFormat) {
-        DesktopDiscordRpc.onPlaybackStateChanged(playback, playbackSpeed)
+    LaunchedEffect(listen?.videoId, playback.isPlaying, playback.durationMs, playbackSpeed, playback.streamFormat) {
+        DesktopDiscordRpc.onPlaybackStateChanged(playback.copy(song = listen ?: return@LaunchedEffect), playbackSpeed)
     }
     // The account's own history on YouTube Music, which is what the home feed is built out of.
-    DisposableEffect(playback.song?.videoId) {
+    // Keyed on the listen rather than the version playing, so switching between a track's audio
+    // and its video is one play — see [ListenIdentity].
+    val listenId = listen?.videoId
+    DisposableEffect(listenId) {
         val previous = playbackEngine.state.value.positionMs / 1_000
         onDispose { DesktopPlaybackTracker.onTrackChanged(previous) }
     }
-    LaunchedEffect(playback.song?.videoId, playback.isPlaying) {
-        val songId = playback.song?.videoId ?: return@LaunchedEffect
+    LaunchedEffect(listenId, playback.isPlaying) {
+        val songId = listenId ?: return@LaunchedEffect
         if (!playback.isPlaying) return@LaunchedEffect
         DesktopPlaybackTracker.onPlaying(songId)
         while (currentCoroutineContext().isActive) {
             delay(HISTORY_SAMPLE_MS)
             val snapshot = playbackEngine.state.value
-            if (snapshot.song?.videoId != songId) break
+            if (snapshot.song?.let { ListenIdentity.idOf(it.videoId) } != songId) break
             DesktopPlaybackTracker.onProgress(songId, snapshot.positionMs / 1_000)
         }
     }
-    LaunchedEffect(playback.song?.videoId, playback.isPlaying) {
-        val songId = playback.song?.videoId ?: return@LaunchedEffect
+    LaunchedEffect(listenId, playback.isPlaying) {
+        val songId = listenId ?: return@LaunchedEffect
         if (!playback.isPlaying) return@LaunchedEffect
         var previousPosition = playback.positionMs
         var countedAsPlay = songId in statsCountedSongs
         while (currentCoroutineContext().isActive) {
             delay(STATS_SAMPLE_MS)
             val snapshot = playbackEngine.state.value
-            if (!snapshot.isPlaying || snapshot.song?.videoId != songId) break
+            if (!snapshot.isPlaying || snapshot.song?.let { ListenIdentity.idOf(it.videoId) } != songId) break
             val position = snapshot.positionMs
             val delta = (position - previousPosition).takeIf { it in 1L..STATS_MAX_DELTA_MS } ?: 0L
             if (delta > 0L) {
                 val threshold = snapshot.durationMs.takeIf { it > 0L }?.let { minOf(it / 2L, SCROBBLE_THRESHOLD_MS) }
                     ?: SCROBBLE_THRESHOLD_MS
                 val reachedThreshold = !countedAsPlay && position >= threshold
-                DesktopListeningStats.record(snapshot.song, delta, reachedThreshold)
+                DesktopListeningStats.record(ListenIdentity.of(snapshot.song ?: break), delta, reachedThreshold)
                 if (reachedThreshold) {
                     countedAsPlay = true
                     statsCountedSongs = statsCountedSongs + songId
@@ -3304,8 +3486,20 @@ fun LayaDesktopApp() {
                             openSettings()
                             true
                         }
+                        // Full screen, as a Mac app does it — ahead of ⌘F, which is search.
+                        DesktopPlatform.isMac && event.isMetaPressed && event.isCtrlPressed && event.key == Key.F -> {
+                            DesktopWindowMode.toggle()
+                            true
+                        }
                         DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.F -> {
                             searchFocusRequested = true
+                            true
+                        }
+                        // F alone, as in any video player — only over a music video in the player,
+                        // so it is never a letter typed somewhere else.
+                        event.key == Key.F && !event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed &&
+                            overlays.nowPlaying && watching != null && playbackEngine.state.value.song?.videoId == watching -> {
+                            DesktopWindowMode.toggle()
                             true
                         }
                         DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.W -> {
@@ -3319,6 +3513,11 @@ fun LayaDesktopApp() {
                         // One layer at a time, innermost first: the player's own side panel, then
                         // the player.
                         event.key == Key.Escape -> when {
+                            // Out of full screen before anything else, as a video player does.
+                            overlays.nowPlaying && DesktopWindowMode.fullScreen.value -> {
+                                DesktopWindowMode.exit()
+                                true
+                            }
                             // The player's own layers first — the lyrics, the queue, a
                             // drawer — in the order Android's back reaches them.
                             overlays.nowPlaying && PlayerBack.dispatch() -> true
@@ -3346,6 +3545,7 @@ fun LayaDesktopApp() {
                     DesktopTopBar(
                         compact = compact,
                         song = selectedSong,
+                        videoId = watching?.takeIf { it == selectedSong?.videoId },
                         isPlaying = playback.isPlaying,
                         isLoading = playback.isLoading,
                         previousEnabled = liveQueue.hasPrevious ||
@@ -3412,6 +3612,7 @@ fun LayaDesktopApp() {
                         compact = compact,
                         destination = destination,
                         song = selectedSong,
+                        videoId = watching?.takeIf { it == selectedSong?.videoId },
                         isPlaying = playback.isPlaying,
                         onDestinationSelected = ::selectDestination,
                         onExpand = { overlays.nowPlaying = true },
@@ -3476,12 +3677,14 @@ fun LayaDesktopApp() {
                             }
                             ?: current
                         NowPlayingScreen(
-                            song = playerSong,
+                            song = asPlayed(playerSong),
                             isPlaying = playback.isPlaying,
                             isLoading = playback.isLoading,
                             position = playerPosition,
                             durationMs = playback.durationMs,
-                            audioVersionSwitching = false,
+                            audioVersionSwitching = versionSwitching,
+                            onToggleVideo = toggleVersion,
+                            pictureShown = watching == playerSong.videoId,
                             qualityUpgraded = false,
                             queue = liveQueue.songs,
                             queueIndex = liveQueue.index,
@@ -4475,6 +4678,8 @@ fun LayaDesktopApp() {
 private fun DesktopTopBar(
     compact: Boolean,
     song: Song?,
+    /** The music video playing as [song], for the cover slot — see [DesktopMiniPlayerVideo]. */
+    videoId: String?,
     isPlaying: Boolean,
     isLoading: Boolean,
     previousEnabled: Boolean,
@@ -4648,11 +4853,10 @@ private fun DesktopTopBar(
                                     }
                                 } else {
                                     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                                        DesktopArtwork(
-                                            song.thumbnailUrl,
-                                            Modifier.size(44.dp).clip(RoundedCornerShape(3.dp)),
-                                            px = ROW_ART_PX,
-                                        )
+                                        Box(Modifier.size(44.dp).clip(RoundedCornerShape(3.dp))) {
+                                            DesktopArtwork(song.thumbnailUrl, Modifier.matchParentSize(), px = ROW_ART_PX)
+                                            DesktopMiniPlayerVideo(videoId, Modifier.matchParentSize())
+                                        }
                                         Column(
                                             Modifier.weight(1f).padding(start = 12.dp, end = 56.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -5083,6 +5287,7 @@ private fun DesktopBottomChrome(
     compact: Boolean,
     destination: DesktopDestination,
     song: Song?,
+    videoId: String?,
     isPlaying: Boolean,
     onDestinationSelected: (DesktopDestination) -> Unit,
     onExpand: () -> Unit,
@@ -5099,6 +5304,7 @@ private fun DesktopBottomChrome(
         if (compact) {
             DesktopMiniPlayer(
                 song = song,
+                videoId = videoId,
                 isPlaying = isPlaying,
                 onExpand = onExpand,
                 onPlayPause = onPlayPause,
@@ -5160,6 +5366,8 @@ private fun DesktopFloatingNavigation(
 @Composable
 private fun DesktopMiniPlayer(
     song: Song?,
+    /** The music video playing as [song], for the cover slot — see [DesktopMiniPlayerVideo]. */
+    videoId: String?,
     isPlaying: Boolean,
     onExpand: () -> Unit,
     onPlayPause: () -> Unit,
@@ -5188,7 +5396,10 @@ private fun DesktopMiniPlayer(
             }
             Spacer(Modifier.weight(1f))
         } else {
-            DesktopArtwork(song.thumbnailUrl, Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)), px = ROW_ART_PX)
+            Box(Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))) {
+                DesktopArtwork(song.thumbnailUrl, Modifier.matchParentSize(), px = ROW_ART_PX)
+                DesktopMiniPlayerVideo(videoId, Modifier.matchParentSize())
+            }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
@@ -6599,6 +6810,13 @@ private fun DesktopSettingsScreen(
                         ],
                         automaticUpdates,
                         DesktopUpdater::setAutomatic,
+                    )
+                    val miniPlayerVideo by DesktopAppearanceSettings.miniPlayerVideo.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["mini_player_video", "Video in mini player"],
+                        DesktopStrings["d_mini_player_video_subtitle", "Play a music video in the mini player's cover"],
+                        miniPlayerVideo,
+                        DesktopAppearanceSettings::setMiniPlayerVideo,
                     )
                     val hideVolumeBar by DesktopAppearanceSettings.hideVolumeBar.collectAsState()
                     SettingsToggle(

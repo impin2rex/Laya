@@ -223,4 +223,5 @@
     <string name="reverb_width">宽度</string>
     <string name="reverb_width_help">尾音的立体声宽度，从单声道到全宽。</string>
     <string name="reverb_reset">恢复默认设置</string>
+    <string name="picture_in_picture">画中画</string>
 </resources>

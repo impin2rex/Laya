@@ -202,4 +202,5 @@
     <string name="reverb_width">প্রস্থ</string>
     <string name="reverb_width_help">রেশের স্টেরিও বিস্তার, মোনো থেকে পুরো প্রস্থ পর্যন্ত।</string>
     <string name="reverb_reset">ডিফল্টে রিসেট করুন</string>
+    <string name="picture_in_picture">ছবির ভিতরে ছবি</string>
 </resources>

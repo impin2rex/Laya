@@ -1309,6 +1309,7 @@
     <string name="search_addons_none">Aucun addon n\'est activé. Ajoutez-en un dans Réglages → Sources.</string>
     <string name="app_icon">Icône de l\'app</string>
     <string name="app_icon_default">Par défaut</string>
+    <string name="app_icon_game_booster_note">Samsung Game Booster n’affiche Laya dans ses applis en fenêtre contextuelle qu’avec l’icône par défaut.</string>
     <string name="show_queue_history">Afficher l\'historique de la file</string>
     <string name="show_queue_history_subtitle">Affiche jusqu\'à 25 titres déjà écoutés au-dessus de « En cours de lecture » dans la file</string>
     <string name="not_enough_this_week">Écoutez encore quelques titres cette semaine pour débloquer votre Replay.</string>
@@ -1374,4 +1375,7 @@
     <string name="song_info_error">Certaines informations n’ont pas pu être chargées.</string>
     <string name="song_info_retry">Réessayer</string>
     <string name="user_agent">Agent utilisateur</string>
+    <string name="no_audio_version">Aucune version audio trouvée pour cette vidéo</string>
+    <string name="no_video_version">Aucune version vidéo trouvée pour ce titre</string>
+    <string name="version_switch_in_party">Dans Écouter ensemble, tout le monde entend la même version</string>
 </resources>

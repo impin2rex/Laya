@@ -1,6 +1,8 @@
 package com.music.laya.data.innertube
 
 import com.music.laya.data.TrackLog
+import com.music.laya.data.model.Song
+import com.music.laya.data.stats.ListenIdentity
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.platform.ioDispatcher
 import kotlin.concurrent.Volatile
@@ -111,7 +113,18 @@ object PlaybackTracker {
      * queue moves on. A no-op while the same track is already being tracked, so
      * a pause/resume does not register a second play.
      */
-    fun onPlaying(videoId: String) {
+    fun onPlaying(played: Song) {
+        // The listen's own track — its audio release, whenever there is one; see [ListenIdentity]
+        // — not whichever version of it is playing. Settled before anything is registered.
+        val known = ListenIdentity.known(played)
+        if (known == null) {
+            scope.launch(TrackLog.about(played.videoId)) { register(ListenIdentity.resolve(played).videoId) }
+        } else {
+            register(known.videoId)
+        }
+    }
+
+    private fun register(videoId: String) {
         if (!VIDEO_ID.matches(videoId)) return
         if (Innertube.cookie == null) return
         // A downloaded track plays perfectly well with the radio off — the
@@ -135,6 +148,27 @@ object PlaybackTracker {
     }
 
     /**
+     * The playing track became its other video/audio version mid-play. Still the same listen —
+     * see [ListenIdentity] — so switching to the video keeps the play the audio release's, with no
+     * second history entry. Switching from a video to its audio release makes the play the
+     * audio's: registered as that, the video's own play (if it had got that far) closed out.
+     */
+    fun onVersionSwapped(from: Song, to: Song) {
+        val before = ListenIdentity.of(from).videoId
+        val listen = ListenIdentity.onVersionSwapped(from, to).videoId
+        if (listen == before) return
+        if (opening == before) opening = null
+        val closing = session?.takeIf { it.videoId == before }
+        if (closing != null) {
+            session = null
+            scope.launch(TrackLog.about(closing.videoId)) {
+                runCatching { flush(closing, maxOf(closing.reportedSeconds, closing.flushingTo), final = true) }
+            }
+        }
+        register(listen)
+    }
+
+    /**
      * Call when the queue moves to a different track. The previous session's
      * watched time is flushed before it is dropped, so a track skipped at the
      * two-minute mark is reported as two minutes rather than lost.
@@ -155,7 +189,8 @@ object PlaybackTracker {
      * Cheap to call often — it only hits the network every
      * [REPORT_INTERVAL_SECONDS] of new audio.
      */
-    fun onProgress(videoId: String, positionSeconds: Long) {
+    fun onProgress(playedId: String, positionSeconds: Long) {
+        val videoId = ListenIdentity.idOf(playedId)
         val current = session ?: return
         if (current.videoId != videoId) return
         if (!current.atrSent && positionSeconds >= current.tracking.atrAfterSeconds) {

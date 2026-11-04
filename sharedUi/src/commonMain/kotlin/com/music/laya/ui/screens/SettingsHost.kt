@@ -21,6 +21,8 @@ class BackupActions(val export: () -> Unit, val import: () -> Unit)
  * row behind it is hidden — which is how iOS runs; Android installs the real thing at start.
  */
 interface SettingsHost {
+    /** Whether the mini player can show a music video, which offers its setting. */
+    val musicVideoInMiniPlayer: Boolean get() = false
     /** null hides the Dolby Atmos row; otherwise whether this device can decode it. */
     val playsDolbyAtmos: Boolean? get() = null
     val party: StateFlow<PartyInfo> get() = NO_PARTY

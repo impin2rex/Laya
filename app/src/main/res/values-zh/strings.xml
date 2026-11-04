@@ -1279,6 +1279,7 @@
     <string name="search_addons_none">未启用任何插件。请在“设置 → 音源”中添加。</string>
     <string name="app_icon">应用图标</string>
     <string name="app_icon_default">默认</string>
+    <string name="app_icon_game_booster_note">只有使用默认图标时，Samsung Game Booster 才会在弹出式应用中列出 Laya。</string>
     <string name="show_queue_history">显示队列历史</string>
     <string name="show_queue_history_subtitle">在队列中“正在播放”上方显示最多 25 首已播放的歌曲</string>
     <string name="not_enough_this_week">本周再多播放几首歌曲即可解锁你的 Replay。</string>
@@ -1350,4 +1351,7 @@
     <string name="artist_signatures_test_failed">无法连接到该地址的 API</string>
     <string name="signed_by">%1$s 的签名</string>
     <string name="user_agent">用户代理</string>
+    <string name="no_audio_version">未找到此视频的音频版本</string>
+    <string name="no_video_version">未找到此歌曲的视频版本</string>
+    <string name="version_switch_in_party">一起听时，所有人听到的是同一版本</string>
 </resources>
