@@ -1131,6 +1131,11 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     override fun onSystemPause() = party.onSystemPause()
     override fun onRemoteNext() = next()
     override fun onRemotePrevious() = previous()
+    override fun onRemoteLike() { onRemoteLike?.invoke() }
+
+    /** The app's own like toggle, for the lock screen's Like / Favorite. Set by the UI, which owns likes. */
+    var onRemoteLike: (() -> Unit)? = null
+    fun setLockScreenLike(available: Boolean, liked: Boolean) = engine.setLikeState(available, liked)
 }
 
 /** The member a party's AutoPlay queue comes from: the host, else the lowest id among those connected. */

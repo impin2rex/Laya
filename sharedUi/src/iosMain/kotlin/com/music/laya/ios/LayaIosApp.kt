@@ -398,6 +398,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             )
         }.distinctUntilChanged().collect { IosWidgets.publish(it) }
     }
+    // The lock screen's Like / Favorite, under the widget's rule plus: not a download, not an addon's track —
+    // neither has a YouTube rating to set.
+    val downloaded by IosDownloads.savedIds.collectAsState()
+    fun canLikeOnLockScreen(song: Song?) = signedIn && song != null && song.localUri == null &&
+        song.videoId !in downloaded && SourceRegistry.parseTrackKey(song.videoId) == null
+    LaunchedEffect(player) {
+        player.onRemoteLike = { player.song?.takeIf(::canLikeOnLockScreen)?.let { toggleLike(it.videoId) } }
+        snapshotFlow { player.song.let { canLikeOnLockScreen(it) to (it != null && isLiked(it.videoId)) } }
+            .distinctUntilChanged()
+            .collect { (available, liked) -> player.setLockScreenLike(available, liked) }
+    }
     LaunchedEffect(Unit) {
         // Only once the library has an answer: signed out is empty, still loading leaves the last row up.
         snapshotFlow { if (!signedIn) emptyList() else (library as? UiState.Success)?.data?.likedSongs?.take(5) }

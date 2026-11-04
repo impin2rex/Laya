@@ -43,6 +43,9 @@ interface AudioEngine {
 
     fun setNowPlaying(title: String, artist: String, album: String?, artworkUrl: String?)
     fun setQueueCapabilities(hasNext: Boolean, hasPrevious: Boolean)
+
+    /** The lock screen's Like / Favorite: offered only when [available] (signed in, an online YouTube track), filled when [liked]. */
+    fun setLikeState(available: Boolean, liked: Boolean)
     fun setListener(listener: AudioEngineListener?)
 
     /** The system output volume, 0..1. iOS only lets an app set it through a (hidden) MPVolumeView slider. */
@@ -73,4 +76,6 @@ interface AudioEngineListener {
     fun onSystemPause()
     fun onRemoteNext()
     fun onRemotePrevious()
+    /** Like / Favorite tapped on the lock screen or Control Center: toggles the playing track's like. */
+    fun onRemoteLike()
 }
