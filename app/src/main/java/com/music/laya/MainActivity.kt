@@ -4436,6 +4436,10 @@ private fun LayaApp(
                 // and drag handle included — see SongActionsSheet.
                 containerColor = Color.Transparent,
                 dragHandle = null,
+                // The sheet keeps clear of the navigation bar itself, its colours
+                // running on under it: padded out here, the transparent container
+                // left a see-through strip below the last row.
+                contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
             ) {
                 songMenuBody(song, SongActionsPresentation.Sheet)
             }

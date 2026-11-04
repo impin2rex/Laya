@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -503,7 +504,8 @@ private fun TintedSheet(
             washFraction = 0.75f,
             artPx = ROW_ART_PX,
         )
-        Column(Modifier.fillMaxWidth().heightIn(max = maxHeight)) {
+        // Rows clear of the navigation bar; the backdrop above runs on under it.
+        Column(Modifier.fillMaxWidth().heightIn(max = maxHeight).navigationBarsPadding()) {
             // Drawn rather than taken from BottomSheetDefaults, whose handle
             // carries 22dp of padding on each side — half a row's worth of
             // nothing between the grip and the track it is about. Kept outside
