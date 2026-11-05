@@ -20,6 +20,15 @@
       "screenshots": [],
       "versions": [
         {
+          "version": "1.9.2",
+          "buildVersion": "33",
+          "date": "2026-11-05T03:20:27Z",
+          "localizedDescription": "- Music videos with the audio/video switch; VP9 up to 4K on iOS 26.2 and later.\n- Video plays in the mini player too (Settings), and keeps playing while the player expands, collapses or rotates.\n- Picture-in-picture, which also starts by itself when you leave the app with a video playing.\n- With video in the mini player on, the lyrics and queue header plays the video instead of showing the album art.\n- Long videos no longer run the app out of memory.\n- The player menu no longer climbs to the top of the screen and jumps.\n- Swiping a song to the queue adds it once, not several times.",
+          "downloadURL": "https://github.com/impin2rex/Laya/releases/download/v1.9.2/Laya-1.9.2-ios.ipa",
+          "size": 80322788,
+          "minOSVersion": "16.0"
+        },
+        {
           "version": "1.9.1",
           "buildVersion": "32",
           "date": "2026-10-30T16:47:24Z",
