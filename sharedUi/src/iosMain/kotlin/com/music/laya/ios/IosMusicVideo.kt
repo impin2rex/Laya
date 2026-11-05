@@ -12,11 +12,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -61,6 +61,7 @@ import platform.AVFoundation.currentItem
 import platform.AVFoundation.currentTime
 import platform.AVFoundation.muted
 import platform.AVFoundation.pause
+import platform.AVFoundation.duration
 import platform.AVFoundation.preferredMaximumResolution
 import platform.AVFoundation.presentationSize
 import platform.AVFoundation.preventsDisplaySleepDuringVideoPlayback
@@ -134,7 +135,7 @@ internal object IosMusicVideo {
     /** The newest frame of the playing picture, whichever surface shows it. */
     val frame = MutableStateFlow<VideoFrame?>(null)
 
-    class VideoFrame(val videoId: String, val image: ImageBitmap)
+    class VideoFrame(val videoId: String, val image: Image)
 
     fun setQuality(height: Int?) {
         NSUserDefaults.standardUserDefaults.setInteger((height ?: 0).convert(), KEY_QUALITY)
@@ -245,6 +246,11 @@ internal object IosMusicVideo {
     /** [want]'s picture, loaded unless it is the one in hand — and the one the floating window plays. */
     private fun load(want: String) {
         if (want == pictureId) return applyCap()
+        // Another video while the window floats — the next track, the previous one, a video
+        // ending into the next: it starts as music, as on Android, so the window closes. Left to
+        // the follow loop, it never would: that compares the track with the picture, and by the
+        // time it looked the picture was already the new video.
+        if (pipActive) pip?.stopPictureInPicture()
         unload()
         pictureId = want
         loadJob = scope.launch {
@@ -254,7 +260,7 @@ internal object IosMusicVideo {
             val made = withContext(NonCancellable + Dispatchers.Default) { HlsPicture(url) }
             if (pictureId != want) return@launch made.release()
             picture = made
-            // The floating window goes on with the next video rather than the last one's frozen frame.
+            // The layer the next window flies out of plays this video, not the last one's frozen frame.
             pipLayer?.player = made.player
             made.viewSize = viewSize()
             applyCap()
@@ -302,8 +308,23 @@ internal object IosMusicVideo {
             // Floating, and the track changed — the next one, the last one, or the switch to audio:
             // a new track starts as music, so the window has nothing of it to show and goes.
             val track = audio?.song
-            if (pipActive && track != null && track.videoId != pictureId) pip?.stopPictureInPicture()
-            if (audio != null) {
+            if (track != null && track.videoId != pictureId) {
+                // Not this picture's track any more: it is never held to another track's clock —
+                // that put the last video back at its start, playing in the window, as the next
+                // song began — and it waits, paused, for the app to put the new track's up.
+                p.player?.pause()
+                p.lastRateSet = 0f
+                if (pipActive) {
+                    val now = currentTimeMillis()
+                    if (pipClosingSince == 0L) {
+                        pipClosingSince = now
+                        TrackLog.d(TAG, "picture-in-picture closing: the track is now ${track.videoId}", about = pictureId)
+                        pip?.stopPictureInPicture()
+                    } else if (now - pipClosingSince > PIP_FORCE_CLOSE_MS) {
+                        forceClosePictureInPicture()
+                    }
+                }
+            } else if (audio != null) {
                 val playing = audio.isPlaying && !audio.isLoading
                 // Off screen and not floating: the picture rests.
                 if (!pipActive || !pipControls(p, audio, playing)) p.follow(audio.audioClockMs(), playing && (foreground || pipActive))
@@ -323,6 +344,9 @@ internal object IosMusicVideo {
     val pictureInPictureSupported: Boolean get() = AVPictureInPictureController.isPictureInPictureSupported()
 
     @Volatile private var pipActive = false
+
+    /** When the window was asked to close for a track change, or 0 — see [follow]. */
+    private var pipClosingSince = 0L
     private var pip: AVPictureInPictureController? = null
     private var pipLayer: AVPlayerLayer? = null
 
@@ -370,6 +394,25 @@ internal object IosMusicVideo {
                 canStartPictureInPictureAutomaticallyFromInline = true
             }
         }
+    }
+
+    /**
+     * The window, shut without iOS's say-so. Asked to stop with the app in the background, iOS
+     * leaves it floating until the app is opened again — the last video's frame over the next
+     * song for as long as nobody looks. Taking its picture, its layer and its controller away
+     * ends it now.
+     */
+    private fun forceClosePictureInPicture() {
+        TrackLog.d(TAG, "picture-in-picture didn't close when asked; shutting it", about = pictureId)
+        pipLayer?.player = null
+        pip?.delegate = null
+        pip = null
+        pipView?.removeFromSuperview()
+        pipView = null
+        pipLayer = null
+        pipActive = false
+        pipClosingSince = 0L
+        if (surfaces.isEmpty()) unload() else applyCap()
     }
 
     private fun dropPictureInPicture() {
@@ -449,6 +492,7 @@ internal object IosMusicVideo {
     private fun pictureInPictureStarted() {
         TrackLog.d(TAG, "picture-in-picture starting", about = pictureId)
         pipActive = true // held from now, so a release in the meantime doesn't take the picture
+        pipClosingSince = 0L
         pipFront(false)
         applyCap()
     }
@@ -456,6 +500,7 @@ internal object IosMusicVideo {
     private fun endPictureInPicture() {
         TrackLog.d(TAG, "picture-in-picture ended", about = pictureId)
         pipActive = false
+        pipClosingSince = 0L
         pipFront(false)
         if (surfaces.isEmpty()) unload() else applyCap()
         preparePictureInPicture()
@@ -469,7 +514,12 @@ internal object IosMusicVideo {
      */
     private fun pipControls(p: HlsPicture, audio: IosPlayer, playing: Boolean): Boolean {
         val pictureRuns = (p.player?.rate ?: 0f) > 0f
-        if (pictureRuns == (p.lastRateSet > 0f) || pictureRuns == playing) {
+        // A video that played to its end has stopped by itself, not by the window's pause button:
+        // the music goes on into the next track.
+        val item = p.player?.currentItem
+        val atEnd = item != null &&
+            CMTimeGetSeconds(item.currentTime()) >= CMTimeGetSeconds(item.duration) - END_SLACK_S
+        if (atEnd || pictureRuns == (p.lastRateSet > 0f) || pictureRuns == playing) {
             pipDisagreeSince = 0L
             return false
         }
@@ -527,6 +577,12 @@ internal object IosMusicVideo {
     private const val RELEASE_GRACE_MS = 4_000L
     private const val PIP_INTENT_MS = 400L
 
+    /** How long a window asked to close is given before it is shut: iOS ignores the ask in the background. */
+    private const val PIP_FORCE_CLOSE_MS = 1_000L
+
+    /** Within this of its end, a stopped picture has finished rather than been paused. */
+    private const val END_SLACK_S = 0.75
+
     /** The tallest variant the mini player's 40 pt slot asks for. */
     private const val MINI_HEIGHT = 240
 
@@ -538,6 +594,9 @@ internal object IosMusicVideo {
     private const val KEY_QUALITY = "music_video_quality"
     private const val TAG = "Laya"
 }
+
+/** Frames held open at once: the newest on screen and the few a draw may still be reading. */
+private const val FRAMES_KEPT = 4
 
 /**
  * One picture: a muted AVPlayer on the video's HLS playlist whose frames are pulled through an
@@ -555,7 +614,16 @@ private class HlsPicture(url: String) {
     private var output: AVPlayerItemVideoOutput? = null
     private var outputSize = IntSize.Zero
 
-    /** Images handed out, oldest first: one is closed only once two newer ones have taken its place on screen. */
+    /**
+     * Frames handed out, oldest first, each closed as soon as [FRAMES_KEPT] newer ones have taken
+     * its place on screen.
+     *
+     * Skia images, drawn straight onto the canvas (see [drawPicture]) and closed here — never
+     * turned into Compose ImageBitmaps. toComposeImageBitmap copies each frame into a bitmap of
+     * its own that only Kotlin's collector frees, and the collector runs on Kotlin allocations,
+     * not on the ~10 MB of native pixels each of those holds: at 30 frames a second they piled
+     * up into gigabytes, and iOS killed the app over its memory limit.
+     */
     private val images = ArrayDeque<Image>()
     private var bytes = ByteArray(0)
 
@@ -642,7 +710,7 @@ private class HlsPicture(url: String) {
     }
 
     /** The newest decoded frame, or null when nothing new arrived since the last call. Off the main thread. */
-    fun nextFrame(): ImageBitmap? {
+    fun nextFrame(): Image? {
         val item = player?.currentItem ?: return null
         val o = outputFor(item) ?: return null
         val t = o.itemTimeForHostTime(CACurrentMediaTime())
@@ -658,8 +726,8 @@ private class HlsPicture(url: String) {
             CVPixelBufferUnlockBaseAddress(buf, 1uL)
             val img = Image.makeRaster(ImageInfo(w, h, ColorType.BGRA_8888, ColorAlphaType.PREMUL), bytes, rb)
             images.addLast(img)
-            while (images.size > 3) images.removeFirst().close()
-            return img.toComposeImageBitmap()
+            while (images.size > FRAMES_KEPT) images.removeFirst().close()
+            return img
         } finally {
             CVBufferRelease(buf)
         }
@@ -711,20 +779,25 @@ internal fun IosMusicVideoSurface(
     }
 }
 
-/** [f] fitted into ([fit]) or cropped to this canvas, centred. */
-private fun DrawScope.drawPicture(f: ImageBitmap, fit: Boolean) {
+/** [f] fitted into ([fit]) or cropped to this canvas, centred. Drawn on Skia's own canvas: see [HlsPicture.images]. */
+private fun DrawScope.drawPicture(f: Image, fit: Boolean) {
     val aspect = f.width.toFloat() / f.height
     val viewAspect = size.width / size.height
     val widthLimited = if (fit) aspect > viewAspect else aspect <= viewAspect
     val w = if (widthLimited) size.width else size.height * aspect
     val h = if (widthLimited) size.width / aspect else size.height
+    val left = (size.width - w) / 2
+    val top = (size.height - h) / 2
     clipRect {
-        drawImage(
-            f,
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(f.width, f.height),
-            dstOffset = IntOffset(((size.width - w) / 2).toInt(), ((size.height - h) / 2).toInt()),
-            dstSize = IntSize(w.toInt(), h.toInt()),
-        )
+        drawIntoCanvas { canvas ->
+            canvas.nativeCanvas.drawImageRect(
+                f,
+                org.jetbrains.skia.Rect.makeWH(f.width.toFloat(), f.height.toFloat()),
+                org.jetbrains.skia.Rect.makeXYWH(left, top, w, h),
+                org.jetbrains.skia.SamplingMode.LINEAR,
+                null,
+                true,
+            )
+        }
     }
 }
