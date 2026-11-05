@@ -18,6 +18,7 @@ import com.music.laya.data.innertube.PlayerClient
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
+import com.music.laya.data.model.artworkAt
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TrackAnalysisState
@@ -842,7 +843,9 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private fun announce() {
         Karaoke.trackChanged(song?.videoId) // karaoke is per song, as on Android
         bindKaraoke()
-        song?.let { engine.setNowPlaying(it.title, it.artist, it.albumName, it.thumbnailUrl) }
+        // Sized for the lock screen, which shows the cover up to its full width: the track's own
+        // URL is a list row's thumbnail (often 60 or 120 px) and came out blurred there (#27).
+        song?.let { engine.setNowPlaying(it.title, it.artist, it.albumName, it.artworkAt(LOCK_SCREEN_ART_PX) ?: it.thumbnailUrl) }
         engine.setQueueCapabilities(hasNext, hasPrevious)
     }
 
@@ -1139,6 +1142,9 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 }
 
 /** The member a party's AutoPlay queue comes from: the host, else the lowest id among those connected. */
+/** The lock screen and Control Center cover: a Pro Max's lock screen is 1290 px across. */
+private const val LOCK_SCREEN_ART_PX = 1200
+
 /** PlaybackService.PROGRESS_SAMPLE_MS: the listening record is fed on this beat. */
 private const val LISTEN_SAMPLE_MS = 5_000L
 
