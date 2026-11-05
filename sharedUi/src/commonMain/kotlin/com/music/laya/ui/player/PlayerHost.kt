@@ -187,6 +187,8 @@ data class MusicVideoQualityUi(
     val held: Int? = null,
     /** The height actually on screen. */
     val activeHeight: Int? = null,
+    /** Heights of this video that failed to play on this device: offered greyed out, where shown. */
+    val failed: Set<Int> = emptySet(),
 )
 
 /** How a height is named on screen: the marketing name where there is one, the height otherwise. */

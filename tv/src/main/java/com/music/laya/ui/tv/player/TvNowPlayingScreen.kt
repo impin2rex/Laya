@@ -19,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.ui.unit.dp
+import com.music.laya.ui.tv.components.tvInitialFocus
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +61,7 @@ private const val ScrubStepMs = 10_000L
 /** How long the scrubber waits for more presses before it actually seeks. */
 private const val ScrubCommitDelayMs = 650L
 
-private enum class PlayerSheet { Menu }
+private enum class PlayerSheet { Menu, VideoQuality }
 
 /**
  * Now Playing, as Apple Music has it on Apple TV.
@@ -334,8 +337,10 @@ fun TvNowPlayingScreen(
                 durationMs = durationMs,
                 scrubTarget = scrubTarget,
                 isLiked = isLiked,
-                lyricsAvailable = hasLyrics,
-                lyricsOn = showLyrics,
+                // Over a music video the lyrics button is the way back to the song, lyrics up:
+                // the video covers the stage they would show on.
+                lyricsAvailable = hasLyrics || (videoMode && toggleVideo != null),
+                lyricsOn = showLyrics && !videoMode,
                 lyricVersions = lyricVersions,
                 upNextOpen = upNextOpen,
                 scrubberFocus = scrubberFocus,
@@ -345,11 +350,20 @@ fun TvNowPlayingScreen(
                 },
                 onOpenUpNext = { upNextOpen = true },
                 onToggleLike = { viewModel.toggleLike(song.videoId) },
-                onToggleLyrics = { lyricsHidden = !lyricsHidden },
+                onToggleLyrics = {
+                    val backToSong = toggleVideo?.takeIf { videoMode }
+                    if (backToSong != null) {
+                        lyricsHidden = false
+                        backToSong()
+                    } else {
+                        lyricsHidden = !lyricsHidden
+                    }
+                },
                 onToggleUpNext = { upNextOpen = !upNextOpen },
                 onMore = { sheet = PlayerSheet.Menu },
                 onToggleVideo = toggleVideo,
                 playingVideo = videoMode,
+                onOpenVideoQuality = if (videoMode) ({ sheet = PlayerSheet.VideoQuality }) else null,
                 versionSwitching = versionSwitching,
                 upNext = {
                     TvUpNext(
@@ -397,6 +411,61 @@ fun TvNowPlayingScreen(
             onToggleLike = { viewModel.toggleLike(song.videoId) },
             onDismiss = { sheet = null },
         )
+        PlayerSheet.VideoQuality -> TvVideoQualityDialog(onDismiss = { sheet = null })
         null -> Unit
+    }
+}
+
+/**
+ * The phone's video quality drawer as a tvOS alert: Auto, then every height the playing video
+ * offers. A pick is held from then on, for the next video too, where that video has it.
+ */
+@Composable
+private fun TvVideoQualityDialog(onDismiss: () -> Unit) {
+    val engine = com.music.laya.ui.player.MusicVideoEngine
+    val quality by engine.quality.collectAsState()
+    // What is on screen when it is lower than the pick: this TV couldn't play the pick.
+    val playing = quality.activeHeight
+    fun label(height: Int) = when {
+        height >= 2160 -> "4K"
+        height >= 1440 -> "2K"
+        height >= 1080 -> "Full HD"
+        height >= 720 -> "HD"
+        else -> "${height}p"
+    }
+    com.music.laya.ui.tv.components.TvDialog(title = "Video Quality", onDismissRequest = onDismiss) {
+        androidx.compose.foundation.layout.Column(
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(5.dp),
+        ) {
+            com.music.laya.ui.tv.components.TvListRow(
+                title = "Auto",
+                value = if (quality.held == null) playing?.let(::label) else null,
+                trailingIcon = if (quality.held == null) androidx.compose.material.icons.Icons.Rounded.Check else null,
+                modifier = Modifier.tvInitialFocus(),
+                onClick = {
+                    engine.setQuality(null)
+                    onDismiss()
+                },
+            )
+            quality.heights.forEach { height ->
+                val picked = quality.held == height
+                // Failed to play on this TV: shown, but not offered.
+                val failed = height in quality.failed
+                com.music.laya.ui.tv.components.TvListRow(
+                    title = label(height),
+                    value = when {
+                        failed -> "Can't play on this TV"
+                        picked && playing != null && playing < height -> "${playing}p playing"
+                        else -> "${height}p"
+                    },
+                    trailingIcon = if (picked) androidx.compose.material.icons.Icons.Rounded.Check else null,
+                    enabled = !failed,
+                    onClick = {
+                        engine.setQuality(height)
+                        onDismiss()
+                    },
+                )
+            }
+        }
     }
 }

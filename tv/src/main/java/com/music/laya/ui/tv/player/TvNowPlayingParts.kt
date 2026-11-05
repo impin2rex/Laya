@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Waves
+import androidx.compose.material.icons.rounded.Hd
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -347,6 +348,8 @@ internal fun TvTransport(
     /** Switches between the song and its music video, from the same moment; null when there is no other cut. */
     onToggleVideo: (() -> Unit)? = null,
     playingVideo: Boolean = false,
+    /** Opens the music video's quality picker; null while no video plays. */
+    onOpenVideoQuality: (() -> Unit)? = null,
     versionSwitching: Boolean = false,
 ) {
     val showStats by AppSettings.showNerdStats.collectAsState()
@@ -397,6 +400,13 @@ internal fun TvTransport(
                         active = playingVideo,
                         enabled = !versionSwitching,
                         onClick = onToggleVideo,
+                    )
+                }
+                if (onOpenVideoQuality != null) {
+                    TvTransportButton(
+                        icon = Icons.Rounded.Hd,
+                        contentDescription = "Video quality",
+                        onClick = onOpenVideoQuality,
                     )
                 }
                 TvTransportButton(
@@ -489,11 +499,16 @@ private fun TvTransportButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    // Disabled reads in the glyph alone. Fading the whole button let its shadow show through the
+    // platter, and a shadow cast by a circle this small is drawn as a polygon: a hexagon flashed up
+    // on every switch. For the same reason the lift casts no shadow here at all — the platter
+    // fading back to glass as focus leaves (a press that opens a dialog) bared it as well.
+    val glyph = (if (focused) TvGlass.OnPlatter else TvGlass.TextPrimary)
+        .let { if (enabled) it else it.copy(alpha = it.alpha * 0.4f) }
     Box(
         modifier = Modifier
             .size(size)
-            .graphicsLayer { alpha = if (enabled) 1f else 0.4f }
-            .tvLift(interaction, CircleShape, focusedScale = 1.1f, elevation = 10.dp)
+            .tvLift(interaction, CircleShape, focusedScale = 1.1f, elevation = 0.dp)
             .tvPlatter(interaction, resting = if (active) TvGlass.FillSelected else TvGlass.Fill)
             .tvClick(interaction, enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -502,7 +517,7 @@ private fun TvTransportButton(
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                tint = if (focused) TvGlass.OnPlatter else TvGlass.TextPrimary,
+                tint = glyph,
                 modifier = Modifier.size(size * 0.46f),
             )
         } else if (badge != null) {
@@ -510,7 +525,7 @@ private fun TvTransportButton(
             Text(
                 text = badge,
                 style = TvType.Body.copy(fontSize = 14.sp, fontWeight = FontWeight.W700),
-                color = if (focused) TvGlass.OnPlatter else TvGlass.TextPrimary,
+                color = glyph,
             )
         }
     }

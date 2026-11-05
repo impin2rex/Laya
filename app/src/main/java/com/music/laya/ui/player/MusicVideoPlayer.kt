@@ -4,6 +4,8 @@ import android.app.Activity
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.MediaCodecInfo
+import android.media.MediaCodecList
 import android.os.Build
 import android.util.Rational
 import android.view.TextureView
@@ -104,6 +106,15 @@ object MusicVideoEngine {
 
     private var controller: Player? = null
     private var player: ExoPlayer? = null
+    private var appContext: Context? = null
+
+    /**
+     * A quality change in progress: the new rendition opening off screen, muted and without a
+     * surface, while [player] keeps playing the old one — swapped in once it can draw. See
+     * [switchQuality].
+     */
+    private var standby: ExoPlayer? = null
+    private var standbyJob: Job? = null
     private class Surface(val view: TextureView, val priority: Int)
 
     private val surfaces = ArrayList<Surface>()
@@ -148,8 +159,21 @@ object MusicVideoEngine {
     /** What the loaded stream was asked for, so a failed high one can step down once. */
     private var loadedCap = 0
 
-    /** Videos whose held height wouldn't decode here, played at [AUTO_HEIGHT] instead. */
-    private val stepDown = HashSet<String>()
+    /**
+     * Videos that wouldn't decode here at the height asked for, and the lower cap they play at
+     * instead. A height alone doesn't bound the picture: an ultra-wide 2560x1066 passes a 1080p
+     * cap and is still too wide for a decoder that tops out at 1920 (an Android TV's VP9).
+     */
+    private val stepDown = HashMap<String, Int>()
+
+    /** Heights of each video that failed to play here, shown greyed out in a quality picker. */
+    private val failedHeights = HashMap<String, MutableSet<Int>>()
+
+    /**
+     * What Auto opens at with no metered connection: a TV's largest picture its own decoders
+     * play, else [AUTO_HEIGHT] — a phone's screen gains nothing from more, and pays for it.
+     */
+    private var autoHeight = AUTO_HEIGHT
 
     private val _playing = MutableStateFlow(false)
 
@@ -208,11 +232,16 @@ object MusicVideoEngine {
 
         override fun onPlayerError(error: PlaybackException) {
             val id = loadedId ?: return
-            TrackLog.w(TAG, "video: playback failed at ${loadedCap}p (${error.errorCodeName})", about = id)
+            val failedAt = _quality.value.activeHeight ?: loadedCap
+            TrackLog.w(TAG, "video: playback failed at ${failedAt}p, ${loadedCap}p asked (${error.errorCodeName})", about = id)
             streams.remove(id)
-            // Above 1080p YouTube serves VP9 and AV1, which not every phone
-            // decodes: one more try on the H.264 ladder before giving up.
-            if (loadedCap > AUTO_HEIGHT && stepDown.add(id)) {
+            val failed = failedHeights.getOrPut(id) { mutableSetOf() }.apply { add(failedAt) }
+            // Not every decoder plays every rendition: above 1080p YouTube serves VP9 and AV1, and
+            // a TV's VP9 can top out narrower than an ultra-wide video. The next height down that
+            // hasn't failed, until there is none.
+            val lower = _quality.value.heights.firstOrNull { it < failedAt && it !in failed }
+            if (lower != null) {
+                stepDown[id] = lower
                 load(id)
                 return
             }
@@ -241,7 +270,12 @@ object MusicVideoEngine {
         surfaces.removeAll { it.view === view }
         surfaces += Surface(view, priority)
         val app = view.context.applicationContext
+        appContext = app
         if (prefs == null) {
+            if (app.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+                autoHeight = decoderMaxHeight()
+                TrackLog.d(TAG, "video: Auto on this TV opens at ${autoHeight}p")
+            }
             prefs = app.getSharedPreferences("music_video", Context.MODE_PRIVATE).also { stored ->
                 val held = stored.getInt(KEY_QUALITY, 0).takeIf { it > 0 }
                 _quality.value = _quality.value.copy(held = held)
@@ -259,6 +293,9 @@ object MusicVideoEngine {
             surfaces.removeAll { it.view === view }
             if (!wasTop) return@release
             if (_frameOn.value === view) _frameOn.value = null
+            // The player now, not the one this surface was claimed with: a quality change may
+            // have swapped it since (see [promote]).
+            val exo = player ?: return@release
             val next = top()
             if (next != null) {
                 exo.setVideoTextureView(next)
@@ -274,16 +311,108 @@ object MusicVideoEngine {
         }
     }
 
-    private fun ensurePlayer(context: Context): ExoPlayer = player ?: ExoPlayer.Builder(context)
+    private fun ensurePlayer(context: Context): ExoPlayer =
+        player ?: newPlayer(context).apply { addListener(playerListener) }.also { player = it }
+
+    /** A silent, picture-only player: the audio is the main player's. */
+    private fun newPlayer(context: Context): ExoPlayer = ExoPlayer.Builder(context)
         .build()
         .apply {
             volume = 0f
             trackSelectionParameters = trackSelectionParameters.buildUpon()
                 .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
                 .build()
-            addListener(playerListener)
         }
-        .also { player = it }
+
+    private fun mediaSource(stream: InnerTubeXResolver.VideoStream) =
+        ProgressiveMediaSource.Factory(
+            ChunkedDataSource.Factory(
+                OkHttpDataSource.Factory(Http.client).setDefaultRequestProperties(stream.headers),
+                CHUNK_BYTES,
+            ),
+        ).createMediaSource(MediaItem.fromUri(stream.url))
+
+    /**
+     * Changes the playing video's quality without stopping it, as YouTube does: the new
+     * rendition opens on a second player, off screen, from the moment the audio is at, and the
+     * old one plays on until the new one can draw — then the surface moves across in one step.
+     *
+     * A standby that fails isn't taken as the height failing: a TV often has a single hardware
+     * decoder, which the playing picture is holding. It falls back to [load], which lets go of
+     * the old picture first (keeping its last frame up) and does judge the height.
+     */
+    private fun switchQuality(videoId: String) {
+        cancelStandby()
+        val context = appContext ?: return load(videoId)
+        val cap = capFor(videoId)
+        standbyJob = scope.launch {
+            val stream = try {
+                cachedStream(videoId, cap) ?: withContext(Dispatchers.IO) {
+                    InnerTubeXResolver.extractVideo(videoId, cap)
+                }?.also { streams[videoId] = Triple(it, cap, System.currentTimeMillis()) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                TrackLog.w(TAG, "video: quality change couldn't resolve: ${e.message}", about = videoId)
+                null
+            }
+            if (loadedId != videoId) return@launch
+            // Nothing to change to, or the same rendition: the playing picture already is it.
+            if (stream == null || stream.aspect < MIN_VIDEO_ASPECT || stream.height == _quality.value.activeHeight) {
+                loadedCap = cap
+                return@launch
+            }
+            val next = newPlayer(context)
+            standby = next
+            next.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_READY && standby === next) promote(next, stream, cap)
+                }
+
+                override fun onPlayerError(error: PlaybackException) {
+                    if (standby !== next) return
+                    TrackLog.w(TAG, "video: ${stream.height}p couldn't open beside the playing picture (${error.errorCodeName}); reloading", about = videoId)
+                    cancelStandby()
+                    if (loadedId == videoId) load(videoId)
+                }
+            })
+            val start = controller?.currentPosition?.coerceAtLeast(0L) ?: 0L
+            next.setMediaSource(mediaSource(stream), start + seekLeadMs)
+            next.playWhenReady = controller?.isPlaying == true
+            next.prepare()
+        }
+    }
+
+    /** The standby can draw: it becomes the player, on the surface the old one was drawing to. */
+    private fun promote(next: ExoPlayer, stream: InnerTubeXResolver.VideoStream, cap: Int) {
+        standby = null
+        standbyJob = null
+        val old = player
+        // A TextureView takes frames from one producer at a time: the old one lets go first, its
+        // last frame staying up until the new one's lands on top of it.
+        top()?.let { view ->
+            old?.clearVideoTextureView(view)
+            next.setVideoTextureView(view)
+        }
+        old?.removeListener(playerListener)
+        old?.release()
+        next.addListener(playerListener)
+        player = next
+        loadedCap = cap
+        if (stream.aspect > 0f) _aspect.value = stream.aspect
+        _quality.value = _quality.value.copy(heights = stream.heights, activeHeight = stream.height)
+        TrackLog.d(TAG, "video: now ${stream.height}p, changed without a stop", about = loadedId)
+        repaint()
+        lastSeekAt = 0L
+        sync()
+    }
+
+    private fun cancelStandby() {
+        standbyJob?.cancel()
+        standbyJob = null
+        standby?.release()
+        standby = null
+    }
 
     /** A paused decoder handed a new surface draws nothing until asked to. */
     private fun repaint() {
@@ -327,8 +456,9 @@ object MusicVideoEngine {
         _quality.value = _quality.value.copy(held = height)
         val id = loadedId ?: return
         streams.remove(id)
-        stepDown.remove(id)
-        load(id)
+        // The step-down stays: Auto, or a pick above a height that failed here, would only fail
+        // again. capFor takes the lower of the two.
+        if (_shownVideoId.value == id && player != null) switchQuality(id) else load(id)
     }
 
     /**
@@ -373,13 +503,16 @@ object MusicVideoEngine {
         // The mini player asks for the same height as the full one: expanding it then hands the
         // playing picture to the bigger surface, rather than reloading it a size up.
         val metered = AppSettings.meteredConnection.value == true
-        val auto = if (metered) METERED_HEIGHT else AUTO_HEIGHT
-        val held = _quality.value.held ?: return auto
-        return if (videoId in stepDown) minOf(held, AUTO_HEIGHT) else held
+        val auto = if (metered) METERED_HEIGHT else autoHeight
+        val base = _quality.value.held ?: auto
+        return stepDown[videoId]?.let { minOf(base, it) } ?: base
     }
 
     private fun load(videoId: String) {
-        unload()
+        // The same video again — a quality change, or a step down after a failure: its last
+        // frame stays up on the surface until the new rendition's first one replaces it, rather
+        // than the player falling back to its artwork or lyrics for the reload.
+        unload(keepPicture = videoId == loadedId && _shownVideoId.value == videoId)
         loadedId = videoId
         val cap = capFor(videoId)
         loadedCap = cap
@@ -394,7 +527,10 @@ object MusicVideoEngine {
                 // Not remembered as pictureless: the next surface or track
                 // change asks again.
                 TrackLog.w(TAG, "video: couldn't resolve the picture: ${e.message}", about = videoId)
-                if (loadedId == videoId) loadedId = null
+                if (loadedId == videoId) {
+                    loadedId = null
+                    dropKeptPicture()
+                }
                 return@launch
             }
             if (loadedId != videoId) return@launch
@@ -402,15 +538,17 @@ object MusicVideoEngine {
             if (stream == null || stream.aspect < MIN_VIDEO_ASPECT) {
                 noPicture += videoId
                 loadedId = null
+                dropKeptPicture()
                 return@launch
             }
             val exo = player ?: return@launch
-            val upstream = OkHttpDataSource.Factory(Http.client)
-                .setDefaultRequestProperties(stream.headers)
-            val source = ProgressiveMediaSource.Factory(ChunkedDataSource.Factory(upstream, CHUNK_BYTES))
-                .createMediaSource(MediaItem.fromUri(stream.url))
+            val source = mediaSource(stream)
             if (stream.aspect > 0f) _aspect.value = stream.aspect
-            _quality.value = _quality.value.copy(heights = stream.heights, activeHeight = stream.height)
+            _quality.value = _quality.value.copy(
+                heights = stream.heights,
+                activeHeight = stream.height,
+                failed = failedHeights[videoId].orEmpty().toSet(),
+            )
             val start = controller?.currentPosition?.coerceAtLeast(0L) ?: 0L
             exo.setMediaSource(source, start + seekLeadMs)
             exo.playWhenReady = controller?.isPlaying == true
@@ -419,6 +557,29 @@ object MusicVideoEngine {
             seekStartedAt = lastSeekAt
             startSync()
         }
+    }
+
+    /**
+     * The largest height on the ladder a hardware VP9 or H.264 decoder here plays at 16:9 —
+     * what a TV's Auto opens at. Software decoders don't count: they claim sizes they can't
+     * keep up with.
+     */
+    private fun decoderMaxHeight(): Int {
+        val ladder = intArrayOf(2160, 1440, 1080, 720)
+        fun MediaCodecInfo.software() =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) isSoftwareOnly
+            else name.startsWith("OMX.google.") || name.startsWith("c2.android.")
+        val best = runCatching {
+            MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos
+                .filter { !it.isEncoder && !it.software() }
+                .flatMap { info ->
+                    info.supportedTypes
+                        .filter { it.equals("video/x-vnd.on2.vp9", true) || it.equals("video/avc", true) }
+                        .mapNotNull { runCatching { info.getCapabilitiesForType(it).videoCapabilities }.getOrNull() }
+                }
+                .maxOfOrNull { caps -> ladder.firstOrNull { h -> caps.isSizeSupported(h * 16 / 9, h) } ?: 0 }
+        }.getOrNull() ?: 0
+        return if (best > 0) best else AUTO_HEIGHT
     }
 
     private fun cachedStream(videoId: String, cap: Int): InnerTubeXResolver.VideoStream? {
@@ -430,15 +591,21 @@ object MusicVideoEngine {
         return stream
     }
 
-    private fun unload() {
+    /** A frame kept up through a reload (see [load]) whose new rendition never came. */
+    private fun dropKeptPicture() {
+        _shownVideoId.value = null
+        _frameOn.value = null
+    }
+
+    private fun unload(keepPicture: Boolean = false) {
+        cancelStandby()
         loadJob?.cancel()
         loadJob = null
         syncJob?.cancel()
         syncJob = null
         loadedId = null
-        _shownVideoId.value = null
-        _frameOn.value = null
-        _quality.value = _quality.value.copy(heights = emptyList(), activeHeight = null)
+        if (!keepPicture) dropKeptPicture()
+        _quality.value = _quality.value.copy(heights = emptyList(), activeHeight = null, failed = emptySet())
         player?.let {
             it.stop()
             it.clearMediaItems()
