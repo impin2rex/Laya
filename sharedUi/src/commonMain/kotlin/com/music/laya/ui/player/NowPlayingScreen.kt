@@ -830,6 +830,10 @@ fun NowPlayingScreen(
     // A music video plays its own picture where the sleeve is — see
     // [MusicVideoSurface] — and takes the place of any animated cover.
     val videoMode = showsMusicVideo(song)
+    // The lyrics and queue header is a small player of its own: it plays the video when the mini
+    // player does (Settings), and is the still sleeve otherwise.
+    val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
+    val headerVideo = videoMode && miniPlayerVideo
     // Read once for both the capsule's segment and the glass pill on the video.
     val versionSwitchAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
     val versionSwitching = audioVersionSwitching || versionSwitchAligning
@@ -2978,7 +2982,7 @@ fun NowPlayingScreen(
                                 // frame records it again and the collapsed header's
                                 // picture doesn't freeze.
                                 .drawWithContent {
-                                    if (videoMode) videoFrames?.value
+                                    if (headerVideo) videoFrames?.value
                                     drawContent()
                                 }
                                 // Haze must observe the drawable layer itself, the
@@ -2999,7 +3003,12 @@ fun NowPlayingScreen(
                                         // Collapsing into the lyrics or the queue, it carries
                                         // the playing picture itself (see below), so it is
                                         // whole from the first frame and the box hands over.
-                                        (if (!videoMode || docking() || p() > 0f) 1f else 0f)
+                                        when {
+                                            !videoMode || docking() -> 1f
+                                            headerVideo -> if (p() > 0f) 1f else 0f
+                                            // The still sleeve: dissolved in over the box's fade.
+                                            else -> (p() * 2f - 1f).coerceIn(0f, 1f)
+                                        }
                                 }
                                 .graphicsLayer {
                                     val shown = sleeveShown()
@@ -3189,18 +3198,17 @@ fun NowPlayingScreen(
                             // queue — and the header thumbnail they leave — so it never
                             // stops or turns back into its thumbnail on the way. At rest
                             // in the player the picture box below shows it.
-                            if (videoMode && (dockMoving || collapseStarted)) {
+                            if (videoMode && (dockMoving || (headerVideo && collapseStarted))) {
                                 // Lands as what the mini player shows: the picture where it plays
                                 // there too, else handed over to the cover on the way, so the
                                 // landing isn't a cut from a moving frame to a still one.
-                                val miniVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
                                 MusicVideoSurface(
                                     videoId = song.videoId,
                                     // Cropped: the sleeve morphs from the picture's shape to the cover's square.
                                     fit = false,
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .graphicsLayer { if (!miniVideo) alpha = dockT() },
+                                        .graphicsLayer { if (!miniPlayerVideo) alpha = dockT() },
                                 )
                             }
                         }
@@ -3322,7 +3330,7 @@ fun NowPlayingScreen(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 // The sleeve has the picture once a collapse starts.
-                                                .graphicsLayer { if (p() > 0f) alpha = 0f }
+                                                .graphicsLayer { if (headerVideo && p() > 0f) alpha = 0f }
                                                 .clip(RoundedCornerShape(10.dp)),
                                         )
                                     }
