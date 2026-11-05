@@ -213,9 +213,13 @@ fun MiniPlayer(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // A music video plays here at its own 16:9, as the web player's
-            // mini player does, rather than cropped into the square cover.
+            // mini player does, rather than cropped into the square cover —
+            // only while it plays here (Settings). Otherwise the cover stays
+            // the square every other track has.
+            val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
+            val showsVideo = song.isVideo && miniPlayerVideo
             val artWidth by animateDpAsState(
-                targetValue = if (song.isVideo) VIDEO_ART_WIDTH else 40.dp,
+                targetValue = if (showsVideo) VIDEO_ART_WIDTH else 40.dp,
                 label = "miniArtWidth",
             )
             Box(
@@ -236,8 +240,7 @@ fun MiniPlayer(
                 // it, as the web player's mini player does — at its lowest
                 // height, and only when asked for in Settings. The full player,
                 // when it is up, takes the picture over.
-                val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
-                if (song.isVideo && miniPlayerVideo) {
+                if (showsVideo) {
                     AndroidMusicVideo(
                         videoId = song.videoId,
                         fit = false,
