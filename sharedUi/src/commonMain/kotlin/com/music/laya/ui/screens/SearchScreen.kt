@@ -222,6 +222,12 @@ fun SearchScreen(
                         stringResource(Res.string.search_hint)
                     },
                     modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp),
+                    trailing = {
+                        com.music.laya.ui.components.VoiceSearchButton(
+                            onPartial = onQueryChange,
+                            onResult = { onQueryChange(it); onSubmit() },
+                        )
+                    },
                 )
             }
             if (sourceSwitcher != null) {

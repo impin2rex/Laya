@@ -3628,7 +3628,7 @@ private fun LayaApp(
                                 // Heard text lands in the field, then searches whichever
                                 // source is picked — as if typed and submitted.
                                 trailing = {
-                                    com.music.laya.ui.components.VoiceSearchButton(onResult = { spoken ->
+                                    com.music.laya.ui.components.VoiceSearchButton(onPartial = viewModel::onQueryChange, onResult = { spoken ->
                                         viewModel.onQueryChange(spoken)
                                         viewModel.submitSearch()
                                     })

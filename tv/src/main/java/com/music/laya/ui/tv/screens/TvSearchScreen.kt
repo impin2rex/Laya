@@ -183,7 +183,7 @@ fun TvSearchScreen(
                             )
                             .padding(4.dp),
                     ) {
-                        VoiceSearchButton(onResult = { spoken ->
+                        VoiceSearchButton(onPartial = viewModel::onQueryChange, onResult = { spoken ->
                             viewModel.onQueryChange(spoken)
                             viewModel.submitSearch()
                         })

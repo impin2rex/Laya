@@ -71,6 +71,7 @@ jobs:
         jar tf "$jar" | grep -q 'native/laya_analysis.dll'
         jar tf "$jar" | grep -q 'models/.*\.onnx'
         jar tf "$jar" | grep -q 'native/laya_smtc.dll'
+        jar tf "$jar" | grep -q 'native/laya_speech.dll'
 
     - name: Name the installer
       shell: pwsh

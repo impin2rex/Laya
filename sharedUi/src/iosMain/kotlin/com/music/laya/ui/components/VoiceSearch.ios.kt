@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import com.music.laya.data.Hinglish
 import com.music.laya.data.VoiceLanguages
 import com.music.laya.sharedui.resources.*
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -76,8 +77,10 @@ actual fun VoiceSearchButton(onResult: (String) -> Unit, onPartial: (String) -> 
                 val tags = if (language == null) listOf(tag) + VoiceLanguages.southAsian else listOf(tag)
                 listener.start(
                     tags = tags,
-                    onPartial = onPartial,
-                    onResult = onResult,
+                    onPartial = { onPartial(if (language == null) Hinglish.of(it) else it) },
+                    // Auto: Hindi goes in as Hinglish, the way song titles are listed. Hindi picked
+                    // by hand stays in Devanagari.
+                    onResult = { onResult(if (language == null) Hinglish.of(it) else it) },
                     onUnavailable = { problem = unavailable },
                     onDenied = { problem = permission },
                 )

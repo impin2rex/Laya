@@ -23,8 +23,16 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.music.laya.data.Hinglish
 import com.music.laya.data.VoiceLanguages
 import com.sun.jna.Callback
 import com.sun.jna.Library
@@ -48,8 +56,9 @@ import javax.swing.SwingUtilities
 /**
  * The search field's mic on the desktop, each OS through its own recognizer:
  * macOS through Apple's Speech framework (what Siri and Dictation use), with
- * words appearing as they're heard; Windows through its built-in voice typing
- * (Win+H); Linux, which has none, through Vosk — English built in, other
+ * words appearing as they're heard; Windows through its own recognizer the same
+ * way (laya_speech_win.cpp), or its voice typing (Win+H) where that can't hear the
+ * language; Linux, which has none, through Vosk — English built in, other
  * languages' models downloaded when picked — also word by word. Draws nothing where
  * the native half didn't build.
  */
@@ -63,8 +72,10 @@ internal fun DesktopVoiceButton(
     val prefs = remember { Preferences.userRoot().node("com/music/laya/voice") }
     var language by remember { mutableStateOf(prefs.get("language", null)) }
     var listening by remember { mutableStateOf(false) }
-    val partial by rememberUpdatedState(onPartial)
-    val result by rememberUpdatedState(onResult)
+    // macOS Auto: Hindi goes in as Hinglish, the way song titles are listed. Hindi picked by
+    // hand stays in Devanagari.
+    val partial by rememberUpdatedState<(String) -> Unit> { onPartial(if (DesktopPlatform.isMac && language == null) Hinglish.of(it) else it) }
+    val result by rememberUpdatedState<(String) -> Unit> { onResult(if (DesktopPlatform.isMac && language == null) Hinglish.of(it) else it) }
     val scope = rememberCoroutineScope()
     DisposableEffect(Unit) { onDispose { DesktopVoice.stop() } }
 
@@ -78,23 +89,31 @@ internal fun DesktopVoiceButton(
         onClick = {
             val tag = language ?: VoiceLanguages.auto(Locale.getDefault().toLanguageTag(), voiceLanguages.map { it.first })
             when {
-                DesktopPlatform.isWindows -> {
-                    focusRequester.requestFocus()
-                    DesktopVoice.windowsVoiceTyping()
-                }
                 listening -> DesktopVoice.stop()
-                DesktopPlatform.isMac -> {
+                DesktopVoice.hasSystemSpeech -> {
                     listening = true
-                    // Auto also listens for the South Asian three, each its own Apple
-                    // recognizer; the most confident wins (see LayaSpeech.swift).
+                    // Auto also listens for the South Asian three, each its own system
+                    // recognizer; the most confident wins (LayaSpeech.swift, laya_speech_win.cpp).
                     val tags = if (language == null) listOf(tag) + VoiceLanguages.southAsian else listOf(tag)
-                    DesktopVoice.macListen(tags) { kind, text ->
+                    DesktopVoice.systemListen(tags) { kind, text ->
                         when (kind) {
                             0 -> partial(text)
                             1 -> { listening = false; if (text.isNotBlank()) result(text) }
-                            else -> listening = false
+                            else -> {
+                                listening = false
+                                // Windows without a speech pack for the language, or with online
+                                // speech recognition off: its own voice typing still works.
+                                if (DesktopPlatform.isWindows) {
+                                    focusRequester.requestFocus()
+                                    DesktopVoice.windowsVoiceTyping()
+                                }
+                            }
                         }
                     }
+                }
+                DesktopPlatform.isWindows -> {
+                    focusRequester.requestFocus()
+                    DesktopVoice.windowsVoiceTyping()
                 }
                 else -> {
                     listening = true
@@ -127,7 +146,7 @@ private val voiceLanguages: List<Pair<String, String>> =
 private fun DesktopMic(listening: Boolean, language: String?, onLanguageChange: (String?) -> Unit, onClick: () -> Unit) {
     val downloads = DesktopVoice.downloads
     var menuOpen by remember { mutableStateOf(false) }
-    Box {
+    Box(Modifier.voiceWaves(listening, DesktopAccent)) {
         Icon(
             Icons.Rounded.Mic,
             contentDescription = DesktopStrings["d_voice_search", "Voice search"],
@@ -137,7 +156,7 @@ private fun DesktopMic(listening: Boolean, language: String?, onLanguageChange: 
                 .clip(CircleShape)
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = if (DesktopPlatform.isWindows) null else ({ menuOpen = true }),
+                    onLongClick = { menuOpen = true },
                     onLongClickLabel = DesktopStrings["d_voice_search_language", "Voice search language"],
                 )
                 .padding(4.dp),
@@ -170,8 +189,27 @@ private fun DesktopMic(listening: Boolean, language: String?, onLanguageChange: 
     }
 }
 
+/** Rings spreading out from the mic, like a drop in water, while it listens (as in sharedUi's VoiceMic). */
+@Composable
+private fun Modifier.voiceWaves(listening: Boolean, color: Color): Modifier {
+    if (!listening) return this
+    val phase by rememberInfiniteTransition(label = "voice").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing)),
+        label = "waves",
+    )
+    return drawBehind {
+        repeat(3) { ring ->
+            val p = (phase + ring / 3f) % 1f
+            drawCircle(color.copy(alpha = 0.35f * (1f - p)), radius = size.minDimension / 2f * (0.5f + 0.9f * p))
+        }
+    }
+}
+
 internal object DesktopVoice {
-    private interface MacSpeech : Library {
+    /** LayaSpeech.swift on macOS, laya_speech_win.cpp on Windows: the same three calls. */
+    private interface SystemSpeech : Library {
         fun laya_speech_start(tags: String, callback: SpeechCallback)
         fun laya_speech_stop()
         fun laya_speech_languages(): String?
@@ -193,9 +231,9 @@ internal object DesktopVoice {
         fun vosk_recognizer_free(recognizer: Pointer)
     }
 
-    private val mac: MacSpeech? by lazy {
-        if (!DesktopPlatform.isMac) null
-        else runCatching { Native.load(DesktopAnalysisRuntime.nativePath("laya_speech"), MacSpeech::class.java) }
+    private val system: SystemSpeech? by lazy {
+        if (!DesktopPlatform.isMac && !DesktopPlatform.isWindows) null
+        else runCatching { Native.load(DesktopAnalysisRuntime.nativePath("laya_speech"), SystemSpeech::class.java) }
             .onFailure { DesktopTrackLog.log("voice search: ${it.message}") }.getOrNull()
     }
 
@@ -350,35 +388,38 @@ internal object DesktopVoice {
     val available: Boolean by lazy {
         when {
             DesktopPlatform.isWindows -> true
-            DesktopPlatform.isMac -> mac != null
+            DesktopPlatform.isMac -> system != null
             else -> vosk != null && javaClass.getResource("/models/vosk-model-small-en-in-0.4.zip") != null
         }
     }
 
+    /** Windows' or Apple's own recognizer is here (Windows without it falls back to Win+H). */
+    val hasSystemSpeech: Boolean get() = system != null
+
     /** The languages this Mac's recognizer has; everything when it can't say. */
     val macLanguages: Set<String> by lazy {
-        mac?.laya_speech_languages()?.split(',')?.toSet()?.takeIf { it.isNotEmpty() }
+        system?.laya_speech_languages()?.split(',')?.toSet()?.takeIf { it.isNotEmpty() }
             ?: VoiceLanguages.all.map { it.first.substringBefore('-') }.toSet()
     }
 
-    // Held so JNA's native thunk isn't collected while Swift still calls it.
-    private var macCallback: SpeechCallback? = null
+    // Held so JNA's native thunk isn't collected while the native side still calls it.
+    private var systemCallback: SpeechCallback? = null
 
     @Volatile private var stopRequested = false
 
     fun stop() {
         stopRequested = true
-        if (DesktopPlatform.isMac) mac?.laya_speech_stop()
+        system?.laya_speech_stop()
     }
 
     /** kind 0: heard so far, 1: final, 2: unavailable, 3: denied — always on the UI thread. */
-    fun macListen(tags: List<String>, onEvent: (kind: Int, text: String) -> Unit) {
-        val lib = mac ?: return onEvent(2, "")
+    fun systemListen(tags: List<String>, onEvent: (kind: Int, text: String) -> Unit) {
+        val lib = system ?: return onEvent(2, "")
         val callback = SpeechCallback { kind, text ->
             val value = text?.getString(0, "UTF-8").orEmpty()
             SwingUtilities.invokeLater { onEvent(kind, value) }
         }
-        macCallback = callback
+        systemCallback = callback
         lib.laya_speech_start(tags.joinToString(","), callback)
     }
 

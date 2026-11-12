@@ -146,6 +146,7 @@ jobs:
           jar tf "$jar" | grep -q 'models/.*\.onnx'
           # WinRT, so only MSVC can build it and only this job ever does.
           jar tf "$jar" | grep -q 'native/laya_smtc.dll'
+          jar tf "$jar" | grep -q 'native/laya_speech.dll'
 
       - name: Collect
         shell: pwsh

@@ -5425,7 +5425,7 @@ internal fun DesktopSearchField(
     focusRequester: FocusRequester = remember { FocusRequester() },
     onFocusChanged: (Boolean) -> Unit = {},
     placeholder: String = "Search",
-    /** Only the app's main search takes voice; the field's other uses filter lists. */
+    /** Mic for search and filter fields; off for plain inputs (a server address). */
     voice: Boolean = false,
 ) {
     val searchShape = RoundedCornerShape(7.dp)
@@ -6035,6 +6035,7 @@ private fun DesktopLocalMusicPage(
                     onSearch = {},
                     modifier = Modifier.weight(1f),
                     placeholder = DesktopStrings["d_search_your_music", "Search your music"],
+                voice = true,
                 )
                 Spacer(Modifier.width(10.dp))
                 TextButton(onClick = {
@@ -6321,6 +6322,7 @@ private fun DesktopSettingsScreen(
                         onQueryChange = onQueryChange,
                         onSearch = {},
                         placeholder = DesktopStrings["settings_search_hint", "Search settings"],
+                        voice = true,
                         modifier = Modifier.padding(start = 24.dp).width(280.dp),
                     )
                 }
@@ -7595,6 +7597,7 @@ private fun DesktopCollectionPage(
                         onSearch = {},
                         modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
                         placeholder = DesktopStrings["search_this_list", "Search this list"],
+                    voice = true,
                     )
                 }
             }

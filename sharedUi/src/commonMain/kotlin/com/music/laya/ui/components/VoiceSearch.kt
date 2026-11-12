@@ -1,5 +1,10 @@
 package com.music.laya.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -21,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.music.laya.data.VoiceLanguages
 import com.music.laya.sharedui.resources.*
@@ -57,7 +64,7 @@ internal fun VoiceMic(
     languages: List<Pair<String, String>> = VOICE_LANGUAGES,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    Box {
+    Box(Modifier.voiceWaves(listening, MaterialTheme.colorScheme.primary)) {
         Icon(
             Icons.Rounded.Mic,
             contentDescription = stringResource(Res.string.voice_search),
@@ -86,6 +93,27 @@ internal fun VoiceMic(
                         },
                     )
                 }
+        }
+    }
+}
+
+/**
+ * Rings spreading out from the mic, like a drop in water, while it listens;
+ * nothing otherwise.
+ */
+@Composable
+internal fun Modifier.voiceWaves(listening: Boolean, color: Color): Modifier {
+    if (!listening) return this
+    val phase by rememberInfiniteTransition(label = "voice").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing)),
+        label = "waves",
+    )
+    return drawBehind {
+        repeat(3) { ring ->
+            val p = (phase + ring / 3f) % 1f
+            drawCircle(color.copy(alpha = 0.35f * (1f - p)), radius = size.minDimension / 2f * (0.5f + 0.9f * p))
         }
     }
 }

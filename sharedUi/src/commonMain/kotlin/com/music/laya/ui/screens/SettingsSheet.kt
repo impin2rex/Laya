@@ -309,6 +309,9 @@ fun SettingsScreen(
             onSubmit = {},
             placeholder = stringResource(Res.string.settings_search_hint),
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
+            trailing = {
+                com.music.laya.ui.components.VoiceSearchButton(onResult = { searchQuery = it }, onPartial = { searchQuery = it })
+            },
         )
 
         SearchableSettingsGroup(search) {

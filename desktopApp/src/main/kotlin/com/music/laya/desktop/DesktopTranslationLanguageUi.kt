@@ -80,6 +80,7 @@ internal fun DesktopTranslationLanguageDialog(onDismiss: () -> Unit) {
                 onQueryChange = { filter = it },
                 onSearch = {},
                 placeholder = DesktopStrings["d_filter_languages", "Filter languages"],
+            voice = true,
             )
         }
 

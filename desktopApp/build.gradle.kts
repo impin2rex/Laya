@@ -374,8 +374,8 @@ val buildWindowNative by tasks.registering {
 
 /**
  * Voice search's native half on macOS: a small Swift library over Apple's Speech framework, the
- * recognizer Siri and Dictation use. Windows needs nothing — it hands off to the system's own
- * voice typing — and Linux uses Vosk, below.
+ * recognizer Siri and Dictation use. Windows' counterpart (native/speech/laya_speech_win.cpp) is
+ * C++/WinRT, built by MSVC with the other WinRT library in native/CMakeLists.txt; Linux uses Vosk, below.
  */
 val speechNativeDir = layout.buildDirectory.dir("native-speech/$targetOs")
 

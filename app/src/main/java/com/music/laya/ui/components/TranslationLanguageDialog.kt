@@ -263,6 +263,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+        VoiceSearchButton(onResult = onQueryChange, onPartial = onQueryChange)
     }
 }
 

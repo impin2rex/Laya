@@ -130,4 +130,9 @@ elseif(MSVC)
     endif()
     # The WinRT umbrella import library.
     target_link_libraries(laya_smtc PRIVATE windowsapp gdi32)
+    # Voice search over Windows' own recognizer, also C++/WinRT. Plain C exports for JNA, so
+    # no JNI headers. MinGW builds go without it and the mic falls back to Win+H.
+    add_library(laya_speech SHARED ${CMAKE_CURRENT_SOURCE_DIR}/speech/laya_speech_win.cpp)
+    set_target_properties(laya_speech PROPERTIES PREFIX "" CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+    target_link_libraries(laya_speech PRIVATE windowsapp)
 endif()

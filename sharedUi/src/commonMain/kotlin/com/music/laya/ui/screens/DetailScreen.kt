@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import com.music.laya.ui.components.VoiceSearchButton
 import com.music.laya.ui.components.backdrop.isRenderEffectSupported
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -1133,6 +1134,7 @@ private fun DetailSearchField(
                     .focusRequester(focus),
             )
         }
+        VoiceSearchButton(onResult = onQueryChange, onPartial = onQueryChange)
         Box(
             modifier = Modifier
                 .size(30.dp)
