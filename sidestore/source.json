@@ -20,6 +20,15 @@
       "screenshots": [],
       "versions": [
         {
+          "version": "1.9.3",
+          "buildVersion": "34",
+          "date": "2026-11-12T13:25:22Z",
+          "localizedDescription": "- Voice search through Apple's speech recognition (what Siri uses). Laya asks for the microphone and speech recognition the first time.\n- On **Auto**, Hindi is written the way song titles are listed: \"तू मिल जाए\" goes in as \"tu mil jaye\". Choose हिन्दी from the long-press menu to keep it in Devanagari.\n- Bangla isn't offered, because Apple's speech recognition doesn't support it.",
+          "downloadURL": "https://github.com/impin2rex/Laya/releases/download/v1.9.3/Laya-1.9.3-ios.ipa",
+          "size": 80438933,
+          "minOSVersion": "16.0"
+        },
+        {
           "version": "1.9.2",
           "buildVersion": "33",
           "date": "2026-11-05T03:20:27Z",
