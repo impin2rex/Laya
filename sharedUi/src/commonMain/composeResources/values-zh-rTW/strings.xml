@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s 首歌曲</string>
     <string name="card_views_format">%1$s 次觀看</string>
     <string name="clear_search">清除搜尋</string>
+    <string name="voice_search">語音搜尋</string>
+    <string name="voice_search_prompt">說話即可搜尋</string>
+    <string name="voice_search_language">語音搜尋語言</string>
+    <string name="voice_search_language_auto">自動</string>
+    <string name="voice_search_unavailable">此裝置不支援語音搜尋</string>
+    <string name="voice_search_permission">請在設定中允許麥克風和語音辨識，以使用語音搜尋</string>
     <string name="downloaded">已下載</string>
     <string name="explore">探索</string>
     <string name="library">資料庫</string>

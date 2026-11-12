@@ -117,6 +117,12 @@
     <string name="card_songs_format">%1$sটি গান</string>
     <string name="card_views_format">%1$s ভিউ</string>
     <string name="clear_search">সার্চ মুছুন</string>
+    <string name="voice_search">ভয়েস সার্চ</string>
+    <string name="voice_search_prompt">বলে খুঁজুন</string>
+    <string name="voice_search_language">ভয়েস সার্চের ভাষা</string>
+    <string name="voice_search_language_auto">স্বয়ংক্রিয়</string>
+    <string name="voice_search_unavailable">এই ডিভাইসে ভয়েস সার্চ নেই</string>
+    <string name="voice_search_permission">ভয়েসে খুঁজতে সেটিংসে মাইক্রোফোন ও স্পিচ রিকগনিশন চালু করুন</string>
     <string name="downloaded">ডাউনলোড হয়েছে</string>
     <string name="explore">এক্সপ্লোর</string>
     <string name="library">লাইব্রেরি</string>

@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s треков</string>
     <string name="card_views_format">%1$s просмотров</string>
     <string name="clear_search">Очистить поиск</string>
+    <string name="voice_search">Голосовой поиск</string>
+    <string name="voice_search_prompt">Скажите, что найти</string>
+    <string name="voice_search_language">Язык голосового поиска</string>
+    <string name="voice_search_language_auto">Автоматически</string>
+    <string name="voice_search_unavailable">Голосовой поиск недоступен на этом устройстве</string>
+    <string name="voice_search_permission">Разрешите доступ к микрофону и распознаванию речи в Настройках, чтобы искать голосом</string>
     <string name="downloaded">Загружено</string>
     <string name="explore">Обзор</string>
     <string name="library">Библиотека</string>

@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s songs</string>
     <string name="card_views_format">%1$s views</string>
     <string name="clear_search">ล้างการค้นหา</string>
+    <string name="voice_search">ค้นหาด้วยเสียง</string>
+    <string name="voice_search_prompt">พูดเพื่อค้นหา</string>
+    <string name="voice_search_language">ภาษาของการค้นหาด้วยเสียง</string>
+    <string name="voice_search_language_auto">อัตโนมัติ</string>
+    <string name="voice_search_unavailable">อุปกรณ์นี้ไม่รองรับการค้นหาด้วยเสียง</string>
+    <string name="voice_search_permission">อนุญาตไมโครโฟนและการรู้จำเสียงพูดในการตั้งค่าเพื่อค้นหาด้วยเสียง</string>
     <string name="downloaded">ดาวน์โหลดแล้ว</string>
     <string name="explore">สำรวจ</string>
     <string name="library">คลังเพลง</string>

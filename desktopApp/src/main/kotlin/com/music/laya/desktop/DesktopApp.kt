@@ -5057,6 +5057,7 @@ private fun DesktopSidebar(
                 onSearch = onSearch,
                 focusRequester = searchFocusRequester,
                 onFocusChanged = { searchFocused = it },
+                voice = true,
             )
             Spacer(Modifier.height(20.dp))
             DesktopSidebarItem(LayaIcons.Home, DesktopStrings["home", "Home"], destination == DesktopDestination.LISTEN_NOW) {
@@ -5424,6 +5425,8 @@ internal fun DesktopSearchField(
     focusRequester: FocusRequester = remember { FocusRequester() },
     onFocusChanged: (Boolean) -> Unit = {},
     placeholder: String = "Search",
+    /** Only the app's main search takes voice; the field's other uses filter lists. */
+    voice: Boolean = false,
 ) {
     val searchShape = RoundedCornerShape(7.dp)
     Box(
@@ -5472,6 +5475,14 @@ internal fun DesktopSearchField(
                         }
                         innerTextField()
                     }
+                    if (voice) DesktopVoiceButton(
+                        focusRequester = focusRequester,
+                        onPartial = onQueryChange,
+                        onResult = { spoken ->
+                            onQueryChange(spoken)
+                            onSearch()
+                        },
+                    )
                 }
             },
         )

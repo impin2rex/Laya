@@ -90,4 +90,10 @@
     <string name="d_off">オフ</string>
     <string name="d_system_font">システムフォントを使用</string>
     <string name="d_system_font_subtitle">SF Pro の代わりにコンピュータのフォントで文字を表示します</string>
+    <string name="d_voice_search">音声検索</string>
+    <string name="d_voice_search_language">音声検索の言語</string>
+    <string name="d_voice_search_language_auto">自動</string>
+    <string name="d_voice_download">ダウンロード（%1$s MB）</string>
+    <string name="d_voice_downloading">ダウンロード中 %1$s%%</string>
+    <string name="d_voice_download_failed">ダウンロードに失敗しました。もう一度お試しください</string>
 </resources>

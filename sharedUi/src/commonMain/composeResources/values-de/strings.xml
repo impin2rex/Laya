@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s Titel</string>
     <string name="card_views_format">%1$s Aufrufe</string>
     <string name="clear_search">Suche löschen</string>
+    <string name="voice_search">Sprachsuche</string>
+    <string name="voice_search_prompt">Zum Suchen sprechen</string>
+    <string name="voice_search_language">Sprache der Sprachsuche</string>
+    <string name="voice_search_language_auto">Automatisch</string>
+    <string name="voice_search_unavailable">Sprachsuche ist auf diesem Gerät nicht verfügbar</string>
+    <string name="voice_search_permission">Erlaube Mikrofon und Spracherkennung in den Einstellungen, um per Sprache zu suchen</string>
     <string name="downloaded">Heruntergeladen</string>
     <string name="explore">Entdecken</string>
     <string name="library">Bibliothek</string>

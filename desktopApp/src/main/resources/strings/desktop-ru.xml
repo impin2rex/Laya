@@ -90,4 +90,10 @@
     <string name="d_off">Выключено</string>
     <string name="d_system_font">Системный шрифт</string>
     <string name="d_system_font_subtitle">Показывает текст шрифтом компьютера вместо SF Pro</string>
+    <string name="d_voice_search">Голосовой поиск</string>
+    <string name="d_voice_search_language">Язык голосового поиска</string>
+    <string name="d_voice_search_language_auto">Автоматически</string>
+    <string name="d_voice_download">Скачать (%1$s МБ)</string>
+    <string name="d_voice_downloading">Загрузка %1$s%%</string>
+    <string name="d_voice_download_failed">Не удалось скачать, попробуйте ещё раз</string>
 </resources>

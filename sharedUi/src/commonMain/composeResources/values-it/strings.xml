@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s brani</string>
     <string name="card_views_format">%1$s visualizzazioni</string>
     <string name="clear_search">Cancella ricerca</string>
+    <string name="voice_search">Ricerca vocale</string>
+    <string name="voice_search_prompt">Parla per cercare</string>
+    <string name="voice_search_language">Lingua della ricerca vocale</string>
+    <string name="voice_search_language_auto">Automatica</string>
+    <string name="voice_search_unavailable">La ricerca vocale non è disponibile su questo dispositivo</string>
+    <string name="voice_search_permission">Consenti microfono e riconoscimento vocale nelle Impostazioni per cercare con la voce</string>
     <string name="downloaded">Scaricato</string>
     <string name="explore">Esplora</string>
     <string name="library">Libreria</string>

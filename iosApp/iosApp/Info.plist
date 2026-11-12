@@ -31,6 +31,10 @@
 		<true/>
 	</dict>
 	<!-- Replay and lyrics cards: "Save" adds the picture to the photo library (add-only, nothing is read). -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Laya listens through the microphone when you search by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Laya turns what you say into a search for songs, artists, albums and playlists.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Laya saves your Replay and lyrics cards to your photo library when you tap Save.</string>
 	<!-- Google Cast discovery: the default media receiver's id is CC1AD845 (CastOptionsProvider on Android). -->

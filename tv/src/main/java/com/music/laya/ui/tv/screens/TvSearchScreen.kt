@@ -1,5 +1,12 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import com.music.laya.ui.components.VoiceSearchButton
+import com.music.laya.ui.tv.theme.TvGlass
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -148,18 +155,40 @@ fun TvSearchScreen(
                 modifier = Modifier.padding(horizontal = TvDimensions.SafeMarginHorizontal),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                TvTextField(
-                    value = query,
-                    onValueChange = viewModel::onQueryChange,
-                    placeholder = "Artists, Songs, Albums and More",
-                    leadingIcon = Icons.Rounded.Search,
-                    imeAction = ImeAction.Search,
-                    onImeAction = {
-                        keyboard?.hide()
-                        viewModel.submitSearch()
-                    },
+                Row(
                     modifier = Modifier.widthIn(max = 576.dp),
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TvTextField(
+                        value = query,
+                        onValueChange = viewModel::onQueryChange,
+                        placeholder = "Artists, Songs, Albums and More",
+                        leadingIcon = Icons.Rounded.Search,
+                        imeAction = ImeAction.Search,
+                        onImeAction = {
+                            keyboard?.hide()
+                            viewModel.submitSearch()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    // Its own D-pad stop beside the field; the ring shows when it's focused.
+                    var micFocused by remember { mutableStateOf(false) }
+                    Box(
+                        modifier = Modifier
+                            .onFocusChanged { micFocused = it.hasFocus }
+                            .background(
+                                if (micFocused) TvGlass.OnPlatter.copy(alpha = 0.25f) else Color.Transparent,
+                                CircleShape,
+                            )
+                            .padding(4.dp),
+                    ) {
+                        VoiceSearchButton(onResult = { spoken ->
+                            viewModel.onQueryChange(spoken)
+                            viewModel.submitSearch()
+                        })
+                    }
+                }
                 if (resultsState != null) {
                     Spacer(modifier = Modifier.height(14.dp))
                     TvSegmented(

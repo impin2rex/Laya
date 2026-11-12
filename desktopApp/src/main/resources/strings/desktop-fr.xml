@@ -90,4 +90,10 @@
     <string name="d_off">Désactivé</string>
     <string name="d_system_font">Utiliser la police du système</string>
     <string name="d_system_font_subtitle">Affiche le texte avec la police de votre ordinateur au lieu de SF Pro</string>
+    <string name="d_voice_search">Recherche vocale</string>
+    <string name="d_voice_search_language">Langue de la recherche vocale</string>
+    <string name="d_voice_search_language_auto">Automatique</string>
+    <string name="d_voice_download">Télécharger (%1$s Mo)</string>
+    <string name="d_voice_downloading">Téléchargement %1$s%%</string>
+    <string name="d_voice_download_failed">Échec du téléchargement, réessayez</string>
 </resources>

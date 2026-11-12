@@ -53,6 +53,8 @@ fun SearchField(
     /** What the empty field says it is for — the one part that changes per screen. */
     placeholder: String = stringResource(Res.string.search_hint),
     modifier: Modifier = Modifier,
+    /** Drawn at the very end, after the clear button — the voice search mic. */
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -140,5 +142,6 @@ fun SearchField(
                 )
             }
         }
+        trailing?.invoke()
     }
 }

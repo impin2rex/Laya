@@ -147,6 +147,12 @@
     <string name="card_songs_format">%1$s songs</string>
     <string name="card_views_format">%1$s views</string>
     <string name="clear_search">Clear search</string>
+    <string name="voice_search">Voice search</string>
+    <string name="voice_search_prompt">Speak to search</string>
+    <string name="voice_search_language">Voice search language</string>
+    <string name="voice_search_language_auto">Auto</string>
+    <string name="voice_search_unavailable">Voice search isn\'t available on this device</string>
+    <string name="voice_search_permission">Allow microphone and speech recognition in Settings to search by voice</string>
     <string name="downloaded">Downloaded</string>
     <string name="explore">Explore</string>
     <string name="library">Library</string>

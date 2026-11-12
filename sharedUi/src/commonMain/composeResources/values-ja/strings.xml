@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s 曲</string>
     <string name="card_views_format">%1$s 回視聴</string>
     <string name="clear_search">検索をクリア</string>
+    <string name="voice_search">音声検索</string>
+    <string name="voice_search_prompt">話して検索</string>
+    <string name="voice_search_language">音声検索の言語</string>
+    <string name="voice_search_language_auto">自動</string>
+    <string name="voice_search_unavailable">このデバイスでは音声検索を利用できません</string>
+    <string name="voice_search_permission">音声で検索するには、設定でマイクと音声認識を許可してください</string>
     <string name="downloaded">ダウンロード済み</string>
     <string name="explore">見つける</string>
     <string name="library">ライブラリ</string>

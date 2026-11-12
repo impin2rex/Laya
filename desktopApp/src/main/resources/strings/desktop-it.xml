@@ -90,4 +90,10 @@
     <string name="d_off">Disattivato</string>
     <string name="d_system_font">Usa il font di sistema</string>
     <string name="d_system_font_subtitle">Mostra il testo con il font del computer invece di SF Pro</string>
+    <string name="d_voice_search">Ricerca vocale</string>
+    <string name="d_voice_search_language">Lingua della ricerca vocale</string>
+    <string name="d_voice_search_language_auto">Automatica</string>
+    <string name="d_voice_download">Scarica (%1$s MB)</string>
+    <string name="d_voice_downloading">Download %1$s%%</string>
+    <string name="d_voice_download_failed">Download non riuscito, riprova</string>
 </resources>

@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s utworów</string>
     <string name="card_views_format">%1$s wyświetleń</string>
     <string name="clear_search">Wyczyść wyszukiwanie</string>
+    <string name="voice_search">Wyszukiwanie głosowe</string>
+    <string name="voice_search_prompt">Powiedz, aby wyszukać</string>
+    <string name="voice_search_language">Język wyszukiwania głosowego</string>
+    <string name="voice_search_language_auto">Automatycznie</string>
+    <string name="voice_search_unavailable">Wyszukiwanie głosowe jest niedostępne na tym urządzeniu</string>
+    <string name="voice_search_permission">Zezwól na mikrofon i rozpoznawanie mowy w Ustawieniach, aby wyszukiwać głosem</string>
     <string name="downloaded">Pobrane</string>
     <string name="explore">Odkrywaj</string>
     <string name="library">Biblioteka</string>

@@ -92,4 +92,10 @@
     <string name="d_off">Off</string>
     <string name="d_system_font">Use system font</string>
     <string name="d_system_font_subtitle">Shows text in your computer\'s font instead of SF Pro</string>
+    <string name="d_voice_search">Voice search</string>
+    <string name="d_voice_search_language">Voice search language</string>
+    <string name="d_voice_search_language_auto">Auto</string>
+    <string name="d_voice_download">Download (%1$s MB)</string>
+    <string name="d_voice_downloading">Downloading %1$s%%</string>
+    <string name="d_voice_download_failed">Download failed, try again</string>
 </resources>

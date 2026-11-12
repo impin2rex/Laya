@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s गाने</string>
     <string name="card_views_format">%1$s बार देखा गया</string>
     <string name="clear_search">खोज साफ़ करें</string>
+    <string name="voice_search">वॉइस सर्च</string>
+    <string name="voice_search_prompt">बोलकर खोजें</string>
+    <string name="voice_search_language">वॉइस सर्च की भाषा</string>
+    <string name="voice_search_language_auto">अपने आप</string>
+    <string name="voice_search_unavailable">इस डिवाइस पर वॉइस सर्च उपलब्ध नहीं है</string>
+    <string name="voice_search_permission">बोलकर खोजने के लिए सेटिंग्स में माइक्रोफ़ोन और स्पीच रिकग्निशन की अनुमति दें</string>
     <string name="downloaded">डाउनलोड किया गया</string>
     <string name="explore">एक्सप्लोर करें</string>
     <string name="library">लाइब्रेरी</string>

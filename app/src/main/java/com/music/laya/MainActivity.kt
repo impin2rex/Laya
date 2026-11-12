@@ -3625,6 +3625,14 @@ private fun LayaApp(
                                         SharedRes.string.search_hint
                                     },
                                 ),
+                                // Heard text lands in the field, then searches whichever
+                                // source is picked — as if typed and submitted.
+                                trailing = {
+                                    com.music.laya.ui.components.VoiceSearchButton(onResult = { spoken ->
+                                        viewModel.onQueryChange(spoken)
+                                        viewModel.submitSearch()
+                                    })
+                                },
                             )
                         }
                     } else null,

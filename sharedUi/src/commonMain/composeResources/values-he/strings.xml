@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s שירים</string>
     <string name="card_views_format">%1$s צפיות</string>
     <string name="clear_search">ניקוי חיפוש</string>
+    <string name="voice_search">חיפוש קולי</string>
+    <string name="voice_search_prompt">דברו כדי לחפש</string>
+    <string name="voice_search_language">שפת החיפוש הקולי</string>
+    <string name="voice_search_language_auto">אוטומטי</string>
+    <string name="voice_search_unavailable">חיפוש קולי אינו זמין במכשיר זה</string>
+    <string name="voice_search_permission">יש לאפשר מיקרופון וזיהוי דיבור בהגדרות כדי לחפש בקול</string>
     <string name="downloaded">הורד</string>
     <string name="explore">גלה</string>
     <string name="library">ספרייה</string>

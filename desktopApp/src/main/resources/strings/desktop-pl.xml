@@ -90,4 +90,10 @@
     <string name="d_off">Wyłączone</string>
     <string name="d_system_font">Użyj czcionki systemowej</string>
     <string name="d_system_font_subtitle">Wyświetla tekst czcionką komputera zamiast SF Pro</string>
+    <string name="d_voice_search">Wyszukiwanie głosowe</string>
+    <string name="d_voice_search_language">Język wyszukiwania głosowego</string>
+    <string name="d_voice_search_language_auto">Automatycznie</string>
+    <string name="d_voice_download">Pobierz (%1$s MB)</string>
+    <string name="d_voice_downloading">Pobieranie %1$s%%</string>
+    <string name="d_voice_download_failed">Pobieranie nie powiodło się, spróbuj ponownie</string>
 </resources>

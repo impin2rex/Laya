@@ -23,6 +23,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.platform.LocalFocusManager
 import com.music.laya.data.settings.ThemeMode
 import com.music.laya.ui.components.SearchField
+import com.music.laya.ui.components.VoiceSearchButton
 import com.music.laya.sharedui.resources.search_hint
 import com.music.laya.sharedui.resources.search_library_hint
 import com.music.laya.sharedui.resources.search_addons_hint
@@ -1243,6 +1244,15 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                                 },
                                             ),
                                             modifier = Modifier.weight(1f),
+                                            trailing = {
+                                                VoiceSearchButton(
+                                                    onPartial = ::onQueryChange,
+                                                    onResult = { spoken ->
+                                                        onQueryChange(spoken)
+                                                        if (searchSource == 2) searchAddons() else scope.launch { search(anonymous = false) }
+                                                    },
+                                                )
+                                            },
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     } else Spacer(Modifier.weight(1f))

@@ -90,4 +90,10 @@
     <string name="d_off">Desactivado</string>
     <string name="d_system_font">Usar fuente del sistema</string>
     <string name="d_system_font_subtitle">Muestra el texto con la fuente de tu ordenador en lugar de SF Pro</string>
+    <string name="d_voice_search">Búsqueda por voz</string>
+    <string name="d_voice_search_language">Idioma de búsqueda por voz</string>
+    <string name="d_voice_search_language_auto">Automático</string>
+    <string name="d_voice_download">Descargar (%1$s MB)</string>
+    <string name="d_voice_downloading">Descargando %1$s%%</string>
+    <string name="d_voice_download_failed">Error al descargar, inténtalo de nuevo</string>
 </resources>

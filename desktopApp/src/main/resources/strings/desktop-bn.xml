@@ -90,4 +90,10 @@
     <string name="d_off">বন্ধ</string>
     <string name="d_system_font">সিস্টেম ফন্ট ব্যবহার করুন</string>
     <string name="d_system_font_subtitle">SF Pro-এর বদলে আপনার কম্পিউটারের ফন্টে লেখা দেখায়</string>
+    <string name="d_voice_search">ভয়েস সার্চ</string>
+    <string name="d_voice_search_language">ভয়েস সার্চের ভাষা</string>
+    <string name="d_voice_search_language_auto">স্বয়ংক্রিয়</string>
+    <string name="d_voice_download">ডাউনলোড (%1$s MB)</string>
+    <string name="d_voice_downloading">ডাউনলোড হচ্ছে %1$s%%</string>
+    <string name="d_voice_download_failed">ডাউনলোড হয়নি, আবার চেষ্টা করুন</string>
 </resources>

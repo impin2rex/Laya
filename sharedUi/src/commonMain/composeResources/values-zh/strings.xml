@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s 首歌曲</string>
     <string name="card_views_format">%1$s 次观看</string>
     <string name="clear_search">清除搜索</string>
+    <string name="voice_search">语音搜索</string>
+    <string name="voice_search_prompt">说话即可搜索</string>
+    <string name="voice_search_language">语音搜索语言</string>
+    <string name="voice_search_language_auto">自动</string>
+    <string name="voice_search_unavailable">此设备不支持语音搜索</string>
+    <string name="voice_search_permission">请在设置中允许麦克风和语音识别，以使用语音搜索</string>
     <string name="downloaded">已下载</string>
     <string name="explore">探索</string>
     <string name="library">资料库</string>

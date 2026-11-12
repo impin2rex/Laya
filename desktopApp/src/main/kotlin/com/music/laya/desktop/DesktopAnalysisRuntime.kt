@@ -72,6 +72,12 @@ internal object DesktopAnalysisRuntime {
      * same unpack for anything else that ships beside it, so there is one place
      * that knows where the jar keeps them.
      */
+    /** Where a jar-shipped native library was unpacked, for loading through JNA. */
+    fun nativePath(name: String): String {
+        val fileName = System.mapLibraryName(name)
+        return unpack("/native/$fileName", fileName).toString()
+    }
+
     fun loadNative(name: String) {
         val fileName = System.mapLibraryName(name)
         System.load(unpack("/native/$fileName", fileName).toString())

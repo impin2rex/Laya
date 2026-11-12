@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s lagu</string>
     <string name="card_views_format">%1$s tayangan</string>
     <string name="clear_search">Hapus pencarian</string>
+    <string name="voice_search">Penelusuran suara</string>
+    <string name="voice_search_prompt">Bicara untuk mencari</string>
+    <string name="voice_search_language">Bahasa penelusuran suara</string>
+    <string name="voice_search_language_auto">Otomatis</string>
+    <string name="voice_search_unavailable">Penelusuran suara tidak tersedia di perangkat ini</string>
+    <string name="voice_search_permission">Izinkan mikrofon dan pengenalan ucapan di Setelan untuk mencari dengan suara</string>
     <string name="downloaded">Diunduh</string>
     <string name="explore">Jelajahi</string>
     <string name="library">Perpustakaan</string>

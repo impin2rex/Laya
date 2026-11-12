@@ -142,6 +142,12 @@
     <string name="card_songs_format">%1$s şarkı</string>
     <string name="card_views_format">%1$s görüntüleme</string>
     <string name="clear_search">Aramayı temizle</string>
+    <string name="voice_search">Sesli arama</string>
+    <string name="voice_search_prompt">Aramak için konuşun</string>
+    <string name="voice_search_language">Sesli arama dili</string>
+    <string name="voice_search_language_auto">Otomatik</string>
+    <string name="voice_search_unavailable">Bu cihazda sesli arama kullanılamıyor</string>
+    <string name="voice_search_permission">Sesle aramak için Ayarlar\'da mikrofona ve konuşma tanımaya izin verin</string>
     <string name="downloaded">İndirildi</string>
     <string name="explore">Keşfet</string>
     <string name="library">Kitaplık</string>

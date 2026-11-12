@@ -90,4 +90,10 @@
     <string name="d_off">Mati</string>
     <string name="d_system_font">Gunakan font sistem</string>
     <string name="d_system_font_subtitle">Menampilkan teks dengan font komputer Anda, bukan SF Pro</string>
+    <string name="d_voice_search">Penelusuran suara</string>
+    <string name="d_voice_search_language">Bahasa penelusuran suara</string>
+    <string name="d_voice_search_language_auto">Otomatis</string>
+    <string name="d_voice_download">Unduh (%1$s MB)</string>
+    <string name="d_voice_downloading">Mengunduh %1$s%%</string>
+    <string name="d_voice_download_failed">Gagal mengunduh, coba lagi</string>
 </resources>

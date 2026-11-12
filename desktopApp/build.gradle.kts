@@ -1,3 +1,5 @@
+import java.net.URI
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipFile
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
@@ -370,8 +372,91 @@ val buildWindowNative by tasks.registering {
     }
 }
 
+/**
+ * Voice search's native half on macOS: a small Swift library over Apple's Speech framework, the
+ * recognizer Siri and Dictation use. Windows needs nothing — it hands off to the system's own
+ * voice typing — and Linux uses Vosk, below.
+ */
+val speechNativeDir = layout.buildDirectory.dir("native-speech/$targetOs")
+
+val buildSpeechNative by tasks.registering {
+    val outputDir = speechNativeDir.get().asFile
+    val swiftSource = project.file("native/speech/LayaSpeech.swift")
+    inputs.file(swiftSource)
+    inputs.property("target", targetOs)
+    outputs.dir(outputDir)
+    onlyIf {
+        targetOs == "macos" && (findOnPath("swiftc") != null).also {
+            if (!it) logger.lifecycle("swiftc not found — the macOS build will have no voice search.")
+        }
+    }
+    doLast {
+        outputDir.mkdirs()
+        providers.exec {
+            commandLine(
+                findOnPath("swiftc")!!.absolutePath, "-emit-library", "-O",
+                "-target", if (isArm64) "arm64-apple-macos11" else "x86_64-apple-macos11",
+                "-o", File(outputDir, "liblaya_speech.dylib").absolutePath,
+                swiftSource.absolutePath,
+            )
+        }.result.get().assertNormalExitValue()
+    }
+}
+
+/**
+ * Linux voice search, which has no system recognizer: Vosk, streaming words as they're heard.
+ * Only the Linux libvosk.so is taken from Vosk's jar (which carries every OS's), plus its small
+ * Indian-English model; other languages download in the app when the user picks them. Fetched at build time, checked against the
+ * hashes Vosk publishes, and shipped in the package so it works offline from the first launch.
+ */
+val voskNative: Configuration by configurations.creating { isTransitive = false }
+dependencies { voskNative("com.alphacephei:vosk:0.3.45") }
+
+val voskDir = layout.buildDirectory.dir("vosk")
+// Only English ships; other languages' models download in the app when picked (DesktopVoiceSearch.kt).
+val voskModels = mapOf(
+    "vosk-model-small-en-in-0.4" to "62fd085f33c8c5fc01a235030e2a1fe3",
+)
+
+val prepareVosk by tasks.registering {
+    val outputDir = voskDir.get().asFile
+    val jar = voskNative
+    inputs.files(jar)
+    outputs.dir(outputDir)
+    onlyIf { targetOs == "linux" }
+    doLast {
+        fun md5(file: File) = MessageDigest.getInstance("MD5")
+            .digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+        val native = File(outputDir, "native").apply { mkdirs() }
+        ZipFile(jar.singleFile).use { zip ->
+            zip.getInputStream(zip.getEntry("linux-x86-64/libvosk.so")).use { input ->
+                File(native, "libvosk.so").outputStream().use(input::copyTo)
+            }
+        }
+        val models = File(outputDir, "models").apply { mkdirs() }
+        voskModels.forEach { (name, hash) ->
+            val target = File(models, "$name.zip")
+            if (target.isFile && md5(target) == hash) return@forEach
+            val partial = File(target.path + ".partial")
+            URI("https://alphacephei.com/vosk/models/$name.zip").toURL().openStream()
+                .use { input -> partial.outputStream().use(input::copyTo) }
+            check(md5(partial) == hash) { "$name failed its checksum" }
+            partial.renameTo(target)
+        }
+    }
+}
+
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(buildAnalysisNative, buildWindowNative)
+    dependsOn(buildAnalysisNative, buildWindowNative, buildSpeechNative, prepareVosk)
+    from(speechNativeDir) {
+        include("*.dylib")
+        into("native")
+    }
+    // Linux only: a Mac or Windows build must not pick up a Linux run's leftovers in build/.
+    if (targetOs == "linux") {
+        from(voskDir.map { it.dir("native") }) { into("native") }
+        from(voskDir.map { it.dir("models") }) { into("models") }
+    }
     from(analysisNativeDir) {
         include("*.so", "*.dll", "*.dylib")
         into("native")
@@ -588,6 +673,10 @@ compose.desktop {
                     extraKeysRawXml = """
                         <key>NSRequiresAquaSystemAppearance</key>
                         <false/>
+                        <key>NSMicrophoneUsageDescription</key>
+                        <string>Laya listens through the microphone when you search by voice.</string>
+                        <key>NSSpeechRecognitionUsageDescription</key>
+                        <string>Laya turns what you say into a search for songs, artists, albums and playlists.</string>
                     """.trimIndent()
                 }
             }
