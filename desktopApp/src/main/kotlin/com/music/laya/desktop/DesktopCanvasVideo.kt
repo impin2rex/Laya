@@ -46,14 +46,15 @@ import kotlin.math.roundToInt
  * of the clip is answered the same way as on the phone: nothing until a first
  * frame, then a 320ms fade reported through `onCoverChanged`, the aspect once
  * known, frames for the backdrop to re-tint off, the portrait fit, the bottom
- * dissolve, and a pause that keeps the last frame on screen.
+ * dissolve, and looping on through a pause of the music, as the phone does.
  */
 @Composable
 internal fun DesktopCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     val canvas = spec.canvas
     var frame by remember(canvas) { mutableStateOf<ImageBitmap?>(null) }
     val rendered = frame != null
-    val running by rememberUpdatedState(spec.isPlaying && !spec.pausedForTransition)
+    // Loops on through a pause, as on the phone; only the sleeve's collapse holds it.
+    val running by rememberUpdatedState(!spec.pausedForTransition)
     val reportAspect by rememberUpdatedState(spec.onAspectRatioChanged)
     val reportRendered by rememberUpdatedState(spec.onRenderedChanged)
     val reportFrame by rememberUpdatedState(spec.onFrameCaptured)
@@ -90,8 +91,8 @@ internal fun DesktopCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
                 val pixels = ByteArray(decoder.width * decoder.height * 4)
                 val info = ImageInfo.makeN32(decoder.width, decoder.height, ColorAlphaType.OPAQUE)
                 while (isActive) {
-                    // Paused with the track, or for the length of the sleeve's
-                    // collapse: the last frame stays up, nothing is decoded.
+                    // Held for the length of the sleeve's collapse: the last
+                    // frame stays up, nothing is decoded.
                     snapshotFlow { running }.first { it }
                     val started = System.currentTimeMillis()
                     val decoded = withContext(Dispatchers.IO) { decoder.nextFrame(pixels) }
