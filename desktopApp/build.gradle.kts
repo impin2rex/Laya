@@ -375,23 +375,51 @@ val buildWindowNative by tasks.registering {
 /**
  * Voice search's native half on macOS: a small Swift library over Apple's Speech framework, the
  * recognizer Siri and Dictation use. Windows' counterpart (native/speech/laya_speech_win.cpp) is
- * C++/WinRT, built by MSVC with the other WinRT library in native/CMakeLists.txt; Linux uses Vosk, below.
+ * C++/WinRT, its own CMake project built with Visual Studio's MSVC (the rest of native/ builds with
+ * MinGW, which has no C++/WinRT); without it the mic uses Win+H. Linux uses Vosk, below.
  */
 val speechNativeDir = layout.buildDirectory.dir("native-speech/$targetOs")
 
 val buildSpeechNative by tasks.registering {
     val outputDir = speechNativeDir.get().asFile
     val swiftSource = project.file("native/speech/LayaSpeech.swift")
-    inputs.file(swiftSource)
+    val speechSource = project.file("native/speech")
+    val onWindows = targetOs == "windows" && !crossBuildingForWindows
+    inputs.dir(speechSource)
     inputs.property("target", targetOs)
     outputs.dir(outputDir)
     onlyIf {
-        targetOs == "macos" && (findOnPath("swiftc") != null).also {
-            if (!it) logger.lifecycle("swiftc not found — the macOS build will have no voice search.")
+        when (targetOs) {
+            "macos" -> (findOnPath("swiftc") != null).also {
+                if (!it) logger.lifecycle("swiftc not found — the macOS build will have no voice search.")
+            }
+            "windows" -> (onWindows && findOnPath("cmake") != null).also {
+                if (!it) logger.lifecycle("Not on Windows with cmake — the mic will use Win+H.")
+            }
+            else -> false
         }
     }
     doLast {
         outputDir.mkdirs()
+        if (targetOs == "windows") {
+            // CMake's default generator on Windows is the newest Visual Studio installed, which
+            // brings MSVC and C++/WinRT without a developer prompt. None installed: Win+H.
+            val configure = providers.exec {
+                commandLine(cmakeBinary(), "-S", speechSource.absolutePath, "-B", outputDir.absolutePath, "-A", "x64")
+                isIgnoreExitValue = true
+            }
+            val built = configure.result.get().exitValue == 0 && providers.exec {
+                commandLine(cmakeBinary(), "--build", outputDir.absolutePath, "--config", "Release")
+                isIgnoreExitValue = true
+            }.result.get().exitValue == 0
+            if (!built) {
+                logger.warn(
+                    "Windows voice search did not build (needs Visual Studio with C++):\n" +
+                        configure.standardOutput.asText.get().takeLast(4000),
+                )
+            }
+            return@doLast
+        }
         providers.exec {
             commandLine(
                 findOnPath("swiftc")!!.absolutePath, "-emit-library", "-O",
@@ -449,7 +477,7 @@ val prepareVosk by tasks.registering {
 tasks.named<ProcessResources>("processResources") {
     dependsOn(buildAnalysisNative, buildWindowNative, buildSpeechNative, prepareVosk)
     from(speechNativeDir) {
-        include("*.dylib")
+        include("*.dylib", "laya_speech.dll")
         into("native")
     }
     // Linux only: a Mac or Windows build must not pick up a Linux run's leftovers in build/.
