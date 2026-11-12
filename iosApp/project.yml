@@ -8,8 +8,8 @@ options:
 settings:
   base:
     # A tag build overrides this with the tag's version (.github/workflows/ios.yml).
-    MARKETING_VERSION: "1.9.2"
-    CURRENT_PROJECT_VERSION: "33"
+    MARKETING_VERSION: "1.9.3"
+    CURRENT_PROJECT_VERSION: "34"
 packages:
   onnxruntime:
     url: https://github.com/microsoft/onnxruntime-swift-package-manager
