@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   build-dmg:
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       LISTEN_TOGETHER_SERVER: ${{ secrets.LISTEN_TOGETHER_SERVER }}
       SIGNATURE_API_URL: ${{ secrets.SIGNATURE_API_URL }}
