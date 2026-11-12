@@ -549,9 +549,9 @@ fun LayaDesktopApp() {
             onDismissRequest = { availableUpdate = null },
             title = { Text(DesktopStrings["d_update_available", "Update available"]) },
             text = {
-                Text(
-                    "Laya ${update.version} is out — you have ${DesktopUpdateChecker.currentVersion}." +
-                        (update.notes?.takeIf { it.isNotBlank() }?.let { "\n\n${it.take(600)}" } ?: ""),
+                UpdateNotes(
+                    "Laya ${update.version} is out — you have ${DesktopUpdateChecker.currentVersion}.",
+                    update.notes,
                 )
             },
             confirmButton = {
@@ -2856,10 +2856,10 @@ fun LayaDesktopApp() {
             onDismissRequest = { readyUpdate = null },
             title = { Text(DesktopStrings["d_update_ready", "Update ready"]) },
             text = {
-                Text(
+                UpdateNotes(
                     "Laya ${ready.version} is downloaded — you have ${DesktopUpdateChecker.currentVersion}. " +
-                        "Restart to install it; it takes a few seconds." +
-                        (ready.notes?.takeIf { it.isNotBlank() }?.let { "\n\n${it.take(600)}" } ?: ""),
+                        "Restart to install it; it takes a few seconds.",
+                    ready.notes,
                 )
             },
             confirmButton = {
@@ -8542,3 +8542,19 @@ private fun formatCollectionDuration(totalSeconds: Long): String {
 }
 
 private fun formatSleepTimer(ms: Long): String = formatTime(ms)
+
+/** An update prompt's message, then the release's notes in full, scrolling past [maxHeight] as on the phone. */
+@Composable
+private fun UpdateNotes(message: String, notes: String?, maxHeight: Dp = 320.dp) {
+    Column {
+        Text(message)
+        if (!notes.isNullOrBlank()) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                notes.trim(),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.heightIn(max = maxHeight).verticalScroll(rememberScrollState()),
+            )
+        }
+    }
+}
