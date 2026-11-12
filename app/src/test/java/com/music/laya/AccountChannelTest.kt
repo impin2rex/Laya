@@ -51,6 +51,16 @@ class AccountChannelTest {
     }
 
     @Test
+    fun `blank or invisible channel names fall back instead of vanishing`() {
+        val channels = parse(BLANK_NAMES)
+        assertEquals(listOf("@ghost", "YouTube Music"), channels.map { it.name })
+        // Account header must parse too, or sign-in aborts with no profile.
+        val header = InnertubeParser.parseAccount(Json.parseToJsonElement(BLANK_HEADER))
+        assertEquals("@ghost", header?.name)
+        assertEquals("Ünïcødé ✨ 名前", InnertubeParser.accountDisplayName("Ünïcødé ✨ 名前", "@x"))
+    }
+
+    @Test
     fun `token order is not assumed`() {
         // Same brand channel, tokens listed the other way round and with an
         // unrelated one in front of both.
@@ -120,6 +130,29 @@ class AccountChannelTest {
             {"pageIdToken":{"pageId":"113355"}}
           ]}}
         }}]}
+        """
+
+        const val BLANK_NAMES = """
+        {"contents":[
+          {"accountItem":{
+            "accountName":{"runs":[{"text":"\u3164"}]},
+            "channelHandle":{"simpleText":"@ghost"},
+            "serviceEndpoint":{"selectActiveIdentityEndpoint":{"supportedTokens":[
+              {"datasyncIdToken":{"datasyncIdToken":"SYNC_A||SESSION_A"}}]}}
+          }},
+          {"accountItem":{
+            "accountName":{"simpleText":" \u200B "},
+            "serviceEndpoint":{"selectActiveIdentityEndpoint":{"supportedTokens":[
+              {"pageIdToken":{"pageId":"42"}}]}}
+          }}
+        ]}
+        """
+
+        const val BLANK_HEADER = """
+        {"activeAccountHeaderRenderer":{
+          "accountName":{"runs":[{"text":"\u2800"}]},
+          "channelHandle":{"runs":[{"text":"@ghost"}]}
+        }}
         """
 
         const val NO_TOKENS = """

@@ -1071,13 +1071,15 @@ object InnertubeParser {
     fun parseAccount(response: JsonElement): Account? {
         val header = collectRenderers(response, "activeAccountHeaderRenderer").firstOrNull()
             ?: return null
-        val name = header.o("accountName").runs()
-        if (name.isBlank()) return null
         val email = header.o("email").runs()
             .ifBlank { header.o("email").s("simpleText").orEmpty() }
             .ifBlank { header.o("channelHandle").runs() }
         return Account(
-            name = name,
+            name = accountDisplayName(
+                header.o("accountName").runs(),
+                header.o("accountName").s("simpleText").orEmpty(),
+                email,
+            ),
             email = email,
             thumbnailUrl = header.o("accountPhoto").a("thumbnails").best(),
         )
@@ -1103,24 +1105,43 @@ object InnertubeParser {
      */
     fun parseAccountChannels(root: JsonElement): List<AccountChannel> =
         collectRenderers(root, "accountItem").mapNotNull { item ->
-            val name = item.o("accountName").runs()
-                .ifBlank { item.o("accountName").s("simpleText").orEmpty() }
-            if (name.isBlank()) return@mapNotNull null
             val pageId = item.findString("pageId")
             val dataSyncId = normalizeDataSyncId(item.findString("datasyncIdToken"))
             if (pageId == null && dataSyncId == null) return@mapNotNull null
+            val subtitle = item.o("channelHandle").runs()
+                .ifBlank { item.o("channelHandle").s("simpleText").orEmpty() }
+                .ifBlank { item.o("accountByline").runs() }
+                .ifBlank { item.o("accountByline").s("simpleText").orEmpty() }
             AccountChannel(
-                name = name,
-                subtitle = item.o("channelHandle").runs()
-                    .ifBlank { item.o("channelHandle").s("simpleText").orEmpty() }
-                    .ifBlank { item.o("accountByline").runs() }
-                    .ifBlank { item.o("accountByline").s("simpleText").orEmpty() },
+                name = accountDisplayName(
+                    item.o("accountName").runs(),
+                    item.o("accountName").s("simpleText").orEmpty(),
+                    subtitle,
+                ),
+                subtitle = subtitle,
                 thumbnailUrl = item.o("accountPhoto").a("thumbnails").best(),
                 pageId = pageId,
                 dataSyncId = dataSyncId,
                 activeOnWeb = (item["isSelected"] as? JsonPrimitive)?.content == "true",
             )
         }.distinctBy { it.key }
+
+    /**
+     * The first candidate a person can actually see, else a generic label.
+     *
+     * YouTube lets a channel be named with nothing visible — whitespace, or
+     * the "blank name" trick of Hangul fillers, braille blanks and zero-width
+     * marks. Rejecting such a name used to abort sign-in entirely (the account
+     * header parsed as null) and drop the channel from the switcher, so the
+     * name now falls back to the handle/email instead of gating anything.
+     */
+    fun accountDisplayName(vararg candidates: String): String =
+        candidates.map { it.trim() }.firstOrNull { name -> name.any { !it.isInvisible() } } ?: "YouTube Music"
+
+    private fun Char.isInvisible(): Boolean = isWhitespace() || this in INVISIBLE_NAME_CHARS ||
+        category == CharCategory.FORMAT || category == CharCategory.CONTROL
+
+    private const val INVISIBLE_NAME_CHARS = "\u115F\u1160\u3164\uFFA0\u2800\u17B4\u17B5"
 
     /** Tracks of a watch queue (`next` response) — the AutoPlay radio mix. */
     fun parseWatchQueue(root: JsonElement): List<Song> {

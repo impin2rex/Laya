@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.innertube.InnertubeParser
 import com.music.laya.data.model.Account
 import com.music.laya.data.model.AccountChannel
 import kotlinx.serialization.Serializable
@@ -339,11 +340,10 @@ internal object DesktopAccountParser {
     /** Name, email and photo, from the header the account menu opens with. */
     fun account(root: JsonElement): Account? {
         val header = DesktopSearchClient.renderers(root, "activeAccountHeaderRenderer").firstOrNull() ?: return null
-        val name = header.text("accountName")
-        if (name.isBlank()) return null
+        val email = header.text("email").ifBlank { header.text("channelHandle") }
         return Account(
-            name = name,
-            email = header.text("email").ifBlank { header.text("channelHandle") },
+            name = InnertubeParser.accountDisplayName(header.text("accountName"), email),
+            email = email,
             thumbnailUrl = header.photo(),
         )
     }
@@ -351,16 +351,15 @@ internal object DesktopAccountParser {
     /** The channels a switcher response offers, in the order YouTube lists them. */
     fun channels(root: JsonElement): List<AccountChannel> =
         DesktopSearchClient.renderers(root, "accountItem").mapNotNull { item ->
-            val name = item.text("accountName")
-            if (name.isBlank()) return@mapNotNull null
             val pageId = item.findString("pageId")
             // `<accountSyncId>||<sessionSyncId>`; only the first half names the account, exactly as
             // in the shell's own DATASYNC_ID.
             val dataSyncId = item.findString("datasyncIdToken")?.substringBefore("||")?.takeIf { it.isNotBlank() }
             if (pageId == null && dataSyncId == null) return@mapNotNull null
+            val subtitle = item.text("channelHandle").ifBlank { item.text("accountByline") }
             AccountChannel(
-                name = name,
-                subtitle = item.text("channelHandle").ifBlank { item.text("accountByline") },
+                name = InnertubeParser.accountDisplayName(item.text("accountName"), subtitle),
+                subtitle = subtitle,
                 thumbnailUrl = item.photo(),
                 pageId = pageId,
                 dataSyncId = dataSyncId,
