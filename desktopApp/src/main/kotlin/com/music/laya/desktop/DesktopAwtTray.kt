@@ -47,6 +47,13 @@ internal object DesktopAwtTray {
         }
     }
 
+    /** Rebuilds the menu for an entry whose label changed outside [update]. */
+    fun refreshMenu() {
+        EventQueue.invokeLater {
+            synchronized(lock) { icon?.popupMenu = DesktopTrayMenu.awtPopup() }
+        }
+    }
+
     fun stop() {
         EventQueue.invokeLater {
             synchronized(lock) {

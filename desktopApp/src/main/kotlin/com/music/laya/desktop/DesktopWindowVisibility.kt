@@ -57,8 +57,20 @@ internal object DesktopWindowVisibility {
         }
     }
 
+    /** Puts the window away while something else stands in for it — the mini player. */
+    fun hide() {
+        DesktopWindowMode.exit()
+        _visible.value = false
+    }
+
     /** Brings the window back — from the Dock, tray menu, or the icon itself. */
     fun show() {
+        // The mini player only ever stands in for this window: whatever brings it back — the Dock,
+        // the tray, the mini player's own close — puts the mini player away.
+        if (DesktopMiniWindow.open.value) {
+            DesktopMiniWindow.open.value = false
+            DesktopTrayMenu.refresh()
+        }
         _visible.value = true
         EventQueue.invokeLater {
             val win = windowRef?.get()
