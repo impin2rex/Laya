@@ -671,4 +671,6 @@
     <string name="lyrics_original_title_desc">先還原 YouTube 原標題再搜歌詞，翻譯過的標題也能找到</string>
     <string name="user_agent">使用者代理</string>
     <string name="app_icon_default">預設</string>
+    <string name="prefer_music_only">優先播放純音樂版本</string>
+    <string name="prefer_music_only_subtitle">音樂影片會以歌曲形式播放並顯示封面，直到你切換到影片</string>
 </resources>

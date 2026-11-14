@@ -707,4 +707,6 @@
     <string name="miscellaneous_footer">При включении закрытие приложения из недавних также останавливает воспроизведение музыки.</string>
     <string name="user_agent">Агент пользователя</string>
     <string name="app_icon_default">По умолчанию</string>
+    <string name="prefer_music_only">Предпочитать аудиоверсию</string>
+    <string name="prefer_music_only_subtitle">Клипы воспроизводятся как песни, с обложкой, пока вы не переключитесь на видео</string>
 </resources>

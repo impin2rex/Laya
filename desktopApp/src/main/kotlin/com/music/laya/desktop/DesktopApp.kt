@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.ui.player.VideoKeys
 import androidx.compose.foundation.lazy.LazyListState
 import com.music.laya.ui.components.LocalShelfRowChrome
 import com.music.laya.ui.components.ShelfRowChrome
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.pointer.isBackPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -1988,9 +1990,14 @@ fun LayaDesktopApp() {
         // Watching is for the track it was asked on: another track — next, previous, or back to
         // this one later — starts as music again. A switch to the video names it before it plays.
         if (watching != playing?.videoId) watching = null
-        if (playing == null || partyState.inParty || playing.localUri != null) return@LaunchedEffect
+        // A saved song still offers its music video, streamed; a saved video is never swapped away
+        // from the file for a stream of its audio.
+        if (playing == null || partyState.inParty || (playing.localUri != null && playing.isVideo)) return@LaunchedEffect
         if (playing.isVideo) DesktopMusicVideo.prefetch(playing.videoId)
         var song = asPlayed(playing)
+        // Without "Prefer music-only version" a video is watched from the start, never swapped.
+        val preferMusicOnly = DesktopAppearanceSettings.preferMusicOnly.value
+        if (!preferMusicOnly && song.isVideo) watching = song.videoId
         val other = versionPairs[song.videoId] ?: withContext(Dispatchers.IO) {
             runCatching {
                 suspend fun audioOf(video: Song) =
@@ -2013,9 +2020,10 @@ fun LayaDesktopApp() {
                 }
             }.getOrNull()
         }
+        if (!preferMusicOnly && song.isVideo) watching = song.videoId
         if (other != null && playbackEngine.state.value.song?.videoId == song.videoId) {
             alternateVersion = song.videoId to other
-            if (song.isVideo && watching != song.videoId) {
+            if (song.isVideo && song.localUri == null && watching != song.videoId) {
                 swapTo(other, fromStart = playbackEngine.state.value.positionMs < AUTO_AUDIO_FROM_START_MS)
             } else if (other.isVideo) {
                 // Asked now, so a press of the switch finds the video's stream already in hand.
@@ -3479,6 +3487,116 @@ fun LayaDesktopApp() {
             LocalContentColor provides Color.White,
             LocalNowPlaying provides selectedSong,
         ) {
+            // The app's keyboard shortcuts, handed to the window itself (see [DesktopShortcuts]) rather
+            // than hung on the page: a window hands its keys to nothing on the page while nothing there
+            // has focus — after a video goes full screen, say — and every shortcut went dead until a click.
+            val shortcuts: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = shortcuts@{ event ->
+                if (event.type != KeyEventType.KeyUp) return@shortcuts false
+                when {
+                    event.key == Key.MediaPlayPause -> {
+                        if (selectedSong != null) togglePlayPauseFromUser()
+                        true
+                    }
+                    event.key == Key.MediaNext -> {
+                        playNext()
+                        true
+                    }
+                    event.key == Key.MediaPrevious -> {
+                        playPrevious()
+                        true
+                    }
+                    event.key == Key.F11 -> {
+                        DesktopWindowMode.toggle()
+                        true
+                    }
+                    event.key == Key.DirectionLeft && event.isAltPressed && !overlays.nowPlaying -> {
+                        goBack()
+                        true
+                    }
+                    DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.Comma -> {
+                        openSettings()
+                        true
+                    }
+                    // Full screen, as a Mac app does it — ahead of ⌘F, which is search.
+                    DesktopPlatform.isMac && event.isMetaPressed && event.isCtrlPressed && event.key == Key.F -> {
+                        DesktopWindowMode.toggle()
+                        true
+                    }
+                    DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.F -> {
+                        searchFocusRequested = true
+                        true
+                    }
+                    // Space plays and pauses a music video in the player, as in any video player.
+                    event.key == Key.Spacebar && !event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed &&
+                        overlays.nowPlaying && watching != null && playbackEngine.state.value.song?.videoId == watching -> {
+                        togglePlayPauseFromUser()
+                        true
+                    }
+                    // ← and → skip ten seconds and A changes the aspect, VLC's keys — only over a
+                    // music video in the player, so they never steal an arrow from anything else.
+                    (event.key == Key.DirectionLeft || event.key == Key.DirectionRight || event.key == Key.A) &&
+                        !event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed && !event.isShiftPressed &&
+                        overlays.nowPlaying && watching != null && playbackEngine.state.value.song?.videoId == watching -> {
+                        when (event.key) {
+                            Key.DirectionLeft -> VideoKeys.skip(-1)
+                            Key.DirectionRight -> VideoKeys.skip(1)
+                            else -> VideoKeys.nextScale()
+                        }
+                        true
+                    }
+                    // F alone, as in any video player — only over a music video in the player,
+                    // so it is never a letter typed somewhere else.
+                    event.key == Key.F && !event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed &&
+                        overlays.nowPlaying && watching != null && playbackEngine.state.value.song?.videoId == watching -> {
+                        DesktopWindowMode.toggle()
+                        true
+                    }
+                    DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.W -> {
+                        windowActions?.close?.invoke()
+                        true
+                    }
+                    // Apple Music's Switch to Mini Player: ⌥⌘M, or Ctrl+Alt+M elsewhere.
+                    event.key == Key.M && event.isAltPressed &&
+                        (if (DesktopPlatform.isMac) event.isMetaPressed else event.isCtrlPressed) -> {
+                        DesktopMiniWindow.show()
+                        true
+                    }
+                    DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.M -> {
+                        windowActions?.minimize?.invoke()
+                        true
+                    }
+                    // One layer at a time, innermost first: the player's own side panel, then
+                    // the player.
+                    event.key == Key.Escape -> when {
+                        // Out of full screen before anything else, as a video player does.
+                        overlays.nowPlaying && DesktopWindowMode.fullScreen.value -> {
+                            DesktopWindowMode.exit()
+                            true
+                        }
+                        // The player's own layers first — the lyrics, the queue, a
+                        // drawer — in the order Android's back reaches them.
+                        overlays.nowPlaying && PlayerBack.dispatch() -> true
+                        overlays.nowPlaying -> {
+                            overlays.nowPlaying = false
+                            true
+                        }
+                        overlays.sidePanel != null -> {
+                            overlays.sidePanel = null
+                            true
+                        }
+                        // A page of Settings steps back the way the back button does, unless
+                        // one of its prompts is up over it.
+                        overlays.settingsPage != null &&
+                            !overlays.lastfmLogin && !overlays.listenBrainzToken && !overlays.discordToken -> {
+                            goBack()
+                            true
+                        }
+                        else -> false
+                    }
+                    else -> false
+                }
+            }
+            SideEffect { DesktopShortcuts.handler = shortcuts }
             DesktopFrame(
                 // The phone's page is black, not the near-black of its cards.
                 containerColor = DesktopBackground,
@@ -3491,94 +3609,6 @@ fun LayaDesktopApp() {
                         artworkUrl = ambientArtworkUrl,
                         transparentBase = transparentBase,
                     )
-                },
-                modifier = Modifier.onPreviewKeyEvent { event ->
-                    if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
-                    when {
-                        event.key == Key.MediaPlayPause -> {
-                            if (selectedSong != null) togglePlayPauseFromUser()
-                            true
-                        }
-                        event.key == Key.MediaNext -> {
-                            playNext()
-                            true
-                        }
-                        event.key == Key.MediaPrevious -> {
-                            playPrevious()
-                            true
-                        }
-                        event.key == Key.F11 -> {
-                            DesktopWindowMode.toggle()
-                            true
-                        }
-                        event.key == Key.DirectionLeft && event.isAltPressed && !overlays.nowPlaying -> {
-                            goBack()
-                            true
-                        }
-                        DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.Comma -> {
-                            openSettings()
-                            true
-                        }
-                        // Full screen, as a Mac app does it — ahead of ⌘F, which is search.
-                        DesktopPlatform.isMac && event.isMetaPressed && event.isCtrlPressed && event.key == Key.F -> {
-                            DesktopWindowMode.toggle()
-                            true
-                        }
-                        DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.F -> {
-                            searchFocusRequested = true
-                            true
-                        }
-                        // F alone, as in any video player — only over a music video in the player,
-                        // so it is never a letter typed somewhere else.
-                        event.key == Key.F && !event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed &&
-                            overlays.nowPlaying && watching != null && playbackEngine.state.value.song?.videoId == watching -> {
-                            DesktopWindowMode.toggle()
-                            true
-                        }
-                        DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.W -> {
-                            windowActions?.close?.invoke()
-                            true
-                        }
-                        // Apple Music's Switch to Mini Player: ⌥⌘M, or Ctrl+Alt+M elsewhere.
-                        event.key == Key.M && event.isAltPressed &&
-                            (if (DesktopPlatform.isMac) event.isMetaPressed else event.isCtrlPressed) -> {
-                            DesktopMiniWindow.show()
-                            true
-                        }
-                        DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.M -> {
-                            windowActions?.minimize?.invoke()
-                            true
-                        }
-                        // One layer at a time, innermost first: the player's own side panel, then
-                        // the player.
-                        event.key == Key.Escape -> when {
-                            // Out of full screen before anything else, as a video player does.
-                            overlays.nowPlaying && DesktopWindowMode.fullScreen.value -> {
-                                DesktopWindowMode.exit()
-                                true
-                            }
-                            // The player's own layers first — the lyrics, the queue, a
-                            // drawer — in the order Android's back reaches them.
-                            overlays.nowPlaying && PlayerBack.dispatch() -> true
-                            overlays.nowPlaying -> {
-                                overlays.nowPlaying = false
-                                true
-                            }
-                            overlays.sidePanel != null -> {
-                                overlays.sidePanel = null
-                                true
-                            }
-                            // A page of Settings steps back the way the back button does, unless
-                            // one of its prompts is up over it.
-                            overlays.settingsPage != null &&
-                                !overlays.lastfmLogin && !overlays.listenBrainzToken && !overlays.discordToken -> {
-                                goBack()
-                                true
-                            }
-                            else -> false
-                        }
-                        else -> false
-                    }
                 },
                 topBar = { compact ->
                     DesktopTopBar(
@@ -6871,6 +6901,16 @@ private fun DesktopSettingsScreen(
                         automaticUpdates,
                         DesktopUpdater::setAutomatic,
                     )
+                    val preferMusicOnly by DesktopAppearanceSettings.preferMusicOnly.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["prefer_music_only", "Prefer music-only version"],
+                        DesktopStrings[
+                            "prefer_music_only_subtitle",
+                            "Music videos play as songs, with their cover art, until you switch to the video",
+                        ],
+                        preferMusicOnly,
+                        DesktopAppearanceSettings::setPreferMusicOnly,
+                    )
                     val miniPlayerVideo by DesktopAppearanceSettings.miniPlayerVideo.collectAsState()
                     SettingsToggle(
                         DesktopStrings["mini_player_video", "Video in mini player"],
@@ -8604,4 +8644,13 @@ private fun UpdateNotes(message: String, notes: String?, maxHeight: Dp = 320.dp)
             )
         }
     }
+}
+
+/**
+ * The app's keyboard shortcuts, as the window takes them: [Main]'s window hands every key here before
+ * anything on the page, focused or not. Set by the app as it composes.
+ */
+internal object DesktopShortcuts {
+    @Volatile
+    var handler: ((androidx.compose.ui.input.key.KeyEvent) -> Boolean)? = null
 }

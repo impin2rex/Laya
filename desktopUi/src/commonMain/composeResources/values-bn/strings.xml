@@ -203,4 +203,9 @@
     <string name="reverb_width_help">রেশের স্টেরিও বিস্তার, মোনো থেকে পুরো প্রস্থ পর্যন্ত।</string>
     <string name="reverb_reset">ডিফল্টে রিসেট করুন</string>
     <string name="picture_in_picture">ছবির ভিতরে ছবি</string>
+    <string name="video_scale">ভিডিওর আকার</string>
+    <string name="video_scale_best_fit">সেরা মাপ</string>
+    <string name="video_scale_fit_screen">স্ক্রিন ভরাট</string>
+    <string name="video_scale_fill">প্রসারিত</string>
+    <string name="video_skip_seconds">%1$d সেকেন্ড</string>
 </resources>

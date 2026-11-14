@@ -379,8 +379,8 @@
     <string name="performance">परफ़ॉर्मेंस</string>
     <string name="play_next_on_swipe">स्वाइप करने पर आगे चलाएं</string>
     <string name="playback">प्लेबैक</string>
-    <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only">केवल संगीत वाला संस्करण पसंद करें</string>
+    <string name="prefer_music_only_subtitle">म्यूज़िक वीडियो कवर आर्ट के साथ गानों की तरह चलेंगे, जब तक आप वीडियो पर स्विच न करें</string>
     <string name="mini_player_video">मिनी प्लेयर में वीडियो</string>
     <string name="mini_player_video_subtitle">डेटा और बैटरी बचाने के लिए मिनी प्लेयर में म्यूज़िक वीडियो सबसे कम क्वालिटी पर चलाएँ</string>
     <string name="prefer_usb_dac">USB DAC को प्राथमिकता दें</string>
@@ -708,4 +708,9 @@
     <string name="no_internet_connection">इंटरनेट कनेक्शन नहीं है</string>
     <string name="something_went_wrong">कुछ गड़बड़ हो गई</string>
     <string name="picture_in_picture">पिक्चर-इन-पिक्चर</string>
+    <string name="video_scale">वीडियो का आकार</string>
+    <string name="video_scale_best_fit">सबसे सही फ़िट</string>
+    <string name="video_scale_fit_screen">स्क्रीन भरें</string>
+    <string name="video_scale_fill">फैलाएँ</string>
+    <string name="video_skip_seconds">%1$d सेकंड</string>
 </resources>

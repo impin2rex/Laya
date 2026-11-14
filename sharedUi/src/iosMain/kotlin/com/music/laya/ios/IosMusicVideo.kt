@@ -1,5 +1,9 @@
 package com.music.laya.ios
 
+import com.music.laya.data.settings.VideoCropSettler
+import com.music.laya.data.settings.VideoCrop
+import com.music.laya.data.settings.BlackBars
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -134,6 +138,11 @@ internal object IosMusicVideo {
 
     /** The newest frame of the playing picture, whichever surface shows it. */
     val frame = MutableStateFlow<VideoFrame?>(null)
+
+    /** The playing video's own black bars, cut off when it is drawn — see [VideoCropSettler]. */
+    val crop = MutableStateFlow(VideoCrop.NONE)
+    private var cropOf: String? = null
+    private var settler = VideoCropSettler()
 
     class VideoFrame(val videoId: String, val image: Image)
 
@@ -287,6 +296,8 @@ internal object IosMusicVideo {
         pictureId = null
         dropPictureInPicture()
         frame.value = null
+        crop.value = VideoCrop.NONE
+        cropOf = null
         quality.value = quality.value.copy(heights = emptyList(), activeHeight = null)
     }
 
@@ -294,6 +305,13 @@ internal object IosMusicVideo {
     private suspend fun pullFrames(p: HlsPicture, videoId: String) {
         while (kotlinx.coroutines.currentCoroutineContext().isActive) {
             if (foreground || pipActive) p.nextFrame()?.let { frame.value = VideoFrame(videoId, it) }
+            if (p.barsRead) {
+                if (cropOf != videoId) {
+                    cropOf = videoId
+                    settler = VideoCropSettler()
+                }
+                crop.value = settler.offer(p.bars)
+            }
             delay(FRAME_POLL_MS)
         }
     }
@@ -627,6 +645,26 @@ private class HlsPicture(url: String) {
     private val images = ArrayDeque<Image>()
     private var bytes = ByteArray(0)
 
+    /** Whether the frame [nextFrame] last returned was read for [BlackBars], and what it read. */
+    var barsRead = false
+        private set
+    var bars: VideoCrop? = null
+        private set
+    private var barsReadAt = 0.0
+
+    /** [BlackBars] on a 160×90 grid of the BGRA frame just copied, about once a second. */
+    private fun readBarsEverySecond(w: Int, h: Int, rowBytes: Int) {
+        val now = CACurrentMediaTime()
+        barsRead = now - barsReadAt >= 1.0
+        if (!barsRead) return
+        barsReadAt = now
+        val frame = bytes
+        bars = BlackBars.detect(160, 90) { x, y ->
+            val i = (y * (h - 1) / 89) * rowBytes + (x * (w - 1) / 159) * 4
+            maxOf(frame[i].toInt() and 0xFF, frame[i + 1].toInt() and 0xFF, frame[i + 2].toInt() and 0xFF)
+        }
+    }
+
     @Volatile private var seeking = false
 
     /** How far ahead a jump is aimed: what the last one took to land. */
@@ -711,6 +749,7 @@ private class HlsPicture(url: String) {
 
     /** The newest decoded frame, or null when nothing new arrived since the last call. Off the main thread. */
     fun nextFrame(): Image? {
+        barsRead = false
         val item = player?.currentItem ?: return null
         val o = outputFor(item) ?: return null
         val t = o.itemTimeForHostTime(CACurrentMediaTime())
@@ -724,6 +763,7 @@ private class HlsPicture(url: String) {
             if (bytes.size != rb * h) bytes = ByteArray(rb * h)
             bytes.usePinned { memcpy(it.addressOf(0), CVPixelBufferGetBaseAddress(buf), (rb * h).convert()) }
             CVPixelBufferUnlockBaseAddress(buf, 1uL)
+            readBarsEverySecond(w, h, rb)
             val img = Image.makeRaster(ImageInfo(w, h, ColorType.BGRA_8888, ColorAlphaType.PREMUL), bytes, rb)
             images.addLast(img)
             while (images.size > FRAMES_KEPT) images.removeFirst().close()
@@ -749,7 +789,7 @@ private class HlsPicture(url: String) {
 @Composable
 internal fun IosMusicVideoSurface(
     videoId: String,
-    fit: Boolean,
+    scale: VideoScale,
     onRenderedChanged: (Boolean) -> Unit,
     modifier: Modifier,
     /** The mini player's cover slot, which alone holds the picture to its smallest variants. */
@@ -761,6 +801,7 @@ internal fun IosMusicVideoSurface(
 
     // Read in the draw phase only: a new frame redraws the canvas, it doesn't recompose.
     val frame = IosMusicVideo.frame.collectAsState()
+    val crop = IosMusicVideo.crop.collectAsState()
     val rendered by remember(videoId) { derivedStateOf { frame.value?.videoId == videoId } }
     LaunchedEffect(rendered) { report(rendered) }
     DisposableEffect(Unit) { onDispose { report(false) } }
@@ -775,19 +816,21 @@ internal fun IosMusicVideoSurface(
             .onGloballyPositioned { IosMusicVideo.place(surface, it.boundsInWindow()) }
             .graphicsLayer { this.alpha = alpha.value }) {
         val f = frame.value?.takeIf { it.videoId == videoId } ?: return@Canvas
-        drawPicture(f.image, fit)
+        drawPicture(f.image, scale, crop.value)
     }
 }
 
-/** [f] fitted into ([fit]) or cropped to this canvas, centred. Drawn on Skia's own canvas: see [HlsPicture.images]. */
-private fun DrawScope.drawPicture(f: Image, fit: Boolean) {
-    val aspect = f.width.toFloat() / f.height
-    val viewAspect = size.width / size.height
-    val widthLimited = if (fit) aspect > viewAspect else aspect <= viewAspect
-    val w = if (widthLimited) size.width else size.height * aspect
-    val h = if (widthLimited) size.width / aspect else size.height
-    val left = (size.width - w) / 2
-    val top = (size.height - h) / 2
+/**
+ * [f] fitted into, cropped to or stretched to this canvas ([scale]), centred — the picture inside
+ * its own black bars ([crop]), which fall off the canvas or into black. Drawn on Skia's own canvas:
+ * see [HlsPicture.images].
+ */
+private fun DrawScope.drawPicture(f: Image, scale: VideoScale, crop: VideoCrop) {
+    val at = scale.place(f.width.toFloat() / f.height, crop, size.width, size.height)
+    val left = at.left
+    val top = at.top
+    val w = at.width
+    val h = at.height
     clipRect {
         drawIntoCanvas { canvas ->
             canvas.nativeCanvas.drawImageRect(

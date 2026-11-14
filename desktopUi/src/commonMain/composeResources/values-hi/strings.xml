@@ -224,4 +224,9 @@
     <string name="reverb_width_help">टेल का स्टीरियो फैलाव, मोनो से पूरी चौड़ाई तक।</string>
     <string name="reverb_reset">डिफ़ॉल्ट पर रीसेट करें</string>
     <string name="picture_in_picture">पिक्चर-इन-पिक्चर</string>
+    <string name="video_scale">वीडियो का आकार</string>
+    <string name="video_scale_best_fit">सबसे सही फ़िट</string>
+    <string name="video_scale_fit_screen">स्क्रीन भरें</string>
+    <string name="video_scale_fill">फैलाएँ</string>
+    <string name="video_skip_seconds">%1$d सेकंड</string>
 </resources>

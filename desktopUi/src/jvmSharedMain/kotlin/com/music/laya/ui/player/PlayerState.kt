@@ -28,6 +28,7 @@ import coil3.request.crossfade
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.artworkAt
+import com.music.laya.data.model.artworkFallback
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
@@ -181,13 +182,19 @@ internal class PlayerArtwork(
 @Composable
 internal fun rememberPlayerArtwork(remoteArt: String?): PlayerArtwork {
     val context = LocalPlatformContext.current
-    val artUrl = remoteArt?.artworkAt(ART_PX)
+    val sized = remoteArt?.artworkAt(ART_PX)
+    // A video's large frame is missing on old uploads; its 4:3 thumbnail stands in.
+    var artUrl by remember(sized) { mutableStateOf(sized) }
     // "Reduce animation" turns the cover's cross-dissolve into a cut, the same as it
     // does the palette's — see [ArtworkPalette].
     val reduceAnimation by PlayerSettings.reduceAnimation.collectAsStateWithLifecycle()
     val crossfadeMs = if (reduceAnimation) 0 else ART_CROSSFADE_MS
     val art = remember(artUrl) { PlayerArtwork(artUrl, context, crossfadeMs) }
     LaunchedEffect(artUrl, art.failed) {
+        if (art.failed) artUrl.artworkFallback()?.let {
+            artUrl = it
+            return@LaunchedEffect
+        }
         // A track with no artwork at all fails immediately and would fail
         // identically three more times: there is no request to make, so there is
         // nothing a second go could do differently.

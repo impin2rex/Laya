@@ -266,8 +266,8 @@
     <string name="skip_silence">নীরবতা বাদ দিন</string>
     <string name="skip_silence_subtitle">এক সেকেন্ডের বেশি ফাঁক ছেঁটে দেয়</string>
     <string name="skip_silence_float_subtitle">32-bit float আউটপুটে পাওয়া যায় না</string>
-    <string name="prefer_music_only">শুধু গানের ভার্সন বেছে নিন</string>
-    <string name="prefer_music_only_subtitle">মিউজিক ভিডিওর ক্ষেত্রে, ক্যাটালগের অডিও ভার্সন খুঁজে লোড করার সময় ভিডিওর বিবরণ দেখায়</string>
+    <string name="prefer_music_only">শুধু মিউজিক সংস্করণ পছন্দ করুন</string>
+    <string name="prefer_music_only_subtitle">মিউজিক ভিডিও গান হিসেবে, কভার আর্ট সহ বাজবে, যতক্ষণ না আপনি ভিডিওতে যান</string>
     <string name="smart_version_alignment">স্মার্ট অডিও অ্যালাইনমেন্ট</string>
     <string name="smart_version_alignment_subtitle">অডিও ওয়েভফর্ম অ্যানালাইজ করে প্লেব্যাকের ঠিক মিলে যাওয়া মুহূর্তটা খুঁজে নেয়</string>
     <string name="equalizer">ইকুয়ালাইজার</string>
@@ -1145,4 +1145,9 @@
     <string name="no_audio_version">এই ভিডিওর অডিও সংস্করণ পাওয়া যায়নি</string>
     <string name="no_video_version">এই গানের ভিডিও সংস্করণ পাওয়া যায়নি</string>
     <string name="version_switch_in_party">একসাথে শুনুন-এ সবাই একই সংস্করণ শোনেন</string>
+    <string name="video_scale">ভিডিওর আকার</string>
+    <string name="video_scale_best_fit">সেরা মাপ</string>
+    <string name="video_scale_fit_screen">স্ক্রিন ভরাট</string>
+    <string name="video_scale_fill">প্রসারিত</string>
+    <string name="video_skip_seconds">%1$d সেকেন্ড</string>
 </resources>

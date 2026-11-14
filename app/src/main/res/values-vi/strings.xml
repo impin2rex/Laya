@@ -810,9 +810,9 @@
 
     <string name="thai">Thai</string>
 
-    <string name="prefer_music_only">Prefer music-only version</string>
+    <string name="prefer_music_only">Ưu tiên bản chỉ có nhạc</string>
 
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only_subtitle">Video âm nhạc phát như bài hát, kèm ảnh bìa, cho đến khi bạn chuyển sang video</string>
 
     <string name="smart_version_alignment">Smart audio alignment</string>
 
@@ -1294,4 +1294,9 @@
     <string name="no_audio_version">Không tìm thấy phiên bản âm thanh cho video này</string>
     <string name="no_video_version">Không tìm thấy phiên bản video cho bài hát này</string>
     <string name="version_switch_in_party">Mọi người trong Listen together đều nghe cùng một phiên bản</string>
+    <string name="video_scale">Kích thước video</string>
+    <string name="video_scale_best_fit">Vừa khít</string>
+    <string name="video_scale_fit_screen">Lấp đầy màn hình</string>
+    <string name="video_scale_fill">Kéo giãn</string>
+    <string name="video_skip_seconds">%1$d giây</string>
 </resources>

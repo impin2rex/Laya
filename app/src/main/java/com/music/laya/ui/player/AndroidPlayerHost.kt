@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.VideoScale
 import com.music.laya.wear.WearBridge
 import android.content.Context
 import android.database.ContentObserver
@@ -99,7 +100,7 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
     override fun MiniPlayerVideo(videoId: String, modifier: Modifier) {
         val wanted by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
         if (wanted) {
-            AndroidMusicVideo(videoId, fit = false, onRenderedChanged = {}, modifier = modifier, priority = MusicVideoEngine.MINI_PLAYER_PRIORITY)
+            AndroidMusicVideo(videoId, scale = VideoScale.FIT_SCREEN, onRenderedChanged = {}, modifier = modifier, priority = MusicVideoEngine.MINI_PLAYER_PRIORITY)
         }
     }
 
@@ -107,8 +108,8 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         if (VideoPictureInPicture.supported(app)) VideoPictureInPicture::enter else null
 
     @Composable
-    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
-        AndroidMusicVideo(videoId, fit, onRenderedChanged, modifier)
+    override fun MusicVideo(videoId: String, scale: VideoScale, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        AndroidMusicVideo(videoId, scale, onRenderedChanged, modifier)
 
     override val musicVideoAspect: StateFlow<Float> get() = MusicVideoEngine.aspect
 

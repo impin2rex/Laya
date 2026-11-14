@@ -686,4 +686,6 @@
     <string name="miscellaneous_footer">כשמופעל, סגירת האפליקציה ממסך האפליקציות האחרונות תעצור גם את השמעת המוזיקה.</string>
     <string name="user_agent">סוכן משתמש</string>
     <string name="app_icon_default">ברירת מחדל</string>
+    <string name="prefer_music_only">העדפת גרסת מוזיקה בלבד</string>
+    <string name="prefer_music_only_subtitle">קליפים מתנגנים כשירים, עם עטיפת האלבום, עד שתעברו לווידאו</string>
 </resources>

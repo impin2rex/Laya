@@ -379,8 +379,8 @@
     <string name="performance">Performance</string>
     <string name="play_next_on_swipe">Lire ensuite en glissant</string>
     <string name="playback">Lecture</string>
-    <string name="prefer_music_only">Préférer la version audio uniquement</string>
-    <string name="prefer_music_only_subtitle">Pour les clips vidéo, afficher les détails de la vidéo tout en recherchant et en chargeant la version audio du catalogue</string>
+    <string name="prefer_music_only">Préférer la version audio seule</string>
+    <string name="prefer_music_only_subtitle">Les clips sont lus comme des titres, avec leur pochette, jusqu’à ce que vous passiez à la vidéo</string>
     <string name="mini_player_video">Vidéo dans le mini-lecteur</string>
     <string name="mini_player_video_subtitle">Lit le clip dans le mini-lecteur en qualité minimale, pour économiser les données et la batterie</string>
     <string name="prefer_usb_dac">Préférer le DAC USB</string>
@@ -708,4 +708,9 @@
     <string name="no_internet_connection">Aucune connexion internet</string>
     <string name="something_went_wrong">Un problème est survenu</string>
     <string name="picture_in_picture">Image dans l’image</string>
+    <string name="video_scale">Taille de la vidéo</string>
+    <string name="video_scale_best_fit">Ajustement optimal</string>
+    <string name="video_scale_fit_screen">Remplir l’écran</string>
+    <string name="video_scale_fill">Étirer</string>
+    <string name="video_skip_seconds">%1$d secondes</string>
 </resources>

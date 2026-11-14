@@ -685,4 +685,6 @@
     <string name="miscellaneous_footer">Une fois activé, fermer l\'application depuis les applications récentes arrête aussi la musique.</string>
     <string name="user_agent">Agent utilisateur</string>
     <string name="app_icon_default">Par défaut</string>
+    <string name="prefer_music_only">Préférer la version audio seule</string>
+    <string name="prefer_music_only_subtitle">Les clips sont lus comme des titres, avec leur pochette, jusqu’à ce que vous passiez à la vidéo</string>
 </resources>

@@ -379,8 +379,8 @@
     <string name="performance">ביצועים</string>
     <string name="play_next_on_swipe">נגן הבא בהחלקה</string>
     <string name="playback">השמעה</string>
-    <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only">העדפת גרסת מוזיקה בלבד</string>
+    <string name="prefer_music_only_subtitle">קליפים מתנגנים כשירים, עם עטיפת האלבום, עד שתעברו לווידאו</string>
     <string name="mini_player_video">וידאו בנגן המיני</string>
     <string name="mini_player_video_subtitle">מנגן קליפ בנגן המיני באיכות הנמוכה ביותר, כדי לחסוך בנתונים ובסוללה</string>
     <string name="prefer_usb_dac">העדף USB DAC</string>
@@ -708,4 +708,9 @@
     <string name="no_internet_connection">אין חיבור אינטרנט</string>
     <string name="something_went_wrong">משהו השתבש</string>
     <string name="picture_in_picture">תמונה בתוך תמונה</string>
+    <string name="video_scale">גודל הווידאו</string>
+    <string name="video_scale_best_fit">התאמה מיטבית</string>
+    <string name="video_scale_fit_screen">מילוי המסך</string>
+    <string name="video_scale_fill">מתיחה</string>
+    <string name="video_skip_seconds">%1$d שניות</string>
 </resources>

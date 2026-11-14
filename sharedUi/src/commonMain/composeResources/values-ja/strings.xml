@@ -378,8 +378,8 @@
     <string name="performance">パフォーマンス</string>
     <string name="play_next_on_swipe">スワイプで次に再生</string>
     <string name="playback">再生</string>
-    <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only">音楽のみのバージョンを優先</string>
+    <string name="prefer_music_only_subtitle">ミュージックビデオは、動画に切り替えるまでジャケット付きの曲として再生されます</string>
     <string name="mini_player_video">ミニプレーヤーで動画を再生</string>
     <string name="mini_player_video_subtitle">データとバッテリーを節約するため、ミュージックビデオをミニプレーヤーで最低画質で再生します</string>
     <string name="prefer_usb_dac">USB DAC を優先</string>
@@ -703,4 +703,9 @@
     <string name="no_internet_connection">インターネット接続がありません</string>
     <string name="something_went_wrong">問題が発生しました</string>
     <string name="picture_in_picture">ピクチャー イン ピクチャー</string>
+    <string name="video_scale">動画のサイズ</string>
+    <string name="video_scale_best_fit">最適サイズ</string>
+    <string name="video_scale_fit_screen">画面に合わせる</string>
+    <string name="video_scale_fill">引き伸ばし</string>
+    <string name="video_skip_seconds">%1$d 秒</string>
 </resources>

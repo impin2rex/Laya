@@ -224,4 +224,9 @@
     <string name="reverb_width_help">尾音的立体声宽度，从单声道到全宽。</string>
     <string name="reverb_reset">恢复默认设置</string>
     <string name="picture_in_picture">画中画</string>
+    <string name="video_scale">视频尺寸</string>
+    <string name="video_scale_best_fit">最佳适配</string>
+    <string name="video_scale_fit_screen">填满屏幕</string>
+    <string name="video_scale_fill">拉伸</string>
+    <string name="video_skip_seconds">%1$d 秒</string>
 </resources>

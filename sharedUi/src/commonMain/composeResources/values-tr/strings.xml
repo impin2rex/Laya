@@ -380,7 +380,7 @@
     <string name="play_next_on_swipe">Kaydırmada sonra çal</string>
     <string name="playback">Oynatma</string>
     <string name="prefer_music_only">Yalnızca müzik sürümünü tercih et</string>
-    <string name="prefer_music_only_subtitle">Müzik videolarında, katalogdaki ses sürümü bulunup yüklenirken video ayrıntılarını gösterir</string>
+    <string name="prefer_music_only_subtitle">Müzik videoları, siz videoya geçene kadar kapak görseliyle şarkı olarak çalınır</string>
     <string name="mini_player_video">Mini oynatıcıda video</string>
     <string name="mini_player_video_subtitle">Veri ve pil tasarrufu için müzik videosunu mini oynatıcıda en düşük kalitede oynatır</string>
     <string name="prefer_usb_dac">USB DAC tercih et</string>
@@ -708,4 +708,9 @@
     <string name="no_internet_connection">İnternet bağlantısı yok</string>
     <string name="something_went_wrong">Bir şeyler ters gitti</string>
     <string name="picture_in_picture">Resim içinde resim</string>
+    <string name="video_scale">Video boyutu</string>
+    <string name="video_scale_best_fit">En iyi sığdırma</string>
+    <string name="video_scale_fit_screen">Ekranı doldur</string>
+    <string name="video_scale_fill">Uzat</string>
+    <string name="video_skip_seconds">%1$d saniye</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.constrainHeight
@@ -860,6 +861,17 @@ fun NowPlayingScreen(
     // A music video plays its own picture where the sleeve is — see
     // [MusicVideoSurface] — and takes the place of any animated cover.
     val videoMode = showsMusicVideo(song) && pictureShown
+    // ← and → on a playing video, VLC's keys — see [VideoKeys]. One run of skips, whichever of
+    // the picture's views is up to mark it.
+    val videoSkip = rememberVideoSkip(
+        position = { position.positionMs },
+        duration = { durationMs },
+        // A party's host holds the playhead: the key says so rather than nothing.
+        seek = { if (controlsLocked) onBlockedControl() else onSeek(it) },
+    )
+    LaunchedEffect(videoMode) {
+        if (videoMode) VideoKeys.skips.collect(videoSkip::skip)
+    }
     // Read once for both the capsule's segment and the glass pill on the video.
     val versionSwitchAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
     val versionSwitching = audioVersionSwitching || versionSwitchAligning
@@ -1960,6 +1972,7 @@ fun NowPlayingScreen(
                     onExitFullscreen = toggleFullScreen,
                     screenFilled = windowFullScreen,
                     onDoubleClick = toggleFullScreen,
+                    skip = videoSkip,
                     onOpenQuality = { showVideoQuality = true },
                     onSwitchToAudio = switchToAudio,
                     switchingVersion = versionSwitching,
@@ -2149,7 +2162,7 @@ fun NowPlayingScreen(
                                 val pictureHaze = remember { HazeState() }
                                 MusicVideoSurface(
                                     videoId = song.videoId,
-                                    fit = false,
+                                    scale = VideoScale.FIT_SCREEN,
                                     onRenderedChanged = { videoRendered = it },
                                     modifier = Modifier.matchParentSize().clip(landscapeArtShape()).hazeSource(pictureHaze),
                                 )
@@ -3475,6 +3488,7 @@ fun NowPlayingScreen(
                                                 .clip(RoundedCornerShape(10.dp)),
                                         )
                                     }
+                                    VideoSkipOverlay(videoSkip, Modifier.clip(RoundedCornerShape(10.dp)).videoKeyFocus())
                                     VideoCornerControls(
                                         fullscreen = false,
                                         onToggleFullscreen = { videoTheater = true },

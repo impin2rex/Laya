@@ -686,4 +686,6 @@
     <string name="miscellaneous_footer">Quando ativado, fechar o app pela tela de apps recentes também interrompe a reprodução de música.</string>
     <string name="user_agent">Agente do usuário</string>
     <string name="app_icon_default">Padrão</string>
+    <string name="prefer_music_only">Preferir versão só com música</string>
+    <string name="prefer_music_only_subtitle">Os videoclipes tocam como músicas, com a capa, até você mudar para o vídeo</string>
 </resources>

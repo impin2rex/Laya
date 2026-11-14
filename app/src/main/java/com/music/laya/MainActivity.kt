@@ -153,6 +153,7 @@ import kotlinx.coroutines.withContext
 import com.music.laya.data.model.durationMillis
 import com.music.laya.data.scrobbling.LastFM
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.data.settings.LibrarySort
 import com.music.laya.data.settings.ThemeMode
 import com.music.laya.ui.components.AccountProfileSelector
@@ -1330,6 +1331,8 @@ private fun LayaApp(
 
             convertedFromAudio = song
             convertedVideoId = video.videoId
+            // Switched to on purpose, so its picture is wanted — see [MusicVideoChoice].
+            MusicVideoChoice.watching.value = video.videoId
             TrackLog.d("Player", "video switch applying '${video.title}' (${video.videoId})", song.videoId)
             val target = video.copy(
                 queueTier = song.queueTier,
@@ -1392,6 +1395,8 @@ private fun LayaApp(
                         convertedAudioId == optimisticVersionSong?.videoId
                     ) -> {
                     keepVideoId = original.videoId
+                    // Back to the video by choice: its picture comes up with it.
+                    MusicVideoChoice.watching.value = original.videoId
                     convertedFromVideo = null
                     convertedAudioId = null
                     if (!versionAlignmentPending(original.videoId)) optimisticVersionSong = original
@@ -1552,6 +1557,9 @@ private fun LayaApp(
             switchingAudioVersion = false
         }
     }
+
+    // A switch to a video names it before the swap lands, so only a track change past it drops it.
+    LaunchedEffect(player.song?.videoId) { MusicVideoChoice.onTrackChanged(player.song?.videoId) }
 
     // Start with the video MediaItem so the main player is populated at once,
     // then resolve its catalogue counterpart behind the loading indicators.

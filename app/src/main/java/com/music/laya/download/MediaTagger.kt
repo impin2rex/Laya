@@ -8,6 +8,7 @@ import com.music.laya.data.DebugLog as Log
 import com.music.laya.data.Http
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.artworkAt
+import com.music.laya.data.model.artworkFallback
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.ByteArrayOutputStream
@@ -406,7 +407,9 @@ object MediaTagger {
 
     private fun fetchCover(track: Song): Artwork? {
         val url = track.artworkAt(1200) ?: return null
+        // A video's large frame is missing on old uploads; its 4:3 thumbnail stands in.
         return fetchCover(url, track.videoId)
+            ?: url.artworkFallback()?.let { fetchCover(it, track.videoId) }
     }
 
     private fun fetchCover(url: String, logId: String): Artwork? {
@@ -416,12 +419,22 @@ object MediaTagger {
                 if (!response.isSuccessful) return@runCatching null
                 val raw = response.body.bytes()
                 val bitmap = BitmapFactory.decodeByteArray(raw, 0, raw.size) ?: return@runCatching null
-                val scaled = downscale(bitmap, COVER_MAX_SIDE)
+                val scaled = downscale(squared(bitmap), COVER_MAX_SIDE)
                 val out = ByteArrayOutputStream()
                 scaled.compress(Bitmap.CompressFormat.JPEG, 92, out)
                 Artwork(out.toByteArray(), "image/jpeg")
             }
         }.onFailure { Log.d(TAG, "no cover saved for $logId: ${it.message}") }.getOrNull()
+    }
+
+    /**
+     * The middle square of a cover that isn't one — a music video's 16:9 frame — so a downloaded
+     * video sits in every player and file browser as an album cover does, not a letterbox.
+     */
+    private fun squared(bitmap: Bitmap): Bitmap {
+        val side = minOf(bitmap.width, bitmap.height)
+        if (maxOf(bitmap.width, bitmap.height) - side <= side / 50) return bitmap
+        return Bitmap.createBitmap(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side)
     }
 
     private fun downscale(bitmap: Bitmap, maxSide: Int): Bitmap {

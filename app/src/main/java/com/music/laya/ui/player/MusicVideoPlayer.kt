@@ -1,5 +1,10 @@
 package com.music.laya.ui.player
 
+import android.graphics.Bitmap
+import com.music.laya.data.settings.VideoCropSettler
+import com.music.laya.data.settings.VideoCrop
+import com.music.laya.data.settings.BlackBars
+import com.music.laya.data.settings.VideoScale
 import android.app.Activity
 import android.app.PictureInPictureParams
 import android.content.Context
@@ -758,7 +763,7 @@ fun PictureInPictureVideo() {
         shown?.let { id ->
             AndroidMusicVideo(
                 videoId = id,
-                fit = true,
+                scale = VideoScale.BEST_FIT,
                 onRenderedChanged = {},
                 modifier = Modifier.fillMaxSize(),
                 priority = PICTURE_IN_PICTURE_PRIORITY,
@@ -780,7 +785,7 @@ private const val PICTURE_IN_PICTURE_PRIORITY = 3
 @Composable
 internal fun AndroidMusicVideo(
     videoId: String,
-    fit: Boolean,
+    scale: VideoScale,
     onRenderedChanged: (Boolean) -> Unit,
     modifier: Modifier,
     /** Which surface wins when two are mounted: the full player's, over the mini player's. */
@@ -820,6 +825,33 @@ internal fun AndroidMusicVideo(
         label = "musicVideoAlpha",
     )
 
+    // The video's own black bars, read off what the view shows about once a second (a 160×90 copy
+    // of it) and cut off as it is laid out — see [VideoCropSettler].
+    var crop by remember(videoId) { mutableStateOf(VideoCrop.NONE) }
+    val settler = remember(videoId) { VideoCropSettler() }
+    LaunchedEffect(view, videoId, rendered) {
+        val target = view ?: return@LaunchedEffect
+        if (!rendered) return@LaunchedEffect
+        val sample = Bitmap.createBitmap(BARS_GRID_W, BARS_GRID_H, Bitmap.Config.ARGB_8888)
+        val pixels = IntArray(BARS_GRID_W * BARS_GRID_H)
+        try {
+            while (true) {
+                delay(BARS_EVERY_MS)
+                if (!target.isAvailable) continue
+                target.getBitmap(sample)
+                sample.getPixels(pixels, 0, BARS_GRID_W, 0, 0, BARS_GRID_W, BARS_GRID_H)
+                crop = settler.offer(
+                    BlackBars.detect(BARS_GRID_W, BARS_GRID_H) { x, y ->
+                        val c = pixels[y * BARS_GRID_W + x]
+                        maxOf((c shr 16) and 0xFF, (c shr 8) and 0xFF, c and 0xFF)
+                    },
+                )
+            }
+        } finally {
+            sample.recycle()
+        }
+    }
+
     Box(modifier.clipToBounds(), contentAlignment = Alignment.Center) {
         AndroidView(
             factory = { context ->
@@ -837,8 +869,8 @@ internal fun AndroidMusicVideo(
             },
             update = { it.alpha = alpha },
             onRelease = { if (view === it) view = null },
-            // The picture at its own shape: letterboxed into the bounds, or
-            // overflowing them and cropped by the clip above.
+            // The picture letterboxed into the bounds, overflowing them and cropped
+            // by the clip above, or stretched to them — see [VideoScale].
             modifier = Modifier.layout { measurable, constraints ->
                 val width = constraints.maxWidth
                 val height = if (constraints.hasBoundedHeight) {
@@ -846,18 +878,20 @@ internal fun AndroidMusicVideo(
                 } else {
                     (width / aspect).roundToInt()
                 }
-                val boundsAspect = width.toFloat() / height.coerceAtLeast(1)
-                val wider = boundsAspect > aspect
-                val (w, h) = if (wider == fit) {
-                    (height * aspect).roundToInt() to height
-                } else {
-                    width to (width / aspect).roundToInt()
-                }
+                // The whole frame, placed so the picture inside its own bars sits as [scale] says.
+                val at = scale.place(aspect, crop, width.toFloat(), height.toFloat())
+                val w = at.width.roundToInt()
+                val h = at.height.roundToInt()
                 val placeable = measurable.measure(Constraints.fixed(w.coerceAtLeast(1), h.coerceAtLeast(1)))
                 layout(width, height) {
-                    placeable.place((width - w) / 2, (height - h) / 2)
+                    placeable.place(at.left.roundToInt(), at.top.roundToInt())
                 }
             },
         )
     }
 }
+
+/** How often the picture is read for its black bars, and the size of the copy read. */
+private const val BARS_EVERY_MS = 1_000L
+private const val BARS_GRID_W = 160
+private const val BARS_GRID_H = 90

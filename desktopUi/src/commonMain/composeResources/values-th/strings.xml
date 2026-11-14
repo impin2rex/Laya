@@ -224,4 +224,9 @@
     <string name="reverb_width_help">การกระจายสเตอริโอของหางเสียง ตั้งแต่โมโนจนกว้างเต็มที่</string>
     <string name="reverb_reset">รีเซ็ตเป็นค่าเริ่มต้น</string>
     <string name="picture_in_picture">ภาพซ้อนภาพ</string>
+    <string name="video_scale">ขนาดวิดีโอ</string>
+    <string name="video_scale_best_fit">พอดีที่สุด</string>
+    <string name="video_scale_fit_screen">เต็มหน้าจอ</string>
+    <string name="video_scale_fill">ยืดเต็ม</string>
+    <string name="video_skip_seconds">%1$d วินาที</string>
 </resources>
