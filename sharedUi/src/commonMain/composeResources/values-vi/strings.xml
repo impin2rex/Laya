@@ -378,8 +378,8 @@
     <string name="performance">Hiệu năng</string>
     <string name="play_next_on_swipe">Phát tiếp khi vuốt</string>
     <string name="playback">Phát nhạc</string>
-    <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only">Ưu tiên bản chỉ có nhạc</string>
+    <string name="prefer_music_only_subtitle">Video âm nhạc phát như bài hát, kèm ảnh bìa, cho đến khi bạn chuyển sang video</string>
     <string name="mini_player_video">Video trong trình phát mini</string>
     <string name="mini_player_video_subtitle">Phát video âm nhạc trong trình phát mini ở chất lượng thấp nhất để tiết kiệm dữ liệu và pin</string>
     <string name="prefer_usb_dac">Ưu tiên DAC USB</string>
@@ -703,4 +703,9 @@
     <string name="no_internet_connection">Không có kết nối internet</string>
     <string name="something_went_wrong">Đã xảy ra lỗi</string>
     <string name="picture_in_picture">Hình trong hình</string>
+    <string name="video_scale">Kích thước video</string>
+    <string name="video_scale_best_fit">Vừa khít</string>
+    <string name="video_scale_fit_screen">Lấp đầy màn hình</string>
+    <string name="video_scale_fill">Kéo giãn</string>
+    <string name="video_skip_seconds">%1$d giây</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.VideoScale
 import com.music.laya.data.settings.AppSettings
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -162,6 +163,7 @@ import com.music.laya.data.canvas.CanvasSource
 import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.settings.LastPlayerScreen
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.data.model.LikeStatus
 import com.music.laya.data.model.PlaybackSourceType
 import com.music.laya.data.model.PLAYER_ART_PX
@@ -829,7 +831,10 @@ fun NowPlayingScreen(
     val mixing by PlayerSettings.smartMixInProgress.collectAsStateWithLifecycle()
     // A music video plays its own picture where the sleeve is — see
     // [MusicVideoSurface] — and takes the place of any animated cover.
-    val videoMode = showsMusicVideo(song)
+    // Under "Prefer music-only version" a video plays as a song until the listener switches to it.
+    val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
+    val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
+    val videoMode = showsMusicVideo(song) && MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
     // The lyrics and queue header is a small player of its own: it plays the video when the mini
     // player does (Settings), and is the still sleeve otherwise.
     val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
@@ -837,9 +842,13 @@ fun NowPlayingScreen(
     // Read once for both the capsule's segment and the glass pill on the video.
     val versionSwitchAligning by PlayerSettings.versionAlignmentInProgress.collectAsStateWithLifecycle()
     val versionSwitching = audioVersionSwitching || versionSwitchAligning
-    val videoToggle = onToggleVideo
+    // A video with no audio version to swap to plays its own sound as music; the toggle then only
+    // puts its picture up or away.
+    val toggle = onToggleVideo
+        ?: song.takeIf { it.isVideo && preferMusicOnly }?.let { video -> { MusicVideoChoice.toggle(video.videoId) } }
+    val videoToggle = toggle
         ?.takeIf { PlayerPlatform.host.musicVideoSupported }
-        ?.let { VideoToggle(video = song.isVideo, switching = versionSwitching, onToggle = it) }
+        ?.let { VideoToggle(video = videoMode, switching = versionSwitching, onToggle = it) }
     // Only a video that is actually showing offers the way back from it.
     val switchToAudio = videoToggle?.takeIf { videoMode }?.onToggle
     val canvas = rememberCanvasArtwork(song)?.takeUnless { videoMode }
@@ -1802,6 +1811,12 @@ fun NowPlayingScreen(
                     onOpenQuality = { showVideoQuality = true },
                     onSwitchToAudio = switchToAudio,
                     switchingVersion = versionSwitching,
+                    skip = rememberVideoSkip(
+                        position = { position.positionMs },
+                        duration = { durationMs },
+                        // A party's host holds the playhead: the gesture says so rather than nothing.
+                        seek = { if (controlsLocked) onBlockedControl() else onSeek(it) },
+                    ),
                     scrubber = {
                         PlayerScrubber(
                             shown = shown,
@@ -3205,7 +3220,7 @@ fun NowPlayingScreen(
                                 MusicVideoSurface(
                                     videoId = song.videoId,
                                     // Cropped: the sleeve morphs from the picture's shape to the cover's square.
-                                    fit = false,
+                                    scale = VideoScale.FIT_SCREEN,
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .graphicsLayer { if (!miniPlayerVideo) alpha = dockT() },

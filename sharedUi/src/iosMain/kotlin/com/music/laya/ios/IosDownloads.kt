@@ -1,6 +1,10 @@
 package com.music.laya.ios
 
 import com.music.laya.data.TrackLog
+import io.ktor.http.isSuccess
+import com.music.laya.data.model.artworkFallback
+import com.music.laya.data.model.artworkAt
+import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.PlayerClient
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.DetailPage
@@ -198,8 +202,17 @@ internal object IosDownloads {
         val id = song.videoId
         set(id, IosDownloadState.Running(0f))
         val quality = AppSettings.downloadQuality.value // pinned for this file
-        val route = routeFor(song, quality)
-        val name = id.map { if (it.isLetterOrDigit() || it == '-' || it == '_') it else '_' }.joinToString("") + "-" + id.hashCode().toUInt().toString(16)
+        // Under "Prefer music-only version" a music video is saved as its catalogue song, as it would
+        // have played, under that song's own id — so playing it later offers the video again. With no
+        // song to find, or the preference off, the video's own audio.
+        val track = if (song.isVideo && song.localUri == null && AppSettings.preferMusicOnly.value) {
+            runCatching { YtMusicRepository.resolveAudio(song) }.getOrNull()?.takeIf { it.videoId != id } ?: song
+        } else {
+            song
+        }
+        val savedId = track.videoId
+        val route = routeFor(track, quality)
+        val name = savedId.map { if (it.isLetterOrDigit() || it == '-' || it == '_') it else '_' }.joinToString("") + "-" + savedId.hashCode().toUInt().toString(16)
         val target = dir / "$name.${route.ext}"
         val tmp = dir / "$name.part"
         try {
@@ -215,21 +228,29 @@ internal object IosDownloads {
         } finally {
             fs.delete(tmp, mustExist = false)
         }
-        val artwork = song.thumbnailUrl?.takeIf { it.startsWith("http") }?.let { saveArtwork(it, dir / "$name.jpg") }
+        val artwork = track.thumbnailUrl?.takeIf { it.startsWith("http") }?.let { saveArtwork(it, dir / "$name.jpg") }
         writeIndex(
-            saved.value + (id to Entry(
-                id, song.title, song.artist, target.name, artwork?.name, song.thumbnailUrl, song.durationText, song.albumName,
-                song.albumId, song.artistId, song.isExplicit, song.isVideo, route.badge, NSDate().timeIntervalSince1970,
+            saved.value + (savedId to Entry(
+                savedId, track.title, track.artist, target.name, artwork?.name, track.thumbnailUrl, track.durationText,
+                track.albumName ?: song.albumName, track.albumId ?: song.albumId, track.artistId ?: song.artistId,
+                track.isExplicit, track.isVideo, route.badge, NSDate().timeIntervalSince1970,
             )),
         )
-        TrackLog.d("Laya", "downloaded $id as ${target.name} (${route.badge ?: route.ext})", about = id)
+        TrackLog.d("Laya", "downloaded $id as $savedId, ${target.name} (${route.badge ?: route.ext})", about = id)
     }
 
     private suspend fun saveArtwork(url: String, to: Path): Path? = runCatching {
-        // Rows carry a 120px thumbnail; the saved copy also fills the player and the lock screen.
-        val bytes = client.get(url.replace(Regex("=w\\d+-h\\d+"), "=w544-h544")).bodyAsBytes()
-        fs.write(to) { write(bytes) }
+        // Rows carry a 120px thumbnail; the saved copy also fills the player and the lock screen. A
+        // music video's is its bar-free frame, its 4:3 thumbnail on an old upload with none, cut to
+        // the middle square so it sits as an album cover does.
+        val sized = url.artworkAt(COVER_PX) ?: url
+        val bytes = fetchImage(sized) ?: sized.artworkFallback()?.let { fetchImage(it) } ?: return@runCatching null
+        fs.write(to) { write(squareCover(bytes)) }
         to
+    }.getOrNull()
+
+    private suspend fun fetchImage(url: String): ByteArray? = runCatching {
+        client.get(url).takeIf { it.status.isSuccess() }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }
     }.getOrNull()
 
     /** The stream to keep: a source's file when one is storable, else YouTube's AAC under the quality's ceiling. */
@@ -337,3 +358,19 @@ internal object IosDownloads {
 
     private const val RESUMES = 3
 }
+
+private const val COVER_PX = 544
+
+/** The middle square of a cover that isn't one — a music video's frame — re-encoded; a square one as it came. */
+internal fun squareCover(bytes: ByteArray): ByteArray = runCatching {
+    val image = org.jetbrains.skia.Image.makeFromEncoded(bytes)
+    val side = minOf(image.width, image.height)
+    if (maxOf(image.width, image.height) - side <= side / 50) return bytes
+    val surface = org.jetbrains.skia.Surface.makeRasterN32Premul(side, side)
+    surface.canvas.drawImageRect(
+        image,
+        org.jetbrains.skia.Rect.makeXYWH(((image.width - side) / 2).toFloat(), ((image.height - side) / 2).toFloat(), side.toFloat(), side.toFloat()),
+        org.jetbrains.skia.Rect.makeWH(side.toFloat(), side.toFloat()),
+    )
+    surface.makeImageSnapshot().encodeToData(org.jetbrains.skia.EncodedImageFormat.JPEG, 90)?.bytes ?: bytes
+}.getOrDefault(bytes)

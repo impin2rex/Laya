@@ -108,6 +108,8 @@ private fun desktopMain() = application {
         // material is possible and the chosen one can be switched live — see [DesktopWindowBackdrop].
         transparent = DesktopWindowBackdrop.available,
         resizable = true,
+        // Every key, before the page and whether or not anything on it has focus — see [DesktopShortcuts].
+        onPreviewKeyEvent = { DesktopShortcuts.handler?.invoke(it) == true },
     ) {
         val composeWindow = window
         val openingSize = remember { state.size }

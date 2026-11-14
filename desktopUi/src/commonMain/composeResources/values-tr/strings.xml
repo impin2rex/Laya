@@ -224,4 +224,9 @@
     <string name="reverb_width_help">Kuyruğun stereo genişliği, monodan tam genişliğe.</string>
     <string name="reverb_reset">Varsayılanlara sıfırla</string>
     <string name="picture_in_picture">Resim içinde resim</string>
+    <string name="video_scale">Video boyutu</string>
+    <string name="video_scale_best_fit">En iyi sığdırma</string>
+    <string name="video_scale_fit_screen">Ekranı doldur</string>
+    <string name="video_scale_fill">Uzat</string>
+    <string name="video_skip_seconds">%1$d saniye</string>
 </resources>

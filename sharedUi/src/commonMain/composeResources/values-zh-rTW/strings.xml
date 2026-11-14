@@ -378,8 +378,8 @@
     <string name="performance">效能</string>
     <string name="play_next_on_swipe">滑動時下一首播放</string>
     <string name="playback">播放</string>
-    <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only">優先播放純音樂版本</string>
+    <string name="prefer_music_only_subtitle">音樂影片會以歌曲形式播放並顯示封面，直到你切換到影片</string>
     <string name="mini_player_video">在迷你播放器播放影片</string>
     <string name="mini_player_video_subtitle">在迷你播放器以最低畫質播放音樂影片，節省行動數據和電量</string>
     <string name="prefer_usb_dac">首選 USB DAC</string>
@@ -703,4 +703,9 @@
     <string name="no_internet_connection">無網路連線</string>
     <string name="something_went_wrong">出了點問題</string>
     <string name="picture_in_picture">子母畫面</string>
+    <string name="video_scale">影片尺寸</string>
+    <string name="video_scale_best_fit">最佳適配</string>
+    <string name="video_scale_fit_screen">填滿螢幕</string>
+    <string name="video_scale_fill">拉伸</string>
+    <string name="video_skip_seconds">%1$d 秒</string>
 </resources>

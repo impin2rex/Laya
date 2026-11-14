@@ -1,5 +1,9 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.settings.VideoCropSettler
+import com.music.laya.data.settings.VideoCrop
+import com.music.laya.data.settings.BlackBars
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -353,7 +357,7 @@ private class Decoding(val frames: Channel<VideoFrame>, val job: Job) {
  * is the one asked for. The decoder is native and single-threaded: a run must be over (joined)
  * before the next one touches it.
  */
-private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Long): Decoding {
+private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Long, onBars: (VideoCrop?) -> Unit): Decoding {
     val frames = Channel<VideoFrame>(FRAMES_AHEAD)
     val job = launch(Dispatchers.IO) {
         try {
@@ -362,6 +366,10 @@ private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Lo
             // Reused frame to frame: Skia copies a raster image's bytes as it makes one.
             var planes: VideoPlanes? = null
             var pixels: ByteArray? = null
+            // Null until the first frame: a sentinel minimum overflowed the subtraction below, and
+            // no frame was ever read.
+            var barsReadAt: Long? = null
+            fun barsDue(pts: Long) = barsReadAt.let { it == null || pts - it >= BARS_EVERY_MS || pts < it }
             while (isActive) {
                 val frame = if (decoder.planarFormat) {
                     val p = decoder.nextPlanes(planes, skipBeforeMs = from)
@@ -369,12 +377,30 @@ private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Lo
                         if (decoder.planarFormat) break else continue
                     }
                     planes = p
+                    // Read here, as decoded, not off the frame shown: a frame decoded late is
+                    // dropped unseen, and with it would go the reading.
+                    if (barsDue(p.ptsMs)) {
+                        barsReadAt = p.ptsMs
+                        onBars(readBars(p.width, p.height) { x, y -> p.y[y * p.yStride + x].toInt() and 0xFF })
+                    }
                     planesFrame(p)
                 } else {
                     val buffer = pixels ?: ByteArray(decoder.width * decoder.height * 4).also { pixels = it }
                     if (!decoder.nextFrame(buffer, skipBeforeMs = from)) break
                     val info = ImageInfo.makeN32(decoder.width, decoder.height, ColorAlphaType.OPAQUE)
-                    VideoFrame(decoder.framePtsMs, decoder.width, decoder.height, rgb = Image.makeRaster(info, buffer, decoder.width * 4))
+                    val pts = decoder.framePtsMs
+                    if (barsDue(pts)) {
+                        barsReadAt = pts
+                        val w = decoder.width
+                        // The brightest of the three channels, whichever order they are in.
+                        onBars(
+                            readBars(w, decoder.height) { x, y ->
+                                val i = (y * w + x) * 4
+                                maxOf(buffer[i].toInt() and 0xFF, buffer[i + 1].toInt() and 0xFF, buffer[i + 2].toInt() and 0xFF)
+                            },
+                        )
+                    }
+                    VideoFrame(pts, decoder.width, decoder.height, rgb = Image.makeRaster(info, buffer, decoder.width * 4))
                 }
                 try {
                     frames.send(frame)
@@ -415,6 +441,7 @@ private suspend fun CoroutineScope.playPicture(
     videoId: String,
     onFrame: (VideoFrame) -> Unit,
     onStepDown: () -> Unit,
+    onBars: (VideoCrop?) -> Unit,
 ) {
     val mountedAt = System.currentTimeMillis()
     val opened = DesktopMusicVideo.take(videoId) ?: return
@@ -424,7 +451,7 @@ private suspend fun CoroutineScope.playPicture(
     var restartedAt = System.currentTimeMillis()
     var landed = false
     val startAt = DesktopMusicVideo.audioPositionMs() ?: 0L
-    var decoding = decodeFrom(decoder, startAt + if (DesktopMusicVideo.audioPlaying()) leadMs else 0L)
+    var decoding = decodeFrom(decoder, startAt + if (DesktopMusicVideo.audioPlaying()) leadMs else 0L, onBars)
     var next: VideoFrame? = null
     try {
         var shownPts = -1L
@@ -447,7 +474,7 @@ private suspend fun CoroutineScope.playPicture(
             next = null
             landed = false
             restartedAt = System.currentTimeMillis()
-            decoding = decodeFrom(decoder, at)
+            decoding = decodeFrom(decoder, at, onBars)
         }
         while (isActive) {
             val target = DesktopMusicVideo.audioPositionMs() ?: run { delay(50); continue }
@@ -541,6 +568,10 @@ private const val RELEASE_GRACE_MS = 4_000L
 private class PictureSession(val videoId: String) {
     /** The frame the audio is on, drawn by every surface. Closed only here. */
     var frame by mutableStateOf<VideoFrame?>(null)
+
+    /** The video's own black bars, cut off when it is drawn — see [VideoCropSettler]. */
+    var crop by mutableStateOf(VideoCrop.NONE)
+    private val settler = VideoCropSettler()
     var surfaces = 0
     var release: Job? = null
 
@@ -565,6 +596,13 @@ private class PictureSession(val videoId: String) {
                         if (old !== shown) old?.close()
                     },
                     onStepDown = { reopen.value++ },
+                    onBars = { reading ->
+                        val settled = synchronized(settler) { settler.offer(reading) }
+                        if (settled != crop) {
+                            DesktopTrackLog.log("music video: black bars ${settled.describe()} for $videoId")
+                            crop = settled
+                        }
+                    },
                 )
             }
         }
@@ -616,7 +654,7 @@ internal fun musicVideoRendered(videoId: String): Boolean = pictures[videoId]?.f
 @Composable
 internal fun DesktopMusicVideoSurface(
     videoId: String,
-    fit: Boolean,
+    scale: VideoScale,
     onRenderedChanged: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
@@ -635,16 +673,13 @@ internal fun DesktopMusicVideoSurface(
     )
     Canvas(modifier.graphicsLayer { this.alpha = alpha; clip = true }) {
         val shown = session.frame ?: return@Canvas
-        val clipAspect = shown.width.toFloat() / shown.height
-        val viewAspect = size.width / size.height
-        // Letterboxed into the bounds, or overflowing them and cropped by the clip.
-        val (w, h) = if ((clipAspect > viewAspect) == fit) {
-            size.width to size.width / clipAspect
-        } else {
-            size.height * clipAspect to size.height
-        }
-        val left = (size.width - w) / 2f
-        val top = (size.height - h) / 2f
+        // Letterboxed into the bounds, overflowing them and cropped by the clip, or stretched —
+        // the picture inside the video's own black bars, which fall off the bounds or into black.
+        val at = scale.place(shown.width.toFloat() / shown.height, session.crop, size.width, size.height)
+        val left = at.left
+        val top = at.top
+        val w = at.width
+        val h = at.height
         drawIntoCanvas { canvas ->
             val native = canvas.nativeCanvas
             val rgb = shown.rgb
@@ -677,5 +712,20 @@ internal fun DesktopMusicVideoSurface(
 @Composable
 internal fun DesktopMiniPlayerVideo(videoId: String?, modifier: Modifier) {
     val wanted by DesktopAppearanceSettings.miniPlayerVideo.collectAsState()
-    if (wanted && videoId != null) DesktopMusicVideoSurface(videoId, fit = false, onRenderedChanged = {}, modifier = modifier)
+    if (wanted && videoId != null) DesktopMusicVideoSurface(videoId, scale = VideoScale.FIT_SCREEN, onRenderedChanged = {}, modifier = modifier)
 }
+
+/** How often a frame is read for its black bars: often enough to settle in seconds, cheap at that. */
+private const val BARS_EVERY_MS = 1_000L
+
+/** [BlackBars] on a 160×90 grid of a [width]×[height] frame, its luma read through [luma]. */
+private inline fun readBars(width: Int, height: Int, crossinline luma: (x: Int, y: Int) -> Int): VideoCrop? {
+    val gw = 160
+    val gh = 90
+    return BlackBars.detect(gw, gh) { x, y -> luma(x * (width - 1) / (gw - 1), y * (height - 1) / (gh - 1)) }
+}
+
+private fun VideoCrop.describe(): String =
+    if (isNone) "none" else "left ${pct(left)} top ${pct(top)} right ${pct(right)} bottom ${pct(bottom)}"
+
+private fun pct(f: Float) = "${(f * 1000).toInt() / 10f}%"

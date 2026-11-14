@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.model.Song
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
@@ -26,13 +27,23 @@ object DesktopDownloadManager {
         if (job != null) activeJobs[song.videoId] = job
         return try {
             require(song.localPath == null) { "This track is already local" }
-            val stream = DesktopMusicSources.resolve(song, quality, forDownload = true).getOrThrow()
+            // Under "Prefer music-only version" a music video is saved as its catalogue song, as it
+            // would have played, under that song's own id — so playing it later offers the video
+            // again. With no song to find, or the preference off, the video's own audio.
+            val track = if (song.isVideo && DesktopAppearanceSettings.preferMusicOnly.value) {
+                runCatching { YtMusicRepository.resolveAudio(song) }.getOrNull()
+                    ?.takeIf { it.videoId != song.videoId } ?: song
+            } else {
+                song
+            }
+            fun saved(file: Path) = track.copy(localUri = file.toUri().toString(), localPath = file.toString())
+            val stream = DesktopMusicSources.resolve(track, quality, forDownload = true).getOrThrow()
             val directory = Path.of(System.getProperty("user.home"), "Music", "Laya")
             Files.createDirectories(directory)
             val safeName = buildString {
-                append(song.artist)
+                append(track.artist)
                 append(" - ")
-                append(song.title)
+                append(track.title)
             }.replace(ILLEGAL_FILENAME, "_").trim().take(180).ifBlank { song.videoId }
             // A manifest is an index of the audio, not the audio: fetched as a file it saved a few
             // KB of XML as `.flac`. Its segments are fMP4, so it can only become FLAC or M4A.
@@ -41,7 +52,7 @@ object DesktopDownloadManager {
             val target = directory.resolve("$safeName.$extension")
             val temporary = directory.resolve(".$safeName.$extension.part")
             if (Files.isRegularFile(target) && Files.size(target) > 0L) {
-                return Result.success(song.copy(localUri = target.toUri().toString(), localPath = target.toString()))
+                return Result.success(saved(target))
             }
 
             if (manifest) {
@@ -58,7 +69,7 @@ object DesktopDownloadManager {
                 }
                 check(Files.size(temporary) > 0L) { "Download failed: nothing was sent" }
                 Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING)
-                return Result.success(song.copy(localUri = target.toUri().toString(), localPath = target.toString()))
+                return Result.success(saved(target))
             }
 
             val existing = if (Files.isRegularFile(temporary)) Files.size(temporary) else 0L
@@ -107,7 +118,7 @@ object DesktopDownloadManager {
             }.getOrElse {
                 Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING)
             }
-            Result.success(song.copy(localUri = target.toUri().toString(), localPath = target.toString()))
+            Result.success(saved(target))
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Throwable) {

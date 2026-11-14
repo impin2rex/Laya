@@ -391,7 +391,7 @@
     <string name="play_next_on_swipe">Play next on swipe</string>
     <string name="playback">Playback</string>
     <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only_subtitle">Music videos play as songs, with their cover art, until you switch to the video</string>
     <string name="mini_player_video">Video in mini player</string>
     <string name="mini_player_video_subtitle">Play a music video in the mini player at its lowest quality, to save data and battery</string>
     <string name="prefer_usb_dac">Prefer USB DAC</string>
@@ -730,4 +730,9 @@
     <string name="switch_to_video">Switch to Video</string>
     <string name="audio_short">Audio</string>
     <string name="picture_in_picture">Picture in picture</string>
+    <string name="video_scale">Video size</string>
+    <string name="video_scale_best_fit">Best fit</string>
+    <string name="video_scale_fit_screen">Fit screen</string>
+    <string name="video_scale_fill">Fill</string>
+    <string name="video_skip_seconds">%1$d seconds</string>
 </resources>

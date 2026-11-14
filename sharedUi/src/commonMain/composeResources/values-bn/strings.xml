@@ -358,8 +358,8 @@
     <string name="performance">পারফরম্যান্স</string>
     <string name="play_next_on_swipe">সোয়াইপ করলে পরের গান চালান</string>
     <string name="playback">প্লেব্যাক</string>
-    <string name="prefer_music_only">শুধু গানের ভার্সন বেছে নিন</string>
-    <string name="prefer_music_only_subtitle">মিউজিক ভিডিওর ক্ষেত্রে, ক্যাটালগের অডিও ভার্সন খুঁজে লোড করার সময় ভিডিওর বিবরণ দেখায়</string>
+    <string name="prefer_music_only">শুধু মিউজিক সংস্করণ পছন্দ করুন</string>
+    <string name="prefer_music_only_subtitle">মিউজিক ভিডিও গান হিসেবে, কভার আর্ট সহ বাজবে, যতক্ষণ না আপনি ভিডিওতে যান</string>
     <string name="mini_player_video">মিনি প্লেয়ারে ভিডিও</string>
     <string name="mini_player_video_subtitle">মিনি প্লেয়ারে মিউজিক ভিডিও সবচেয়ে কম কোয়ালিটিতে চালায়, ডেটা ও ব্যাটারি বাঁচাতে</string>
     <string name="prefer_usb_dac">USB DAC-কে অগ্রাধিকার দিন</string>
@@ -687,4 +687,9 @@
     <string name="no_internet_connection">ইন্টারনেট সংযোগ নেই</string>
     <string name="something_went_wrong">কিছু একটা সমস্যা হয়েছে</string>
     <string name="picture_in_picture">ছবির ভিতরে ছবি</string>
+    <string name="video_scale">ভিডিওর আকার</string>
+    <string name="video_scale_best_fit">সেরা মাপ</string>
+    <string name="video_scale_fit_screen">স্ক্রিন ভরাট</string>
+    <string name="video_scale_fill">প্রসারিত</string>
+    <string name="video_skip_seconds">%1$d সেকেন্ড</string>
 </resources>

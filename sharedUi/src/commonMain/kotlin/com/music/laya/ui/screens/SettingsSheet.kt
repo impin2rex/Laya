@@ -470,7 +470,8 @@ fun SettingsScreen(
 
         SearchableSettingsGroup(search, header = stringResource(Res.string.playback)) {
             val preferMusicOnlyTitle = stringResource(Res.string.prefer_music_only)
-            row(preferMusicOnlyTitle, "video", "audio", "music video", available = engineOptions) {
+            // Not an engine option: both phones' players decide a music video's picture by it.
+            row(preferMusicOnlyTitle, "video", "audio", "music video") {
                 SettingsRow(
                     icon = Icons.Rounded.SmartDisplay,
                     title = preferMusicOnlyTitle,

@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -69,8 +70,8 @@ internal object DesktopPlayerHost : PlayerHost {
     }
 
     @Composable
-    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
-        DesktopMusicVideoSurface(videoId, fit, onRenderedChanged, modifier)
+    override fun MusicVideo(videoId: String, scale: VideoScale, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        DesktopMusicVideoSurface(videoId, scale, onRenderedChanged, modifier)
 
     override fun musicVideoRendered(videoId: String): Boolean = com.music.laya.desktop.musicVideoRendered(videoId)
 
@@ -256,7 +257,16 @@ internal object DesktopPlayerSettings : PlayerSettingsSource {
 
     override fun setReverbEnabled(value: Boolean) = DesktopReverbSettings.setEnabled(value)
 
+    // Android's key, as the rest of these.
+    override val videoScale = MutableStateFlow(VideoScale.named(persistence.string(KEY_VIDEO_SCALE, "")))
+
+    override fun setVideoScale(value: VideoScale) {
+        videoScale.value = value
+        persistence.saveString(KEY_VIDEO_SCALE, value.name)
+    }
+
     private const val KEY_LAST_SCREEN = "last_player_screen"
+    private const val KEY_VIDEO_SCALE = "video_scale"
     private const val KEY_LYRICS_OFFSET = "lyrics_offset_ms"
 }
 

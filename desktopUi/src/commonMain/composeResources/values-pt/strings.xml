@@ -224,4 +224,9 @@
     <string name="reverb_width_help">Abertura estéreo da cauda, de mono à largura total.</string>
     <string name="reverb_reset">Restaurar padrões</string>
     <string name="picture_in_picture">Picture-in-picture</string>
+    <string name="video_scale">Tamanho do vídeo</string>
+    <string name="video_scale_best_fit">Melhor ajuste</string>
+    <string name="video_scale_fit_screen">Preencher a tela</string>
+    <string name="video_scale_fill">Esticar</string>
+    <string name="video_skip_seconds">%1$d segundos</string>
 </resources>

@@ -379,8 +379,8 @@
     <string name="performance">Leistung</string>
     <string name="play_next_on_swipe">Beim Wischen als Nächstes wiedergeben</string>
     <string name="playback">Wiedergabe</string>
-    <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only">Reine Musikversion bevorzugen</string>
+    <string name="prefer_music_only_subtitle">Musikvideos werden als Songs mit Cover abgespielt, bis du zum Video wechselst</string>
     <string name="mini_player_video">Video im Mini-Player</string>
     <string name="mini_player_video_subtitle">Spielt ein Musikvideo im Mini-Player in der niedrigsten Qualität ab, um Daten und Akku zu sparen</string>
     <string name="prefer_usb_dac">USB-DAC bevorzugen</string>
@@ -708,4 +708,9 @@
     <string name="no_internet_connection">Keine Internetverbindung</string>
     <string name="something_went_wrong">Etwas ist schiefgelaufen</string>
     <string name="picture_in_picture">Bild-im-Bild</string>
+    <string name="video_scale">Videogröße</string>
+    <string name="video_scale_best_fit">Optimal</string>
+    <string name="video_scale_fit_screen">Bildschirm füllen</string>
+    <string name="video_scale_fill">Strecken</string>
+    <string name="video_skip_seconds">%1$d Sekunden</string>
 </resources>

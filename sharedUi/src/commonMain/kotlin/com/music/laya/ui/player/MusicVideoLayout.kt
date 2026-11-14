@@ -1,5 +1,10 @@
 package com.music.laya.ui.player
 
+import com.music.laya.sharedui.resources.video_scale
+import androidx.compose.material.icons.rounded.AspectRatio
+import androidx.compose.foundation.gestures.detectTapGestures
+import com.music.laya.data.settings.VideoScale
+import com.music.laya.data.settings.AppSettings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -117,8 +122,12 @@ internal fun FullscreenVideoPlayer(
     /** Back to the song's audio-only cut, where it has one — see [SwitchToAudioPill]. */
     onSwitchToAudio: (() -> Unit)? = null,
     switchingVersion: Boolean = false,
+    /** Ten seconds back or forward on a double tap of either half; null leaves double taps alone. */
+    skip: VideoSkip? = null,
 ) {
     HideSystemBars(true)
+    // VLC's aspect button: the whole picture, the screen filled, or stretched — remembered.
+    val scale by AppSettings.videoScale.collectAsStateWithLifecycle()
     var controlsShown by remember { mutableStateOf(true) }
     // Bumped by every touch on the controls, so the idle timer starts over.
     var touches by remember { mutableIntStateOf(0) }
@@ -133,10 +142,14 @@ internal fun FullscreenVideoPlayer(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { controlsShown = !controlsShown },
+            // A tap brings the controls up or puts them away; a double tap skips ten seconds on
+            // the half it lands on, as in VLC.
+            .pointerInput(skip) {
+                detectTapGestures(
+                    onTap = { controlsShown = !controlsShown },
+                    onDoubleTap = skip?.let { s -> { at -> s.skip(if (at.x < size.width / 2f) -1 else 1) } },
+                )
+            },
     ) {
         // What the glass pill frosts and bends: the picture, or the thumbnail before it.
         val pictureBackdrop = rememberLayerBackdrop()
@@ -145,11 +158,13 @@ internal fun FullscreenVideoPlayer(
             if (!rendered) VideoLoadingBackdrop(artRequest, Modifier.fillMaxSize())
             MusicVideoSurface(
                 videoId = song.videoId,
-                fit = true,
+                scale = scale,
                 onRenderedChanged = onRenderedChanged,
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        skip?.let { VideoSkipOverlay(it) }
+        VideoScaleFlash(scale, Modifier.align(Alignment.Center))
 
         AnimatedVisibility(
             visible = controlsShown,
@@ -207,6 +222,8 @@ internal fun FullscreenVideoPlayer(
                         SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion, backdrop = pictureBackdrop)
                         Spacer(Modifier.width(8.dp))
                     }
+                    VideoScaleButton(scale)
+                    Spacer(Modifier.width(6.dp))
                     VideoCornerControls(fullscreen = true, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
                 }
                 Box(
@@ -390,6 +407,26 @@ internal fun VideoLoadingBackdrop(artRequest: ImageRequest?, modifier: Modifier 
     }
 }
 
+
+/** VLC's aspect button: the next of best fit, fit screen and fill, remembered for every video. */
+@Composable
+internal fun VideoScaleButton(scale: VideoScale, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(30.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.38f))
+            .clickable { AppSettings.setVideoScale(scale.next) },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.AspectRatio,
+            contentDescription = stringResource(Res.string.video_scale),
+            tint = Color.White,
+            modifier = Modifier.size(19.dp),
+        )
+    }
+}
 /**
  * The two glass boxes in a music video's top-right corner: the quality box —
  * the web player's VideoQuality, which reads the rendition on screen and opens

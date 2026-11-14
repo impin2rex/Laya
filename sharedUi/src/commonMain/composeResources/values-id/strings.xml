@@ -378,8 +378,8 @@
     <string name="performance">Performa</string>
     <string name="play_next_on_swipe">Putar berikutnya saat digeser</string>
     <string name="playback">Pemutaran</string>
-    <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only">Utamakan versi musik saja</string>
+    <string name="prefer_music_only_subtitle">Video musik diputar sebagai lagu, dengan sampul albumnya, sampai kamu beralih ke video</string>
     <string name="mini_player_video">Video di pemutar mini</string>
     <string name="mini_player_video_subtitle">Putar video musik di pemutar mini dengan kualitas terendah untuk menghemat data dan baterai</string>
     <string name="prefer_usb_dac">Pilih DAC USB</string>
@@ -703,4 +703,9 @@
     <string name="no_internet_connection">Tidak ada koneksi internet</string>
     <string name="something_went_wrong">Terjadi kesalahan</string>
     <string name="picture_in_picture">Gambar dalam gambar</string>
+    <string name="video_scale">Ukuran video</string>
+    <string name="video_scale_best_fit">Paling pas</string>
+    <string name="video_scale_fit_screen">Penuhi layar</string>
+    <string name="video_scale_fill">Rentangkan</string>
+    <string name="video_skip_seconds">%1$d detik</string>
 </resources>

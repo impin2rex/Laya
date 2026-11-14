@@ -382,7 +382,7 @@
     <string name="play_next_on_swipe">Graj następny po przesunięciu</string>
     <string name="playback">Odtwarzanie</string>
     <string name="prefer_music_only">Preferuj wersję muzyczną</string>
-    <string name="prefer_music_only_subtitle">Dla teledysków pokazuje szczegóły wideo podczas wyszukiwania i ładowania wersji audio z katalogu</string>
+    <string name="prefer_music_only_subtitle">Teledyski są odtwarzane jak utwory, z okładką, dopóki nie przełączysz na wideo</string>
     <string name="mini_player_video">Wideo w miniodtwarzaczu</string>
     <string name="mini_player_video_subtitle">Odtwarza teledysk w miniodtwarzaczu w najniższej jakości, aby oszczędzać dane i baterię</string>
     <string name="prefer_usb_dac">Preferuj USB DAC</string>
@@ -718,4 +718,9 @@
     <string name="no_internet_connection">Brak połączenia internetowego</string>
     <string name="something_went_wrong">Coś poszło nie tak</string>
     <string name="picture_in_picture">Obraz w obrazie</string>
+    <string name="video_scale">Rozmiar wideo</string>
+    <string name="video_scale_best_fit">Najlepsze dopasowanie</string>
+    <string name="video_scale_fit_screen">Wypełnij ekran</string>
+    <string name="video_scale_fill">Rozciągnij</string>
+    <string name="video_skip_seconds">%1$d sekund</string>
 </resources>

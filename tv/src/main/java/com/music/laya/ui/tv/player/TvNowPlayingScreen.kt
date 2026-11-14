@@ -1,5 +1,6 @@
 package com.music.laya.ui.tv.player
 
+import androidx.compose.foundation.layout.padding
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -43,6 +44,7 @@ import androidx.media3.session.MediaController
 import com.music.laya.data.LikeState
 import com.music.laya.data.model.LikeStatus
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.playback.PlayerState
 import com.music.laya.playback.toggleAutoplay
 import com.music.laya.playback.toggleShuffle
@@ -131,10 +133,33 @@ fun TvNowPlayingScreen(
     val versionSwitching by AppSettings.versionAlignmentInProgress.collectAsState()
     val versionPairs = remember { mutableMapOf<String, Song>() }
     var alternate by remember(song.videoId) { mutableStateOf<Song?>(null) }
+    // Swaps this queue entry for [other] at the playhead, keeping its place in the queue.
+    fun swapTo(other: Song) {
+        val target = other.copy(
+            isVideoOrigin = song.isVideo,
+            queueTier = song.queueTier,
+            queueEntryId = song.queueEntryId,
+            radioName = song.radioName,
+            playbackSource = song.playbackSource,
+            playbackSourceType = song.playbackSourceType,
+            playbackSourceId = song.playbackSourceId,
+        )
+        versionPairs[target.videoId] = song
+        // Switched to on purpose: a video's picture comes up with it.
+        if (target.isVideo) MusicVideoChoice.watching.value = target.videoId
+        mediaController?.swapToVersion(target)
+    }
+    // "Prefer music-only version": a video plays as a song — its audio release when there is one,
+    // its own sound with no picture otherwise — until the listener switches to the video.
+    val preferMusicOnly by AppSettings.preferMusicOnly.collectAsState()
+    val watchingVideo by MusicVideoChoice.watching.collectAsState()
     LaunchedEffect(song.videoId, inParty) {
         alternate = null
-        if (inParty || song.localUri != null) return@LaunchedEffect
-        alternate = versionPairs[song.videoId] ?: kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        MusicVideoChoice.onTrackChanged(song.videoId)
+        // A saved song still offers its music video, streamed; a saved video is never swapped away
+        // from the file for a stream of its audio.
+        if (inParty || (song.localUri != null && song.isVideo)) return@LaunchedEffect
+        val other = versionPairs[song.videoId] ?: kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 if (song.isVideo) {
                     com.music.laya.data.YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
@@ -144,23 +169,19 @@ fun TvNowPlayingScreen(
                 }
             }.getOrNull()
         }
-    }
-    val toggleVideo: (() -> Unit)? = alternate?.let { other ->
-        {
-            val target = other.copy(
-                isVideoOrigin = song.isVideo,
-                queueTier = song.queueTier,
-                queueEntryId = song.queueEntryId,
-                radioName = song.radioName,
-                playbackSource = song.playbackSource,
-                playbackSourceType = song.playbackSourceType,
-                playbackSourceId = song.playbackSourceId,
-            )
-            versionPairs[target.videoId] = song
-            mediaController?.swapToVersion(target)
+        alternate = other
+        if (other != null && song.isVideo && !other.isVideo && AppSettings.preferMusicOnly.value &&
+            MusicVideoChoice.watching.value != song.videoId
+        ) {
+            swapTo(other)
         }
     }
-    val videoMode = song.isVideo
+    val toggleVideo: (() -> Unit)? = alternate?.let { other -> { swapTo(other) } }
+        // No audio version to go to: the switch only puts the video's picture up or away.
+        ?: song.takeIf { it.isVideo && preferMusicOnly }?.let { video -> { MusicVideoChoice.toggle(video.videoId) } }
+    val videoMode = MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
+    // The aspect button's choice — see [com.music.laya.data.settings.VideoScale].
+    val videoScale by AppSettings.videoScale.collectAsState()
     var videoRendered by remember(song.videoId) { mutableStateOf(false) }
 
     var lyricsHidden by rememberSaveable { mutableStateOf(false) }
@@ -304,11 +325,12 @@ fun TvNowPlayingScreen(
             )
             com.music.laya.ui.player.AndroidMusicVideo(
                 videoId = song.videoId,
-                fit = true,
+                scale = videoScale,
                 onRenderedChanged = { videoRendered = it },
                 modifier = Modifier.fillMaxSize().graphicsLayer { alpha = dim },
                 priority = 2,
             )
+            TvVideoScaleFlash(videoScale, Modifier.align(androidx.compose.ui.Alignment.Center))
         }
         if (!videoMode || !videoRendered) TvNowPlayingStage(
             song = song,
@@ -468,4 +490,35 @@ private fun TvVideoQualityDialog(onDismiss: () -> Unit) {
             }
         }
     }
+}
+
+/** The aspect's name in the middle of the picture for a moment after it changes, as VLC shows it. */
+@Composable
+private fun TvVideoScaleFlash(scale: com.music.laya.data.settings.VideoScale, modifier: Modifier = Modifier) {
+    var seen by remember { mutableStateOf(scale) }
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(scale) {
+        if (scale == seen) return@LaunchedEffect
+        seen = scale
+        shown = true
+        kotlinx.coroutines.delay(1_200)
+        shown = false
+    }
+    if (!shown) return
+    val label = when (scale) {
+        com.music.laya.data.settings.VideoScale.BEST_FIT -> com.music.laya.R.string.video_scale_best_fit
+        com.music.laya.data.settings.VideoScale.FIT_SCREEN -> com.music.laya.R.string.video_scale_fit_screen
+        com.music.laya.data.settings.VideoScale.FILL -> com.music.laya.R.string.video_scale_fill
+    }
+    androidx.compose.material3.Text(
+        text = androidx.compose.ui.res.stringResource(label),
+        color = androidx.compose.ui.graphics.Color.White,
+        fontSize = androidx.compose.ui.unit.TextUnit(22f, androidx.compose.ui.unit.TextUnitType.Sp),
+        modifier = modifier
+            .background(
+                androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f),
+                androidx.compose.foundation.shape.RoundedCornerShape(percent = 50),
+            )
+            .padding(horizontal = 28.dp, vertical = 12.dp),
+    )
 }
