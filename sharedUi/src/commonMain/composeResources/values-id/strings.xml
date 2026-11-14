@@ -708,4 +708,6 @@
     <string name="video_scale_fit_screen">Penuhi layar</string>
     <string name="video_scale_fill">Rentangkan</string>
     <string name="video_skip_seconds">%1$d detik</string>
+    <string name="independent_volume">Volume khusus aplikasi</string>
+    <string name="independent_volume_subtitle">Bilah volume mengatur level Laya sendiri dalam batas volume media perangkat, tanpa mengubahnya</string>
 </resources>

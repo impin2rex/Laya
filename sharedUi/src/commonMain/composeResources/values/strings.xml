@@ -735,4 +735,6 @@
     <string name="video_scale_fit_screen">Fit screen</string>
     <string name="video_scale_fill">Fill</string>
     <string name="video_skip_seconds">%1$d seconds</string>
+    <string name="independent_volume">In-app volume</string>
+    <string name="independent_volume_subtitle">The volume bar sets Laya\'s own level within your device\'s media volume, which it leaves alone</string>
 </resources>

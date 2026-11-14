@@ -713,4 +713,6 @@
     <string name="video_scale_fit_screen">Remplir l’écran</string>
     <string name="video_scale_fill">Étirer</string>
     <string name="video_skip_seconds">%1$d secondes</string>
+    <string name="independent_volume">Volume propre à l\'app</string>
+    <string name="independent_volume_subtitle">La barre de volume règle le niveau propre à Laya dans la limite du volume multimédia de l\'appareil, sans le modifier</string>
 </resources>

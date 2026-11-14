@@ -1,5 +1,8 @@
 package com.music.laya.data.settings
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+
 /**
  * How much of each edge of a video frame is the uploader's own black bars, as fractions of the
  * frame: a widescreen film letterboxed into 16:9, or a 4:3 clip pillarboxed into it. The player
@@ -17,6 +20,15 @@ data class VideoCrop(val left: Float, val top: Float, val right: Float, val bott
 }
 
 object BlackBars {
+    /**
+     * How long after one reading to take the next: a quarter second until the [VideoCropSettler]
+     * has the readings it waits for, so a new video is cropped within a second rather than three,
+     * then once a second.
+     */
+    fun readEveryMs(readsSoFar: Int): Long = if (readsSoFar < QUICK_READS) 250L else 1_000L
+
+    private const val QUICK_READS = 3
+
     /** Brightest a bar's pixel gets, on 0–255: limited-range black is 16, and compression adds a little. */
     private const val BLACK = 32
 
@@ -51,6 +63,9 @@ object BlackBars {
 class VideoCropSettler {
     private val readings = ArrayDeque<VideoCrop>()
 
+    /** Whether enough frames were read for [offer]'s answer to stand: until then it is [VideoCrop.NONE]. */
+    val settled: Boolean get() = readings.size >= SETTLED
+
     /** Takes one frame's reading (null for a frame too dark to read); returns the crop to show. */
     fun offer(reading: VideoCrop?): VideoCrop {
         if (reading != null) {
@@ -70,4 +85,27 @@ class VideoCropSettler {
         const val WINDOW = 5
         const val SETTLED = 3
     }
+}
+
+/**
+ * Each video's crop once settled, on every platform: a surface that takes the picture over (mini
+ * player to full player, picture in picture), or the same video coming round again, shows it at
+ * its final shape at once instead of waiting for the bars to be read again. The last [KEEP] videos;
+ * safe from any thread.
+ */
+object VideoCropMemory {
+    private val crops = MutableStateFlow<Map<String, VideoCrop>>(emptyMap())
+
+    operator fun get(videoId: String): VideoCrop? = crops.value[videoId]
+
+    fun put(videoId: String, crop: VideoCrop) = crops.update { held ->
+        // Moved to the end, the newest; the oldest goes past [KEEP].
+        val next = held - videoId + (videoId to crop)
+        if (next.size > KEEP) next - next.keys.first() else next
+    }
+
+    /** The longest a new picture waits, hidden, for its crop: a dark opening gives no reading. */
+    const val WAIT_MS = 1_500L
+
+    private const val KEEP = 32
 }

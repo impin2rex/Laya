@@ -1,8 +1,10 @@
 package com.music.laya.ios
 
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.VideoCropSettler
 import com.music.laya.data.settings.VideoCrop
 import com.music.laya.data.settings.BlackBars
+import com.music.laya.data.settings.VideoCropMemory
 import com.music.laya.data.settings.VideoScale
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -141,6 +143,9 @@ internal object IosMusicVideo {
 
     /** The playing video's own black bars, cut off when it is drawn — see [VideoCropSettler]. */
     val crop = MutableStateFlow(VideoCrop.NONE)
+
+    /** Whether [crop] is known for the picture up: it stays hidden until it is, so it never jumps to it. */
+    val cropSettled = MutableStateFlow(false)
     private var cropOf: String? = null
     private var settler = VideoCropSettler()
 
@@ -256,21 +261,35 @@ internal object IosMusicVideo {
     private fun load(want: String) {
         if (want == pictureId) return applyCap()
         // Another video while the window floats — the next track, the previous one, a video
-        // ending into the next: it starts as music, as on Android, so the window closes. Left to
-        // the follow loop, it never would: that compares the track with the picture, and by the
-        // time it looked the picture was already the new video.
-        if (pipActive) pip?.stopPictureInPicture()
+        // ending into the next: under "Prefer music-only" it starts as music, as on Android, so
+        // the window closes. Left to the follow loop, it never would: that compares the track
+        // with the picture, and by the time it looked the picture was already the new video.
+        // Without it the new video plays as a video, and the window stays for it.
+        val keepWindow = pipActive && !AppSettings.preferMusicOnly.value
+        if (pipActive && !keepWindow) pip?.stopPictureInPicture()
+        // The window's layer keeps the old picture, still playing, until the new one is on it:
+        // released now, its player would empty under the window, and iOS closes a window whose
+        // player has nothing in it.
+        if (keepWindow) picture?.let { old ->
+            pipBridge?.takeIf { it !== old }?.release()
+            pipBridge = old
+            picture = null
+        }
         unload()
         pictureId = want
         loadJob = scope.launch {
             vp9 // registered before the player chooses its variants
-            val url = manifest(want) ?: return@launch run { pip?.stopPictureInPicture() }
+            val url = manifest(want) ?: return@launch run {
+                pip?.stopPictureInPicture()
+                dropPipBridge()
+            }
             // Built off the main thread, as the canvas clip is: AVPlayer and its item wait on the media server.
             val made = withContext(NonCancellable + Dispatchers.Default) { HlsPicture(url) }
             if (pictureId != want) return@launch made.release()
             picture = made
             // The layer the next window flies out of plays this video, not the last one's frozen frame.
             pipLayer?.player = made.player
+            dropPipBridge()
             made.viewSize = viewSize()
             applyCap()
             launch(Dispatchers.Default) { pullFrames(made, want) }
@@ -288,6 +307,14 @@ internal object IosMusicVideo {
         p.viewSize = viewSize()
     }
 
+    /** The last video's picture, held on the floating window's layer while the next one loads — see [load]. */
+    private var pipBridge: HlsPicture? = null
+
+    private fun dropPipBridge() {
+        pipBridge?.release()
+        pipBridge = null
+    }
+
     private fun unload() {
         loadJob?.cancel()
         loadJob = null
@@ -297,6 +324,7 @@ internal object IosMusicVideo {
         dropPictureInPicture()
         frame.value = null
         crop.value = VideoCrop.NONE
+        cropSettled.value = false
         cropOf = null
         quality.value = quality.value.copy(heights = emptyList(), activeHeight = null)
     }
@@ -309,8 +337,15 @@ internal object IosMusicVideo {
                 if (cropOf != videoId) {
                     cropOf = videoId
                     settler = VideoCropSettler()
+                    // Seen before: at its final shape at once (see [VideoCropMemory]).
+                    VideoCropMemory[videoId]?.let { crop.value = it; cropSettled.value = true }
                 }
-                crop.value = settler.offer(p.bars)
+                val read = settler.offer(p.bars)
+                if (settler.settled) {
+                    crop.value = read
+                    VideoCropMemory.put(videoId, read)
+                    cropSettled.value = true
+                }
             }
             delay(FRAME_POLL_MS)
         }
@@ -326,6 +361,13 @@ internal object IosMusicVideo {
             // Floating, and the track changed — the next one, the last one, or the switch to audio:
             // a new track starts as music, so the window has nothing of it to show and goes.
             val track = audio?.song
+            if (pipActive && track != null && track.videoId != pictureId && track.isVideo && !AppSettings.preferMusicOnly.value) {
+                // Without "Prefer music-only" the next music video plays as a video: the window
+                // moves to it (the controller outlives the unload while it floats; load lays the
+                // new player on its layer). This loop goes with the old picture.
+                load(track.videoId)
+                return
+            }
             if (track != null && track.videoId != pictureId) {
                 // Not this picture's track any more: it is never held to another track's clock —
                 // that put the last video back at its start, playing in the window, as the next
@@ -423,6 +465,7 @@ internal object IosMusicVideo {
     private fun forceClosePictureInPicture() {
         TrackLog.d(TAG, "picture-in-picture didn't close when asked; shutting it", about = pictureId)
         pipLayer?.player = null
+        dropPipBridge()
         pip?.delegate = null
         pip = null
         pipView?.removeFromSuperview()
@@ -517,6 +560,7 @@ internal object IosMusicVideo {
 
     private fun endPictureInPicture() {
         TrackLog.d(TAG, "picture-in-picture ended", about = pictureId)
+        dropPipBridge()
         pipActive = false
         pipClosingSince = 0L
         pipFront(false)
@@ -651,13 +695,15 @@ private class HlsPicture(url: String) {
     var bars: VideoCrop? = null
         private set
     private var barsReadAt = 0.0
+    private var barsReads = 0
 
     /** [BlackBars] on a 160×90 grid of the BGRA frame just copied, about once a second. */
     private fun readBarsEverySecond(w: Int, h: Int, rowBytes: Int) {
         val now = CACurrentMediaTime()
-        barsRead = now - barsReadAt >= 1.0
+        barsRead = (now - barsReadAt) * 1000 >= BlackBars.readEveryMs(barsReads)
         if (!barsRead) return
         barsReadAt = now
+        barsReads++
         val frame = bytes
         bars = BlackBars.detect(160, 90) { x, y ->
             val i = (y * (h - 1) / 89) * rowBytes + (x * (w - 1) / 159) * 4
@@ -802,7 +848,15 @@ internal fun IosMusicVideoSurface(
     // Read in the draw phase only: a new frame redraws the canvas, it doesn't recompose.
     val frame = IosMusicVideo.frame.collectAsState()
     val crop = IosMusicVideo.crop.collectAsState()
-    val rendered by remember(videoId) { derivedStateOf { frame.value?.videoId == videoId } }
+    // Shown once its crop is known too, so it appears at its final shape (see [IosMusicVideo.cropSettled]).
+    val cropSettled by IosMusicVideo.cropSettled.collectAsState()
+    val framed by remember(videoId) { derivedStateOf { frame.value?.videoId == videoId } }
+    LaunchedEffect(videoId, framed) {
+        if (!framed || IosMusicVideo.cropSettled.value) return@LaunchedEffect
+        delay(VideoCropMemory.WAIT_MS)
+        if (frame.value?.videoId == videoId) IosMusicVideo.cropSettled.value = true
+    }
+    val rendered = framed && cropSettled
     LaunchedEffect(rendered) { report(rendered) }
     DisposableEffect(Unit) { onDispose { report(false) } }
 

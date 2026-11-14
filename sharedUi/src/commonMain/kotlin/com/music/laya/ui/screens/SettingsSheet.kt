@@ -227,6 +227,7 @@ fun SettingsScreen(
     val swipeToPlayNext by AppSettings.swipeToPlayNext.collectAsStateWithLifecycle()
     val dontRepeatSuggestions by AppSettings.dontRepeatSuggestions.collectAsStateWithLifecycle()
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
+    val independentVolume by AppSettings.independentVolume.collectAsStateWithLifecycle()
     val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
     val smartVersionAlignment by AppSettings.smartVersionAlignment.collectAsStateWithLifecycle()
     val filterNonMusicAudio by AppSettings.filterNonMusicAudio.collectAsStateWithLifecycle()
@@ -487,6 +488,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setPreferMusicOnly(!preferMusicOnly) },
+                )
+            }
+            val independentVolumeTitle = stringResource(Res.string.independent_volume)
+            row(independentVolumeTitle, "volume", "system volume", "media volume") {
+                SettingsRow(
+                    icon = Icons.AutoMirrored.Rounded.VolumeUp,
+                    title = independentVolumeTitle,
+                    subtitle = stringResource(Res.string.independent_volume_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = independentVolume,
+                            onCheckedChange = AppSettings::setIndependentVolume,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setIndependentVolume(!independentVolume) },
                 )
             }
             val miniPlayerVideoTitle = stringResource(Res.string.mini_player_video)

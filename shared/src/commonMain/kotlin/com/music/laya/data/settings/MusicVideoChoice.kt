@@ -14,9 +14,13 @@ object MusicVideoChoice {
     /** The video the listener switched to; null while none. */
     val watching = MutableStateFlow<String?>(null)
 
-    /** Whether [song]'s picture should be up, for the given preference and [watching]. */
+    /**
+     * Whether [song]'s picture should be up, for the given preference and [watching]. A track not
+     * marked as a video still has one when the listener switched to it and the video found for it
+     * was the very same upload (a song whose id is its own music video).
+     */
     fun pictureWanted(song: Song?, preferMusicOnly: Boolean, watching: String?): Boolean =
-        song != null && song.isVideo && (!preferMusicOnly || watching == song.videoId)
+        song != null && (watching == song.videoId || (song.isVideo && !preferMusicOnly))
 
     /** As [pictureWanted], read off the current values — for code outside composition. */
     fun pictureWanted(song: Song?): Boolean =

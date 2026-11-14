@@ -240,7 +240,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     func stop() {
         cancelSwap(resume: false)
         pendingNext = nil
-        for deck in [player, idle] { deck.pause(); deck.removeAllItems(); deck.volume = 1 }
+        for deck in [player, idle] { deck.pause(); deck.removeAllItems(); deck.volume = appGain }
         fade = nil
         easing = false
         IosTransition.shared.end()
@@ -333,17 +333,42 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             }
             return
         }
+        fetchArtwork(artworkUrl, letterboxed: false, expectedTitle: expectedTitle)
+    }
+
+    /// The lock screen's cover, square as the app's own: a music video's 16:9 frame (hq720) is cut to its middle square.
+    /// An old upload has no hq720; its 4:3 hqdefault stands in, whose picture is the 16:9 band between baked-in bars.
+    private func fetchArtwork(_ artworkUrl: String, letterboxed: Bool, expectedTitle: String) {
         guard let url = URL(string: artworkUrl) else { return }
-        artworkTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            guard let data, let image = UIImage(data: data) else { return }
+        artworkTask = URLSession.shared.dataTask(with: url) { [weak self] data, response, _ in
+            let ok = (response as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? true
+            guard ok, let data, let image = UIImage(data: data) else {
+                if !letterboxed, artworkUrl.contains("/hq720.") {
+                    let fallback = artworkUrl.replacingOccurrences(of: "/hq720.", with: "/hqdefault.")
+                    DispatchQueue.main.async { self?.fetchArtwork(fallback, letterboxed: true, expectedTitle: expectedTitle) }
+                }
+                return
+            }
+            let square = Self.squared(image, letterboxed: letterboxed)
             DispatchQueue.main.async {
                 guard let self, self.nowPlaying[MPMediaItemPropertyTitle] as? String == expectedTitle else { return }
                 self.nowPlaying[MPMediaItemPropertyArtwork] =
-                    MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+                    MPMediaItemArtwork(boundsSize: square.size) { _ in square }
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = self.nowPlaying
             }
         }
         artworkTask?.resume()
+    }
+
+    /// The centred square of [image]; of a letterboxed 4:3 thumbnail, the square inside its 16:9 band. A cover already
+    /// square, near enough, is left as it came.
+    private static func squared(_ image: UIImage, letterboxed: Bool) -> UIImage {
+        guard let cg = image.cgImage else { return image }
+        let w = cg.width, h = cg.height
+        let side = letterboxed ? min(h, w * 9 / 16) : min(w, h)
+        if side <= 0 || max(w, h) - side <= side / 50 { return image }
+        guard let cut = cg.cropping(to: CGRect(x: (w - side) / 2, y: (h - side) / 2, width: side, height: side)) else { return image }
+        return UIImage(cgImage: cut, scale: image.scale, orientation: image.imageOrientation)
     }
 
     func setQueueCapabilities(hasNext: Bool, hasPrevious: Bool) {
@@ -386,6 +411,15 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         return [port?.portName ?? "", port?.portType.rawValue ?? "",
                 String(Int(session.sampleRate)), String(session.outputNumberOfChannels),
                 String(Int(session.ioBufferDuration * 1000))]
+    }
+
+    /// The app's own level ("In-app volume"): each deck's volume is this times its own swap fade. Crossfades run in the taps.
+    private var appGain: Float = 1
+
+    func setAppVolume(level: Float) {
+        appGain = level
+        player.volume = appGain
+        if swapItem == nil { idle.volume = appGain }
     }
 
     func setSystemVolume(level: Float) {
@@ -796,8 +830,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         func retire() {
             out.pause()
             out.removeAllItems()
-            out.volume = 1
-            deck.volume = 1
+            out.volume = self.appGain
+            deck.volume = self.appGain
         }
         if out.timeControlStatus == .paused { // paused (or interrupted) while the copy was lining up
             deck.pause()
@@ -807,8 +841,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             let began = CACurrentMediaTime()
             let timer = Timer(timeInterval: 0.02, repeats: true) { t in
                 let f = min(1, (CACurrentMediaTime() - began) / 0.16)
-                deck.volume = Float(f)
-                out.volume = Float(1 - f)
+                deck.volume = Float(f) * self.appGain
+                out.volume = Float(1 - f) * self.appGain
                 if f >= 1 { t.invalidate(); retire() }
             }
             RunLoop.main.add(timer, forMode: .common)
@@ -826,7 +860,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         swapObservation = nil
         idle.pause()
         idle.removeAllItems()
-        idle.volume = 1
+        idle.volume = appGain
         dropItem(item)
         if resume { materializeNextIfDue() }
     }

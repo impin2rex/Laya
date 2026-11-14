@@ -708,4 +708,6 @@
     <string name="video_scale_fit_screen">画面に合わせる</string>
     <string name="video_scale_fill">引き伸ばし</string>
     <string name="video_skip_seconds">%1$d 秒</string>
+    <string name="independent_volume">アプリ内音量</string>
+    <string name="independent_volume_subtitle">音量バーは端末のメディア音量の範囲内で Laya 独自の音量を調整し、端末の音量は変更しません</string>
 </resources>

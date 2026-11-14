@@ -1886,6 +1886,12 @@ class PlaybackService : MediaLibraryService() {
         )
             .setId(SESSION_ID)
             .setSessionActivity(sessionActivity())
+            // Media3's own loader and cache, with the cover squared on its way to the system.
+            .setBitmapLoader(
+                androidx.media3.session.CacheBitmapLoader(
+                    SquareArtBitmapLoader(androidx.media3.datasource.DataSourceBitmapLoader(this)),
+                ),
+            )
             .build()
         refreshCustomLayouts()
 
@@ -6957,7 +6963,14 @@ class PlaybackService : MediaLibraryService() {
                 .collect { applyReverb() }
         }
         scope.launch {
-            combine(AppSettings.reverbEnabled, AppSettings.equalizerEnabled, Karaoke.enabled) { _, _, _ -> }
+            combine(
+                AppSettings.reverbEnabled,
+                AppSettings.equalizerEnabled,
+                Karaoke.enabled,
+                AppSettings.independentVolume,
+                AppSettings.appVolume,
+            ) { _, _, _, _, _ -> effectsNeedPcm() }
+                .distinctUntilChanged()
                 .collect { decodeIfBitstream() }
         }
         scope.launch {
@@ -7053,7 +7066,9 @@ class PlaybackService : MediaLibraryService() {
 
     /** Read on the playback thread by [PrecisionAudioSink]: StateFlow values only. */
     private fun effectsNeedPcm(): Boolean =
-        AppSettings.reverbEnabled.value || AppSettings.equalizerEnabled.value || Karaoke.enabled.value
+        AppSettings.reverbEnabled.value || AppSettings.equalizerEnabled.value || Karaoke.enabled.value ||
+            // "In-app volume" below full: a bitstream's level can't be turned down, its decoded PCM can.
+            AppSettings.appGain() < 1f
 
     /**
      * An effect was just turned on over a track the audible player is passing through as a

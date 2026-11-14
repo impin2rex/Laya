@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import com.music.laya.data.settings.VideoCropSettler
 import com.music.laya.data.settings.VideoCrop
 import com.music.laya.data.settings.BlackBars
+import com.music.laya.data.settings.VideoCropMemory
 import com.music.laya.data.settings.VideoScale
+import com.music.laya.data.settings.MusicVideoChoice
 import android.app.Activity
 import android.app.PictureInPictureParams
 import android.content.Context
@@ -192,9 +194,12 @@ object MusicVideoEngine {
 
     private val controllerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            // A new track starts as music: the floating window has nothing of it to show. The
-            // same one again (repeat one) keeps it.
-            if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) VideoPictureInPicture.close()
+            // A new track starts as music under "Prefer music-only": the floating window has
+            // nothing of it to show. Without it a music video plays as a video, and the window
+            // stays for its picture (refresh loads it). The same one again (repeat one) keeps it.
+            val keep = reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
+                (!AppSettings.preferMusicOnly.value && mediaItem?.toSong()?.isVideo == true)
+            if (!keep) VideoPictureInPicture.close()
             refresh()
         }
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -430,7 +435,7 @@ object MusicVideoEngine {
     /** The track the picture should be of: the controller's, when it is a music video. */
     private fun wanted(): Song? {
         val song = controller?.currentMediaItem?.toSong() ?: return null
-        return song.takeIf { it.isVideo && it.videoId !in noPicture }
+        return song.takeIf { (it.isVideo || MusicVideoChoice.watching.value == it.videoId) && it.videoId !in noPicture }
     }
 
     private fun refresh() {
@@ -535,6 +540,7 @@ object MusicVideoEngine {
                 if (loadedId == videoId) {
                     loadedId = null
                     dropKeptPicture()
+                    VideoPictureInPicture.close() // a floating window kept for it would stay black
                 }
                 return@launch
             }
@@ -544,6 +550,7 @@ object MusicVideoEngine {
                 noPicture += videoId
                 loadedId = null
                 dropKeptPicture()
+                VideoPictureInPicture.close()
                 return@launch
             }
             val exo = player ?: return@launch
@@ -759,8 +766,12 @@ object VideoPictureInPicture {
 @Composable
 fun PictureInPictureVideo() {
     val shown by MusicVideoEngine.shownVideoId.collectAsStateWithLifecycle()
+    // Held through a change of video: the picture is dropped while the next one loads, and the
+    // view it would land on has to stay, or its first frame never comes and the window stays black.
+    var held by remember { mutableStateOf<String?>(null) }
+    shown?.let { held = it }
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        shown?.let { id ->
+        held?.let { id ->
             AndroidMusicVideo(
                 videoId = id,
                 scale = VideoScale.BEST_FIT,
@@ -815,42 +826,59 @@ internal fun AndroidMusicVideo(
     val awake = rendered && playing
     LaunchedEffect(view, awake) { view?.keepScreenOn = awake }
 
-    val report by rememberUpdatedState(onRenderedChanged)
-    LaunchedEffect(handedOver) { report(handedOver) }
-    DisposableEffect(Unit) { onDispose { report(false) } }
-
-    val alpha by animateFloatAsState(
-        targetValue = if (handedOver) 1f else 0f,
-        animationSpec = tween(durationMillis = 320),
-        label = "musicVideoAlpha",
-    )
-
-    // The video's own black bars, read off what the view shows about once a second (a 160×90 copy
-    // of it) and cut off as it is laid out — see [VideoCropSettler].
-    var crop by remember(videoId) { mutableStateOf(VideoCrop.NONE) }
+    // The video's own black bars, read off what the view shows (a 160×90 copy of it, quickly at
+    // first, then once a second) and cut off as it is laid out — see [VideoCropSettler]. A video
+    // already cropped on another surface starts from that crop.
+    var crop by remember(videoId) { mutableStateOf(VideoCropMemory[videoId] ?: VideoCrop.NONE) }
+    // The picture stays hidden, the still art showing, until its crop is known, so it appears at
+    // its final shape rather than jumping to it. A dark opening that can't be read is waited for
+    // no longer than [VideoCropMemory.WAIT_MS].
+    var settled by remember(videoId) { mutableStateOf(VideoCropMemory[videoId] != null) }
     val settler = remember(videoId) { VideoCropSettler() }
+    LaunchedEffect(videoId, rendered) {
+        if (!rendered || settled) return@LaunchedEffect
+        delay(VideoCropMemory.WAIT_MS)
+        settled = true
+    }
     LaunchedEffect(view, videoId, rendered) {
         val target = view ?: return@LaunchedEffect
         if (!rendered) return@LaunchedEffect
         val sample = Bitmap.createBitmap(BARS_GRID_W, BARS_GRID_H, Bitmap.Config.ARGB_8888)
         val pixels = IntArray(BARS_GRID_W * BARS_GRID_H)
+        var reads = 0
         try {
             while (true) {
-                delay(BARS_EVERY_MS)
+                delay(BlackBars.readEveryMs(reads++))
                 if (!target.isAvailable) continue
                 target.getBitmap(sample)
                 sample.getPixels(pixels, 0, BARS_GRID_W, 0, 0, BARS_GRID_W, BARS_GRID_H)
-                crop = settler.offer(
+                val read = settler.offer(
                     BlackBars.detect(BARS_GRID_W, BARS_GRID_H) { x, y ->
                         val c = pixels[y * BARS_GRID_W + x]
                         maxOf((c shr 16) and 0xFF, (c shr 8) and 0xFF, c and 0xFF)
                     },
                 )
+                if (settler.settled) {
+                    crop = read
+                    VideoCropMemory.put(videoId, read)
+                    settled = true
+                }
             }
         } finally {
             sample.recycle()
         }
     }
+    val ready = handedOver && settled
+
+    val report by rememberUpdatedState(onRenderedChanged)
+    LaunchedEffect(ready) { report(ready) }
+    DisposableEffect(Unit) { onDispose { report(false) } }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (ready) 1f else 0f,
+        animationSpec = tween(durationMillis = 320),
+        label = "musicVideoAlpha",
+    )
 
     Box(modifier.clipToBounds(), contentAlignment = Alignment.Center) {
         AndroidView(
@@ -892,6 +920,5 @@ internal fun AndroidMusicVideo(
 }
 
 /** How often the picture is read for its black bars, and the size of the copy read. */
-private const val BARS_EVERY_MS = 1_000L
 private const val BARS_GRID_W = 160
 private const val BARS_GRID_H = 90

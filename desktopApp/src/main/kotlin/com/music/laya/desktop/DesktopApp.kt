@@ -2043,7 +2043,14 @@ fun LayaDesktopApp() {
     }
     LaunchedEffect(playback.song?.videoId, watching, pictureInPicture) {
         val shown = pictureInPicture ?: return@LaunchedEffect
-        if (playback.song?.videoId != shown || watching != shown) DesktopPictureInPicture.close()
+        val song = playback.song
+        when {
+            song?.videoId == shown && watching == shown -> Unit
+            // Without "Prefer music-only" the next music video plays as a video: the window moves to it.
+            song != null && song.isVideo && !DesktopAppearanceSettings.preferMusicOnly.value ->
+                DesktopPictureInPicture.open(song.videoId)
+            else -> DesktopPictureInPicture.close()
+        }
     }
     SideEffect {
         DesktopPictureInPicture.onTogglePlay = ::togglePlayPauseFromUser
@@ -2253,9 +2260,11 @@ fun LayaDesktopApp() {
     LaunchedEffect(listen?.videoId, playback.isPlaying, playback.durationMs) {
         DesktopScrobbling.onPlaybackStateChanged(playback.copy(song = listen ?: return@LaunchedEffect))
     }
-    LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs) {
+    val systemArt by DesktopSystemArt.changes.collectAsState()
+    LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs, systemArt) {
         DesktopWindowsMedia.publish(playback)
     }
+    LaunchedEffect(systemArt) { mprisController.refreshArt() }
     // Refetched on opening the page rather than cached for the session: the
     // point of it is that something played elsewhere shows up here.
     LaunchedEffect(destination, youtubeSignedIn, sessionRevision) {

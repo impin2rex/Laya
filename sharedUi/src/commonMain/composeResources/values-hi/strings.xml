@@ -713,4 +713,6 @@
     <string name="video_scale_fit_screen">स्क्रीन भरें</string>
     <string name="video_scale_fill">फैलाएँ</string>
     <string name="video_skip_seconds">%1$d सेकंड</string>
+    <string name="independent_volume">ऐप का अपना वॉल्यूम</string>
+    <string name="independent_volume_subtitle">वॉल्यूम बार डिवाइस के मीडिया वॉल्यूम की सीमा में Laya का अपना लेवल बदलता है, डिवाइस वॉल्यूम वैसा ही रहता है</string>
 </resources>
