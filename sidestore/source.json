@@ -20,6 +20,15 @@
       "screenshots": [],
       "versions": [
         {
+          "version": "1.9.4",
+          "buildVersion": "35",
+          "date": "2026-11-14T18:18:44Z",
+          "localizedDescription": "- New setting in Settings → Playback, **off by default**.\n- When on, Laya's volume bar sets only Laya's own level. Your phone's media volume and volume buttons stay as they are. Laya's level can't go above the phone's media volume.\n- Normalization, ReplayGain, crossfade, the equalizer and Dolby playback all keep working.\n\n- Picture in picture keeps playing into the next music video instead of closing.",
+          "downloadURL": "https://github.com/impin2rex/Laya/releases/download/v1.9.4/Laya-1.9.4-ios.ipa",
+          "size": 80510045,
+          "minOSVersion": "16.0"
+        },
+        {
           "version": "1.9.3",
           "buildVersion": "34",
           "date": "2026-11-12T13:25:22Z",
