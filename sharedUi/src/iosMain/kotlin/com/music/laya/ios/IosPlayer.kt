@@ -188,8 +188,15 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         engine.setListener(this)
         IosCast.player = this
         IosMusicVideo.player = this
-        IosVolume.level.value = engine.systemVolume()
-        IosVolume.setter = engine::setSystemVolume
+        IosVolume.level.value = localVolume()
+        IosVolume.setter = ::setLocalVolume
+        // "In-app volume" on or off, or its level moved: the engine plays at it, and the bar shows it.
+        scope.launch {
+            combine(AppSettings.independentVolume, AppSettings.appVolume) { _, _ -> AppSettings.appGain() }.collect {
+                engine.setAppVolume(it)
+                if (!IosCast.active) IosVolume.level.value = localVolume()
+            }
+        }
         IosPlayerStore.load()?.let { s ->
             queue = s.songs; index = s.index; pendingMs = s.positionMs; durationMs = s.durationMs
             position.report(s.positionMs)
@@ -920,8 +927,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     /** The receiver let go: its place comes back to the phone, paused unless the listener chose "Stop casting" while it played. */
     internal fun castEnded(resumeHere: Boolean) {
         castLoading = null
-        IosVolume.setter = engine::setSystemVolume
-        IosVolume.level.value = engine.systemVolume()
+        IosVolume.setter = ::setLocalVolume
+        IosVolume.level.value = localVolume()
         val at = position.positionMs
         val was = isPlaying
         isPlaying = false
@@ -1126,7 +1133,17 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         }
     }
 
-    override fun onVolumeChanged(level: Float) { if (!IosCast.active) IosVolume.level.value = level }
+    override fun onVolumeChanged(level: Float) {
+        if (!IosCast.active && !AppSettings.independentVolume.value) IosVolume.level.value = level
+    }
+
+    /** The volume bar's level on this phone: the app's own with "In-app volume" on, the system's otherwise. */
+    private fun localVolume(): Float =
+        if (AppSettings.independentVolume.value) AppSettings.appVolume.value else engine.systemVolume()
+
+    private fun setLocalVolume(level: Float) {
+        if (AppSettings.independentVolume.value) AppSettings.setAppVolume(level) else engine.setSystemVolume(level)
+    }
     // The lock screen, Control Center and headphones are the listener's own buttons: they go where the app's do, so
     // a party hears them. Straight to the engine, a pause was undone by the next reconcile within a second.
     override fun onRemotePlayPause(play: Boolean) = setPlaying(play)

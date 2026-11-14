@@ -1318,6 +1318,13 @@ private fun LayaApp(
             val stillCurrent = c.currentMediaItemIndex == index &&
                 c.currentMediaItem?.mediaId == song.videoId
 
+            // The video found is this very upload: the track is its own music video, only not
+            // marked as one. Nothing to swap — its own picture comes up, or goes again.
+            if (video != null && video.videoId == song.videoId && stillCurrent) {
+                MusicVideoChoice.toggle(song.videoId)
+                if (resumeAfterResolution) c.play()
+                return
+            }
             if (video == null || video.videoId == song.videoId) {
                 TrackLog.w("Player", "video switch found no distinct video", song.videoId)
                 if (stillCurrent) showQueueNotice(context.getString(R.string.no_video_version))

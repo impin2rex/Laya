@@ -720,4 +720,6 @@
     <string name="video_scale_fit_screen">Заполнить экран</string>
     <string name="video_scale_fill">Растянуть</string>
     <string name="video_skip_seconds">%1$d секунд</string>
+    <string name="independent_volume">Собственная громкость приложения</string>
+    <string name="independent_volume_subtitle">Ползунок громкости задаёт уровень Laya в пределах громкости медиа устройства, не меняя её</string>
 </resources>

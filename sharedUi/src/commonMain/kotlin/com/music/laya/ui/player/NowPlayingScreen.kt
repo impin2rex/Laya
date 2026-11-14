@@ -834,7 +834,8 @@ fun NowPlayingScreen(
     // Under "Prefer music-only version" a video plays as a song until the listener switches to it.
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
     val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
-    val videoMode = showsMusicVideo(song) && MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
+    val videoMode = PlayerPlatform.host.musicVideoSupported &&
+        MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
     // The lyrics and queue header is a small player of its own: it plays the video when the mini
     // player does (Settings), and is the still sleeve otherwise.
     val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()

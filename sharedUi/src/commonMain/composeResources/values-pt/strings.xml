@@ -713,4 +713,6 @@
     <string name="video_scale_fit_screen">Preencher a tela</string>
     <string name="video_scale_fill">Esticar</string>
     <string name="video_skip_seconds">%1$d segundos</string>
+    <string name="independent_volume">Volume próprio do app</string>
+    <string name="independent_volume_subtitle">A barra de volume ajusta o nível próprio do Laya dentro do volume de mídia do aparelho, sem alterá-lo</string>
 </resources>

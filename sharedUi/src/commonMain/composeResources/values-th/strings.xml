@@ -708,4 +708,6 @@
     <string name="video_scale_fit_screen">เต็มหน้าจอ</string>
     <string name="video_scale_fill">ยืดเต็ม</string>
     <string name="video_skip_seconds">%1$d วินาที</string>
+    <string name="independent_volume">ระดับเสียงในแอป</string>
+    <string name="independent_volume_subtitle">แถบระดับเสียงปรับระดับเสียงของ Laya ภายในระดับเสียงสื่อของอุปกรณ์ โดยไม่เปลี่ยนระดับเสียงนั้น</string>
 </resources>

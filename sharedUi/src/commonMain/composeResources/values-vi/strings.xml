@@ -708,4 +708,6 @@
     <string name="video_scale_fit_screen">Lấp đầy màn hình</string>
     <string name="video_scale_fill">Kéo giãn</string>
     <string name="video_skip_seconds">%1$d giây</string>
+    <string name="independent_volume">Âm lượng riêng trong ứng dụng</string>
+    <string name="independent_volume_subtitle">Thanh âm lượng chỉnh mức riêng của Laya trong giới hạn âm lượng phương tiện của thiết bị, không thay đổi nó</string>
 </resources>

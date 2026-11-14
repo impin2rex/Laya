@@ -47,3 +47,18 @@ class BlackBarsTest {
         assertEquals(16f / 9f * 1f / 0.76f, bars.aspect(16f / 9f), 0.0001f)
     }
 }
+
+class VideoCropMemoryTest {
+    @Test
+    fun keepsTheNewestCropsAndForgetsTheOldest() {
+        val crop = VideoCrop(0f, 0.1f, 0f, 0.1f)
+        repeat(33) { VideoCropMemory.put("v$it", crop) }
+        assertEquals(null, VideoCropMemory["v0"])
+        assertEquals(crop, VideoCropMemory["v32"])
+        // Seen again, a video becomes the newest and outlives the ones after it.
+        VideoCropMemory.put("v1", VideoCrop.NONE)
+        repeat(31) { VideoCropMemory.put("w$it", crop) }
+        assertEquals(VideoCrop.NONE, VideoCropMemory["v1"])
+        assertEquals(null, VideoCropMemory["v2"])
+    }
+}

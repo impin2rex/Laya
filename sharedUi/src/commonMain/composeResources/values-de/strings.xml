@@ -713,4 +713,6 @@
     <string name="video_scale_fit_screen">Bildschirm füllen</string>
     <string name="video_scale_fill">Strecken</string>
     <string name="video_skip_seconds">%1$d Sekunden</string>
+    <string name="independent_volume">App-eigene Lautstärke</string>
+    <string name="independent_volume_subtitle">Der Lautstärkeregler stellt Layas eigene Lautstärke innerhalb der Medienlautstärke des Geräts ein und lässt diese unverändert</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.music.laya.desktop
 
 import com.music.laya.data.settings.VideoCropSettler
+import com.music.laya.data.settings.VideoCropMemory
 import com.music.laya.data.settings.VideoCrop
 import com.music.laya.data.settings.BlackBars
 import com.music.laya.data.settings.VideoScale
@@ -369,7 +370,10 @@ private fun CoroutineScope.decodeFrom(decoder: DesktopCanvasDecoder, startMs: Lo
             // Null until the first frame: a sentinel minimum overflowed the subtraction below, and
             // no frame was ever read.
             var barsReadAt: Long? = null
-            fun barsDue(pts: Long) = barsReadAt.let { it == null || pts - it >= BARS_EVERY_MS || pts < it }
+            var barsReads = 0
+            fun barsDue(pts: Long) = barsReadAt.let {
+                (it == null || pts - it >= BlackBars.readEveryMs(barsReads) || pts < it).also { due -> if (due) barsReads++ }
+            }
             while (isActive) {
                 val frame = if (decoder.planarFormat) {
                     val p = decoder.nextPlanes(planes, skipBeforeMs = from)
@@ -569,8 +573,14 @@ private class PictureSession(val videoId: String) {
     /** The frame the audio is on, drawn by every surface. Closed only here. */
     var frame by mutableStateOf<VideoFrame?>(null)
 
-    /** The video's own black bars, cut off when it is drawn — see [VideoCropSettler]. */
-    var crop by mutableStateOf(VideoCrop.NONE)
+    /**
+     * The video's own black bars, cut off when it is drawn — see [VideoCropSettler]; one seen
+     * before starts from its crop ([VideoCropMemory]).
+     */
+    var crop by mutableStateOf(VideoCropMemory[videoId] ?: VideoCrop.NONE)
+
+    /** Whether [crop] is known: the picture stays hidden until it is, so it never jumps to it. */
+    var cropSettled by mutableStateOf(VideoCropMemory[videoId] != null)
     private val settler = VideoCropSettler()
     var surfaces = 0
     var release: Job? = null
@@ -597,10 +607,14 @@ private class PictureSession(val videoId: String) {
                     },
                     onStepDown = { reopen.value++ },
                     onBars = { reading ->
-                        val settled = synchronized(settler) { settler.offer(reading) }
-                        if (settled != crop) {
-                            DesktopTrackLog.log("music video: black bars ${settled.describe()} for $videoId")
-                            crop = settled
+                        val (settled, known) = synchronized(settler) { settler.offer(reading) to settler.settled }
+                        if (known) {
+                            if (settled != crop) {
+                                DesktopTrackLog.log("music video: black bars ${settled.describe()} for $videoId")
+                                crop = settled
+                            }
+                            VideoCropMemory.put(videoId, settled)
+                            cropSettled = true
                         }
                     },
                 )
@@ -643,7 +657,8 @@ private class PictureUse(videoId: String) : RememberObserver {
 }
 
 /** Whether [videoId]'s picture has a frame up now — a surface opening on it shows it at once. */
-internal fun musicVideoRendered(videoId: String): Boolean = pictures[videoId]?.frame != null
+internal fun musicVideoRendered(videoId: String): Boolean =
+    pictures[videoId]?.let { it.frame != null && it.cropSettled } == true
 
 /**
  * Where the playing music video shows on the desktop: [videoId]'s picture fitted into ([fit]) or
@@ -662,7 +677,14 @@ internal fun DesktopMusicVideoSurface(
     val report by rememberUpdatedState(onRenderedChanged)
 
     // Derived, so a new frame redraws the canvas without recomposing the surface.
-    val rendered by remember(session) { derivedStateOf { session.frame != null } }
+    // Shown once its crop is known too, so it appears at its final shape (see [PictureSession.cropSettled]).
+    val framed by remember(session) { derivedStateOf { session.frame != null } }
+    LaunchedEffect(session, framed) {
+        if (!framed || session.cropSettled) return@LaunchedEffect
+        delay(VideoCropMemory.WAIT_MS)
+        session.cropSettled = true
+    }
+    val rendered by remember(session) { derivedStateOf { session.frame != null && session.cropSettled } }
     LaunchedEffect(rendered) { report(rendered) }
 
     // From 1 at once when the video already has a frame up: nothing to fade in.
@@ -716,7 +738,6 @@ internal fun DesktopMiniPlayerVideo(videoId: String?, modifier: Modifier) {
 }
 
 /** How often a frame is read for its black bars: often enough to settle in seconds, cheap at that. */
-private const val BARS_EVERY_MS = 1_000L
 
 /** [BlackBars] on a 160×90 grid of a [width]×[height] frame, its luma read through [luma]. */
 private inline fun readBars(width: Int, height: Int, crossinline luma: (x: Int, y: Int) -> Int): VideoCrop? {

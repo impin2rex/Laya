@@ -708,4 +708,6 @@
     <string name="video_scale_fit_screen">填满屏幕</string>
     <string name="video_scale_fill">拉伸</string>
     <string name="video_skip_seconds">%1$d 秒</string>
+    <string name="independent_volume">应用内音量</string>
+    <string name="independent_volume_subtitle">音量条在设备媒体音量范围内调节 Laya 自身的音量，不改变设备音量</string>
 </resources>

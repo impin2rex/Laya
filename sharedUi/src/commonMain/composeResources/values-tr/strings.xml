@@ -713,4 +713,6 @@
     <string name="video_scale_fit_screen">Ekranı doldur</string>
     <string name="video_scale_fill">Uzat</string>
     <string name="video_skip_seconds">%1$d saniye</string>
+    <string name="independent_volume">Uygulama içi ses düzeyi</string>
+    <string name="independent_volume_subtitle">Ses çubuğu, cihazın medya ses düzeyi sınırında Laya\'nın kendi düzeyini ayarlar; cihaz sesini değiştirmez</string>
 </resources>
