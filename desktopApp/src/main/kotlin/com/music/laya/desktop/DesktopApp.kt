@@ -143,6 +143,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.FastRewind
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Folder
@@ -3324,6 +3325,10 @@ fun LayaDesktopApp() {
         DesktopPlayerHost.volumeLevel.value = volume
         DesktopPlayerHost.onVolumeChange = {
             volume = it
+            // Straight to the engine and the shared level too: with the main window put away for
+            // the mini player it does not recompose, so the effects on `volume` would wait for it.
+            DesktopPlayerHost.volumeLevel.value = it
+            playbackEngine.setVolume(it)
             persistence.saveString("volume", it.toString())
         }
     }
@@ -3436,6 +3441,34 @@ fun LayaDesktopApp() {
         partySyncHolder[0]?.onLocalIntent()
     }
 
+    // The floating mini player reads the same state and comes back here for every action. Watched
+    // as snapshots rather than pushed on recomposition: the main window, hidden behind the mini
+    // player, stops recomposing.
+    LaunchedEffect(Unit) {
+        snapshotFlow {
+            val id = playback.song?.videoId
+            (id != null && id in likedIds) to watching?.takeIf { it == id }
+        }.collect { (liked, video) ->
+            DesktopMiniWindow.liked.value = liked
+            DesktopMiniWindow.videoId.value = video
+        }
+    }
+    SideEffect {
+        DesktopMiniWindow.onTogglePlay = { if (playback.song != null) togglePlayPauseFromUser() }
+        DesktopMiniWindow.onPrevious = ::playPrevious
+        DesktopMiniWindow.onNext = ::playNext
+        DesktopMiniWindow.onSeek = ::seekPlayer
+        DesktopMiniWindow.onToggleLike = { playback.song?.let(::toggleLike) }
+        DesktopMiniWindow.onOpenQueue = {
+            DesktopMiniWindow.close()
+            overlays.sidePanel = DesktopSidePanel.QUEUE
+        }
+        DesktopMiniWindow.onOpenAudioOutput = {
+            DesktopMiniWindow.close()
+            overlays.audioOutput = true
+        }
+    }
+
     MaterialTheme(
         colorScheme = desktopColorScheme(),
         typography = desktopTypography(),
@@ -3504,6 +3537,12 @@ fun LayaDesktopApp() {
                         }
                         DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.W -> {
                             windowActions?.close?.invoke()
+                            true
+                        }
+                        // Apple Music's Switch to Mini Player: ⌥⌘M, or Ctrl+Alt+M elsewhere.
+                        event.key == Key.M && event.isAltPressed &&
+                            (if (DesktopPlatform.isMac) event.isMetaPressed else event.isCtrlPressed) -> {
+                            DesktopMiniWindow.show()
                             true
                         }
                         DesktopPlatform.isMac && event.isMetaPressed && event.key == Key.M -> {
@@ -4927,6 +4966,14 @@ private fun DesktopTopBar(
                         Icon(
                             Icons.Rounded.Headphones,
                             DesktopStrings["audio_output", "Audio output"],
+                            tint = DesktopSecondary,
+                            modifier = Modifier.size(19.dp),
+                        )
+                    }
+                    DesktopToolbarButton(onClick = DesktopMiniWindow::show, size = 32.dp) {
+                        Icon(
+                            Icons.Rounded.PictureInPictureAlt,
+                            DesktopStrings["d_mini_player", "Mini player"],
                             tint = DesktopSecondary,
                             modifier = Modifier.size(19.dp),
                         )
