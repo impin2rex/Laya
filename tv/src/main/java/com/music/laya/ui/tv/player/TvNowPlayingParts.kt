@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Waves
+import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.Hd
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Icon
@@ -407,6 +408,12 @@ internal fun TvTransport(
                         icon = Icons.Rounded.Hd,
                         contentDescription = "Video quality",
                         onClick = onOpenVideoQuality,
+                    )
+                    // VLC's aspect button: best fit, fit screen, fill — remembered for every video.
+                    TvTransportButton(
+                        icon = Icons.Rounded.AspectRatio,
+                        contentDescription = androidx.compose.ui.res.stringResource(com.music.laya.R.string.video_scale),
+                        onClick = { AppSettings.setVideoScale(AppSettings.videoScale.value.next) },
                     )
                 }
                 TvTransportButton(

@@ -1,5 +1,6 @@
 package com.music.laya.ui.components
 
+import com.music.laya.data.settings.VideoScale
 import com.music.laya.R
 
 import androidx.compose.foundation.background
@@ -57,6 +58,7 @@ import com.music.laya.data.model.ROW_ART_PX
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.artworkAt
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.sharedui.resources.Res as SharedRes
 import com.music.laya.sharedui.resources.ic_player_next
 import com.music.laya.ui.components.thumbnailBorder
@@ -217,7 +219,9 @@ fun MiniPlayer(
             // only while it plays here (Settings). Otherwise the cover stays
             // the square every other track has.
             val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
-            val showsVideo = song.isVideo && miniPlayerVideo
+            val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
+            val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
+            val showsVideo = miniPlayerVideo && MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
             val artWidth by animateDpAsState(
                 targetValue = if (showsVideo) VIDEO_ART_WIDTH else 40.dp,
                 label = "miniArtWidth",
@@ -243,7 +247,7 @@ fun MiniPlayer(
                 if (showsVideo) {
                     AndroidMusicVideo(
                         videoId = song.videoId,
-                        fit = false,
+                        scale = VideoScale.FIT_SCREEN,
                         onRenderedChanged = {},
                         modifier = Modifier.fillMaxSize(),
                         priority = MusicVideoEngine.MINI_PLAYER_PRIORITY,

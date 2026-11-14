@@ -9,6 +9,7 @@ import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.ForwardingAudioSink
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.BuildConfig
 import com.music.laya.playback.AudioOutputStatus
 import com.music.laya.playback.KaraokeProcessor
@@ -284,11 +285,32 @@ class PrecisionAudioSink(
         )
     }
 
+    /** The player's own volume (crossfades and fades write it); the app's level goes on top. */
+    private var playerVolume = 1f
+    private var appliedGain = Float.NaN
+
+    override fun setVolume(volume: Float) {
+        playerVolume = volume
+        applyVolume()
+    }
+
+    /**
+     * "In-app volume": [AppSettings.appGain] scales the track's output level, leaving the
+     * device's media volume alone. Checked per buffer, on the playback thread, so a move of
+     * the bar lands within one buffer.
+     */
+    private fun applyVolume() {
+        val gain = AppSettings.appGain()
+        appliedGain = gain
+        delegate.setVolume(playerVolume * gain)
+    }
+
     override fun handleBuffer(
         inputBuffer: ByteBuffer,
         presentationTimeUs: Long,
         encodedAccessUnitCount: Int,
     ): Boolean {
+        if (AppSettings.appGain() != appliedGain) applyVolume()
         if (!isPrecisionActive) {
             return delegate.handleBuffer(inputBuffer, presentationTimeUs, encodedAccessUnitCount)
         }

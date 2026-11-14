@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.VideoScale
 import com.music.laya.wear.WearBridge
 import android.content.Context
 import android.database.ContentObserver
@@ -99,7 +100,7 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
     override fun MiniPlayerVideo(videoId: String, modifier: Modifier) {
         val wanted by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
         if (wanted) {
-            AndroidMusicVideo(videoId, fit = false, onRenderedChanged = {}, modifier = modifier, priority = MusicVideoEngine.MINI_PLAYER_PRIORITY)
+            AndroidMusicVideo(videoId, scale = VideoScale.FIT_SCREEN, onRenderedChanged = {}, modifier = modifier, priority = MusicVideoEngine.MINI_PLAYER_PRIORITY)
         }
     }
 
@@ -107,8 +108,8 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         if (VideoPictureInPicture.supported(app)) VideoPictureInPicture::enter else null
 
     @Composable
-    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
-        AndroidMusicVideo(videoId, fit, onRenderedChanged, modifier)
+    override fun MusicVideo(videoId: String, scale: VideoScale, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        AndroidMusicVideo(videoId, scale, onRenderedChanged, modifier)
 
     override val musicVideoAspect: StateFlow<Float> get() = MusicVideoEngine.aspect
 
@@ -122,7 +123,7 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
 
     // Lazy, all three: the player is not the first thing the process does, and
     // none of these objects should be woken for a launch that never opens it.
-    override val volume: SystemVolume by lazy { CastAwareVolume(MusicStreamVolume(app), scope) }
+    override val volume: SystemVolume by lazy { CastAwareVolume(InAppVolume(MusicStreamVolume(app), scope), scope) }
 
     @Composable
     override fun rememberAudioOutputs(): List<AudioOutputDevice> {
@@ -286,6 +287,28 @@ private class CastAwareVolume(
             WearBridge.watchOutput.value.active -> WearBridge.setWatchVolume(level)
             else -> system.set(level)
         }
+    }
+
+    override fun refresh() = system.refresh()
+}
+
+/**
+ * The phone's level: the app's own while "In-app volume" is on (the player
+ * applies it, see `PrecisionAudioSink.setVolume`), the music stream's otherwise.
+ */
+private class InAppVolume(
+    private val system: SystemVolume,
+    scope: CoroutineScope,
+) : SystemVolume {
+    override val level: StateFlow<Float> = combine(
+        system.level,
+        AppSettings.independentVolume,
+        AppSettings.appVolume,
+    ) { stream, own, app -> if (own) app else stream }
+        .stateIn(scope, SharingStarted.Eagerly, system.level.value)
+
+    override fun set(level: Float) {
+        if (AppSettings.independentVolume.value) AppSettings.setAppVolume(level) else system.set(level)
     }
 
     override fun refresh() = system.refresh()

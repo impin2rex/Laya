@@ -1059,9 +1059,9 @@
 
     <string name="settings_search_empty">No settings match “%1$s”</string>
 
-    <string name="prefer_music_only">Prefer music-only version</string>
+    <string name="prefer_music_only">केवल संगीत वाला संस्करण पसंद करें</string>
 
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only_subtitle">म्यूज़िक वीडियो कवर आर्ट के साथ गानों की तरह चलेंगे, जब तक आप वीडियो पर स्विच न करें</string>
     <string name="smart_version_alignment">स्मार्ट ऑडियो अलाइनमेंट</string>
     <string name="smart_version_alignment_subtitle">ठीक मेल खाने वाला प्लेबैक पल ढूँढने के लिए ऑडियो वेवफ़ॉर्म का विश्लेषण करता है</string>
 
@@ -1377,4 +1377,9 @@
     <string name="no_audio_version">इस वीडियो का ऑडियो वर्शन नहीं मिला</string>
     <string name="no_video_version">इस गाने का वीडियो वर्शन नहीं मिला</string>
     <string name="version_switch_in_party">साथ में सुनें में सभी को एक ही वर्शन सुनाई देता है</string>
+    <string name="video_scale">वीडियो का आकार</string>
+    <string name="video_scale_best_fit">सबसे सही फ़िट</string>
+    <string name="video_scale_fit_screen">स्क्रीन भरें</string>
+    <string name="video_scale_fill">फैलाएँ</string>
+    <string name="video_skip_seconds">%1$d सेकंड</string>
 </resources>

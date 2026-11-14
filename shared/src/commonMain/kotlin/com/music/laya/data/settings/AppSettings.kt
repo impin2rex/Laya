@@ -410,14 +410,31 @@ object AppSettings {
     val dontRepeatSuggestions = MutableStateFlow(false)
 
     /**
-     * Prefer the catalogue audio release when the selected result is a music
-     * video. The video itself is still handed to the player first so its
-     * metadata appears immediately while the catalogue match is resolved.
+     * A music video plays as a song: its catalogue audio release when there is
+     * one, and otherwise the video's own sound under a square cover, with no
+     * picture — until the listener switches to the video ([MusicVideoChoice]).
+     * The video itself is still handed to the player first so its metadata
+     * appears immediately while the catalogue match is resolved. On by default.
      */
-    val preferMusicOnly = MutableStateFlow(false)
+    val preferMusicOnly = MutableStateFlow(true)
 
     /** Plays a music video's picture, at its lowest height, in the mini player's cover slot. */
     val miniPlayerVideo = MutableStateFlow(false)
+
+    /**
+     * The volume bar sets the app's own level instead of the device's media volume, which the
+     * hardware keys and system panel keep for themselves. Off by default.
+     */
+    val independentVolume = MutableStateFlow(false)
+
+    /** The app's own level, 0..1, while [independentVolume] is on. */
+    val appVolume = MutableStateFlow(1f)
+
+    /** The gain the player applies on top of everything else: [appVolume] while [independentVolume] is on, else none. */
+    fun appGain(): Float = if (independentVolume.value) appVolume.value else 1f
+
+    /** How a music video fills a full screen — the aspect button on the video, remembered. */
+    val videoScale = MutableStateFlow(VideoScale.BEST_FIT)
 
     /** Analyzes audio waveform/envelope to align matching playback moment between versions. */
     val smartVersionAlignment = MutableStateFlow(true)
@@ -890,8 +907,11 @@ object AppSettings {
         showQueueHistory.value = prefs.getBoolean(KEY_SHOW_QUEUE_HISTORY, false)
         swipeToPlayNext.value = prefs.getBoolean(KEY_SWIPE_TO_PLAY_NEXT, false)
         dontRepeatSuggestions.value = prefs.getBoolean(KEY_DONT_REPEAT_SUGGESTIONS, false)
-        preferMusicOnly.value = prefs.getBoolean(KEY_PREFER_MUSIC_ONLY, false)
+        preferMusicOnly.value = prefs.getBoolean(KEY_PREFER_MUSIC_ONLY, true)
         miniPlayerVideo.value = prefs.getBoolean(KEY_MINI_PLAYER_VIDEO, false)
+        videoScale.value = VideoScale.named(prefs.getString(KEY_VIDEO_SCALE, null))
+        independentVolume.value = prefs.getBoolean(KEY_INDEPENDENT_VOLUME, false)
+        appVolume.value = prefs.getFloat(KEY_APP_VOLUME, 1f).coerceIn(0f, 1f)
         smartVersionAlignment.value = prefs.getBoolean(KEY_SMART_VERSION_ALIGNMENT, true)
         reduceDynamicBlur.value = prefs.getBoolean(KEY_REDUCE_BLUR, false)
         liquidGlass.value = prefs.getBoolean(KEY_LIQUID_GLASS, true)
@@ -1284,6 +1304,21 @@ object AppSettings {
     fun setPreferMusicOnly(value: Boolean) {
         preferMusicOnly.value = value
         prefs.edit().putBoolean(KEY_PREFER_MUSIC_ONLY, value).apply()
+    }
+
+    fun setIndependentVolume(value: Boolean) {
+        independentVolume.value = value
+        prefs.edit().putBoolean(KEY_INDEPENDENT_VOLUME, value).apply()
+    }
+
+    fun setAppVolume(value: Float) {
+        appVolume.value = value.coerceIn(0f, 1f)
+        prefs.edit().putFloat(KEY_APP_VOLUME, appVolume.value).apply()
+    }
+
+    fun setVideoScale(value: VideoScale) {
+        videoScale.value = value
+        prefs.edit().putString(KEY_VIDEO_SCALE, value.name).apply()
     }
 
     fun setMiniPlayerVideo(value: Boolean) {
@@ -2051,6 +2086,9 @@ object AppSettings {
     private const val KEY_DONT_REPEAT_SUGGESTIONS = "dont_repeat_suggestions"
     private const val KEY_PREFER_MUSIC_ONLY = "prefer_music_only"
     private const val KEY_MINI_PLAYER_VIDEO = "mini_player_video"
+    private const val KEY_VIDEO_SCALE = "video_scale"
+    private const val KEY_INDEPENDENT_VOLUME = "independent_volume"
+    private const val KEY_APP_VOLUME = "app_volume"
     private const val KEY_SMART_VERSION_ALIGNMENT = "smart_version_alignment"
     private const val KEY_REDUCE_BLUR = "reduce_dynamic_blur"
     private const val KEY_LIQUID_GLASS = "liquid_glass"

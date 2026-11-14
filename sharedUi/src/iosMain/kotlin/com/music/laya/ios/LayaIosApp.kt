@@ -142,6 +142,7 @@ import com.music.laya.data.model.DetailPage
 import com.music.laya.data.model.MoodGenre
 import com.music.laya.data.model.withoutRepeatsOf
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.LibraryGridPage
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -457,16 +458,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val versionPairs = remember { mutableMapOf<String, Song>() }
     var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
     // Videos the listener switched to. The switch replaces the queue entry, so coming back to that
-    // track later — next, then previous — finds the video: it starts as music again. [watching] is
-    // the one switched to just now, playing on until the track changes.
+    // track later — next, then previous — finds the video: it starts as music again. The one switched
+    // to just now is [MusicVideoChoice.watching], playing on, picture up, until the track changes.
     val switchedToVideo = remember { mutableSetOf<String>() }
-    val watching = remember { arrayOfNulls<String>(1) }
     val inParty = com.music.laya.data.listentogether.ListenTogether.state.collectAsState().value.inParty
     LaunchedEffect(player.song?.videoId, inParty) {
         val song = player.song
         alternateVersion = null
-        if (watching[0] != song?.videoId) watching[0] = null
-        if (song == null || inParty || song.localUri != null) return@LaunchedEffect
+        MusicVideoChoice.onTrackChanged(song?.videoId)
+        // A saved song still offers its music video, streamed; a saved video is never swapped away
+        // from the file for a stream of its audio.
+        if (song == null || inParty || (song.localUri != null && song.isVideo)) return@LaunchedEffect
         val other = versionPairs[song.videoId] ?: withContext(ioDispatcher) {
             runCatching {
                 if (song.isVideo) YtMusicRepository.resolveAudio(song).takeIf { it.videoId != song.videoId }
@@ -475,7 +477,10 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
         if (other != null && player.song?.videoId == song.videoId) {
             alternateVersion = song.videoId to other
-            if (song.isVideo && !other.isVideo && song.videoId in switchedToVideo && watching[0] != song.videoId) {
+            // "Prefer music-only version" plays every video as its audio release; without it, only a
+            // video the listener switched to earlier goes back to music when it comes round again.
+            val toMusic = AppSettings.preferMusicOnly.value || song.videoId in switchedToVideo
+            if (song.isVideo && !other.isVideo && toMusic && MusicVideoChoice.watching.value != song.videoId) {
                 player.swapVersion(other) { swapped ->
                     if (swapped) {
                         versionPairs[other.videoId] = song
@@ -492,7 +497,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 val from = player.song
                 if (other.isVideo) {
                     switchedToVideo += other.videoId
-                    watching[0] = other.videoId
+                    MusicVideoChoice.watching.value = other.videoId
                 }
                 if (from != null) player.swapVersion(other) { swapped ->
                     if (swapped) {

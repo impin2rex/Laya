@@ -302,12 +302,35 @@ fun String?.durationMillis(): Long {
 /** As [Song.artworkAt], for artwork that isn't a track's. */
 fun String?.artworkAt(px: Int): String? {
     if (this == null) return null
+    videoFrame(this)?.let { (base, ext) ->
+        // A video's thumbnail: InnerTube hands over hqdefault/sddefault, 4:3 with black bars baked
+        // in above and below the 16:9 picture, so a square crop of it is bars, and it is low-res.
+        // These two are the picture alone, edge to edge: mqdefault (320×180) exists for every
+        // video; hq720 (1280×720) for nearly every one, with [artworkFallback] for the rest.
+        return base + (if (px <= SMALL_VIDEO_FRAME_PX) "mqdefault" else "hq720") + ext
+    }
     val sized = this.replace(SIZE_HINT, "w$px-h$px")
     return if (isGoogleImageHost(this)) {
         sized.replace(PARAM_SIZE_HINT, "=s$px")
     } else {
         sized
     }
+}
+
+/**
+ * Where to go when [artworkAt]'s large video frame is missing — an old or low-resolution upload has
+ * no hq720 — or null for any other cover: the 4:3 thumbnail every video has.
+ */
+fun String?.artworkFallback(): String? {
+    if (this == null) return null
+    val (base, ext) = videoFrame(this) ?: return null
+    return if (removePrefix(base).startsWith("hq720")) base + "hqdefault" + ext else null
+}
+
+/** An i.ytimg.com video thumbnail split around its variant name: `…/vi/<id>/` and `.jpg`. */
+private fun videoFrame(url: String): Pair<String, String>? {
+    val match = VIDEO_FRAME.find(url) ?: return null
+    return match.groupValues[1] to match.groupValues[3]
 }
 
 private fun isGoogleImageHost(url: String): Boolean {
@@ -321,6 +344,8 @@ private fun isGoogleImageHost(url: String): Boolean {
         host == "googleusercontent.com" || host.endsWith(".googleusercontent.com")
 }
 
+private val VIDEO_FRAME = Regex("""^(https?://i\d?\.ytimg\.com/vi(?:_webp)?/[^/]+/)([a-z0-9_]+)(\.(?:jpg|webp))(?:\?.*)?$""")
+private const val SMALL_VIDEO_FRAME_PX = 320
 private val SIZE_HINT = Regex("""w\d+-h\d+""")
 private val PARAM_SIZE_HINT = Regex("""=s\d+""")
 

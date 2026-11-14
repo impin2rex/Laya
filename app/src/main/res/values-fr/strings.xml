@@ -1060,9 +1060,9 @@
 
     <string name="settings_search_empty">Aucun paramètre ne correspond à « %1$s »</string>
 
-    <string name="prefer_music_only">Préférer la version audio uniquement</string>
+    <string name="prefer_music_only">Préférer la version audio seule</string>
 
-    <string name="prefer_music_only_subtitle">Pour les clips vidéo, afficher les détails de la vidéo tout en recherchant et en chargeant la version audio du catalogue</string>
+    <string name="prefer_music_only_subtitle">Les clips sont lus comme des titres, avec leur pochette, jusqu’à ce que vous passiez à la vidéo</string>
     <string name="smart_version_alignment">Alignement audio intelligent</string>
     <string name="smart_version_alignment_subtitle">Analyse les formes d\'onde pour retrouver le moment de lecture exactement correspondant</string>
 
@@ -1378,4 +1378,9 @@
     <string name="no_audio_version">Aucune version audio trouvée pour cette vidéo</string>
     <string name="no_video_version">Aucune version vidéo trouvée pour ce titre</string>
     <string name="version_switch_in_party">Dans Écouter ensemble, tout le monde entend la même version</string>
+    <string name="video_scale">Taille de la vidéo</string>
+    <string name="video_scale_best_fit">Ajustement optimal</string>
+    <string name="video_scale_fit_screen">Remplir l’écran</string>
+    <string name="video_scale_fill">Étirer</string>
+    <string name="video_skip_seconds">%1$d secondes</string>
 </resources>

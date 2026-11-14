@@ -667,4 +667,6 @@
     <string name="miscellaneous_footer">オンにすると、最近のアプリ画面からアプリを終了した際に音楽の再生も停止します。</string>
     <string name="user_agent">ユーザーエージェント</string>
     <string name="app_icon_default">デフォルト</string>
+    <string name="prefer_music_only">音楽のみのバージョンを優先</string>
+    <string name="prefer_music_only_subtitle">ミュージックビデオは、動画に切り替えるまでジャケット付きの曲として再生されます</string>
 </resources>

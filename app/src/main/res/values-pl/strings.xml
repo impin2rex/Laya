@@ -1096,7 +1096,7 @@
 
     <string name="prefer_music_only">Preferuj wersję muzyczną</string>
 
-    <string name="prefer_music_only_subtitle">Dla teledysków pokazuje szczegóły wideo podczas wyszukiwania i ładowania wersji audio z katalogu</string>
+    <string name="prefer_music_only_subtitle">Teledyski są odtwarzane jak utwory, z okładką, dopóki nie przełączysz na wideo</string>
 
     <string name="smart_version_alignment">Inteligentne dopasowanie dźwięku</string>
 
@@ -1414,4 +1414,9 @@
     <string name="no_audio_version">Nie znaleziono wersji audio tego teledysku</string>
     <string name="no_video_version">Nie znaleziono wersji wideo tego utworu</string>
     <string name="version_switch_in_party">W Słuchajcie razem wszyscy słyszą tę samą wersję</string>
+    <string name="video_scale">Rozmiar wideo</string>
+    <string name="video_scale_best_fit">Najlepsze dopasowanie</string>
+    <string name="video_scale_fit_screen">Wypełnij ekran</string>
+    <string name="video_scale_fill">Rozciągnij</string>
+    <string name="video_skip_seconds">%1$d sekund</string>
 </resources>

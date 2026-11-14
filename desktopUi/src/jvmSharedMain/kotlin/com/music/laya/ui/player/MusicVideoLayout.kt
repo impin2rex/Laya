@@ -1,5 +1,8 @@
 package com.music.laya.ui.player
 
+import com.music.laya.sharedui.resources.video_scale
+import androidx.compose.material.icons.rounded.AspectRatio
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -116,8 +119,12 @@ internal fun FullscreenVideoPlayer(
     screenFilled: Boolean = true,
     /** A double-click on the picture, as in any video player: full screen in and out. */
     onDoubleClick: (() -> Unit)? = null,
+    /** Ten seconds back or forward, from the keyboard (see [VideoKeys]), marked on the picture. */
+    skip: VideoSkip? = null,
 ) {
     HideSystemBars(true)
+    // VLC's aspect button: the whole picture, the screen filled, or stretched — remembered.
+    val scale by PlayerSettings.videoScale.collectAsStateWithLifecycle()
     var controlsShown by remember { mutableStateOf(true) }
     // Bumped by every touch on the controls, so the idle timer starts over.
     var touches by remember { mutableIntStateOf(0) }
@@ -132,6 +139,7 @@ internal fun FullscreenVideoPlayer(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
+            .videoKeyFocus()
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -145,11 +153,13 @@ internal fun FullscreenVideoPlayer(
             if (!rendered) VideoLoadingBackdrop(artRequest, Modifier.fillMaxSize())
             MusicVideoSurface(
                 videoId = song.videoId,
-                fit = true,
+                scale = scale,
                 onRenderedChanged = onRenderedChanged,
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        skip?.let { VideoSkipOverlay(it) }
+        VideoScaleFlash(scale, Modifier.align(Alignment.Center))
 
         AnimatedVisibility(
             visible = controlsShown,
@@ -207,6 +217,8 @@ internal fun FullscreenVideoPlayer(
                         SwitchToAudioPill(onClick = onSwitchToAudio, switching = switchingVersion, haze = pictureHaze)
                         Spacer(Modifier.width(8.dp))
                     }
+                    VideoScaleButton(scale)
+                    Spacer(Modifier.width(6.dp))
                     VideoCornerControls(fullscreen = screenFilled, onToggleFullscreen = onExitFullscreen, onOpenQuality = onOpenQuality)
                 }
                 Box(
@@ -382,6 +394,26 @@ internal fun VideoLoadingBackdrop(artRequest: ImageRequest?, modifier: Modifier 
     }
 }
 
+
+/** VLC's aspect button: the next of best fit, fit screen and fill, remembered for every video. The A key does the same. */
+@Composable
+internal fun VideoScaleButton(scale: VideoScale, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(30.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.38f))
+            .clickable { PlayerSettings.setVideoScale(scale.next) },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.AspectRatio,
+            contentDescription = stringResource(Res.string.video_scale),
+            tint = Color.White,
+            modifier = Modifier.size(19.dp),
+        )
+    }
+}
 /**
  * The two glass boxes in a music video's top-right corner: the quality box —
  * the web player's VideoQuality, which reads the rendition on screen and opens

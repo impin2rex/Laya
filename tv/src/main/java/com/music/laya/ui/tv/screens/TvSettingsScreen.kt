@@ -75,6 +75,7 @@ fun TvSettingsScreen(
     val automix by AppSettings.smartFadeEnabled.collectAsState()
     val crossfade by AppSettings.crossfadeSeconds.collectAsState()
     val autoplay by AppSettings.autoplay.collectAsState()
+    val preferMusicOnly by AppSettings.preferMusicOnly.collectAsState()
     val skipSilence by AppSettings.skipSilence.collectAsState()
     val eqEnabled by AppSettings.equalizerEnabled.collectAsState()
     val reverbEnabled by AppSettings.reverbEnabled.collectAsState()
@@ -178,6 +179,15 @@ fun TvSettingsScreen(
                     value = onOff(autoplay),
                     onFocused = { blurb = "When the queue ends, keeps playing music similar to what you were listening to." },
                     onClick = { AppSettings.setAutoplay(!autoplay) },
+                )
+            }
+            item {
+                val subtitle = androidx.compose.ui.res.stringResource(com.music.laya.R.string.prefer_music_only_subtitle)
+                TvListRow(
+                    title = androidx.compose.ui.res.stringResource(com.music.laya.R.string.prefer_music_only),
+                    value = onOff(preferMusicOnly),
+                    onFocused = { blurb = subtitle },
+                    onClick = { AppSettings.setPreferMusicOnly(!preferMusicOnly) },
                 )
             }
             item {

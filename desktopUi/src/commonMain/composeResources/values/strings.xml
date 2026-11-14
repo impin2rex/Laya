@@ -236,4 +236,9 @@
     <string name="switch_to_video">Switch to Video</string>
     <string name="audio_short">Audio</string>
     <string name="picture_in_picture">Picture in picture</string>
+    <string name="video_scale">Video size</string>
+    <string name="video_scale_best_fit">Best fit</string>
+    <string name="video_scale_fit_screen">Fit screen</string>
+    <string name="video_scale_fill">Fill</string>
+    <string name="video_skip_seconds">%1$d seconds</string>
 </resources>

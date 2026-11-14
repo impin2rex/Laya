@@ -27,6 +27,7 @@ internal object DesktopTrayMenu {
     private const val ID_SETTINGS = 8
     private const val ID_SEPARATOR_BOTTOM = 9
     private const val ID_QUIT = 10
+    private const val ID_MINI_PLAYER = 11
 
     private val lock = Any()
 
@@ -73,6 +74,13 @@ internal object DesktopTrayMenu {
         onLayoutChanged(next)
     }
 
+    /** The mini player came or went: its entry now says the other thing. */
+    fun refresh() {
+        val next = synchronized(lock) { ++revision }
+        onLayoutChanged(next)
+        DesktopAwtTray.refreshMenu()
+    }
+
     fun revision(): Int = synchronized(lock) { revision }
 
     /** The menu as it stands. */
@@ -94,6 +102,19 @@ internal object DesktopTrayMenu {
             add(Entry(ID_PREVIOUS, label = DesktopStrings["widget_previous", "Previous"], icon = "media-skip-backward", action = previous))
             add(Entry(ID_SEPARATOR_MIDDLE, separator = true))
             add(Entry(ID_OPEN_PLAYER, label = DesktopStrings["widget_open_laya", "Open Laya"], icon = "media-playback-start", action = openPlayer))
+            val mini = DesktopMiniWindow.open.value
+            add(
+                Entry(
+                    ID_MINI_PLAYER,
+                    label = if (mini) {
+                        DesktopStrings["d_switch_main_player", "Switch to Main Player"]
+                    } else {
+                        DesktopStrings["d_switch_mini_player", "Switch to Mini Player"]
+                    },
+                    icon = "view-restore",
+                    action = { if (DesktopMiniWindow.open.value) DesktopMiniWindow.close() else DesktopMiniWindow.show() },
+                ),
+            )
             add(Entry(ID_SETTINGS, label = DesktopStrings["settings", "Settings"], icon = "preferences-system", action = openSettings))
             add(Entry(ID_SEPARATOR_BOTTOM, separator = true))
             add(Entry(ID_QUIT, label = DesktopStrings["d_quit_laya", "Quit Laya"], icon = "application-exit", action = quit))

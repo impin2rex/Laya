@@ -108,6 +108,8 @@ private fun desktopMain() = application {
         // material is possible and the chosen one can be switched live — see [DesktopWindowBackdrop].
         transparent = DesktopWindowBackdrop.available,
         resizable = true,
+        // Every key, before the page and whether or not anything on it has focus — see [DesktopShortcuts].
+        onPreviewKeyEvent = { DesktopShortcuts.handler?.invoke(it) == true },
     ) {
         val composeWindow = window
         val openingSize = remember { state.size }
@@ -186,6 +188,7 @@ private fun desktopMain() = application {
         }
     }
     DesktopPictureInPictureWindow()
+    DesktopMiniPlayerWindow()
 }
 
 // The now-playing screen's two-column layout starts at 560dp wide (LANDSCAPE_PLAYER_MIN_WIDTH in

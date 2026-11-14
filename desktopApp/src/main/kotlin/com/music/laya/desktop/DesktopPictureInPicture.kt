@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -99,7 +100,7 @@ internal fun DesktopPictureInPictureWindow() {
             ) {
                 DesktopMusicVideoSurface(
                     videoId = videoId,
-                    fit = true,
+                    scale = VideoScale.BEST_FIT,
                     onRenderedChanged = {},
                     modifier = Modifier.fillMaxSize(),
                 )

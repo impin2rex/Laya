@@ -268,7 +268,7 @@
     <string name="skip_silence_subtitle">Trim gaps longer than a second</string>
     <string name="skip_silence_float_subtitle">Unavailable on 32-bit float output</string>
     <string name="prefer_music_only">Prefer music-only version</string>
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only_subtitle">Music videos play as songs, with their cover art, until you switch to the video</string>
     <string name="smart_version_alignment">Smart audio alignment</string>
     <string name="smart_version_alignment_subtitle">Analyze audio waveforms to match the exact corresponding playback moment</string>
     <string name="equalizer">Equalizer</string>
@@ -1229,4 +1229,9 @@
     <string name="no_audio_version">No audio version found for this video</string>
     <string name="no_video_version">No video version found for this song</string>
     <string name="version_switch_in_party">Everyone in Listen Together hears the same version</string>
+    <string name="video_scale">Video size</string>
+    <string name="video_scale_best_fit">Best fit</string>
+    <string name="video_scale_fit_screen">Fit screen</string>
+    <string name="video_scale_fill">Fill</string>
+    <string name="video_skip_seconds">%1$d seconds</string>
 </resources>

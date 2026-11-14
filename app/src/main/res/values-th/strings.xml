@@ -856,9 +856,9 @@
 
     <string name="dolby_atmos_unavailable">This device can\'t play Atmos, so these songs play in their usual version</string>
 
-    <string name="prefer_music_only">Prefer music-only version</string>
+    <string name="prefer_music_only">เลือกเวอร์ชันเพลงอย่างเดียวก่อน</string>
 
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only_subtitle">มิวสิกวิดีโอจะเล่นเป็นเพลงพร้อมภาพปก จนกว่าคุณจะสลับไปดูวิดีโอ</string>
     <string name="smart_version_alignment">จัดตำแหน่งเสียงอัจฉริยะ</string>
     <string name="smart_version_alignment_subtitle">วิเคราะห์รูปคลื่นเสียงเพื่อหาจุดเล่นที่ตรงกันพอดี</string>
 
@@ -1360,4 +1360,9 @@
     <string name="no_audio_version">ไม่พบเวอร์ชันเสียงของวิดีโอนี้</string>
     <string name="no_video_version">ไม่พบเวอร์ชันวิดีโอของเพลงนี้</string>
     <string name="version_switch_in_party">ทุกคนใน ฟังด้วยกัน จะได้ยินเวอร์ชันเดียวกัน</string>
+    <string name="video_scale">ขนาดวิดีโอ</string>
+    <string name="video_scale_best_fit">พอดีที่สุด</string>
+    <string name="video_scale_fit_screen">เต็มหน้าจอ</string>
+    <string name="video_scale_fill">ยืดเต็ม</string>
+    <string name="video_skip_seconds">%1$d วินาที</string>
 </resources>

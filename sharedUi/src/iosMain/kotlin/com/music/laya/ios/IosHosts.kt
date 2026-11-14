@@ -1,5 +1,6 @@
 package com.music.laya.ios
 
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -68,12 +69,12 @@ internal object IosPlayerHost : PlayerHost {
     override val musicVideoSupported: Boolean get() = true
 
     @Composable
-    override fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
-        IosMusicVideoSurface(videoId, fit, onRenderedChanged, modifier)
+    override fun MusicVideo(videoId: String, scale: VideoScale, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) =
+        IosMusicVideoSurface(videoId, scale, onRenderedChanged, modifier)
 
     @Composable
     override fun MiniPlayerVideo(videoId: String, modifier: Modifier) {
-        if (AppSettings.miniPlayerVideo.collectAsState().value) IosMusicVideoSurface(videoId, fit = false, onRenderedChanged = {}, modifier, mini = true)
+        if (AppSettings.miniPlayerVideo.collectAsState().value) IosMusicVideoSurface(videoId, scale = VideoScale.FIT_SCREEN, onRenderedChanged = {}, modifier, mini = true)
     }
 
     override val pictureInPicture: (() -> Unit)? =

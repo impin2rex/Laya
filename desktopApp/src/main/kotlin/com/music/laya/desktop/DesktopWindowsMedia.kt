@@ -75,7 +75,8 @@ internal object DesktopWindowsMedia {
                 song?.title.orEmpty(),
                 song?.artist.orEmpty(),
                 song?.albumName.orEmpty(),
-                song?.thumbnailUrl.orEmpty(),
+                // A URL the shell fetches itself: the sharp frame, not the barred thumbnail.
+                DesktopSystemArt.forUrl(song?.thumbnailUrl)?.remote.orEmpty(),
                 state.isPlaying,
                 state.positionMs,
                 state.durationMs,

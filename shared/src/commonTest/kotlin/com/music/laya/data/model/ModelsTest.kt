@@ -13,6 +13,18 @@ class ModelsTest {
     }
 
     @Test
+    fun videoThumbnailsBecomeBarFreeFramesWithAFallback() {
+        val thumb = "https://i.ytimg.com/vi/abc_DEF-123/hqdefault.jpg?sqp=xyz&rs=AOn"
+        assertEquals("https://i.ytimg.com/vi/abc_DEF-123/hq720.jpg", thumb.artworkAt(1200))
+        assertEquals("https://i.ytimg.com/vi/abc_DEF-123/mqdefault.jpg", thumb.artworkAt(160))
+        assertEquals("https://i.ytimg.com/vi/abc_DEF-123/hqdefault.jpg", thumb.artworkAt(1200).artworkFallback())
+        assertEquals(null, thumb.artworkAt(160).artworkFallback())
+        assertEquals("https://i9.ytimg.com/vi_webp/x/hq720.webp", "https://i9.ytimg.com/vi_webp/x/sddefault.webp".artworkAt(900))
+        // Covers are not video frames.
+        assertEquals(null, "https://lh3.googleusercontent.com/abc=w120-h120".artworkFallback())
+    }
+
+    @Test
     fun artworkSizeHintIsSharedAcrossTargets() {
         assertEquals(
             "https://example.test/w720-h720.jpg",

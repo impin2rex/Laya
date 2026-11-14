@@ -714,4 +714,6 @@
     <string name="miscellaneous_footer">Al activarlo, cerrar la app desde recientes también detiene la música.</string>
     <string name="user_agent">Agente de usuario</string>
     <string name="app_icon_default">Predeterminado</string>
+    <string name="prefer_music_only">Preferir versión solo música</string>
+    <string name="prefer_music_only_subtitle">Los videos musicales se reproducen como canciones, con su portada, hasta que cambies al video</string>
 </resources>

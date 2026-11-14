@@ -1,6 +1,7 @@
 package com.music.laya.desktop
 
 import com.music.laya.data.model.artworkAt
+import com.music.laya.data.model.artworkFallback
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -69,7 +70,8 @@ fun DesktopArtwork(
     val sized = if (px != null) url.artworkAt(px) else url
     val bitmap by produceState<ImageBitmap?>(initialValue = null, key1 = sized) {
         value = withContext(Dispatchers.IO) {
-            DesktopArtworkCache.load(sized)
+            // A video's large frame is missing on old uploads; its 4:3 thumbnail stands in.
+            DesktopArtworkCache.load(sized) ?: sized.artworkFallback()?.let { DesktopArtworkCache.load(it) }
         }
     }
     if (bitmap == null) {

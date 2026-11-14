@@ -840,4 +840,6 @@
     <string name="translate">অনুবাদ করুন</string>
     <string name="user_agent">ইউজার-এজেন্ট</string>
     <string name="app_icon_default">ডিফল্ট</string>
+    <string name="prefer_music_only">শুধু মিউজিক সংস্করণ পছন্দ করুন</string>
+    <string name="prefer_music_only_subtitle">মিউজিক ভিডিও গান হিসেবে, কভার আর্ট সহ বাজবে, যতক্ষণ না আপনি ভিডিওতে যান</string>
 </resources>

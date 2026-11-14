@@ -224,4 +224,9 @@
     <string name="reverb_width_help">残響のステレオの広がり。モノラルから最大まで。</string>
     <string name="reverb_reset">デフォルトに戻す</string>
     <string name="picture_in_picture">ピクチャー イン ピクチャー</string>
+    <string name="video_scale">動画のサイズ</string>
+    <string name="video_scale_best_fit">最適サイズ</string>
+    <string name="video_scale_fit_screen">画面に合わせる</string>
+    <string name="video_scale_fill">引き伸ばし</string>
+    <string name="video_skip_seconds">%1$d 秒</string>
 </resources>

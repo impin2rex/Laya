@@ -20,6 +20,7 @@ internal object DesktopAppearanceSettings {
     private val _ambientBackdrop = flag(KEY_AMBIENT_BACKDROP, false)
     private val _systemFont = flag(KEY_SYSTEM_FONT, false)
     private val _miniPlayerVideo = flag(KEY_MINI_PLAYER_VIDEO, false)
+    private val _preferMusicOnly = flag(KEY_PREFER_MUSIC_ONLY, true)
 
     /** Freezes the main player's gradient instead of drifting. */
     val reduceAnimation: StateFlow<Boolean> = _reduceAnimation
@@ -39,6 +40,12 @@ internal object DesktopAppearanceSettings {
     /** Plays a music video's picture in the mini player's cover slot. */
     val miniPlayerVideo: StateFlow<Boolean> = _miniPlayerVideo
 
+    /**
+     * A music video plays as a song — its audio release when there is one, its own sound with no
+     * picture otherwise — until the listener switches to the video. Android's key, and its default.
+     */
+    val preferMusicOnly: StateFlow<Boolean> = _preferMusicOnly
+
     fun setReduceAnimation(value: Boolean) = write(KEY_REDUCE_ANIMATION, value, _reduceAnimation)
 
     fun setReduceDynamicBlur(value: Boolean) = write(KEY_REDUCE_DYNAMIC_BLUR, value, _reduceDynamicBlur)
@@ -51,6 +58,8 @@ internal object DesktopAppearanceSettings {
 
     fun setMiniPlayerVideo(value: Boolean) = write(KEY_MINI_PLAYER_VIDEO, value, _miniPlayerVideo)
 
+    fun setPreferMusicOnly(value: Boolean) = write(KEY_PREFER_MUSIC_ONLY, value, _preferMusicOnly)
+
     private fun write(key: String, value: Boolean, into: MutableStateFlow<Boolean>) {
         DesktopPersistence().saveBoolean(key, value)
         into.value = value
@@ -62,4 +71,5 @@ internal object DesktopAppearanceSettings {
     internal const val KEY_AMBIENT_BACKDROP = "ambient_backdrop"
     internal const val KEY_SYSTEM_FONT = "system_font"
     internal const val KEY_MINI_PLAYER_VIDEO = "mini_player_video"
+    internal const val KEY_PREFER_MUSIC_ONLY = "prefer_music_only"
 }

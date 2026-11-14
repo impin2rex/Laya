@@ -1061,9 +1061,9 @@
 
     <string name="settings_search_empty">No settings match “%1$s”</string>
 
-    <string name="prefer_music_only">Prefer music-only version</string>
+    <string name="prefer_music_only">העדפת גרסת מוזיקה בלבד</string>
 
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only_subtitle">קליפים מתנגנים כשירים, עם עטיפת האלבום, עד שתעברו לווידאו</string>
     <string name="smart_version_alignment">יישור אודיו חכם</string>
     <string name="smart_version_alignment_subtitle">ניתוח צורות הגל כדי למצוא בדיוק את רגע ההשמעה התואם</string>
 
@@ -1379,4 +1379,9 @@
     <string name="no_audio_version">לא נמצאה גרסת אודיו לסרטון הזה</string>
     <string name="no_video_version">לא נמצאה גרסת וידאו לשיר הזה</string>
     <string name="version_switch_in_party">ב„להאזין ביחד” כולם שומעים את אותה הגרסה</string>
+    <string name="video_scale">גודל הווידאו</string>
+    <string name="video_scale_best_fit">התאמה מיטבית</string>
+    <string name="video_scale_fit_screen">מילוי המסך</string>
+    <string name="video_scale_fill">מתיחה</string>
+    <string name="video_skip_seconds">%1$d שניות</string>
 </resources>

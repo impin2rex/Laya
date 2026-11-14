@@ -713,4 +713,6 @@
     <string name="listen_together_open_count">กำลังฟังด้วยกัน · %1$d</string>
     <string name="user_agent">ตัวแทนผู้ใช้</string>
     <string name="app_icon_default">ค่าเริ่มต้น</string>
+    <string name="prefer_music_only">เลือกเวอร์ชันเพลงอย่างเดียวก่อน</string>
+    <string name="prefer_music_only_subtitle">มิวสิกวิดีโอจะเล่นเป็นเพลงพร้อมภาพปก จนกว่าคุณจะสลับไปดูวิดีโอ</string>
 </resources>

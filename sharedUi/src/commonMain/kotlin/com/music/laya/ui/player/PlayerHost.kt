@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.VideoScale
 import kotlin.concurrent.Volatile
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -61,7 +62,7 @@ interface PlayerHost {
      * still artwork under it until then.
      */
     @Composable
-    fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) = Unit
+    fun MusicVideo(videoId: String, scale: VideoScale, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) = Unit
 
     /**
      * The playing music video in a mini player's cover slot, cropped to it, when the listener
@@ -210,9 +211,9 @@ internal fun showsMusicVideo(song: Song): Boolean =
 internal fun MusicVideoSurface(
     videoId: String,
     modifier: Modifier = Modifier,
-    fit: Boolean = true,
+    scale: VideoScale = VideoScale.BEST_FIT,
     onRenderedChanged: (Boolean) -> Unit = {},
-) = PlayerPlatform.host.MusicVideo(videoId, fit, onRenderedChanged, modifier)
+) = PlayerPlatform.host.MusicVideo(videoId, scale, onRenderedChanged, modifier)
 
 private val NoWatch = MutableStateFlow(WatchOutputUi())
 

@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.settings.VideoScale
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -60,7 +61,7 @@ interface PlayerHost {
      * still artwork under it until then.
      */
     @Composable
-    fun MusicVideo(videoId: String, fit: Boolean, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) = Unit
+    fun MusicVideo(videoId: String, scale: VideoScale, onRenderedChanged: (Boolean) -> Unit, modifier: Modifier) = Unit
 
     /**
      * Whether [videoId]'s picture already has a frame up — elsewhere on screen, or a moment ago —
@@ -201,9 +202,9 @@ internal fun showsMusicVideo(song: Song): Boolean =
 internal fun MusicVideoSurface(
     videoId: String,
     modifier: Modifier = Modifier,
-    fit: Boolean = true,
+    scale: VideoScale = VideoScale.BEST_FIT,
     onRenderedChanged: (Boolean) -> Unit = {},
-) = PlayerPlatform.host.MusicVideo(videoId, fit, onRenderedChanged, modifier)
+) = PlayerPlatform.host.MusicVideo(videoId, scale, onRenderedChanged, modifier)
 
 private val NoWatch = MutableStateFlow(WatchOutputUi())
 
@@ -275,7 +276,11 @@ interface PlayerSettingsSource {
     val translationLanguage: StateFlow<String>
     val versionAlignmentInProgress: StateFlow<Boolean>
 
+    /** How a music video fills the theater or the full screen — the aspect button, remembered. */
+    val videoScale: StateFlow<VideoScale>
+
     fun setLastPlayerScreen(value: LastPlayerScreen)
+    fun setVideoScale(value: VideoScale)
     fun setLyricsOffsetMs(value: Int)
     fun setReverbEnabled(value: Boolean)
 }

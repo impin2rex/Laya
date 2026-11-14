@@ -224,4 +224,9 @@
     <string name="reverb_width_help">Largeur stéréo de la queue, du mono à la pleine largeur.</string>
     <string name="reverb_reset">Rétablir les valeurs par défaut</string>
     <string name="picture_in_picture">Image dans l’image</string>
+    <string name="video_scale">Taille de la vidéo</string>
+    <string name="video_scale_best_fit">Ajustement optimal</string>
+    <string name="video_scale_fit_screen">Remplir l’écran</string>
+    <string name="video_scale_fill">Étirer</string>
+    <string name="video_skip_seconds">%1$d secondes</string>
 </resources>

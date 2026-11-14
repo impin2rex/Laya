@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.settings.DownloadQuality
 import com.music.laya.data.sources.SourceResolver
 import com.music.laya.data.sources.SourceStream
@@ -568,7 +569,10 @@ object Downloads {
         downloadFormat: String? = null,
         artworkUri: String? = null,
     ) {
-        val ids = setOf(asked.videoId, fetched.videoId)
+        // Recorded under the song actually saved, only. A music video saved as its catalogue song
+        // ("Prefer music-only version") is that song: tapping the video plays it as before the
+        // download — the video, swapped for the song — and the song is then played from the file.
+        val ids = setOf(fetched.videoId)
         // MediaStore supplies this for exported downloads, but app-private and
         // legacy file:// downloads never pass through that index. Keep the
         // creation time in our own record so "Date added" remains stable if a
@@ -595,17 +599,6 @@ object Downloads {
         // is both, and an album page's rows are neither.
         val album = fetched.albumName?.takeIf { it.isNotBlank() }
             ?: asked.albumName?.takeIf { it.isNotBlank() }
-        val metaAsked = SavedSongMetadata(
-            videoId = asked.videoId,
-            title = asked.title,
-            artist = asked.artist,
-            thumbnailUrl = savedArtwork ?: artworkUri ?: asked.thumbnailUrl,
-            durationText = asked.durationText,
-            albumName = album,
-            uri = uri.toString(),
-            downloadFormat = downloadFormat,
-            dateAddedSeconds = dateAddedSeconds,
-        )
         val metaFetched = SavedSongMetadata(
             videoId = fetched.videoId,
             title = fetched.title,
@@ -619,9 +612,7 @@ object Downloads {
         )
         record(
             saved = { it + ids.associateWith { id -> uri.toString() } },
-            meta = {
-                it + mapOf(asked.videoId to metaAsked, fetched.videoId to metaFetched)
-            },
+            meta = { it + (fetched.videoId to metaFetched) },
         )
     }
 
@@ -898,10 +889,18 @@ object Downloads {
      * before its turn — and a preparation is not a download.
      */
     internal suspend fun prepare(context: Context, song: Song): Prepared = withContext(Dispatchers.IO) {
-        // Downloads preserve the exact item the listener picked. Catalogue
-        // matching is a manual playback action and must not silently change a
-        // download or its filename.
-        val track = song
+        // Under "Prefer music-only version" a music video is saved as its
+        // catalogue song, as it would have played; with no song to find, or
+        // the preference off, as the exact item the listener picked. Both ids
+        // are recorded against the one file — see [remember].
+        val track = if (song.isVideo && song.localUri == null && AppSettings.preferMusicOnly.value) {
+            runCatching { YtMusicRepository.resolveAudio(song) }.getOrNull()
+                ?.takeIf { it.videoId != song.videoId }
+                ?.copy(isVideoOrigin = true)
+                ?: song
+        } else {
+            song
+        }
         // Read once, here, for the whole of this track. Both routes below
         // and the re-resolve inside [Downloader.fetch] have to agree on
         // which rung they are fetching, and re-reading the setting per call
@@ -929,7 +928,7 @@ object Downloads {
         // Asked for from the Cached songs folder: the copy already on disk is
         // the answer, if it is whole. See [fromCache].
         if (fromCache.remove(song.videoId)) {
-            AudioCache.completeCopyOf(song.videoId)?.let(::cachedRoute)?.let { route ->
+            AudioCache.completeCopyOf(track.videoId)?.let(::cachedRoute)?.let { route ->
                 Log.d(TAG, "downloading ${song.videoId} from the song cache as .${route.extension}")
                 return@withContext Prepared(song.videoId, track, route = route, alreadyAt = null)
             }
@@ -941,7 +940,7 @@ object Downloads {
         } catch (e: Exception) {
             // No connection, or nothing would resolve. A complete copy in the
             // song cache is still the song, and better saved than refused.
-            AudioCache.completeCopyOf(song.videoId)?.let(::cachedRoute)
+            AudioCache.completeCopyOf(track.videoId)?.let(::cachedRoute)
                 ?.also { Log.w(TAG, "${song.videoId} could not be fetched (${e.message}); saving the cached copy") }
                 ?: throw e
         }

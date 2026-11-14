@@ -224,4 +224,9 @@
     <string name="reverb_width_help">Стереоширина хвоста, от моно до полной.</string>
     <string name="reverb_reset">Сбросить по умолчанию</string>
     <string name="picture_in_picture">Картинка в картинке</string>
+    <string name="video_scale">Размер видео</string>
+    <string name="video_scale_best_fit">Вписать</string>
+    <string name="video_scale_fit_screen">Заполнить экран</string>
+    <string name="video_scale_fill">Растянуть</string>
+    <string name="video_skip_seconds">%1$d секунд</string>
 </resources>

@@ -1059,9 +1059,9 @@
 
     <string name="settings_search_empty">No settings match “%1$s”</string>
 
-    <string name="prefer_music_only">Prefer music-only version</string>
+    <string name="prefer_music_only">Reine Musikversion bevorzugen</string>
 
-    <string name="prefer_music_only_subtitle">For music videos, show the video details while finding and loading the catalogue audio version</string>
+    <string name="prefer_music_only_subtitle">Musikvideos werden als Songs mit Cover abgespielt, bis du zum Video wechselst</string>
     <string name="smart_version_alignment">Intelligente Audio-Ausrichtung</string>
     <string name="smart_version_alignment_subtitle">Analysiert Wellenformen, um genau die passende Wiedergabestelle zu finden</string>
 
@@ -1377,4 +1377,9 @@
     <string name="no_audio_version">Keine Audioversion für dieses Video gefunden</string>
     <string name="no_video_version">Keine Videoversion für diesen Song gefunden</string>
     <string name="version_switch_in_party">Bei „Gemeinsam hören“ hören alle dieselbe Version</string>
+    <string name="video_scale">Videogröße</string>
+    <string name="video_scale_best_fit">Optimal</string>
+    <string name="video_scale_fit_screen">Bildschirm füllen</string>
+    <string name="video_scale_fill">Strecken</string>
+    <string name="video_skip_seconds">%1$d Sekunden</string>
 </resources>

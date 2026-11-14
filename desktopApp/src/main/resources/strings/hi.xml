@@ -685,4 +685,6 @@
     <string name="miscellaneous_footer">चालू होने पर, हाल के ऐप्स स्क्रीन से ऐप बंद करने पर संगीत प्लेबैक भी रुक जाएगा।</string>
     <string name="user_agent">यूज़र-एजेंट</string>
     <string name="app_icon_default">डिफ़ॉल्ट</string>
+    <string name="prefer_music_only">केवल संगीत वाला संस्करण पसंद करें</string>
+    <string name="prefer_music_only_subtitle">म्यूज़िक वीडियो कवर आर्ट के साथ गानों की तरह चलेंगे, जब तक आप वीडियो पर स्विच न करें</string>
 </resources>

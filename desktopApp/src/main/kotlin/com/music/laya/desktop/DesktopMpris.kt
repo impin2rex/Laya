@@ -137,6 +137,7 @@ internal class DesktopMprisController(
     private var loopStatus = "None"
     private var rate = 1.0
     private var publishedSongId: String? = null
+    private var publishedArt: String? = null
     private var publishedPlaybackStatus: String? = null
     private var publishedShuffle = false
     private var publishedLoopStatus = "None"
@@ -199,7 +200,8 @@ internal class DesktopMprisController(
             currentConnection = connection ?: return
             val playbackStatus = playbackStatus(state)
             changed = linkedMapOf()
-            if (force || publishedSongId != state.song?.videoId) {
+            val art = artFor(state.song)
+            if (force || publishedSongId != state.song?.videoId || publishedArt != art) {
                 changed["Metadata"] = variant(metadata(state.song), "a{sv}")
             }
             if (force || publishedPlaybackStatus != playbackStatus) {
@@ -219,6 +221,7 @@ internal class DesktopMprisController(
             }
             changed.putAll(capabilityTracker.changed(state, force))
             publishedSongId = state.song?.videoId
+            publishedArt = art
             publishedPlaybackStatus = playbackStatus
             publishedShuffle = shuffle
             publishedLoopStatus = loopStatus
@@ -302,10 +305,16 @@ internal class DesktopMprisController(
             durationMs(current, state.durationMs).takeIf { it > 0L }?.let {
                 put("mpris:length", variant(it * 1_000L))
             }
-            current.thumbnailUrl?.takeIf(String::isNotBlank)?.let { put("mpris:artUrl", variant(it)) }
+            artFor(current)?.let { put("mpris:artUrl", variant(it)) }
             current.localUri?.takeIf(String::isNotBlank)?.let { put("xesam:url", variant(it)) }
         }
     } ?: emptyMap()
+
+    /** The square cover's file once made, the remote picture otherwise — see [DesktopSystemArt]. */
+    private fun artFor(song: Song?): String? = DesktopSystemArt.forUrl(song?.thumbnailUrl)?.let { it.file ?: it.remote }
+
+    /** A square cover just landed: the metadata goes out again with it. */
+    fun refreshArt() = publish(force = false)
 
     private fun unknownProperty(interfaceName: String, propertyName: String): Nothing =
         throw DBusExecutionException("Unknown property $interfaceName.$propertyName")

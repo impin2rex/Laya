@@ -750,4 +750,6 @@
     <string name="miscellaneous_footer">Quando attivo, chiudere l\'app dalla schermata delle app recenti interrompe anche la riproduzione musicale.</string>
     <string name="user_agent">Agente utente</string>
     <string name="app_icon_default">Predefinita</string>
+    <string name="prefer_music_only">Preferisci la versione solo musica</string>
+    <string name="prefer_music_only_subtitle">I video musicali vengono riprodotti come brani, con la copertina, finché non passi al video</string>
 </resources>

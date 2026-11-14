@@ -55,7 +55,11 @@ import com.music.laya.sharedui.resources.play
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.music.laya.data.model.ROW_ART_PX
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.music.laya.data.settings.MusicVideoChoice
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.artworkAt
 import com.music.laya.ui.components.floatingtabbar.FloatingTabBar
@@ -375,10 +379,17 @@ private fun GlassNowPlaying(
                 AsyncImage(
                     model = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX),
                     contentDescription = null,
+                    // A music video's frame is 16:9: cropped to the square, as every other cover is.
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier.matchParentSize(),
                 )
-                // The music video in the cover's place, when asked for in Settings.
-                if (song.isVideo) PlayerPlatform.host.MiniPlayerVideo(song.videoId, Modifier.matchParentSize())
+                // The music video in the cover's place, when asked for in Settings — and, under
+                // "Prefer music-only version", only once the listener switched to the video.
+                val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
+                val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
+                if (MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)) {
+                    PlayerPlatform.host.MiniPlayerVideo(song.videoId, Modifier.matchParentSize())
+                }
             }
             Spacer(Modifier.width(if (isInline) 8.dp else 10.dp))
             if (isInline) {
