@@ -151,6 +151,9 @@ dependencies {
     implementation("androidx.wear:wear:1.4.0")
     // NowPlayingListener: our icon on the watch face, opening our player.
     implementation("androidx.wear:wear-ongoing:1.1.0")
+    // The "Recognize music" tile (RecognizeTileService).
+    implementation("androidx.wear.tiles:tiles:1.5.0")
+    implementation("androidx.wear.protolayout:protolayout:1.3.0")
 
     // The watch as the speaker: a player reading from the phone, in a session
     // so it plays on with the screen off. Same Media3 as the phone app.

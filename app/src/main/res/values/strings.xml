@@ -1234,4 +1234,15 @@
     <string name="video_scale_fit_screen">Fit screen</string>
     <string name="video_scale_fill">Fill</string>
     <string name="video_skip_seconds">%1$d seconds</string>
+    <string name="recognize_title">Recognize music</string>
+    <string name="recognize_channel">Music recognition</string>
+    <string name="recognize_tile_idle">Tap to listen</string>
+    <string name="recognize_listening">Listening…</string>
+    <string name="recognize_identifying">Identifying…</string>
+    <string name="recognize_not_found">Couldn\'t recognize the song</string>
+    <string name="recognize_failed">Recognition failed — tap to open</string>
+    <string name="recognize_permission">Allow microphone access to recognize music</string>
+    <string name="recognize_cancel">Cancel</string>
+    <string name="recognize_try_again">Try again</string>
+    <string name="recognize_channel_results">Recognized songs</string>
 </resources>

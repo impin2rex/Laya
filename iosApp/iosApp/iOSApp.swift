@@ -3,6 +3,7 @@ import LayaKit
 
 @main
 struct iOSApp: App {
+    @UIApplicationDelegateAdaptor(QuickActionsAppDelegate.self) private var quickActions
     /// One engine for the app's lifetime; Kotlin drives it.
     static let audioEngine = AVAudioEngineImpl()
 
@@ -16,6 +17,11 @@ struct iOSApp: App {
         // Home-screen widgets: what they draw, and where their buttons' intents land.
         IosWidgets.shared.host = WidgetHostImpl()
         LayaWidgetCommands.handler = { IosWidgets.shared.perform(command: $0) }
+        // Music recognition's lock-screen / Dynamic Island status while it listens.
+        // A launch never starts mid-listen, so any one still up was left by the last run.
+        let liveActivity = RecognitionLiveActivityImpl()
+        liveActivity.end()
+        RecognitionNotifier.shared.liveActivity = liveActivity
     }
 
     var body: some Scene {

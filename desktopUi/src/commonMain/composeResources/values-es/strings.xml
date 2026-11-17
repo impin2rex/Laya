@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">analizada</string>
+    <string name="analysis_too_long">omitida: demasiado larga</string>
     <string name="analysis_in_progress">analizando…</string>
     <string name="analysis_refining">analizada, ajustando…</string>
     <string name="audio_output">Audio output</string>
@@ -229,4 +230,25 @@
     <string name="video_scale_fit_screen">Ajustar a pantalla</string>
     <string name="video_scale_fill">Rellenar</string>
     <string name="video_skip_seconds">%1$d segundos</string>
+    <string name="recognize_title">Reconocer música</string>
+    <string name="recognize_tap_to_listen">Toca para identificar la canción que suena a tu alrededor</string>
+    <string name="recognize_listening">Escuchando…</string>
+    <string name="recognize_identifying">Identificando…</string>
+    <string name="recognize_not_found">No se pudo reconocer esta canción. Inténtalo de nuevo más cerca del sonido.</string>
+    <string name="recognize_error_permission">Laya necesita acceso al micrófono para reconocer música. Permítelo en Ajustes.</string>
+    <string name="recognize_error_microphone">El micrófono no está disponible ahora.</string>
+    <string name="recognize_error_network">Sin conexión. Revisa tu red e inténtalo de nuevo.</string>
+    <string name="recognize_error_service">El servicio de reconocimiento no responde. Inténtalo más tarde.</string>
+    <string name="recognize_try_again">Reintentar</string>
+    <string name="recognize_cancel">Cancelar</string>
+    <string name="recognize_play">Reproducir en Laya</string>
+    <string name="recognize_finding">Buscando en Laya…</string>
+    <string name="recognize_not_on_laya">Esta canción no está disponible en las fuentes de Laya.</string>
+    <string name="recognize_history">Canciones reconocidas</string>
+    <string name="recognize_history_clear">Borrar</string>
+    <string name="recognize_remove">Quitar</string>
+    <string name="recognize_just_now">Ahora mismo</string>
+    <string name="recognize_minutes_ago">hace %1$d min</string>
+    <string name="recognize_hours_ago">hace %1$d h</string>
+    <string name="recognize_days_ago">hace %1$d d</string>
 </resources>

@@ -26,14 +26,19 @@ import androidx.wear.ambient.AmbientLifecycleObserver
 import com.music.laya.wear.ui.Ambient
 import com.music.laya.wear.ui.LocalAmbient
 import com.music.laya.wear.data.PhoneLink
+import com.music.laya.wear.data.Recognizer
 import com.music.laya.wear.ui.LayaWearTheme
 import com.music.laya.wear.ui.WearApp
 
 class WearViewModel(app: Application) : AndroidViewModel(app) {
     /** Outlives a rotation-less recreate (theme, locale) so the last state stays drawn. */
     val link = PhoneLink(app, viewModelScope)
+    val recognizer = Recognizer(app, viewModelScope, link)
 
-    override fun onCleared() = link.stop()
+    override fun onCleared() {
+        link.stop()
+        recognizer.release()
+    }
 }
 
 class WearActivity : ComponentActivity() {
@@ -72,6 +77,7 @@ class WearActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) takeRecognize(intent)
         lifecycle.addObserver(ambientObserver)
         // For the watch-face icon while the phone plays. Asked once; a "no"
         // only costs that icon — the app itself works the same.
@@ -100,9 +106,22 @@ class WearActivity : ComponentActivity() {
             val systemFont by model.link.systemFont.collectAsState()
             LayaWearTheme(systemFont = systemFont) {
                 CompositionLocalProvider(LocalAmbient provides ambient.value) {
-                    WearApp(model.link)
+                    WearApp(model.link, model.recognizer)
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        takeRecognize(intent)
+    }
+
+    /** Opened by the recognition tile: straight to listening. */
+    private fun takeRecognize(intent: Intent?) {
+        if (intent?.getBooleanExtra(Recognizer.EXTRA_RECOGNIZE, false) == true) {
+            intent.removeExtra(Recognizer.EXTRA_RECOGNIZE)
+            Recognizer.requested.value = true
         }
     }
 }

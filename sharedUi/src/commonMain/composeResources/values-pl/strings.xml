@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">przeanalizowano</string>
+    <string name="analysis_too_long">pominięto: za długi</string>
     <string name="analysis_in_progress">analizowanie…</string>
     <string name="analysis_refining">przeanalizowano, ulepszanie…</string>
     <string name="audio_output">Audio output</string>
@@ -725,4 +726,31 @@
     <string name="video_skip_seconds">%1$d sekund</string>
     <string name="independent_volume">Głośność w aplikacji</string>
     <string name="independent_volume_subtitle">Suwak głośności ustawia poziom Laya w granicach głośności multimediów urządzenia, nie zmieniając jej</string>
+    <string name="recognize_title">Rozpoznaj muzykę</string>
+    <string name="recognize_tap_to_listen">Dotknij, aby rozpoznać utwór grający wokół Ciebie</string>
+    <string name="recognize_listening">Słucham…</string>
+    <string name="recognize_identifying">Rozpoznawanie…</string>
+    <string name="recognize_not_found">Nie udało się rozpoznać utworu. Spróbuj ponownie bliżej źródła dźwięku.</string>
+    <string name="recognize_error_permission">Laya potrzebuje dostępu do mikrofonu, aby rozpoznawać muzykę. Zezwól w Ustawieniach.</string>
+    <string name="recognize_error_microphone">Mikrofon jest teraz niedostępny.</string>
+    <string name="recognize_error_network">Brak połączenia. Sprawdź sieć i spróbuj ponownie.</string>
+    <string name="recognize_error_service">Usługa rozpoznawania nie odpowiada. Spróbuj później.</string>
+    <string name="recognize_try_again">Spróbuj ponownie</string>
+    <string name="recognize_cancel">Anuluj</string>
+    <string name="recognize_play">Odtwórz w Laya</string>
+    <string name="recognize_finding">Szukanie w Laya…</string>
+    <string name="recognize_not_on_laya">Ten utwór nie jest dostępny w źródłach Laya.</string>
+    <string name="recognize_history">Rozpoznane utwory</string>
+    <string name="recognize_history_clear">Wyczyść</string>
+    <string name="recognize_remove">Usuń</string>
+    <string name="recognize_just_now">Przed chwilą</string>
+    <string name="recognize_minutes_ago">%1$d min temu</string>
+    <string name="recognize_hours_ago">%1$d godz. temu</string>
+    <string name="recognize_days_ago">%1$d dni temu</string>
+    <string name="recognize_shortcut_qs">Dodaj Rozpoznaj muzykę do Szybkich ustawień</string>
+    <string name="recognize_shortcut_cc">Dodaj Laya do Centrum sterowania</string>
+    <string name="recognize_shortcut_try">Wypróbuj teraz</string>
+    <string name="recognize_shortcut_steps">Otwórz Centrum sterowania, stuknij + w lewym górnym rogu, potem Dodaj element sterujący i wyszukaj Laya.</string>
+    <string name="recognize_shortcut_ok">Rozumiem</string>
+    <string name="recognize_shortcut_close">Zamknij</string>
 </resources>

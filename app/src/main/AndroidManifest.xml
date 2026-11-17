@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- Saving a track to Music outlives the screen it was asked from. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -89,6 +90,31 @@
                 android:value="true" />
         </service>
 
+        <!-- Music recognition: the Quick Settings tile, the invisible activity it opens
+             (a microphone service may only start from the foreground), and the service
+             that holds the microphone for one session. -->
+        <service
+            android:name=".recognition.RecognitionService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+        <service
+            android:name=".recognition.RecognitionTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_notification_logo"
+            android:label="@string/recognize_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <activity
+            android:name=".recognition.RecognizeActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- Android Auto support -->
         <meta-data
             android:name="com.google.android.gms.car.application"
@@ -142,6 +168,11 @@
                 <action android:name="android.intent.action.MUSIC_PLAYER" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.APP_MUSIC" />
+            </intent-filter>
+
+            <!-- Long-pressing the recognition tile opens the recognized songs, not App info. -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
             </intent-filter>
 
             <!--
@@ -458,6 +489,14 @@
                 <data
                     android:host="*"
                     android:pathPrefix="/laya/stream"
+                    android:scheme="wear" />
+            </intent-filter>
+            <!-- Music recognition: the watch's microphone, named here (WatchRecognition). -->
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/laya/recognize"
                     android:scheme="wear" />
             </intent-filter>
         </service>

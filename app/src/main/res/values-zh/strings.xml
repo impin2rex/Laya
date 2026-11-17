@@ -1359,4 +1359,15 @@
     <string name="video_scale_fit_screen">填满屏幕</string>
     <string name="video_scale_fill">拉伸</string>
     <string name="video_skip_seconds">%1$d 秒</string>
+    <string name="recognize_title">识别音乐</string>
+    <string name="recognize_channel">音乐识别</string>
+    <string name="recognize_tile_idle">轻触以聆听</string>
+    <string name="recognize_listening">正在聆听…</string>
+    <string name="recognize_identifying">正在识别…</string>
+    <string name="recognize_not_found">无法识别这首歌</string>
+    <string name="recognize_failed">识别失败 — 轻触打开</string>
+    <string name="recognize_permission">允许麦克风权限以识别音乐</string>
+    <string name="recognize_cancel">取消</string>
+    <string name="recognize_try_again">重试</string>
+    <string name="recognize_channel_results">已识别的歌曲</string>
 </resources>

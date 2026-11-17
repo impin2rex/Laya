@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">analysed</string>
+    <string name="analysis_too_long">skipped: too long</string>
     <string name="analysis_in_progress">analysing…</string>
     <string name="analysis_refining">analysed, refining…</string>
     <string name="audio_output">Audio output</string>
@@ -241,4 +242,25 @@
     <string name="video_scale_fit_screen">Fit screen</string>
     <string name="video_scale_fill">Fill</string>
     <string name="video_skip_seconds">%1$d seconds</string>
+    <string name="recognize_title">Recognize music</string>
+    <string name="recognize_tap_to_listen">Tap to identify the song playing around you</string>
+    <string name="recognize_listening">Listening…</string>
+    <string name="recognize_identifying">Identifying…</string>
+    <string name="recognize_not_found">Couldn't recognize this song. Try again closer to the sound.</string>
+    <string name="recognize_error_permission">Laya needs microphone access to recognize music. Allow it in Settings.</string>
+    <string name="recognize_error_microphone">The microphone isn't available right now.</string>
+    <string name="recognize_error_network">No connection. Check your network and try again.</string>
+    <string name="recognize_error_service">The recognition service isn't responding. Try again later.</string>
+    <string name="recognize_try_again">Try again</string>
+    <string name="recognize_cancel">Cancel</string>
+    <string name="recognize_play">Play on Laya</string>
+    <string name="recognize_finding">Finding on Laya…</string>
+    <string name="recognize_not_on_laya">This song isn't available on Laya's sources.</string>
+    <string name="recognize_history">Recognized songs</string>
+    <string name="recognize_history_clear">Clear</string>
+    <string name="recognize_remove">Remove</string>
+    <string name="recognize_just_now">Just now</string>
+    <string name="recognize_minutes_ago">%1$d min ago</string>
+    <string name="recognize_hours_ago">%1$d h ago</string>
+    <string name="recognize_days_ago">%1$d d ago</string>
 </resources>

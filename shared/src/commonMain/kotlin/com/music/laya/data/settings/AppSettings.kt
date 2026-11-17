@@ -1376,6 +1376,13 @@ object AppSettings {
         prefs.edit().putInt(KEY_LYRICS_OFFSET_MS, normalized).apply()
     }
 
+    /** A string a feature keeps under its own key (e.g. recognition history JSON); still part of backups. */
+    fun rawString(key: String): String? = prefs.getString(key, null)
+
+    fun putRawString(key: String, value: String) {
+        prefs.edit().putString(key, value).apply()
+    }
+
     /** Blank restores "follow the app language"; see [translationLanguage]. */
     fun setTranslationLanguage(value: String) {
         translationLanguage.value = value

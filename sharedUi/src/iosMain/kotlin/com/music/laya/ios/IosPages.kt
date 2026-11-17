@@ -124,6 +124,7 @@ internal sealed interface IosPage {
     data object Sources : IosPage
     data object ListenTogether : IosPage
     data object Replay : IosPage
+    data object Recognize : IosPage
     class History(val songs: UiState<List<Song>>) : IosPage
     class ShowAll(val shelf: HomeShelf) : IosPage
 }

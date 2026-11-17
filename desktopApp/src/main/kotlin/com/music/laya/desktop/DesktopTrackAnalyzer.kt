@@ -87,6 +87,7 @@ internal class DesktopTrackAnalyzer(
         trackId in running -> TrackAnalysisState.ANALYSING
         // A recorded-but-unusable result is the analyser saying it tried and got nothing, and that
         // it will not try again.
+        results[trackId]?.isTooLong == true -> TrackAnalysisState.TOO_LONG
         trackId in failed || results.containsKey(trackId) -> TrackAnalysisState.FAILED
         else -> TrackAnalysisState.WAITING
     }
@@ -103,7 +104,6 @@ internal class DesktopTrackAnalyzer(
     fun request(song: Song, stream: DesktopStream?, durationSeconds: Double) {
         val trackId = song.videoId
         if (trackId.isBlank()) return
-        if (durationSeconds <= 0) return
         if (stopped()) return
         if (!DesktopAnalysisRuntime.available) {
             if (warnedNoAnalyser.compareAndSet(false, true)) {
@@ -112,6 +112,8 @@ internal class DesktopTrackAnalyzer(
             return
         }
         if (results.containsKey(trackId) || restored(trackId) != null) return
+        // Never decoded: see TrackAnalysis.MAX_WHOLE_TRACK_SECONDS. An unknown length is read off the file on the worker.
+        if (durationSeconds > TrackAnalysis.MAX_WHOLE_TRACK_SECONDS) return tooLong(song, durationSeconds)
         // Asked every tick; a track that just failed is not resolved and decoded again each time.
         failedAt[trackId]?.let { if (System.currentTimeMillis() - it < RETRY_AFTER_MS) return }
         if (!running.add(trackId)) return
@@ -132,12 +134,24 @@ internal class DesktopTrackAnalyzer(
                 // core, and the thread count stays the speed knob for the other two.
                 Thread.currentThread().priority =
                     if (performance().yieldsToPlayback) Thread.MIN_PRIORITY else Thread.NORM_PRIORITY
+                var skipped = false
                 val analysis = runCatching {
                     val source = local ?: youTubeOpus(song) ?: return@runCatching null
-                    analyse(trackId, source, durationSeconds)
+                    // Unknown up front (a file with no tags, a queued row with no length): its header says, as on Android.
+                    val seconds = durationSeconds.takeIf { it > 0 } ?: lengthOf(source) ?: return@runCatching null
+                    if (seconds > TrackAnalysis.MAX_WHOLE_TRACK_SECONDS) {
+                        skipped = true
+                        tooLong(song, seconds)
+                        return@runCatching null
+                    }
+                    analyse(trackId, source, seconds)
                 }
                     .onFailure { DesktopTrackLog.log("analysis of '${song.title}' failed: ${it.message}") }
                     .getOrNull()
+                if (skipped) {
+                    running.remove(trackId)
+                    return@execute
+                }
                 if (analysis == null && stopped()) {
                     // Called off, not failed: it is free to be measured once the party ends.
                     running.remove(trackId)
@@ -221,6 +235,29 @@ internal class DesktopTrackAnalyzer(
             vocalActivityMask = features.vocalActivityMask,
             vocalProbability = features.vocalProbability,
         )
+    }
+
+    /** Recorded unmeasured, so the stats line says "too long" and it is not asked again. */
+    private fun tooLong(song: Song, seconds: Double) {
+        results[song.videoId] = TrackAnalysis(status = TrackAnalysis.STATUS_READY, trackId = song.videoId, duration = seconds)
+        DesktopTrackLog.log("automix: '${song.title}' (${"%.0f".format(seconds)}s) is too long to analyse")
+    }
+
+    /** [stream]'s length from its container header, without decoding any of it; null when it does not say. */
+    private fun lengthOf(stream: DesktopStream): Double? {
+        val decoder = DesktopAudioDecoder()
+        return try {
+            decoder.open(
+                url = stream.url,
+                headers = stream.headers,
+                requested = DesktopPcmFormat(TrackFeatures.sampleRate.toInt(), channels = 1, bytesPerSample = 4, isFloat = true),
+                windowed = stream.windowedReads,
+                transport = stream.transport,
+            ).getOrNull() ?: return null
+            decoder.durationUs?.takeIf { it > 0 }?.let { it / 1_000_000.0 }
+        } finally {
+            decoder.close()
+        }
     }
 
     /** The whole track as mono float at [rate]. */

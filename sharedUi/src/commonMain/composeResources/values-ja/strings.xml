@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">分析済み</string>
+    <string name="analysis_too_long">スキップ: 長すぎます</string>
     <string name="analysis_in_progress">分析中…</string>
     <string name="analysis_refining">分析済み、調整中…</string>
     <string name="audio_output">Audio output</string>
@@ -710,4 +711,31 @@
     <string name="video_skip_seconds">%1$d 秒</string>
     <string name="independent_volume">アプリ内音量</string>
     <string name="independent_volume_subtitle">音量バーは端末のメディア音量の範囲内で Laya 独自の音量を調整し、端末の音量は変更しません</string>
+    <string name="recognize_title">音楽を認識</string>
+    <string name="recognize_tap_to_listen">タップして周りで流れている曲を調べる</string>
+    <string name="recognize_listening">聴いています…</string>
+    <string name="recognize_identifying">識別しています…</string>
+    <string name="recognize_not_found">この曲を認識できませんでした。音源の近くでもう一度お試しください。</string>
+    <string name="recognize_error_permission">Laya が音楽を認識するにはマイクへのアクセスが必要です。設定で許可してください。</string>
+    <string name="recognize_error_microphone">マイクは現在使用できません。</string>
+    <string name="recognize_error_network">接続されていません。ネットワークを確認してもう一度お試しください。</string>
+    <string name="recognize_error_service">認識サービスが応答していません。しばらくしてからお試しください。</string>
+    <string name="recognize_try_again">再試行</string>
+    <string name="recognize_cancel">キャンセル</string>
+    <string name="recognize_play">Laya で再生</string>
+    <string name="recognize_finding">Laya で検索中…</string>
+    <string name="recognize_not_on_laya">この曲は Laya のソースにありません。</string>
+    <string name="recognize_history">認識した曲</string>
+    <string name="recognize_history_clear">クリア</string>
+    <string name="recognize_remove">削除</string>
+    <string name="recognize_just_now">たった今</string>
+    <string name="recognize_minutes_ago">%1$d 分前</string>
+    <string name="recognize_hours_ago">%1$d 時間前</string>
+    <string name="recognize_days_ago">%1$d 日前</string>
+    <string name="recognize_shortcut_qs">「音楽を認識」をクイック設定に追加</string>
+    <string name="recognize_shortcut_cc">Laya をコントロールセンターに追加</string>
+    <string name="recognize_shortcut_try">今すぐ試す</string>
+    <string name="recognize_shortcut_steps">コントロールセンターを開き、左上の + をタップして「コントロールを追加」から Laya を検索してください。</string>
+    <string name="recognize_shortcut_ok">OK</string>
+    <string name="recognize_shortcut_close">閉じる</string>
 </resources>

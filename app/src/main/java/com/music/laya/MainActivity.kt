@@ -374,6 +374,7 @@ class MainActivity : AppCompatActivity() {
         JamInviteLink.consume(intent)
         // Likewise for a link tapped or shared from another app — see [MusicLink].
         MusicLink.consume(intent)
+        com.music.laya.recognition.RecognitionLink.consume(intent)
         setContent {
             val theme by AppSettings.themeMode.collectAsStateWithLifecycle()
             val systemFont by AppSettings.systemFont.collectAsStateWithLifecycle()
@@ -486,6 +487,7 @@ class MainActivity : AppCompatActivity() {
         PlayerDeepLink.consume(intent)
         JamInviteLink.consume(intent)
         MusicLink.consume(intent)
+        com.music.laya.recognition.RecognitionLink.consume(intent)
     }
 }
 
@@ -725,6 +727,15 @@ private fun LayaApp(
     // [AppNavigator]. Whatever was opened last is what is on screen, and back
     // (the gesture or the bar's button alike) undoes exactly that.
     val navigator = viewModel.navigator
+    // A recognition notification, or the tile asking for the microphone.
+    val openRecognitionRequested by com.music.laya.recognition.RecognitionLink.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(openRecognitionRequested) {
+        if (openRecognitionRequested) {
+            dismissPlayer()
+            navigator.push(AppRoute.Recognize)
+            com.music.laya.recognition.RecognitionLink.handled()
+        }
+    }
     val detailStack by viewModel.detailStack.collectAsStateWithLifecycle()
     val visibleEntry = navigator.visibleEntry(detailStack.size)
     /** The route on screen, or null when a release page or a tab is. */
@@ -1183,6 +1194,7 @@ private fun LayaApp(
     val replayLabel = stringResource(R.string.replay)
     val queueLabel = stringResource(R.string.queue)
     val sharedLinkLabel = stringResource(R.string.shared_link)
+    val recognitionLabel = stringResource(R.string.recognize_title)
     val tabs = remember(homeLabel, exploreLabel, libraryLabel, searchLabel) {
         listOf(
             BottomTab(homeLabel, LayaIcons.Home),
@@ -2120,6 +2132,7 @@ private fun LayaApp(
     val notifyPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { /* Refusing costs the progress notification, not the download. */ }
+    val startListening: () -> Unit = { com.music.laya.recognition.listen(context, notifyResult = false) }
     val storagePermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -2669,6 +2682,7 @@ private fun LayaApp(
                     }
                     // Handled inside NowPlayingScreen by opening its queue.
                     PlaybackSourceType.QUEUE -> Unit
+                    PlaybackSourceType.RECOGNITION -> navigator.push(AppRoute.Recognize)
                 }
             },
             lyrics = lyrics,
@@ -2969,6 +2983,17 @@ private fun LayaApp(
                             )
                         } else if (pageRoute == AppRoute.Equalizer) {
                             EqualizerScreen(contentPadding = listPadding)
+                        } else if (pageRoute == AppRoute.Recognize) {
+                            com.music.laya.ui.screens.RecognitionScreen(
+                                onListen = startListening,
+                                onPlay = { song ->
+                                    playRadio(song, QueueSource(recognitionLabel, PlaybackSourceType.RECOGNITION, song.videoId))
+                                },
+                                contentPadding = listPadding,
+                                shortcut = com.music.laya.ui.screens.RecognitionShortcut.QUICK_SETTINGS
+                                    .takeIf { com.music.laya.recognition.canOfferTile },
+                                onAddShortcut = { com.music.laya.recognition.offerTile(context) },
+                            )
                         } else if (pageRoute == AppRoute.Settings) {
                             SettingsScreen(
                                 windowWidth = windowWidth,
@@ -3565,6 +3590,7 @@ private fun LayaApp(
                         AppRoute.Spotify -> stringResource(R.string.spotify)
                         AppRoute.Discord -> "Discord"
                         AppRoute.History -> stringResource(R.string.history)
+                        AppRoute.Recognize -> recognitionLabel
                         is AppRoute.LibraryShowAll -> route.shelf.title
                         AppRoute.AccountScrobbling -> stringResource(R.string.account_scrobbling)
                         AppRoute.Sources -> stringResource(R.string.sources)
@@ -3647,6 +3673,13 @@ private fun LayaApp(
                                         viewModel.onQueryChange(spoken)
                                         viewModel.submitSearch()
                                     })
+                                    IconButton(onClick = { navigator.push(AppRoute.Recognize) }) {
+                                        Icon(
+                                            com.music.laya.ui.screens.RecognitionIcon,
+                                            contentDescription = recognitionLabel,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 },
                             )
                         }

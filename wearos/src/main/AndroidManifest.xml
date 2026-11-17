@@ -8,6 +8,9 @@
 
     <!-- The watch-face icon while the phone plays (NowPlayingListener). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Music recognition: the watch listens, the phone names the song. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <!-- The watch as the speaker: WatchPlaybackService plays on with the screen off. -->
     <!-- Updates sent from the phone's "Laya for Wear OS" settings (SelfUpdate). -->
@@ -102,6 +105,21 @@
                     android:pathPrefix="/laya/watch/apk"
                     android:scheme="wear" />
             </intent-filter>
+        </service>
+
+        <!-- A tile that opens the app listening (RecognizeTileService). -->
+        <service
+            android:name=".RecognizeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_notification"
+            android:label="@string/recognize"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/ic_notification" />
         </service>
 
         <receiver

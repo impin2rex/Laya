@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Intent
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
+import com.music.laya.recognition.recognizeShortcutIntents
 import androidx.core.graphics.drawable.IconCompat
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
@@ -107,7 +108,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // Full tag (zh-Hant / zh-Hans preserved); Innertube maps to hl/gl.
         Innertube.appLanguage = { AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() }
         migrateScriptOnlyAppLocale()
-        registerSearchShortcut()
+        registerShortcuts()
         LyricsTranslation.cacheDir = cacheDir.toOkioPath()
         // PlaybackService shares this process, so seeding the cookie here means
         // stream resolution is authenticated from the first play onwards.
@@ -289,19 +290,30 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
     }
 
     /**
-     * The launcher's long-press Search entry, as Spotify has. Dynamic rather than
-     * a static shortcuts.xml because the dev and prod flavours are different
-     * packages, and a static shortcut has to name its package outright.
-     * Re-published on every start, which also re-labels it after a language
-     * change; a launcher that rate-limits or refuses shortcuts just goes without.
+     * The launcher's long-press entries — Search, as Spotify has, and Recognize
+     * music, as Shazam has. Dynamic rather than a static shortcuts.xml because
+     * the dev and prod flavours are different packages, and a static shortcut
+     * has to name its package outright. Re-published on every start, which also
+     * re-labels them after a language change; a launcher that rate-limits or
+     * refuses shortcuts just goes without.
      */
-    private fun registerSearchShortcut() {
-        val shortcut = ShortcutInfoCompat.Builder(this, SHORTCUT_SEARCH)
+    private fun registerShortcuts() {
+        val search = ShortcutInfoCompat.Builder(this, SHORTCUT_SEARCH)
             .setShortLabel(getString(R.string.search))
             .setIcon(IconCompat.createWithResource(this, R.drawable.ic_shortcut_search))
             .setIntent(Intent(MusicLink.ACTION_OPEN_SEARCH, null, this, MainActivity::class.java))
+            .setRank(0)
             .build()
-        runCatching { ShortcutManagerCompat.pushDynamicShortcut(this, shortcut) }
+        val recognize = ShortcutInfoCompat.Builder(this, SHORTCUT_RECOGNIZE)
+            .setShortLabel(getString(R.string.recognize_title))
+            .setIcon(IconCompat.createWithResource(this, R.drawable.ic_shortcut_recognize))
+            .setIntents(recognizeShortcutIntents(this))
+            .setRank(1)
+            .build()
+        runCatching {
+            ShortcutManagerCompat.pushDynamicShortcut(this, search)
+            ShortcutManagerCompat.pushDynamicShortcut(this, recognize)
+        }
     }
 
     companion object {
@@ -309,6 +321,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
             private set
 
         private const val SHORTCUT_SEARCH = "search"
+        private const val SHORTCUT_RECOGNIZE = "recognize"
 
         /**
          * One-time move from region-less script tags to regional ones.

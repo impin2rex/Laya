@@ -45,6 +45,7 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesF
         return when {
             a.isUsable -> TrackAnalysisState.ANALYSED
             isRunning(trackId) -> TrackAnalysisState.ANALYSING
+            a.isTooLong -> TrackAnalysisState.TOO_LONG
             a.status == TrackAnalysis.STATUS_READY -> TrackAnalysisState.FAILED
             else -> TrackAnalysisState.WAITING
         }
@@ -54,6 +55,11 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesF
     fun request(trackId: String, source: AnalysisSource, durationSeconds: Double) {
         if (results[trackId] != null || running[trackId] == true || IosAutomix.native == null) return
         if (store.load(trackId) != null) return
+        // Never decoded: see TrackAnalysis.MAX_WHOLE_TRACK_SECONDS.
+        if (durationSeconds > TrackAnalysis.MAX_WHOLE_TRACK_SECONDS) {
+            results[trackId] = failed(trackId, durationSeconds)
+            return
+        }
         running[trackId] = true
         scope.launch(worker) {
             try {
@@ -72,12 +78,18 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesF
 
     private fun analyze(trackId: String, s: AnalysisSource, knownDuration: Double): TrackAnalysis {
         val native = IosAutomix.native ?: return failed(trackId, knownDuration)
+        // Unknown up front (a queued row with no length): the container says, as on Android. Past the cap it's
+        // recorded unmeasured ("too long") rather than decoded whole.
+        val length = knownDuration.takeIf { it > 0 }
+            ?: native.durationSeconds(s.url, s.headers, s.mime, s.length, chunkBytesFor(s.url)).takeIf { it > 0 }
+            ?: return failed(trackId, 0.0)
+        if (length > TrackAnalysis.MAX_WHOLE_TRACK_SECONDS) return failed(trackId, length)
         val pcm = native.decode(s.url, s.headers, s.mime, s.length, chunkBytesFor(s.url)) ?: return failed(trackId, knownDuration)
         try {
             val rate = AutomixNative.DECODE_RATE
             val seconds = pcm.frames / rate
             // A decode that stopped early reads as a track that goes quiet, and the mix-out would land where the bytes ran out.
-            if (knownDuration > 0 && seconds < knownDuration * MIN_DECODED_FRACTION) return failed(trackId, knownDuration)
+            if (seconds < length * MIN_DECODED_FRACTION) return failed(trackId, length)
             val features = pcm.features(seconds)?.let { runCatching { TrackFeatureJson.parse(it) }.getOrNull() }
                 ?: return failed(trackId, seconds)
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">বিশ্লেষণ হয়ে গেছে</string>
+    <string name="analysis_too_long">বাদ: খুব দীর্ঘ</string>
     <string name="analysis_in_progress">বিশ্লেষণ হচ্ছে…</string>
     <string name="analysis_refining">বিশ্লেষণ হয়েছে, আরও নিখুঁত করা হচ্ছে…</string>
     <string name="audio_output">অডিও আউটপুট</string>
@@ -208,4 +209,25 @@
     <string name="video_scale_fit_screen">স্ক্রিন ভরাট</string>
     <string name="video_scale_fill">প্রসারিত</string>
     <string name="video_skip_seconds">%1$d সেকেন্ড</string>
+    <string name="recognize_title">গান শনাক্ত করুন</string>
+    <string name="recognize_tap_to_listen">আপনার চারপাশে বাজতে থাকা গানটি শনাক্ত করতে ট্যাপ করুন</string>
+    <string name="recognize_listening">শুনছে…</string>
+    <string name="recognize_identifying">শনাক্ত করছে…</string>
+    <string name="recognize_not_found">গানটি শনাক্ত করা যায়নি। শব্দের উৎসের কাছে গিয়ে আবার চেষ্টা করুন।</string>
+    <string name="recognize_error_permission">গান শনাক্ত করতে Laya-র মাইক্রোফোন অ্যাক্সেস দরকার। সেটিংসে অনুমতি দিন।</string>
+    <string name="recognize_error_microphone">মাইক্রোফোন এখন উপলব্ধ নয়।</string>
+    <string name="recognize_error_network">কোনো সংযোগ নেই। নেটওয়ার্ক পরীক্ষা করে আবার চেষ্টা করুন।</string>
+    <string name="recognize_error_service">শনাক্তকরণ পরিষেবা সাড়া দিচ্ছে না। পরে আবার চেষ্টা করুন।</string>
+    <string name="recognize_try_again">আবার চেষ্টা করুন</string>
+    <string name="recognize_cancel">বাতিল</string>
+    <string name="recognize_play">Laya-তে চালান</string>
+    <string name="recognize_finding">Laya-তে খোঁজা হচ্ছে…</string>
+    <string name="recognize_not_on_laya">এই গানটি Laya-র উৎসগুলোতে নেই।</string>
+    <string name="recognize_history">শনাক্ত করা গান</string>
+    <string name="recognize_history_clear">মুছুন</string>
+    <string name="recognize_remove">সরান</string>
+    <string name="recognize_just_now">এইমাত্র</string>
+    <string name="recognize_minutes_ago">%1$d মিনিট আগে</string>
+    <string name="recognize_hours_ago">%1$d ঘণ্টা আগে</string>
+    <string name="recognize_days_ago">%1$d দিন আগে</string>
 </resources>

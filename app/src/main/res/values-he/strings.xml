@@ -1384,4 +1384,15 @@
     <string name="video_scale_fit_screen">מילוי המסך</string>
     <string name="video_scale_fill">מתיחה</string>
     <string name="video_skip_seconds">%1$d שניות</string>
+    <string name="recognize_title">זיהוי מוזיקה</string>
+    <string name="recognize_channel">זיהוי מוזיקה</string>
+    <string name="recognize_tile_idle">הקש כדי להאזין</string>
+    <string name="recognize_listening">מאזין…</string>
+    <string name="recognize_identifying">מזהה…</string>
+    <string name="recognize_not_found">לא ניתן לזהות את השיר</string>
+    <string name="recognize_failed">הזיהוי נכשל — הקש לפתיחה</string>
+    <string name="recognize_permission">אפשר גישה למיקרופון כדי לזהות מוזיקה</string>
+    <string name="recognize_cancel">ביטול</string>
+    <string name="recognize_try_again">נסה שוב</string>
+    <string name="recognize_channel_results">שירים שזוהו</string>
 </resources>

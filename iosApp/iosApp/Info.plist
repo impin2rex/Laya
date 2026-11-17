@@ -32,7 +32,7 @@
 	</dict>
 	<!-- Replay and lyrics cards: "Save" adds the picture to the photo library (add-only, nothing is read). -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Laya listens through the microphone when you search by voice.</string>
+	<string>Laya listens through the microphone when you search by voice or recognize a song playing nearby.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Laya turns what you say into a search for songs, artists, albums and playlists.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -62,6 +62,8 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

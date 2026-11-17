@@ -47,9 +47,9 @@ object DeviceType {
     }
 
     /**
-     * Returns true if the device has a working microphone hardware feature.
+     * Whether the box declares a microphone of its own. Only the declaration: some TVs list a built-in mic input
+     * that records pure silence, their remote's mic reaching only the assistant.
      */
-    fun hasMicrophone(context: Context): Boolean {
-        return context.packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
-    }
+    fun hasMicrophone(context: Context): Boolean =
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
 }

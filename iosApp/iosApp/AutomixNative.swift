@@ -101,6 +101,14 @@ final class AutomixNativeImpl: NSObject, AutomixNative {
         }
     }
 
+    func durationSeconds(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) -> Double {
+        guard let source = URL(string: url),
+              let reader = PcmReader(source: source, headers: headers, mimeType: mimeType, contentLength: contentLength,
+                                     chunkBytes: chunkBytes, rate: Double(Self.rate), channels: 1) else { return 0 }
+        defer { reader.close() }
+        return reader.durationFrames > 0 ? Double(reader.durationFrames) / Double(Self.rate) : 0
+    }
+
     func decode(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) -> AutomixPcm? {
         guard let source = URL(string: url),
               let reader = PcmReader(source: source, headers: headers, mimeType: mimeType, contentLength: contentLength,

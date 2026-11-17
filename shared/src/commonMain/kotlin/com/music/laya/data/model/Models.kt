@@ -394,6 +394,8 @@ enum class PlaybackSourceType {
     BROWSE,
     SHARED_LINK,
     QUEUE,
+    /** A song found with music recognition. */
+    RECOGNITION,
 }
 
 /** A non-track search result: album, artist or playlist. */

@@ -1414,4 +1414,15 @@
     <string name="video_scale_fit_screen">Заполнить экран</string>
     <string name="video_scale_fill">Растянуть</string>
     <string name="video_skip_seconds">%1$d секунд</string>
+    <string name="recognize_title">Распознать музыку</string>
+    <string name="recognize_channel">Распознавание музыки</string>
+    <string name="recognize_tile_idle">Нажмите, чтобы слушать</string>
+    <string name="recognize_listening">Слушаю…</string>
+    <string name="recognize_identifying">Распознаю…</string>
+    <string name="recognize_not_found">Не удалось распознать песню</string>
+    <string name="recognize_failed">Ошибка распознавания — нажмите, чтобы открыть</string>
+    <string name="recognize_permission">Разрешите доступ к микрофону для распознавания музыки</string>
+    <string name="recognize_cancel">Отмена</string>
+    <string name="recognize_try_again">Повторить</string>
+    <string name="recognize_channel_results">Распознанные песни</string>
 </resources>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">đã phân tích</string>
+    <string name="analysis_too_long">bỏ qua: quá dài</string>
     <string name="analysis_in_progress">đang phân tích…</string>
     <string name="analysis_refining">đã phân tích, đang tinh chỉnh…</string>
     <string name="audio_output">Audio output</string>
@@ -710,4 +711,31 @@
     <string name="video_skip_seconds">%1$d giây</string>
     <string name="independent_volume">Âm lượng riêng trong ứng dụng</string>
     <string name="independent_volume_subtitle">Thanh âm lượng chỉnh mức riêng của Laya trong giới hạn âm lượng phương tiện của thiết bị, không thay đổi nó</string>
+    <string name="recognize_title">Nhận diện nhạc</string>
+    <string name="recognize_tap_to_listen">Chạm để nhận diện bài hát đang phát quanh bạn</string>
+    <string name="recognize_listening">Đang nghe…</string>
+    <string name="recognize_identifying">Đang nhận diện…</string>
+    <string name="recognize_not_found">Không nhận diện được bài hát này. Hãy thử lại gần nguồn âm hơn.</string>
+    <string name="recognize_error_permission">Laya cần quyền truy cập micrô để nhận diện nhạc. Hãy cho phép trong Cài đặt.</string>
+    <string name="recognize_error_microphone">Micrô hiện không khả dụng.</string>
+    <string name="recognize_error_network">Không có kết nối. Hãy kiểm tra mạng và thử lại.</string>
+    <string name="recognize_error_service">Dịch vụ nhận diện không phản hồi. Hãy thử lại sau.</string>
+    <string name="recognize_try_again">Thử lại</string>
+    <string name="recognize_cancel">Hủy</string>
+    <string name="recognize_play">Phát trên Laya</string>
+    <string name="recognize_finding">Đang tìm trên Laya…</string>
+    <string name="recognize_not_on_laya">Bài hát này không có trên các nguồn của Laya.</string>
+    <string name="recognize_history">Bài hát đã nhận diện</string>
+    <string name="recognize_history_clear">Xóa hết</string>
+    <string name="recognize_remove">Xóa</string>
+    <string name="recognize_just_now">Vừa xong</string>
+    <string name="recognize_minutes_ago">%1$d phút trước</string>
+    <string name="recognize_hours_ago">%1$d giờ trước</string>
+    <string name="recognize_days_ago">%1$d ngày trước</string>
+    <string name="recognize_shortcut_qs">Thêm Nhận diện nhạc vào Cài đặt nhanh</string>
+    <string name="recognize_shortcut_cc">Thêm Laya vào Trung tâm điều khiển</string>
+    <string name="recognize_shortcut_try">Thử ngay</string>
+    <string name="recognize_shortcut_steps">Mở Trung tâm điều khiển, chạm + ở góc trên bên trái, rồi Thêm điều khiển và tìm Laya.</string>
+    <string name="recognize_shortcut_ok">Đã hiểu</string>
+    <string name="recognize_shortcut_close">Đóng</string>
 </resources>

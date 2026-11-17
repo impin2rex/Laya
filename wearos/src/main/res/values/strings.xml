@@ -40,4 +40,13 @@
     <string name="update_channel">Updates</string>
     <string name="update_ready">Laya update ready</string>
     <string name="update_tap">Tap to install the update from your phone.</string>
+    <string name="recognize">Recognize music</string>
+    <string name="recognize_tap">Tap to name the song playing around you</string>
+    <string name="recognize_listening">Listening…</string>
+    <string name="recognize_identifying">Identifying…</string>
+    <string name="recognize_not_found">Couldn\'t recognize the song</string>
+    <string name="recognize_failed">Recognition isn\'t available right now</string>
+    <string name="recognize_no_microphone">This watch\'s microphone isn\'t available</string>
+    <string name="recognize_not_on_laya">Not available on Laya</string>
+    <string name="recognize_again">Listen again</string>
 </resources>

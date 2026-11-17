@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">analiz edildi</string>
+    <string name="analysis_too_long">atlandı: çok uzun</string>
     <string name="analysis_in_progress">analiz ediliyor…</string>
     <string name="analysis_refining">analiz edildi, iyileştiriliyor…</string>
     <string name="audio_output">Audio output</string>
@@ -715,4 +716,31 @@
     <string name="video_skip_seconds">%1$d saniye</string>
     <string name="independent_volume">Uygulama içi ses düzeyi</string>
     <string name="independent_volume_subtitle">Ses çubuğu, cihazın medya ses düzeyi sınırında Laya\'nın kendi düzeyini ayarlar; cihaz sesini değiştirmez</string>
+    <string name="recognize_title">Müziği tanı</string>
+    <string name="recognize_tap_to_listen">Etrafında çalan şarkıyı tanımak için dokun</string>
+    <string name="recognize_listening">Dinleniyor…</string>
+    <string name="recognize_identifying">Tanımlanıyor…</string>
+    <string name="recognize_not_found">Bu şarkı tanınamadı. Ses kaynağına daha yakın tekrar dene.</string>
+    <string name="recognize_error_permission">Laya'nın müziği tanımak için mikrofon erişimine ihtiyacı var. Ayarlar'dan izin ver.</string>
+    <string name="recognize_error_microphone">Mikrofon şu anda kullanılamıyor.</string>
+    <string name="recognize_error_network">Bağlantı yok. Ağını kontrol edip tekrar dene.</string>
+    <string name="recognize_error_service">Tanıma hizmeti yanıt vermiyor. Daha sonra tekrar dene.</string>
+    <string name="recognize_try_again">Tekrar dene</string>
+    <string name="recognize_cancel">İptal</string>
+    <string name="recognize_play">Laya'da çal</string>
+    <string name="recognize_finding">Laya'da aranıyor…</string>
+    <string name="recognize_not_on_laya">Bu şarkı Laya'nın kaynaklarında mevcut değil.</string>
+    <string name="recognize_history">Tanınan şarkılar</string>
+    <string name="recognize_history_clear">Temizle</string>
+    <string name="recognize_remove">Kaldır</string>
+    <string name="recognize_just_now">Az önce</string>
+    <string name="recognize_minutes_ago">%1$d dk önce</string>
+    <string name="recognize_hours_ago">%1$d sa önce</string>
+    <string name="recognize_days_ago">%1$d gün önce</string>
+    <string name="recognize_shortcut_qs">Müziği tanı'yı Hızlı Ayarlar'a ekle</string>
+    <string name="recognize_shortcut_cc">Laya'yı Denetim Merkezi'ne ekle</string>
+    <string name="recognize_shortcut_try">Şimdi dene</string>
+    <string name="recognize_shortcut_steps">Denetim Merkezi'ni aç, sol üstteki +'ya dokun, ardından Denetim Ekle'ye dokunup Laya'yı ara.</string>
+    <string name="recognize_shortcut_ok">Anladım</string>
+    <string name="recognize_shortcut_close">Kapat</string>
 </resources>

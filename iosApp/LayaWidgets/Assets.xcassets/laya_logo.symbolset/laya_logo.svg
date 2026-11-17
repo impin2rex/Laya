@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- The Laya mark (assets/LogoTransparent.svg) as a custom SF Symbol, for the Control Center control. -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="3300" height="2200">
+ <g id="Notes">
+  <text id="template-version" x="133.5" y="1696" style="font-family:'LucidaGrande';font-size:13">Template v.3.0</text>
+ </g>
+ <g id="Guides">
+  <line id="Baseline-S" x1="263" x2="3036" y1="696.0" y2="696.0" style="fill:none;stroke:#27AAE1;stroke-width:0.5;"/>
+  <line id="Capline-S" x1="263" x2="3036" y1="625.541" y2="625.541" style="fill:none;stroke:#27AAE1;stroke-width:0.5;"/>
+  <line id="Baseline-M" x1="263" x2="3036" y1="1126" y2="1126" style="fill:none;stroke:#27AAE1;stroke-width:0.5;"/>
+  <line id="Capline-M" x1="263" x2="3036" y1="1055.54" y2="1055.54" style="fill:none;stroke:#27AAE1;stroke-width:0.5;"/>
+  <line id="Baseline-L" x1="263" x2="3036" y1="1556" y2="1556" style="fill:none;stroke:#27AAE1;stroke-width:0.5;"/>
+  <line id="Capline-L" x1="263" x2="3036" y1="1485.54" y2="1485.54" style="fill:none;stroke:#27AAE1;stroke-width:0.5;"/>
+  <line id="left-margin-Ultralight-S" x1="559.000" x2="559.000" y1="600.785" y2="720.121" style="fill:none;stroke:#00AEEF;stroke-width:0.5;"/>
+  <line id="right-margin-Ultralight-S" x1="628.295" x2="628.295" y1="600.785" y2="720.121" style="fill:none;stroke:#00AEEF;stroke-width:0.5;"/>
+  <line id="left-margin-Regular-S" x1="1449.000" x2="1449.000" y1="600.785" y2="720.121" style="fill:none;stroke:#00AEEF;stroke-width:0.5;"/>
+  <line id="right-margin-Regular-S" x1="1518.295" x2="1518.295" y1="600.785" y2="720.121" style="fill:none;stroke:#00AEEF;stroke-width:0.5;"/>
+  <line id="left-margin-Black-S" x1="2339.000" x2="2339.000" y1="600.785" y2="720.121" style="fill:none;stroke:#00AEEF;stroke-width:0.5;"/>
+  <line id="right-margin-Black-S" x1="2408.295" x2="2408.295" y1="600.785" y2="720.121" style="fill:none;stroke:#00AEEF;stroke-width:0.5;"/>
+ </g>
+ <g id="Symbols">
+  <g id="Ultralight-S" transform="matrix(1 0 0 1 559.000 696.0)">
+   <path d="M 8.747 -25.155 L 49.358 -58.634 A 8.728 8.728 0 0 1 60.461 -45.166 L 51.278 -37.594 A 5.105 5.105 0 0 0 53.508 -28.654 A 8.860 8.860 0 0 1 57.380 -13.145 L 41.461 -0.024 A 8.860 8.860 0 0 1 30.188 -13.698 L 43.045 -24.296 A 2.513 2.513 0 0 0 39.850 -28.173 L 19.850 -11.688 A 8.728 8.728 0 0 1 8.747 -25.155 Z"/>
+   <path d="M 8.971 -54.820 L 27.951 -70.467 A 8.728 8.728 0 0 1 39.054 -56.997 L 20.074 -41.352 A 8.728 8.728 0 0 1 8.971 -54.820 Z"/>
+  </g>
+  <g id="Regular-S" transform="matrix(1 0 0 1 1449.000 696.0)">
+   <path d="M 8.747 -25.155 L 49.358 -58.634 A 8.728 8.728 0 0 1 60.461 -45.166 L 51.278 -37.594 A 5.105 5.105 0 0 0 53.508 -28.654 A 8.860 8.860 0 0 1 57.380 -13.145 L 41.461 -0.024 A 8.860 8.860 0 0 1 30.188 -13.698 L 43.045 -24.296 A 2.513 2.513 0 0 0 39.850 -28.173 L 19.850 -11.688 A 8.728 8.728 0 0 1 8.747 -25.155 Z"/>
+   <path d="M 8.971 -54.820 L 27.951 -70.467 A 8.728 8.728 0 0 1 39.054 -56.997 L 20.074 -41.352 A 8.728 8.728 0 0 1 8.971 -54.820 Z"/>
+  </g>
+  <g id="Black-S" transform="matrix(1 0 0 1 2339.000 696.0)">
+   <path d="M 8.747 -25.155 L 49.358 -58.634 A 8.728 8.728 0 0 1 60.461 -45.166 L 51.278 -37.594 A 5.105 5.105 0 0 0 53.508 -28.654 A 8.860 8.860 0 0 1 57.380 -13.145 L 41.461 -0.024 A 8.860 8.860 0 0 1 30.188 -13.698 L 43.045 -24.296 A 2.513 2.513 0 0 0 39.850 -28.173 L 19.850 -11.688 A 8.728 8.728 0 0 1 8.747 -25.155 Z"/>
+   <path d="M 8.971 -54.820 L 27.951 -70.467 A 8.728 8.728 0 0 1 39.054 -56.997 L 20.074 -41.352 A 8.728 8.728 0 0 1 8.971 -54.820 Z"/>
+  </g>
+ </g>
+</svg>

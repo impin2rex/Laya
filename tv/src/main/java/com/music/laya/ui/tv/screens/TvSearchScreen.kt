@@ -114,6 +114,14 @@ fun TvSearchScreen(
         )
         playSong(song)
     }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // Most TV remotes route their microphone to the assistant only; offer recognition where the box has one of its own.
+    val hasMicrophone = remember { com.music.laya.ui.tv.DeviceType.hasMicrophone(context) }
+    var recognizing by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    if (recognizing) {
+        TvRecognition(onPlay = { recognizing = false; playSong(it) }, onClose = { recognizing = false })
+        return
+    }
     val openBrowse: (BrowseItem) -> Unit = { item ->
         viewModel.recordEntity(
             SearchHistoryEntity(
@@ -187,6 +195,26 @@ fun TvSearchScreen(
                             viewModel.onQueryChange(spoken)
                             viewModel.submitSearch()
                         })
+                    }
+                    if (hasMicrophone) {
+                        var recognizeFocused by remember { mutableStateOf(false) }
+                        androidx.compose.material3.IconButton(
+                            onClick = { recognizing = true },
+                            modifier = Modifier
+                                .padding(start = 6.dp)
+                                .onFocusChanged { recognizeFocused = it.hasFocus }
+                                .background(
+                                    if (recognizeFocused) TvGlass.OnPlatter.copy(alpha = 0.25f) else Color.Transparent,
+                                    CircleShape,
+                                ),
+                        ) {
+                            androidx.compose.material3.Icon(
+                                com.music.laya.ui.screens.RecognitionIcon,
+                                contentDescription = androidx.compose.ui.res.stringResource(com.music.laya.R.string.recognize_title),
+                                // The voice-search mic's colour beside it; OnPlatter is for a light platter, black here.
+                                tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
                 if (resultsState != null) {
@@ -499,4 +527,21 @@ private fun List<SearchResult>.deduplicated(): List<SearchResult> {
             }
         }
     }
+}
+
+/** Music recognition over the Search page; Back returns to it. In-app only — the app is on screen the whole time. */
+@Composable
+private fun TvRecognition(onPlay: (Song) -> Unit, onClose: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.activity.compose.BackHandler(onBack = onClose)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { com.music.laya.data.recognition.MusicRecognizer.cancel() }
+    }
+    // The phone's path: the microphone permission, then the listening service.
+    com.music.laya.ui.screens.RecognitionScreen(
+        onListen = { com.music.laya.recognition.listen(context, notifyResult = false) },
+        onPlay = onPlay,
+        contentPadding = PaddingValues(top = TvDimensions.ContentTop, bottom = 45.dp),
+        modifier = Modifier.padding(horizontal = TvDimensions.SafeMarginHorizontal),
+    )
 }

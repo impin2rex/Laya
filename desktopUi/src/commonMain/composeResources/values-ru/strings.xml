@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">анализ завершён</string>
+    <string name="analysis_too_long">пропущено: слишком длинный</string>
     <string name="analysis_in_progress">анализируется…</string>
     <string name="analysis_refining">анализ завершён, уточняется…</string>
     <string name="audio_output">Audio output</string>
@@ -229,4 +230,25 @@
     <string name="video_scale_fit_screen">Заполнить экран</string>
     <string name="video_scale_fill">Растянуть</string>
     <string name="video_skip_seconds">%1$d секунд</string>
+    <string name="recognize_title">Распознать музыку</string>
+    <string name="recognize_tap_to_listen">Нажмите, чтобы узнать, какая песня играет рядом</string>
+    <string name="recognize_listening">Слушаю…</string>
+    <string name="recognize_identifying">Распознаю…</string>
+    <string name="recognize_not_found">Не удалось распознать песню. Попробуйте ещё раз ближе к источнику звука.</string>
+    <string name="recognize_error_permission">Laya нужен доступ к микрофону для распознавания музыки. Разрешите его в настройках.</string>
+    <string name="recognize_error_microphone">Микрофон сейчас недоступен.</string>
+    <string name="recognize_error_network">Нет подключения. Проверьте сеть и попробуйте снова.</string>
+    <string name="recognize_error_service">Сервис распознавания не отвечает. Попробуйте позже.</string>
+    <string name="recognize_try_again">Повторить</string>
+    <string name="recognize_cancel">Отмена</string>
+    <string name="recognize_play">Слушать в Laya</string>
+    <string name="recognize_finding">Поиск в Laya…</string>
+    <string name="recognize_not_on_laya">Эта песня недоступна в источниках Laya.</string>
+    <string name="recognize_history">Распознанные песни</string>
+    <string name="recognize_history_clear">Очистить</string>
+    <string name="recognize_remove">Удалить</string>
+    <string name="recognize_just_now">Только что</string>
+    <string name="recognize_minutes_ago">%1$d мин назад</string>
+    <string name="recognize_hours_ago">%1$d ч назад</string>
+    <string name="recognize_days_ago">%1$d дн. назад</string>
 </resources>

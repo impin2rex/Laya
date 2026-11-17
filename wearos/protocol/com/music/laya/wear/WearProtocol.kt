@@ -13,7 +13,7 @@ package com.music.laya.wear
  * the dev phone app, and prod only prod. That is why the watch app takes the
  * phone app's application ids rather than ids of its own.
  *
- * Two channels:
+ * Two channels (and music recognition's own pair, below):
  *  - **State**, phone → watch, as DataItems ([PATH_NOW_PLAYING], [PATH_QUEUE]).
  *    The Data Layer keeps the last one, so a watch app that opens while the
  *    phone is busy still draws the last thing that was playing at once.
@@ -90,6 +90,36 @@ object WearProtocol {
      */
     const val PATH_APK = "/laya/watch/apk"
 
+    // ---- Music recognition: the watch listens, the phone names the song ----
+
+    /**
+     * Watch → phone ChannelClient channel: the watch's microphone as 16 kHz mono
+     * 16-bit little-endian PCM, written as it is heard. The phone closes it once
+     * it has an answer; the watch closing it first is a cancel.
+     */
+    const val PATH_RECOGNIZE = "/laya/recognize"
+
+    /**
+     * Phone → watch message, a DataMap: [KEY_STATE], one of the RECOGNITION_*
+     * values; with [RECOGNITION_RECOGNIZED] also [KEY_RECOGNITION_ID],
+     * [KEY_TITLE], [KEY_ARTIST], [KEY_ALBUM] and [KEY_ART] (JPEG bytes, if any).
+     */
+    const val PATH_RECOGNITION = "/laya/recognition"
+    const val RECOGNITION_LISTENING = "listening"
+    const val RECOGNITION_IDENTIFYING = "identifying"
+    const val RECOGNITION_RECOGNIZED = "recognized"
+    const val RECOGNITION_NOT_FOUND = "not_found"
+    const val RECOGNITION_FAILED = "failed"
+
+    /** The answer to [CMD_PLAY_RECOGNIZED] when no song on Laya is that one. */
+    const val RECOGNITION_NOT_ON_LAYA = "not_on_laya"
+
+    /** The recognised song's id, which [CMD_PLAY_RECOGNIZED] hands back. */
+    const val KEY_RECOGNITION_ID = "recognition_id"
+
+    /** Side of the recognised song's cover sent with [PATH_RECOGNITION]. */
+    const val RECOGNITION_ART_PX = 160
+
     const val STREAM_OK: Int = 0
     const val STREAM_FAILED: Int = 1
 
@@ -128,6 +158,9 @@ object WearProtocol {
      * phone output picked with [CMD_SELECT_OUTPUT] ends it.
      */
     const val CMD_SPEAKER_WATCH = "speaker_watch"
+
+    /** Payload: a [KEY_RECOGNITION_ID]. The phone plays that song, or answers [RECOGNITION_NOT_ON_LAYA]. */
+    const val CMD_PLAY_RECOGNIZED = "play_recognized"
 
     /** Watch → phone, payload a DataMap: the watch speaker's player state ([KEY_STATE] and friends). */
     const val CMD_SPEAKER_STATUS = "speaker_status"

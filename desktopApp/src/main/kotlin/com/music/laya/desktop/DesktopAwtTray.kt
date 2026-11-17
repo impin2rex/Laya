@@ -47,6 +47,13 @@ internal object DesktopAwtTray {
         }
     }
 
+    /** A message from the tray icon; false with no icon up to show it. Clicking it is an activation. */
+    fun notify(title: String, body: String): Boolean = synchronized(lock) {
+        val current = icon ?: return false
+        EventQueue.invokeLater { current.displayMessage(title, body, TrayIcon.MessageType.NONE) }
+        true
+    }
+
     /** Rebuilds the menu for an entry whose label changed outside [update]. */
     fun refreshMenu() {
         EventQueue.invokeLater {

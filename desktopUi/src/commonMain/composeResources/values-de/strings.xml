@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">analysiert</string>
+    <string name="analysis_too_long">übersprungen: zu lang</string>
     <string name="analysis_in_progress">wird analysiert…</string>
     <string name="analysis_refining">analysiert, wird verfeinert…</string>
     <string name="audio_output">Audio output</string>
@@ -229,4 +230,25 @@
     <string name="video_scale_fit_screen">Bildschirm füllen</string>
     <string name="video_scale_fill">Strecken</string>
     <string name="video_skip_seconds">%1$d Sekunden</string>
+    <string name="recognize_title">Musik erkennen</string>
+    <string name="recognize_tap_to_listen">Tippe, um den Song um dich herum zu erkennen</string>
+    <string name="recognize_listening">Hört zu…</string>
+    <string name="recognize_identifying">Wird erkannt…</string>
+    <string name="recognize_not_found">Song nicht erkannt. Versuche es näher an der Tonquelle erneut.</string>
+    <string name="recognize_error_permission">Laya braucht Mikrofonzugriff, um Musik zu erkennen. Erlaube ihn in den Einstellungen.</string>
+    <string name="recognize_error_microphone">Das Mikrofon ist gerade nicht verfügbar.</string>
+    <string name="recognize_error_network">Keine Verbindung. Prüfe dein Netzwerk und versuche es erneut.</string>
+    <string name="recognize_error_service">Der Erkennungsdienst antwortet nicht. Versuche es später erneut.</string>
+    <string name="recognize_try_again">Erneut versuchen</string>
+    <string name="recognize_cancel">Abbrechen</string>
+    <string name="recognize_play">Auf Laya abspielen</string>
+    <string name="recognize_finding">Suche auf Laya…</string>
+    <string name="recognize_not_on_laya">Dieser Song ist in Layas Quellen nicht verfügbar.</string>
+    <string name="recognize_history">Erkannte Songs</string>
+    <string name="recognize_history_clear">Löschen</string>
+    <string name="recognize_remove">Entfernen</string>
+    <string name="recognize_just_now">Gerade eben</string>
+    <string name="recognize_minutes_ago">vor %1$d Min.</string>
+    <string name="recognize_hours_ago">vor %1$d Std.</string>
+    <string name="recognize_days_ago">vor %1$d T.</string>
 </resources>

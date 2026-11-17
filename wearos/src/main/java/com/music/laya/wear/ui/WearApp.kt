@@ -40,16 +40,31 @@ import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.music.laya.wear.R
 import com.music.laya.wear.data.Link
 import com.music.laya.wear.data.PhoneLink
+import com.music.laya.wear.data.Recognizer
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 private const val PLAYER = "player"
 private const val QUEUE = "queue"
 private const val MORE = "more"
 private const val OUTPUT = "output"
+private const val RECOGNIZE = "recognize"
 
 /** Player at the root; Up Next and More swipe away back to it, as every watch app does. */
 @Composable
-fun WearApp(link: PhoneLink) {
+fun WearApp(link: PhoneLink, recognizer: Recognizer) {
     val nav = rememberSwipeDismissableNavController()
+    // The tile: straight onto recognition, listening.
+    val requested by Recognizer.requested.collectAsStateWithLifecycle()
+    var startNow by remember { mutableStateOf(false) }
+    LaunchedEffect(requested) {
+        if (requested) {
+            Recognizer.requested.value = false
+            startNow = true
+            nav.navigate(RECOGNIZE) { popUpTo(PLAYER) }
+        }
+    }
     val ambient = LocalAmbient.current
     val np by link.nowPlaying.collectAsStateWithLifecycle()
     val showAmbient = ambient.active && np != null
@@ -80,7 +95,20 @@ fun WearApp(link: PhoneLink) {
                 )
             }
             composable(MORE) {
-                MoreScreen(np = np, link = link, onOpenOutput = { nav.navigate(OUTPUT) })
+                MoreScreen(
+                    np = np,
+                    link = link,
+                    onOpenOutput = { nav.navigate(OUTPUT) },
+                    onRecognize = { startNow = false; nav.navigate(RECOGNIZE) },
+                )
+            }
+            composable(RECOGNIZE) {
+                RecognizeScreen(
+                    recognizer = recognizer,
+                    startNow = startNow,
+                    playingId = np?.mediaId,
+                    onPlayed = { nav.popBackStack(PLAYER, inclusive = false) },
+                )
             }
             composable(OUTPUT) {
                 // Straight back to the player once a choice is made.
@@ -189,7 +217,7 @@ private fun Message(title: String, body: String, action: String, onAction: () ->
 
 /** The phone app's primary button: white, black label, fully rounded. */
 @Composable
-private fun Pill(text: String, onClick: () -> Unit) {
+internal fun Pill(text: String, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     Box(

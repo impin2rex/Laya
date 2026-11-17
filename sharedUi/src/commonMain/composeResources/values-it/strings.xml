@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">analizzato</string>
+    <string name="analysis_too_long">saltato: troppo lungo</string>
     <string name="analysis_in_progress">analisi in corso…</string>
     <string name="analysis_refining">analizzato, rifinitura…</string>
     <string name="audio_output">Audio output</string>
@@ -715,4 +716,31 @@
     <string name="video_skip_seconds">%1$d secondi</string>
     <string name="independent_volume">Volume dell\'app</string>
     <string name="independent_volume_subtitle">La barra del volume regola il livello di Laya entro il volume multimediale del dispositivo, senza modificarlo</string>
+    <string name="recognize_title">Riconosci musica</string>
+    <string name="recognize_tap_to_listen">Tocca per identificare il brano che suona intorno a te</string>
+    <string name="recognize_listening">In ascolto…</string>
+    <string name="recognize_identifying">Identificazione…</string>
+    <string name="recognize_not_found">Impossibile riconoscere questo brano. Riprova più vicino alla fonte sonora.</string>
+    <string name="recognize_error_permission">Laya ha bisogno dell'accesso al microfono per riconoscere la musica. Consentilo nelle Impostazioni.</string>
+    <string name="recognize_error_microphone">Il microfono non è disponibile al momento.</string>
+    <string name="recognize_error_network">Nessuna connessione. Controlla la rete e riprova.</string>
+    <string name="recognize_error_service">Il servizio di riconoscimento non risponde. Riprova più tardi.</string>
+    <string name="recognize_try_again">Riprova</string>
+    <string name="recognize_cancel">Annulla</string>
+    <string name="recognize_play">Riproduci su Laya</string>
+    <string name="recognize_finding">Ricerca su Laya…</string>
+    <string name="recognize_not_on_laya">Questo brano non è disponibile nelle fonti di Laya.</string>
+    <string name="recognize_history">Brani riconosciuti</string>
+    <string name="recognize_history_clear">Cancella</string>
+    <string name="recognize_remove">Rimuovi</string>
+    <string name="recognize_just_now">Proprio ora</string>
+    <string name="recognize_minutes_ago">%1$d min fa</string>
+    <string name="recognize_hours_ago">%1$d h fa</string>
+    <string name="recognize_days_ago">%1$d g fa</string>
+    <string name="recognize_shortcut_qs">Aggiungi Riconosci musica alle Impostazioni rapide</string>
+    <string name="recognize_shortcut_cc">Aggiungi Laya al Centro di Controllo</string>
+    <string name="recognize_shortcut_try">Provalo ora</string>
+    <string name="recognize_shortcut_steps">Apri il Centro di Controllo, tocca + in alto a sinistra, poi Aggiungi un controllo e cerca Laya.</string>
+    <string name="recognize_shortcut_ok">Ho capito</string>
+    <string name="recognize_shortcut_close">Chiudi</string>
 </resources>
