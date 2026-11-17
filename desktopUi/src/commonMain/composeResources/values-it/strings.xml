@@ -229,4 +229,25 @@
     <string name="video_scale_fit_screen">Riempi lo schermo</string>
     <string name="video_scale_fill">Estendi</string>
     <string name="video_skip_seconds">%1$d secondi</string>
+    <string name="recognize_title">Riconosci musica</string>
+    <string name="recognize_tap_to_listen">Tocca per identificare il brano che suona intorno a te</string>
+    <string name="recognize_listening">In ascolto…</string>
+    <string name="recognize_identifying">Identificazione…</string>
+    <string name="recognize_not_found">Impossibile riconoscere questo brano. Riprova più vicino alla fonte sonora.</string>
+    <string name="recognize_error_permission">Laya ha bisogno dell'accesso al microfono per riconoscere la musica. Consentilo nelle Impostazioni.</string>
+    <string name="recognize_error_microphone">Il microfono non è disponibile al momento.</string>
+    <string name="recognize_error_network">Nessuna connessione. Controlla la rete e riprova.</string>
+    <string name="recognize_error_service">Il servizio di riconoscimento non risponde. Riprova più tardi.</string>
+    <string name="recognize_try_again">Riprova</string>
+    <string name="recognize_cancel">Annulla</string>
+    <string name="recognize_play">Riproduci su Laya</string>
+    <string name="recognize_finding">Ricerca su Laya…</string>
+    <string name="recognize_not_on_laya">Questo brano non è disponibile nelle fonti di Laya.</string>
+    <string name="recognize_history">Brani riconosciuti</string>
+    <string name="recognize_history_clear">Cancella</string>
+    <string name="recognize_remove">Rimuovi</string>
+    <string name="recognize_just_now">Proprio ora</string>
+    <string name="recognize_minutes_ago">%1$d min fa</string>
+    <string name="recognize_hours_ago">%1$d h fa</string>
+    <string name="recognize_days_ago">%1$d g fa</string>
 </resources>

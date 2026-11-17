@@ -325,6 +325,8 @@ val buildWindowNative by tasks.registering {
     val crossing = crossBuildingForWindows
     val toolchain = project.file("native/mingw-w64.cmake")
     inputs.dir(cmakeSource)
+    // Music recognition's notification (laya_notify.dll) builds in the same CMake project.
+    inputs.dir(project.file("native/notify"))
     inputs.property("target", targetOs)
     outputs.dir(outputDir)
     onlyIf {
@@ -384,8 +386,11 @@ val buildSpeechNative by tasks.registering {
     val outputDir = speechNativeDir.get().asFile
     val swiftSource = project.file("native/speech/LayaSpeech.swift")
     val speechSource = project.file("native/speech")
+    // Music recognition's result notification on macOS (UserNotifications), built alongside.
+    val notifySource = project.file("native/notify/LayaNotify.swift")
     val onWindows = targetOs == "windows" && !crossBuildingForWindows
     inputs.dir(speechSource)
+    inputs.file(notifySource)
     inputs.property("target", targetOs)
     outputs.dir(outputDir)
     onlyIf {
@@ -426,6 +431,14 @@ val buildSpeechNative by tasks.registering {
                 "-target", if (isArm64) "arm64-apple-macos11" else "x86_64-apple-macos11",
                 "-o", File(outputDir, "liblaya_speech.dylib").absolutePath,
                 swiftSource.absolutePath,
+            )
+        }.result.get().assertNormalExitValue()
+        providers.exec {
+            commandLine(
+                findOnPath("swiftc")!!.absolutePath, "-emit-library", "-O",
+                "-target", if (isArm64) "arm64-apple-macos11" else "x86_64-apple-macos11",
+                "-o", File(outputDir, "liblaya_notify.dylib").absolutePath,
+                notifySource.absolutePath,
             )
         }.result.get().assertNormalExitValue()
     }
@@ -702,7 +715,7 @@ compose.desktop {
                         <key>NSRequiresAquaSystemAppearance</key>
                         <false/>
                         <key>NSMicrophoneUsageDescription</key>
-                        <string>Laya listens through the microphone when you search by voice.</string>
+                        <string>Laya listens through the microphone when you search by voice or recognize a song.</string>
                         <key>NSSpeechRecognitionUsageDescription</key>
                         <string>Laya turns what you say into a search for songs, artists, albums and playlists.</string>
                     """.trimIndent()

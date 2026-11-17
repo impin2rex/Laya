@@ -1,3 +1,4 @@
+import ActivityKit
 import SwiftUI
 import WidgetKit
 
@@ -9,6 +10,85 @@ struct LayaWidgetBundle: WidgetBundle {
         NowPlayingWidget()
         PillWidget()
         LibraryWidget()
+        if #available(iOS 18.0, *) {
+            RecognizeControl()
+        }
+        RecognitionLiveActivity()
+    }
+}
+
+/// Control Center's "Recognize Music" button: opens Laya listening (see LayaRecognizeIntent).
+@available(iOS 18.0, *)
+struct RecognizeControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "com.music.laya.recognize") {
+            ControlWidgetButton(action: LayaRecognizeIntent()) {
+                Label("Recognize Music", image: "laya_logo")
+            }
+        }
+        .displayName("Recognize Music")
+        .description("Identify the song playing around you with Laya.")
+    }
+}
+
+/// Music recognition while Laya listens in the background: the mark, "Listening…" / "Identifying…", and Cancel.
+/// Tapping it goes back to Laya's Recognize page. Started by the app; see LayaRecognitionAttributes.
+struct RecognitionLiveActivity: Widget {
+    private static let open = URL(string: "laya://widget/recognize_open")
+
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: LayaRecognitionAttributes.self) { context in
+            HStack(spacing: 14) {
+                Image("laya_logo")
+                    .font(.title)
+                    .foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(context.state.title).font(.headline).foregroundStyle(.white)
+                    Text(context.state.subtitle).font(.subheadline).foregroundStyle(.white.opacity(0.7))
+                }
+                Spacer()
+                Image(systemName: "waveform")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .symbolEffect(.variableColor.iterative)
+                Button(intent: LayaCancelRecognitionIntent()) {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.circle)
+                .tint(.white)
+            }
+            .padding(16)
+            .activityBackgroundTint(.black.opacity(0.75))
+            .activitySystemActionForegroundColor(.white)
+            .widgetURL(Self.open)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Image("laya_logo").font(.title2).padding(.leading, 6)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    VStack(spacing: 2) {
+                        Text(context.state.title).font(.headline)
+                        Text(context.state.subtitle).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    Button(intent: LayaCancelRecognitionIntent()) {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.circle)
+                }
+            } compactLeading: {
+                Image("laya_logo")
+            } compactTrailing: {
+                Image(systemName: "waveform").symbolEffect(.variableColor.iterative)
+            } minimal: {
+                Image("laya_logo")
+            }
+            .widgetURL(Self.open)
+        }
     }
 }
 

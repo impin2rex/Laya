@@ -1321,4 +1321,15 @@
     <string name="video_scale_fit_screen">Riempi lo schermo</string>
     <string name="video_scale_fill">Estendi</string>
     <string name="video_skip_seconds">%1$d secondi</string>
+    <string name="recognize_title">Riconosci musica</string>
+    <string name="recognize_channel">Riconoscimento musicale</string>
+    <string name="recognize_tile_idle">Tocca per ascoltare</string>
+    <string name="recognize_listening">In ascolto…</string>
+    <string name="recognize_identifying">Identificazione…</string>
+    <string name="recognize_not_found">Impossibile riconoscere il brano</string>
+    <string name="recognize_failed">Riconoscimento non riuscito — tocca per aprire</string>
+    <string name="recognize_permission">Consenti l\'accesso al microfono per riconoscere la musica</string>
+    <string name="recognize_cancel">Annulla</string>
+    <string name="recognize_try_again">Riprova</string>
+    <string name="recognize_channel_results">Brani riconosciuti</string>
 </resources>

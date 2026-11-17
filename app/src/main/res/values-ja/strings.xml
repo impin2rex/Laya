@@ -1360,4 +1360,15 @@
     <string name="video_scale_fit_screen">画面に合わせる</string>
     <string name="video_scale_fill">引き伸ばし</string>
     <string name="video_skip_seconds">%1$d 秒</string>
+    <string name="recognize_title">音楽を認識</string>
+    <string name="recognize_channel">音楽認識</string>
+    <string name="recognize_tile_idle">タップして聴く</string>
+    <string name="recognize_listening">聴いています…</string>
+    <string name="recognize_identifying">識別しています…</string>
+    <string name="recognize_not_found">曲を認識できませんでした</string>
+    <string name="recognize_failed">認識に失敗しました — タップして開く</string>
+    <string name="recognize_permission">音楽を認識するにはマイクへのアクセスを許可してください</string>
+    <string name="recognize_cancel">キャンセル</string>
+    <string name="recognize_try_again">再試行</string>
+    <string name="recognize_channel_results">認識した曲</string>
 </resources>

@@ -1150,4 +1150,15 @@
     <string name="video_scale_fit_screen">স্ক্রিন ভরাট</string>
     <string name="video_scale_fill">প্রসারিত</string>
     <string name="video_skip_seconds">%1$d সেকেন্ড</string>
+    <string name="recognize_title">গান শনাক্ত করুন</string>
+    <string name="recognize_channel">গান শনাক্তকরণ</string>
+    <string name="recognize_tile_idle">শুনতে ট্যাপ করুন</string>
+    <string name="recognize_listening">শুনছে…</string>
+    <string name="recognize_identifying">শনাক্ত করছে…</string>
+    <string name="recognize_not_found">গানটি শনাক্ত করা যায়নি</string>
+    <string name="recognize_failed">শনাক্তকরণ ব্যর্থ — খুলতে ট্যাপ করুন</string>
+    <string name="recognize_permission">গান শনাক্ত করতে মাইক্রোফোন অ্যাক্সেসের অনুমতি দিন</string>
+    <string name="recognize_cancel">বাতিল</string>
+    <string name="recognize_try_again">আবার চেষ্টা করুন</string>
+    <string name="recognize_channel_results">শনাক্ত করা গান</string>
 </resources>

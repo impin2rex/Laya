@@ -229,4 +229,25 @@
     <string name="video_scale_fit_screen">Penuhi layar</string>
     <string name="video_scale_fill">Rentangkan</string>
     <string name="video_skip_seconds">%1$d detik</string>
+    <string name="recognize_title">Kenali musik</string>
+    <string name="recognize_tap_to_listen">Ketuk untuk mengenali lagu yang diputar di sekitarmu</string>
+    <string name="recognize_listening">Mendengarkan…</string>
+    <string name="recognize_identifying">Mengenali…</string>
+    <string name="recognize_not_found">Lagu ini tidak dapat dikenali. Coba lagi lebih dekat ke sumber suara.</string>
+    <string name="recognize_error_permission">Laya memerlukan akses mikrofon untuk mengenali musik. Izinkan di Setelan.</string>
+    <string name="recognize_error_microphone">Mikrofon sedang tidak tersedia.</string>
+    <string name="recognize_error_network">Tidak ada koneksi. Periksa jaringan dan coba lagi.</string>
+    <string name="recognize_error_service">Layanan pengenalan tidak merespons. Coba lagi nanti.</string>
+    <string name="recognize_try_again">Coba lagi</string>
+    <string name="recognize_cancel">Batal</string>
+    <string name="recognize_play">Putar di Laya</string>
+    <string name="recognize_finding">Mencari di Laya…</string>
+    <string name="recognize_not_on_laya">Lagu ini tidak tersedia di sumber Laya.</string>
+    <string name="recognize_history">Lagu yang dikenali</string>
+    <string name="recognize_history_clear">Hapus semua</string>
+    <string name="recognize_remove">Hapus</string>
+    <string name="recognize_just_now">Baru saja</string>
+    <string name="recognize_minutes_ago">%1$d mnt lalu</string>
+    <string name="recognize_hours_ago">%1$d jam lalu</string>
+    <string name="recognize_days_ago">%1$d hr lalu</string>
 </resources>

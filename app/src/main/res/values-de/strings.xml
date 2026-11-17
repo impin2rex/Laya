@@ -1382,4 +1382,15 @@
     <string name="video_scale_fit_screen">Bildschirm füllen</string>
     <string name="video_scale_fill">Strecken</string>
     <string name="video_skip_seconds">%1$d Sekunden</string>
+    <string name="recognize_title">Musik erkennen</string>
+    <string name="recognize_channel">Musikerkennung</string>
+    <string name="recognize_tile_idle">Zum Zuhören tippen</string>
+    <string name="recognize_listening">Hört zu…</string>
+    <string name="recognize_identifying">Wird erkannt…</string>
+    <string name="recognize_not_found">Song konnte nicht erkannt werden</string>
+    <string name="recognize_failed">Erkennung fehlgeschlagen – tippen zum Öffnen</string>
+    <string name="recognize_permission">Erlaube den Mikrofonzugriff, um Musik zu erkennen</string>
+    <string name="recognize_cancel">Abbrechen</string>
+    <string name="recognize_try_again">Erneut versuchen</string>
+    <string name="recognize_channel_results">Erkannte Songs</string>
 </resources>

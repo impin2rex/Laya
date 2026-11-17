@@ -24,6 +24,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import com.music.laya.data.settings.ThemeMode
 import com.music.laya.ui.components.SearchField
 import com.music.laya.ui.components.VoiceSearchButton
+import com.music.laya.sharedui.resources.search
+import platform.UIKit.shortcutItems
 import com.music.laya.sharedui.resources.search_hint
 import com.music.laya.sharedui.resources.search_library_hint
 import com.music.laya.sharedui.resources.search_addons_hint
@@ -195,6 +197,7 @@ import androidx.compose.material.icons.rounded.History
 import com.music.laya.data.LikeState
 import com.music.laya.data.model.LibraryPage
 import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.recognize_title
 import com.music.laya.sharedui.resources.history_empty
 import com.music.laya.sharedui.resources.library_empty
 import com.music.laya.ui.screens.HistoryScreen
@@ -418,7 +421,25 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 IosWidgets.host?.publishLiked(songs.map { it.videoId }, songs.map { it.title }, songs.map { it.artworkAt(ROW_ART_PX) ?: it.thumbnailUrl.orEmpty() })
             }
     }
+    // The app icon's long-press menu (Home Screen quick actions), re-titled when the language changes.
+    val searchTitle = stringResource(Res.string.search)
+    val recognizeTitle = stringResource(Res.string.recognize_title)
+    LaunchedEffect(searchTitle, recognizeTitle) {
+        platform.UIKit.UIApplication.sharedApplication.shortcutItems = listOf(
+            "search" to (searchTitle to "magnifyingglass"),
+            "recognize" to (recognizeTitle to "music.mic"),
+        ).map { (type, label) ->
+            platform.UIKit.UIApplicationShortcutItem(
+                type = type,
+                localizedTitle = label.first,
+                localizedSubtitle = null,
+                icon = platform.UIKit.UIApplicationShortcutIcon.iconWithSystemImageName(label.second),
+                userInfo = null,
+            )
+        }
+    }
     LaunchedEffect(Unit) {
+        RecognitionNotifier.install()
         IosWidgets.ready = true
         try {
             IosWidgets.commands.collect { command ->
@@ -429,6 +450,23 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     command == "like" -> player.song?.takeIf { signedIn && it.localUri == null }?.let { toggleLike(it.videoId) }
                     command == "shuffle" -> player.setShuffle(!AppSettings.shuffleEnabled.value)
                     command == "open" -> if (player.song != null) nowPlayingOpen = true
+                    // The app icon's quick action.
+                    command == "search" -> {
+                        nowPlayingOpen = false
+                        stack = emptyList()
+                        tab = 3
+                    }
+                    // The Control Center control / Shortcuts action: straight to listening.
+                    command == "recognize" -> {
+                        nowPlayingOpen = false
+                        if (stack.lastOrNull() != IosPage.Recognize) stack = stack + IosPage.Recognize
+                        com.music.laya.data.recognition.MusicRecognizer.start()
+                    }
+                    // A recognition result's notification: the page, where the song and history are.
+                    command == "recognize_open" -> {
+                        nowPlayingOpen = false
+                        if (stack.lastOrNull() != IosPage.Recognize) stack = stack + IosPage.Recognize
+                    }
                     command.startsWith("play:") -> {
                         val id = command.removePrefix("play:")
                         (library as? UiState.Success)?.data?.likedSongs?.firstOrNull { it.videoId == id }?.let {
@@ -1043,6 +1081,16 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         onRetry = { stack = stack.dropLast(1); openHistory() },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
                                     )
+                                    IosPage.Recognize -> com.music.laya.ui.screens.RecognitionScreen(
+                                        // The microphone prompt, if one is needed, is asked by the recorder itself.
+                                        onListen = { com.music.laya.data.recognition.MusicRecognizer.start() },
+                                        onPlay = { s -> player.play(listOf(s), 0); nowPlayingOpen = true },
+                                        contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                        // Control Center controls arrived in iOS 18 (LayaWidgets' RecognizeControl).
+                                        shortcut = com.music.laya.ui.screens.RecognitionShortcut.CONTROL_CENTER.takeIf {
+                                            (platform.UIKit.UIDevice.currentDevice.systemVersion.substringBefore('.').toIntOrNull() ?: 0) >= 18
+                                        },
+                                    )
                                     is IosPage.ShowAll -> LibraryGridPage(
                                         shelf = top.shelf,
                                         gridState = rememberLazyGridState(),
@@ -1257,6 +1305,13 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                                         if (searchSource == 2) searchAddons() else scope.launch { search(anonymous = false) }
                                                     },
                                                 )
+                                                IconButton(onClick = { stack = stack + IosPage.Recognize }) {
+                                                    Icon(
+                                                        com.music.laya.ui.screens.RecognitionIcon,
+                                                        contentDescription = stringResource(Res.string.recognize_title),
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
                                             },
                                         )
                                         Spacer(Modifier.width(8.dp))

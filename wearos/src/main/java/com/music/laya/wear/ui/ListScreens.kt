@@ -132,7 +132,7 @@ private fun QueueCell(row: QueueRow, isCurrent: Boolean, isPast: Boolean, onClic
 
 /** Shuffle, repeat and love, with the state each is in on the phone. */
 @Composable
-fun MoreScreen(np: NowPlaying?, link: PhoneLink, onOpenOutput: () -> Unit) {
+fun MoreScreen(np: NowPlaying?, link: PhoneLink, onOpenOutput: () -> Unit, onRecognize: () -> Unit) {
     val state = rememberScalingLazyListState(initialCenterItemIndex = 1)
     val onWatch by link.watchSpeaker.collectAsStateWithLifecycle()
     ScreenScaffold(scrollState = state) { padding ->
@@ -150,6 +150,15 @@ fun MoreScreen(np: NowPlaying?, link: PhoneLink, onOpenOutput: () -> Unit) {
                     value = stringResource(if (onWatch) R.string.this_watch else R.string.on_phone_output),
                     active = false,
                     onClick = onOpenOutput,
+                )
+            }
+            item(key = "recognize") {
+                ToggleCell(
+                    icon = R.drawable.ic_notification,
+                    label = stringResource(R.string.recognize),
+                    value = null,
+                    active = false,
+                    onClick = onRecognize,
                 )
             }
             if (np == null) {

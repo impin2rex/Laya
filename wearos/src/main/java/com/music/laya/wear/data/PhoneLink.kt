@@ -304,6 +304,12 @@ class PhoneLink(context: Context, private val scope: CoroutineScope) :
         }.getOrNull()
     }
 
+    /** The phone to talk to, found if not yet known; null with none in reach. */
+    suspend fun phone(): String? = phoneNode ?: findPhone()?.also { phoneNode = it }
+
+    /** Play a song the phone recognised for this watch ([Recognizer]). */
+    fun playRecognized(id: String) = send(P.CMD_PLAY_RECOGNIZED, id)
+
     private fun send(command: String, arg: String = "") {
         scope.launch { sendNow(command, arg) }
     }
