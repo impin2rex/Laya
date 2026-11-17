@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">analiz edildi</string>
+    <string name="analysis_too_long">atlandı: çok uzun</string>
     <string name="analysis_in_progress">analiz ediliyor…</string>
     <string name="analysis_refining">analiz edildi, iyileştiriliyor…</string>
     <string name="audio_output">Audio output</string>

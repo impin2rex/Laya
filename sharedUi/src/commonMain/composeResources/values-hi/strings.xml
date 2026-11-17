@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">विश्लेषित</string>
+    <string name="analysis_too_long">छोड़ा गया: बहुत लंबा</string>
     <string name="analysis_in_progress">विश्लेषण हो रहा है…</string>
     <string name="analysis_refining">विश्लेषित, सुधार हो रहा है…</string>
     <string name="audio_output">Audio output</string>

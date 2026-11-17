@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">đã phân tích</string>
+    <string name="analysis_too_long">bỏ qua: quá dài</string>
     <string name="analysis_in_progress">đang phân tích…</string>
     <string name="analysis_refining">đã phân tích, đang tinh chỉnh…</string>
     <string name="audio_output">Audio output</string>

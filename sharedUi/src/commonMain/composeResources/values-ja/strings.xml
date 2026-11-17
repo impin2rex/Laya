@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">分析済み</string>
+    <string name="analysis_too_long">スキップ: 長すぎます</string>
     <string name="analysis_in_progress">分析中…</string>
     <string name="analysis_refining">分析済み、調整中…</string>
     <string name="audio_output">Audio output</string>

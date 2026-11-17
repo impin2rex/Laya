@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">נותח</string>
+    <string name="analysis_too_long">דולג: ארוך מדי</string>
     <string name="analysis_in_progress">מנתח…</string>
     <string name="analysis_refining">נותח, משפר…</string>
     <string name="audio_output">Audio output</string>

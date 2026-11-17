@@ -25,6 +25,9 @@ enum class TrackAnalysisState {
 
     /** Tried and came back with nothing usable — a decode error, or audio that yielded no tempo. */
     FAILED,
+
+    /** Not analysed on purpose: long enough (an audiobook, a DJ mix) that decoding it whole would run out of memory. */
+    TOO_LONG,
 }
 
 /** Both sides of the next transition, for stats for nerds. */

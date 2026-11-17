@@ -1005,6 +1005,7 @@ class CrossfadeController(
         // ready-but-empty entry precisely so the track stops being retried. A
         // track nothing has looked at yet has no status at all, which is the
         // only case that is still merely waiting.
+        analysis.isTooLong -> TrackAnalysisState.TOO_LONG
         analysis.status == TrackAnalysis.STATUS_READY -> TrackAnalysisState.FAILED
         else -> TrackAnalysisState.WAITING
     }

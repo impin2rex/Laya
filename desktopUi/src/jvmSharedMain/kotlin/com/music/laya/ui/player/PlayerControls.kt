@@ -1899,4 +1899,5 @@ private fun TrackAnalysisState.localizedLabel(): String = when (this) {
     TrackAnalysisState.ANALYSING -> stringResource(Res.string.analysis_in_progress)
     TrackAnalysisState.WAITING -> stringResource(Res.string.waiting)
     TrackAnalysisState.FAILED -> stringResource(Res.string.failed)
+    TrackAnalysisState.TOO_LONG -> stringResource(Res.string.analysis_too_long)
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">анализ завершён</string>
+    <string name="analysis_too_long">пропущено: слишком длинный</string>
     <string name="analysis_in_progress">анализируется…</string>
     <string name="analysis_refining">анализ завершён, уточняется…</string>
     <string name="audio_output">Audio output</string>

@@ -11,6 +11,9 @@ import kotlinx.cinterop.FloatVar
  */
 @OptIn(ExperimentalForeignApi::class)
 interface AutomixNative {
+    /** The track's length from its container, without decoding it; zero or less when it can't be read. */
+    fun durationSeconds(url: String, headers: Map<String, String>, mimeType: String, contentLength: Long, chunkBytes: Long): Double
+
     /** The whole track as mono float at [DECODE_RATE] Hz, or null when it can't be opened. */
     fun decode(url: String, headers: Map<String, String>, mimeType: String, contentLength: Long, chunkBytes: Long): AutomixPcm?
 

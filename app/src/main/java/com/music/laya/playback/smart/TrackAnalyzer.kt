@@ -62,6 +62,7 @@ import java.util.Locale
  * plain fade.
  */
 @UnstableApi
+
 class TrackAnalyzer(private val context: Context, private val cache: AudioCache) {
 
     private val tracker = BeatTracker(
@@ -999,6 +1000,11 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
         if (effectiveDuration <= 0) {
             Log.d(TAG, "Skipping $trackId: ${copy.key} has no readable duration")
             return WholeTrack(empty(trackId, 0.0))
+        }
+        // See TrackAnalysis.MAX_WHOLE_TRACK_SECONDS: past it the whole-track decode runs the heap out.
+        if (effectiveDuration > TrackAnalysis.MAX_WHOLE_TRACK_SECONDS) {
+            Log.d(TAG, "Skipping $trackId: ${effectiveDuration.toInt()}s is past the whole-track analysis cap")
+            return WholeTrack(empty(trackId, effectiveDuration))
         }
 
         // Pass 1 (Phase 1, DSP-only): the analyzer needs the whole track — the energy curve,

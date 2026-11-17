@@ -105,8 +105,20 @@ data class TrackAnalysis(
      */
     val isUsable: Boolean get() = status == STATUS_READY && bpm > 0
 
+    /** Left unmeasured on purpose, past [MAX_WHOLE_TRACK_SECONDS]: "too long", not "failed". */
+    val isTooLong: Boolean get() = status == STATUS_READY && !isUsable && duration > MAX_WHOLE_TRACK_SECONDS
+
     companion object {
         const val STATUS_READY = "ready"
+
+        /**
+         * Longest track any platform decodes whole for Automix. Every analyser holds the whole
+         * track as PCM while it measures it (Android ~10 MB a minute, doubled while stitched;
+         * iOS ~5 MB; the desktop two passes), so an audiobook or a DJ mix runs the app out of
+         * memory and takes playback with it.
+         * ponytail: duration cap, a streaming decode into the DSP rate would lift it if long mixes need Automix.
+         */
+        const val MAX_WHOLE_TRACK_SECONDS = 8 * 60.0
     }
 }
 

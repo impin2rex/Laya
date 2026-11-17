@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">বিশ্লেষণ হয়ে গেছে</string>
+    <string name="analysis_too_long">বাদ: খুব দীর্ঘ</string>
     <string name="analysis_in_progress">বিশ্লেষণ হচ্ছে…</string>
     <string name="analysis_refining">বিশ্লেষণ হয়েছে, আরও নিখুঁত করা হচ্ছে…</string>
     <string name="audio_output">অডিও আউটপুট</string>

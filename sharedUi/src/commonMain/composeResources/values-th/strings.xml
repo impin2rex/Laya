@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">วิเคราะห์แล้ว</string>
+    <string name="analysis_too_long">ข้าม: ยาวเกินไป</string>
     <string name="analysis_in_progress">กำลังวิเคราะห์…</string>
     <string name="analysis_refining">วิเคราะห์แล้ว กำลังปรับแต่ง…</string>
     <string name="audio_output">Audio output</string>

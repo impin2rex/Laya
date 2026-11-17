@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">analizzato</string>
+    <string name="analysis_too_long">saltato: troppo lungo</string>
     <string name="analysis_in_progress">analisi in corso…</string>
     <string name="analysis_refining">analizzato, rifinitura…</string>
     <string name="audio_output">Audio output</string>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="analysis_complete">已分析</string>
+    <string name="analysis_too_long">已跳过：过长</string>
     <string name="analysis_in_progress">正在分析…</string>
     <string name="analysis_refining">已分析，正在优化…</string>
     <string name="audio_output">Audio output</string>

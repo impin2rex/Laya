@@ -8106,6 +8106,7 @@ private fun TrackAnalysisState.label(): String = when (this) {
     TrackAnalysisState.ANALYSING -> "analysing…"
     TrackAnalysisState.WAITING -> "waiting"
     TrackAnalysisState.FAILED -> "failed"
+    TrackAnalysisState.TOO_LONG -> "skipped: too long"
 }
 
 @Composable
