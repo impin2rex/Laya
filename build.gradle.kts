@@ -41,8 +41,8 @@ buildscript {
  * No "v" in the name — the in-app updater reads it as a number; the "v" is the
  * release tag's alone.
  */
-extra["layaVersionCode"] = 35
-extra["layaVersionName"] = "1.9.4"
+extra["layaVersionCode"] = 36
+extra["layaVersionName"] = "1.9.5"
 
 /*
  * Bump this by hand before cutting each sideloaded test build ("beta2",
