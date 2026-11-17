@@ -1,3 +1,4 @@
+import ActivityKit
 import AppIntents
 import Foundation
 import WidgetKit
@@ -111,3 +112,69 @@ struct LayaWidgetIntent: AudioPlaybackIntent {
 @available(iOS 17.0, *)
 extension LayaWidgetIntent: ForegroundContinuableIntent {}
 #endif
+
+/// "Recognize Music": the Control Center control and the Shortcuts / Siri / Action Button action. Opens Laya on its
+/// recognition page and starts listening. iOS lets an app start the microphone only from the foreground (a background
+/// AudioRecordingIntent must start a Live Activity, which itself needs the foreground), so the app is brought forward
+/// rather than listening behind the lock screen.
+struct LayaRecognizeIntent: AppIntent {
+    static var title: LocalizedStringResource = "Recognize Music"
+    static var description = IntentDescription("Identify the song playing around you with Laya.")
+    static var openAppWhenRun = true
+
+    func perform() async throws -> some IntentResult {
+        #if !LAYA_WIDGET_EXTENSION
+        // Queued until the UI is up when the intent cold-starts the app.
+        _ = LayaWidgetCommands.handler?("recognize")
+        #endif
+        return .result()
+    }
+}
+
+#if !LAYA_WIDGET_EXTENSION
+struct LayaShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: LayaRecognizeIntent(),
+            phrases: ["Recognize music with \(.applicationName)", "What's this song in \(.applicationName)"]
+        )
+    }
+}
+#endif
+
+// MARK: - Music recognition's Live Activity
+
+/// "Listening…" / "Identifying…" on the lock screen and in the Dynamic Island while Laya listens in the background —
+/// iOS's counterpart to Android's listening notification. Started and updated by the app (RecognitionLiveActivityImpl),
+/// drawn by the widget extension (RecognitionLiveActivity). Ends when the result is in; the result is a notification.
+@available(iOS 16.1, *)
+struct LayaRecognitionAttributes: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        /// "listening" or "identifying".
+        var phase: String
+        var title: String
+        var subtitle: String
+    }
+}
+
+/// The Live Activity's Cancel: a LiveActivityIntent, so it runs in the app's process, where the recognizer is.
+@available(iOS 17.0, *)
+struct LayaCancelRecognitionIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Stop listening"
+    static var isDiscoverable = false
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        #if !LAYA_WIDGET_EXTENSION
+        await MainActor.run { _ = LayaWidgetCommands.handler?("recognize_cancel") }
+        #endif
+        // Here as well, not left to the recognizer's state: the tap must clear it even if that never arrives.
+        if #available(iOS 16.2, *) {
+            for activity in ActivityKit.Activity<LayaRecognitionAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+        return .result()
+    }
+}

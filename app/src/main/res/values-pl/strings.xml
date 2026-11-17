@@ -1419,4 +1419,15 @@
     <string name="video_scale_fit_screen">Wypełnij ekran</string>
     <string name="video_scale_fill">Rozciągnij</string>
     <string name="video_skip_seconds">%1$d sekund</string>
+    <string name="recognize_title">Rozpoznaj muzykę</string>
+    <string name="recognize_channel">Rozpoznawanie muzyki</string>
+    <string name="recognize_tile_idle">Dotknij, aby słuchać</string>
+    <string name="recognize_listening">Słucham…</string>
+    <string name="recognize_identifying">Rozpoznawanie…</string>
+    <string name="recognize_not_found">Nie udało się rozpoznać utworu</string>
+    <string name="recognize_failed">Rozpoznawanie nie powiodło się — dotknij, aby otworzyć</string>
+    <string name="recognize_permission">Zezwól na dostęp do mikrofonu, aby rozpoznawać muzykę</string>
+    <string name="recognize_cancel">Anuluj</string>
+    <string name="recognize_try_again">Spróbuj ponownie</string>
+    <string name="recognize_channel_results">Rozpoznane utwory</string>
 </resources>

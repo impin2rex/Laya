@@ -127,7 +127,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             listener?.onError(message: "Bad stream URL", httpStatus: 0)
             return
         }
-        try? AVAudioSession.sharedInstance().setActive(true)
+        activateSession()
         becomeCurrent(item)
         player.insert(item, after: nil)
         go()
@@ -200,7 +200,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     func resume() {
-        try? AVAudioSession.sharedInstance().setActive(true)
+        activateSession()
         go()
         reportProgress()
     }
@@ -1154,6 +1154,17 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     private func configureSession() {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .default)
+    }
+
+    /// Music recognition records in PlayAndRecord and hands back Playback while still active, which can leave the
+    /// route on the earpiece. Called with nothing playing, so a reset here is silent.
+    private func activateSession() {
+        let session = AVAudioSession.sharedInstance()
+        if session.category != .playback || session.currentRoute.outputs.contains(where: { $0.portType == .builtInReceiver }) {
+            try? session.setActive(false)
+            configureSession()
+        }
+        try? session.setActive(true)
     }
 
     private func observeSystemEvents() {

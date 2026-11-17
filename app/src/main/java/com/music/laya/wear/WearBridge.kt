@@ -73,6 +73,17 @@ import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import com.music.laya.data.model.Song
+import com.music.laya.data.recognition.MusicRecognizer
+import com.music.laya.data.recognition.RECOGNITION_SAMPLE_RATE
+import com.music.laya.data.recognition.RecognitionHistory
+import com.music.laya.data.recognition.RecognitionState
+import com.music.laya.data.recognition.findOnLaya
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.withTimeoutOrNull
 import com.music.laya.wear.WearProtocol as P
 
 /**
@@ -535,7 +546,7 @@ object WearBridge {
      * out of the disk cache the notification and the rows already filled
      * instead of over the network, and decoded straight down to [px].
      */
-    private suspend fun loadBitmap(app: Context, url: String?, ladderPx: Int, px: Int): Bitmap? {
+    internal suspend fun loadBitmap(app: Context, url: String?, ladderPx: Int, px: Int): Bitmap? {
         if (url.isNullOrBlank()) return null
         val request = ImageRequest.Builder(app)
             .data(url.artworkAt(ladderPx) ?: url)
@@ -552,7 +563,7 @@ object WearBridge {
         return if (side > px) Bitmap.createScaledBitmap(square, px, px, true) else square
     }
 
-    private fun Bitmap.jpeg(quality: Int): ByteArray =
+    internal fun Bitmap.jpeg(quality: Int): ByteArray =
         ByteArrayOutputStream().also { compress(Bitmap.CompressFormat.JPEG, quality, it) }.toByteArray()
 
     private fun isWatchReachable(app: Context): Boolean {
@@ -633,6 +644,19 @@ class WearCommandService : WearableListenerService() {
             }
             P.CMD_OUTPUTS -> {
                 WearBridge.publishOutputs(this)
+                return
+            }
+            P.CMD_PLAY_RECOGNIZED -> {
+                val song = WatchRecognition.songFor(this, event.sourceNodeId, arg) ?: return
+                // Its own controller call: [execute] wants something already queued.
+                val done = CountDownLatch(1)
+                Controllers.use(applicationContext, onMissing = { done.countDown() }) { controller ->
+                    controller.setMediaItem(song.toMediaItem())
+                    controller.prepare()
+                    controller.play()
+                    done.countDown()
+                }
+                done.await(8, TimeUnit.SECONDS)
                 return
             }
             P.CMD_SELECT_OUTPUT -> {
@@ -733,6 +757,11 @@ class WearCommandService : WearableListenerService() {
     }
 
     override fun onChannelOpened(channel: ChannelClient.Channel) {
+        if (channel.path == P.PATH_RECOGNIZE) {
+            WearBridge.onWatchSeen(this)
+            WatchRecognition.serve(this, channel)
+            return
+        }
         if (channel.path != P.PATH_STREAM) return
         WearBridge.onWatchSeen(this)
         WearBridge.serveStream(this, channel) {
@@ -1127,5 +1156,90 @@ internal class WatchSpeaker(
 
         /** How long a seek is believed over the watch's last report. */
         const val SEEK_GRACE_MS = 1_500L
+    }
+}
+
+/**
+ * Music recognition for the watch. Its microphone streams in over
+ * [P.PATH_RECOGNIZE]; this phone names the song through the same
+ * [MusicRecognizer] its own page uses (so the song lands in the phone's
+ * history), and tells the watch each step with a [P.PATH_RECOGNITION] message.
+ */
+internal object WatchRecognition {
+
+    /** One session, start to answer. Blocks Play services' worker thread, which keeps the process up meanwhile. */
+    fun serve(context: Context, channel: ChannelClient.Channel) {
+        val app = context.applicationContext
+        val channels = Wearable.getChannelClient(app)
+        val node = channel.nodeId
+        if (MusicRecognizer.state.value.isActive) {
+            // The phone is already listening for itself.
+            send(app, node, DataMap().apply { putString(P.KEY_STATE, P.RECOGNITION_FAILED) })
+            channels.close(channel)
+            return
+        }
+        val input = runCatching { Tasks.await(channels.getInputStream(channel), 10, TimeUnit.SECONDS) }.getOrNull()
+            ?: return
+        val audio = flow {
+            input.use { stream ->
+                val bytes = ByteArray(RECOGNITION_SAMPLE_RATE / 10 * 2)
+                while (true) {
+                    var n = 0
+                    while (n < bytes.size) {
+                        val read = stream.read(bytes, n, bytes.size - n)
+                        if (read < 0) break
+                        n += read
+                    }
+                    if (n >= 2) emit(ShortArray(n / 2) { ((bytes[2 * it].toInt() and 0xFF) or (bytes[2 * it + 1].toInt() shl 8)).toShort() })
+                    // The watch closed the channel: done, or cancelled.
+                    if (n < bytes.size) break
+                }
+            }
+        }.flowOn(Dispatchers.IO)
+
+        runBlocking {
+            MusicRecognizer.start(audio)
+            val result = withTimeoutOrNull(90_000) {
+                MusicRecognizer.state
+                    .onEach { if (it.isActive) send(app, node, DataMap().apply { putString(P.KEY_STATE, stateName(it)) }) }
+                    .first { !it.isActive }
+            } ?: RecognitionState.NotRecognized
+            send(app, node, resultMap(app, result))
+        }
+        // Stops the watch recording, if it is still at it.
+        runCatching { Tasks.await(channels.close(channel), 5, TimeUnit.SECONDS) }
+    }
+
+    /** The song the watch picked from its result; null (and the watch told) when Laya hasn't got it. */
+    fun songFor(context: Context, node: String, id: String): Song? {
+        val track = RecognitionHistory.entries.value.firstOrNull { it.id == id } ?: return null
+        val song = runBlocking { runCatching { findOnLaya(track) }.getOrNull() }
+        if (song == null) send(context.applicationContext, node, DataMap().apply { putString(P.KEY_STATE, P.RECOGNITION_NOT_ON_LAYA) })
+        return song
+    }
+
+    private fun stateName(state: RecognitionState) = when (state) {
+        RecognitionState.Listening -> P.RECOGNITION_LISTENING
+        RecognitionState.Identifying -> P.RECOGNITION_IDENTIFYING
+        is RecognitionState.Recognized -> P.RECOGNITION_RECOGNIZED
+        RecognitionState.NotRecognized, RecognitionState.Idle -> P.RECOGNITION_NOT_FOUND
+        is RecognitionState.Failed -> P.RECOGNITION_FAILED
+    }
+
+    private suspend fun resultMap(app: Context, state: RecognitionState) = DataMap().apply {
+        putString(P.KEY_STATE, stateName(state))
+        val track = (state as? RecognitionState.Recognized)?.track ?: return@apply
+        putString(P.KEY_RECOGNITION_ID, track.id)
+        putString(P.KEY_TITLE, track.title)
+        putString(P.KEY_ARTIST, track.artist)
+        track.album?.let { putString(P.KEY_ALBUM, it) }
+        WearBridge.loadBitmap(app, track.artworkUrl, NOTIFICATION_ART_PX, P.RECOGNITION_ART_PX)
+            ?.let { putByteArray(P.KEY_ART, with(WearBridge) { it.jpeg(80) }) }
+    }
+
+    private fun send(app: Context, node: String, map: DataMap) {
+        runCatching {
+            Tasks.await(Wearable.getMessageClient(app).sendMessage(node, P.PATH_RECOGNITION, map.toByteArray()), 10, TimeUnit.SECONDS)
+        }
     }
 }

@@ -39,3 +39,12 @@ if(MINGW)
     # packaged correctly.
     target_link_options(laya_window PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
+
+# Music recognition's result notification (native/notify/laya_notify_win.cpp): a native, silent Windows
+# notification with Try again; plain C API, loaded through JNA.
+add_library(laya_notify SHARED ../notify/laya_notify_win.cpp)
+set_target_properties(laya_notify PROPERTIES PREFIX "")
+target_link_libraries(laya_notify PRIVATE ole32 shell32 shlwapi propsys uuid runtimeobject)
+if(MINGW)
+    target_link_options(laya_notify PRIVATE -static -static-libgcc -static-libstdc++)
+endif()

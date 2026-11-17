@@ -1365,4 +1365,15 @@
     <string name="video_scale_fit_screen">เต็มหน้าจอ</string>
     <string name="video_scale_fill">ยืดเต็ม</string>
     <string name="video_skip_seconds">%1$d วินาที</string>
+    <string name="recognize_title">จดจำเพลง</string>
+    <string name="recognize_channel">การจดจำเพลง</string>
+    <string name="recognize_tile_idle">แตะเพื่อฟัง</string>
+    <string name="recognize_listening">กำลังฟัง…</string>
+    <string name="recognize_identifying">กำลังระบุ…</string>
+    <string name="recognize_not_found">ไม่สามารถระบุเพลงได้</string>
+    <string name="recognize_failed">การจดจำล้มเหลว — แตะเพื่อเปิด</string>
+    <string name="recognize_permission">อนุญาตการเข้าถึงไมโครโฟนเพื่อจดจำเพลง</string>
+    <string name="recognize_cancel">ยกเลิก</string>
+    <string name="recognize_try_again">ลองอีกครั้ง</string>
+    <string name="recognize_channel_results">เพลงที่จดจำได้</string>
 </resources>

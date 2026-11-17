@@ -1382,4 +1382,15 @@
     <string name="video_scale_fit_screen">स्क्रीन भरें</string>
     <string name="video_scale_fill">फैलाएँ</string>
     <string name="video_skip_seconds">%1$d सेकंड</string>
+    <string name="recognize_title">संगीत पहचानें</string>
+    <string name="recognize_channel">संगीत पहचान</string>
+    <string name="recognize_tile_idle">सुनने के लिए टैप करें</string>
+    <string name="recognize_listening">सुन रहे हैं…</string>
+    <string name="recognize_identifying">पहचान रहे हैं…</string>
+    <string name="recognize_not_found">गाना पहचाना नहीं जा सका</string>
+    <string name="recognize_failed">पहचान विफल — खोलने के लिए टैप करें</string>
+    <string name="recognize_permission">संगीत पहचानने के लिए माइक्रोफ़ोन की अनुमति दें</string>
+    <string name="recognize_cancel">रद्द करें</string>
+    <string name="recognize_try_again">फिर से कोशिश करें</string>
+    <string name="recognize_channel_results">पहचाने गए गाने</string>
 </resources>

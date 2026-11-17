@@ -1339,4 +1339,15 @@
     <string name="video_scale_fit_screen">Ekranı doldur</string>
     <string name="video_scale_fill">Uzat</string>
     <string name="video_skip_seconds">%1$d saniye</string>
+    <string name="recognize_title">Müziği tanı</string>
+    <string name="recognize_channel">Müzik tanıma</string>
+    <string name="recognize_tile_idle">Dinlemek için dokun</string>
+    <string name="recognize_listening">Dinleniyor…</string>
+    <string name="recognize_identifying">Tanımlanıyor…</string>
+    <string name="recognize_not_found">Şarkı tanınamadı</string>
+    <string name="recognize_failed">Tanıma başarısız — açmak için dokun</string>
+    <string name="recognize_permission">Müziği tanımak için mikrofon erişimine izin ver</string>
+    <string name="recognize_cancel">İptal</string>
+    <string name="recognize_try_again">Tekrar dene</string>
+    <string name="recognize_channel_results">Tanınan şarkılar</string>
 </resources>

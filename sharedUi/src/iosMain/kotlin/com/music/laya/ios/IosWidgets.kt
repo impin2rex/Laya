@@ -63,6 +63,11 @@ object IosWidgets {
 
     /** Queues [command]; true when it runs now, false when it waits for the app's UI to start. */
     fun perform(command: String): Boolean {
+        // The Live Activity's Cancel, run at once: the app is in the background then, listening.
+        if (command == "recognize_cancel") {
+            com.music.laya.data.recognition.MusicRecognizer.cancel()
+            return true
+        }
         queue.trySend(command)
         return ready
     }
@@ -74,6 +79,9 @@ object IosWidgets {
         when {
             rest.startsWith("play") -> rest.substringAfter("v=", "").substringBefore('&').takeIf { it.isNotEmpty() }
                 ?.let { perform("play:" + it.percentDecoded()) }
+            // The Live Activity: back to the page, without starting another listen.
+            rest.startsWith("recognize_open") -> perform("recognize_open")
+            rest.startsWith("recognize") -> perform("recognize")
             else -> perform("open")
         }
         return true

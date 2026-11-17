@@ -503,6 +503,7 @@ private enum class DesktopDestination(val id: String, val label: String) {
     LIBRARY("library", "Library"),
     SEARCH("search", "Search"),
     HISTORY("history", "History"),
+    RECOGNIZE("recognize", "Recognize"),
     DOWNLOADS("downloads", "Downloads"),
     LOCAL_MUSIC("local-music", "Local Music"),
     SETTINGS("settings", "Settings"),
@@ -538,6 +539,8 @@ fun LayaDesktopApp() {
     var personalPositionStash by remember { mutableStateOf(0L) }
     var personalPlayingStash by remember { mutableStateOf(false) }
     val persistence = remember { DesktopPersistence() }
+    // The desktop has no AppSettings store; recognition history lives with its other preferences.
+    remember(persistence) { com.music.laya.data.recognition.RecognitionStore.use({ persistence.string(it).ifEmpty { null } }, persistence::saveString) }
     var availableUpdate by remember { mutableStateOf<DesktopUpdateChecker.UpdateInfo?>(null) }
     // Downloaded and verified in the background, then offered as a restart; see DesktopUpdater.
     // Anything it can't update in place falls back to the open-the-installer prompt.
@@ -2825,7 +2828,12 @@ fun LayaDesktopApp() {
             // so it has to raise the window before it does anything inside it.
             onActivate = {
                 DesktopWindowVisibility.show()
-                overlays.nowPlaying = true
+                // A click on a recognition result's tray message (Windows) goes to that result.
+                if (DesktopRecognitionNotifier.consumeTrayClick()) {
+                    selectDestination(DesktopDestination.RECOGNIZE)
+                } else {
+                    overlays.nowPlaying = true
+                }
             },
             onPlayPause = { if (selectedSong != null) togglePlayPauseFromUser() },
         )
@@ -2833,6 +2841,17 @@ fun LayaDesktopApp() {
     DisposableEffect(tray, trayIconEnabled) {
         if (trayIconEnabled) tray.start()
         onDispose { tray.stop() }
+    }
+    // A recognition that finishes with the window behind others says so in a notification,
+    // and clicking it (or its Try again) comes back here.
+    LaunchedEffect(Unit) {
+        launch { DesktopRecognitionNotifier.watch() }
+        DesktopRecognitionNotifier.requests.collect { retry ->
+            DesktopWindowVisibility.show()
+            overlays.nowPlaying = false
+            selectDestination(DesktopDestination.RECOGNIZE)
+            if (retry) com.music.laya.data.recognition.MusicRecognizer.start()
+        }
     }
     // Deliberately not a key on the effect above.
     DisposableEffect(trayIconEnabled, closeToTray) {
@@ -4703,6 +4722,13 @@ fun LayaDesktopApp() {
                             deviceItems = libraryDeviceItems,
                             showTitle = false,
                         )
+                        destination == DesktopDestination.RECOGNIZE -> com.music.laya.ui.screens.RecognitionScreen(
+                            onListen = { com.music.laya.data.recognition.MusicRecognizer.start() },
+                            onPlay = {
+                                playSong(it, source = DesktopQueueSource(DesktopStrings["recognize_title", "Recognize music"], PlaybackSourceType.RECOGNITION))
+                            },
+                            contentPadding = contentPadding,
+                        )
                         destination == DesktopDestination.HISTORY -> DesktopHistoryPage(
                             // The account's history when there is one, and what
                             // this computer played when there is not.
@@ -5170,6 +5196,15 @@ private fun DesktopSidebar(
                     onHide = { DesktopSidebarVisibility.hide(HISTORY_KEY, "History") },
                 )
             }
+            if (RECOGNIZE_KEY !in hiddenSidebar) {
+                DesktopSidebarItem(
+                    com.music.laya.ui.screens.RecognitionIcon,
+                    "Recognize",
+                    destination == DesktopDestination.RECOGNIZE,
+                    onClick = { onDestinationSelected(DesktopDestination.RECOGNIZE) },
+                    onHide = { DesktopSidebarVisibility.hide(RECOGNIZE_KEY, "Recognize") },
+                )
+            }
             val queued by DesktopDownloadQueue.active.collectAsState()
             if (DOWNLOADS_KEY !in hiddenSidebar) {
                 DesktopSidebarItem(
@@ -5310,6 +5345,7 @@ private fun DesktopSidebarItem(
 
 /** The secondary destinations that can be tucked away, by the key they hide under. */
 private const val HISTORY_KEY = "dest:HISTORY"
+private const val RECOGNIZE_KEY = "dest:RECOGNIZE"
 private const val DOWNLOADS_KEY = "dest:DOWNLOADS"
 private const val LOCAL_MUSIC_KEY = "dest:LOCAL_MUSIC"
 

@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Music recognition, through the TV's own microphone. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- Saving a track to Music outlives the screen it was asked from. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -403,6 +405,19 @@
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
             android:value="com.music.laya.playback.cast.CastOptionsProvider" />
+
+        <!-- Music recognition (app/.../recognition/Recognition.kt): the invisible activity that asks
+             for the microphone, and the service that listens. No tile on TV. -->
+        <service
+            android:name="com.music.laya.recognition.RecognitionService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+        <activity
+            android:name="com.music.laya.recognition.RecognizeActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 
 </manifest>

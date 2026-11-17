@@ -1299,4 +1299,15 @@
     <string name="video_scale_fit_screen">Lấp đầy màn hình</string>
     <string name="video_scale_fill">Kéo giãn</string>
     <string name="video_skip_seconds">%1$d giây</string>
+    <string name="recognize_title">Nhận diện nhạc</string>
+    <string name="recognize_channel">Nhận diện nhạc</string>
+    <string name="recognize_tile_idle">Chạm để nghe</string>
+    <string name="recognize_listening">Đang nghe…</string>
+    <string name="recognize_identifying">Đang nhận diện…</string>
+    <string name="recognize_not_found">Không nhận diện được bài hát</string>
+    <string name="recognize_failed">Nhận diện thất bại — chạm để mở</string>
+    <string name="recognize_permission">Cho phép truy cập micrô để nhận diện nhạc</string>
+    <string name="recognize_cancel">Hủy</string>
+    <string name="recognize_try_again">Thử lại</string>
+    <string name="recognize_channel_results">Bài hát đã nhận diện</string>
 </resources>

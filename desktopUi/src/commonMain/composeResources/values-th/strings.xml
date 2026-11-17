@@ -229,4 +229,25 @@
     <string name="video_scale_fit_screen">เต็มหน้าจอ</string>
     <string name="video_scale_fill">ยืดเต็ม</string>
     <string name="video_skip_seconds">%1$d วินาที</string>
+    <string name="recognize_title">จดจำเพลง</string>
+    <string name="recognize_tap_to_listen">แตะเพื่อค้นหาเพลงที่กำลังเล่นอยู่รอบตัวคุณ</string>
+    <string name="recognize_listening">กำลังฟัง…</string>
+    <string name="recognize_identifying">กำลังระบุ…</string>
+    <string name="recognize_not_found">ไม่สามารถระบุเพลงนี้ได้ ลองอีกครั้งใกล้แหล่งเสียงมากขึ้น</string>
+    <string name="recognize_error_permission">Laya ต้องได้รับสิทธิ์เข้าถึงไมโครโฟนเพื่อจดจำเพลง อนุญาตได้ในการตั้งค่า</string>
+    <string name="recognize_error_microphone">ไมโครโฟนไม่พร้อมใช้งานในขณะนี้</string>
+    <string name="recognize_error_network">ไม่มีการเชื่อมต่อ ตรวจสอบเครือข่ายแล้วลองอีกครั้ง</string>
+    <string name="recognize_error_service">บริการจดจำเพลงไม่ตอบสนอง ลองอีกครั้งภายหลัง</string>
+    <string name="recognize_try_again">ลองอีกครั้ง</string>
+    <string name="recognize_cancel">ยกเลิก</string>
+    <string name="recognize_play">เล่นบน Laya</string>
+    <string name="recognize_finding">กำลังค้นหาบน Laya…</string>
+    <string name="recognize_not_on_laya">เพลงนี้ไม่มีในแหล่งเพลงของ Laya</string>
+    <string name="recognize_history">เพลงที่จดจำได้</string>
+    <string name="recognize_history_clear">ล้าง</string>
+    <string name="recognize_remove">นำออก</string>
+    <string name="recognize_just_now">เมื่อสักครู่</string>
+    <string name="recognize_minutes_ago">%1$d นาทีที่แล้ว</string>
+    <string name="recognize_hours_ago">%1$d ชม. ที่แล้ว</string>
+    <string name="recognize_days_ago">%1$d วันที่แล้ว</string>
 </resources>
