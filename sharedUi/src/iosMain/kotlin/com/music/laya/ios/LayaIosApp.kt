@@ -322,11 +322,10 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val limiter = Semaphore(4)
         (explore as? UiState.Success)?.data?.flatMap { it.items }?.forEach { item ->
             launch {
-                val art = limiter.withPermit { YtMusicRepository.moodGenreArtwork(item.browseId, item.params).getOrNull() } ?: return@launch
+                val art = limiter.withPermit { YtMusicRepository.moodGenreArtwork(item.browseId, item.params).getOrNull() }
+                    ?.takeIf { it.isNotEmpty() } ?: return@launch
                 val current = (explore as? UiState.Success)?.data ?: return@launch
-                explore = UiState.Success(current.map { sec ->
-                    sec.copy(items = sec.items.map { if (it.browseId == item.browseId && it.params == item.params) it.copy(thumbnailUrl = art) else it })
-                })
+                explore = UiState.Success(YtMusicRepository.withMoodGenreArtwork(current, item, art))
             }
         }
     }

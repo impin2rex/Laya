@@ -14,6 +14,7 @@ import com.music.laya.data.model.HomeShelf
 import com.music.laya.data.model.LibraryPage
 import com.music.laya.data.model.LibraryState
 import com.music.laya.data.model.LikeStatus
+import com.music.laya.data.model.MoodGenre
 import com.music.laya.data.model.MoodGenreSection
 import com.music.laya.data.model.playlistMoves
 import com.music.laya.data.model.PlaylistPrivacy
@@ -273,12 +274,26 @@ object YtMusicRepository {
         }.also { result -> result.getOrNull()?.let { moodGenreShelfCache.getOrPut(key) { it } } }
     }
 
-    /** A category card borrows the first real cover from the playlists it opens. */
-    suspend fun moodGenreArtwork(browseId: String, params: String?): Result<String?> =
+    /** A category card borrows the first two distinct covers from the playlists it opens. */
+    suspend fun moodGenreArtwork(browseId: String, params: String?): Result<List<String>> =
         moodGenreShelves(browseId, params).map { shelves ->
             shelves.asSequence().flatMap { it.items.asSequence() }
                 .mapNotNull(ShelfItem::thumbnailUrl)
-                .firstOrNull()
+                .distinct()
+                .take(2)
+                .toList()
+        }
+
+    /** [artwork] from [moodGenreArtwork] applied to the matching card in [sections]. */
+    fun withMoodGenreArtwork(sections: List<MoodGenreSection>, item: MoodGenre, artwork: List<String>): List<MoodGenreSection> =
+        sections.map { section ->
+            section.copy(items = section.items.map {
+                if (it.browseId == item.browseId && it.params == item.params) {
+                    it.copy(thumbnailUrl = artwork.firstOrNull(), backThumbnailUrl = artwork.getOrNull(1))
+                } else {
+                    it
+                }
+            })
         }
 
     /** One page of a search response, with the token for its next page if present. */

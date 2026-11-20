@@ -3041,21 +3041,9 @@ fun LayaDesktopApp() {
                     launch {
                         val artwork = limiter.withPermit {
                             DesktopSearchClient.moodGenreArtwork(item.browseId, item.params).getOrNull()
-                        } ?: return@launch
+                        }?.takeIf { it.isNotEmpty() } ?: return@launch
                         val current = (exploreState as? UiState.Success)?.data ?: return@launch
-                        exploreState = UiState.Success(
-                            current.map { section ->
-                                section.copy(
-                                    items = section.items.map { entry ->
-                                        if (entry.browseId == item.browseId && entry.params == item.params) {
-                                            entry.copy(thumbnailUrl = artwork)
-                                        } else {
-                                            entry
-                                        }
-                                    },
-                                )
-                            },
-                        )
+                        exploreState = UiState.Success(YtMusicRepository.withMoodGenreArtwork(current, item, artwork))
                     }
                 }
         }

@@ -832,8 +832,8 @@ fun TvSongRow(
 }
 
 /**
- * A mood or genre card — the phone's own sleeve ([MoodGenreSleeve]: colour stripe,
- * duotone cover, title), lifted on focus.
+ * A mood or genre card — the phone's own sleeve ([MoodGenreSleeve]: tinted tile,
+ * fanned covers, title), lifted on focus.
  */
 @Composable
 fun TvMoodCard(

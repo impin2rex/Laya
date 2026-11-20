@@ -3,11 +3,14 @@ package com.music.laya.ui.tv.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -47,9 +50,9 @@ import com.music.laya.ui.tv.theme.TvType
 import kotlinx.coroutines.launch
 
 /**
- * Explore, laid out as the phone's: every mood and genre in one grid (the
- * server's sections only decide the order), each a colour-striped duotone
- * sleeve. Choosing one opens its playlists as shelves; Back returns to the grid.
+ * Explore, laid out as the phone's: the server's sections ("Moods & moments",
+ * "Genres") each under its own header, every category a tinted tile with two
+ * fanned covers. Choosing one opens its playlists as shelves; Back returns to the grid.
  */
 @Composable
 fun TvExploreScreen(
@@ -119,12 +122,41 @@ private fun TvMoodGrid(
                 TvErrorState(message = state.message, onRetry = onRetry, modifier = Modifier.padding(top = 48.dp))
             }
             is UiState.Success -> {
-                val moods = state.data.flatMap(MoodGenreSection::items).distinctBy { it.browseId to it.params }
-                items(moods, key = { "${it.browseId}|${it.params}" }) { item ->
-                    TvMoodCard(item = item, onClick = { onCategory(item) })
+                // A category the server lists twice is drawn only once.
+                val seen = mutableSetOf<Pair<String, String?>>()
+                state.data.forEachIndexed { index, section ->
+                    val cards = section.items.filter { seen.add(it.browseId to it.params) }
+                    if (cards.isEmpty()) return@forEachIndexed
+                    item(key = "header|${section.title}", span = { GridItemSpan(maxLineSpan) }) {
+                        TvMoodSectionHeader(section.title, Modifier.padding(top = if (index == 0) 0.dp else 14.dp))
+                    }
+                    items(cards, key = { "${it.browseId}|${it.params}" }) { item ->
+                        TvMoodCard(item = item, onClick = { onCategory(item) })
+                    }
                 }
             }
         }
+    }
+}
+
+/** The section's name over a hairline rule, as the phone's Explore sets it. */
+@Composable
+private fun TvMoodSectionHeader(title: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(
+            text = title,
+            style = TvType.Title,
+            color = TvGlass.TextPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(10.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(TvGlass.TextPrimary.copy(alpha = 0.1f)),
+        )
     }
 }
 

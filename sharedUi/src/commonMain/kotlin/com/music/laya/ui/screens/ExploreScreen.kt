@@ -6,16 +6,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -25,24 +28,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 import com.music.laya.data.model.HomeShelf
 import com.music.laya.data.model.MoodGenre
 import com.music.laya.data.model.MoodGenreSection
@@ -105,18 +115,43 @@ fun ExploreScreen(
                         MessageState(state.message, actionLabel = stringResource(Res.string.retry), onAction = onRetry)
                     }
                     is UiState.Success -> {
-                        // Moods and genres read as one grid; the server's
-                        // grouping only decides the order.
-                        val rows = state.data.flatMap(MoodGenreSection::items)
-                            .distinctBy { it.browseId to it.params }
-                            .chunked(columns)
-                        items(rows, key = { row -> row.first().let { "${it.browseId}|${it.params}" } }) { row ->
-                            MoodGenreRow(row = row, columns = columns, onCategoryClick = onCategoryClick)
+                        // A category the server lists twice is drawn only once.
+                        val seen = mutableSetOf<Pair<String, String?>>()
+                        state.data.forEach { section ->
+                            val cards = section.items.filter { seen.add(it.browseId to it.params) }
+                            if (cards.isEmpty()) return@forEach
+                            item(key = "header|${section.title}") { MoodSectionHeader(section.title) }
+                            items(cards.chunked(columns), key = { row -> row.first().let { "${it.browseId}|${it.params}" } }) { row ->
+                                MoodGenreRow(row = row, columns = columns, onCategoryClick = onCategoryClick)
+                            }
+                            item(key = "gap|${section.title}") { Spacer(Modifier.height(MOOD_SECTION_GAP)) }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** The section's name over a hairline rule, as Spotify's browse page sets it. */
+@Composable
+private fun MoodSectionHeader(title: String) {
+    Column(Modifier.padding(horizontal = PAGE_GUTTER).padding(bottom = 14.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(12.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = .1f)),
+        )
     }
 }
 
@@ -160,9 +195,8 @@ private fun MoodGenreCard(
 }
 
 /**
- * A solid stripe down the left and the category's cover filling the rest,
- * redrawn as a duotone of the stripe's colour so every card reads as one
- * tinted sleeve rather than a photo pasted onto a swatch.
+ * A tile washed in the category's colour, its name on the left and two of its
+ * playlist covers fanned out on the right, the second tilted behind the first.
  *
  * Only the artwork: the caller sizes, clips and makes it clickable, which is
  * how the TV app wraps the same sleeve in its own focus treatment.
@@ -173,32 +207,29 @@ fun MoodGenreSleeve(
     modifier: Modifier = Modifier,
     titleStyle: TextStyle = MaterialTheme.typography.titleMedium,
 ) {
-    val tone = remember(item.stripeColor, item.title) { moodTone(item) }
-    Box(modifier = modifier.background(tone.stripe)) {
+    val tint = remember(item.stripeColor, item.title) { moodTint(item) }
+    BoxWithConstraints(
+        modifier.background(
+            Brush.linearGradient(listOf(lerp(MOOD_TILE, tint, .55f), lerp(MOOD_TILE, tint, .16f))),
+        ),
+    ) {
+        // Cover sizes and offsets are pitched for a 76dp-tall tile and scale with it.
+        val scale = maxHeight / 76.dp
+        val coversLeft = maxWidth - (MOOD_COVERS_END + MOOD_COVERS_WIDTH) * scale
+        // Where the title's last letter lands, in px from the card's left edge.
+        var titleEnd by remember(item.title) { mutableStateOf(0f) }
+        val density = LocalDensity.current
+        // A cover the title runs over fades away, so the name stays readable.
+        fun covered(cover: MoodCoverSpec) = titleEnd > with(density) { (coversLeft + cover.left * scale).toPx() }
         Box(
             Modifier
                 .align(Alignment.CenterEnd)
-                .fillMaxHeight()
-                .fillMaxWidth(1f - MOOD_STRIPE_FRACTION)
-                .background(tone.placeholder),
+                .padding(end = MOOD_COVERS_END * scale)
+                .size(width = MOOD_COVERS_WIDTH * scale, height = maxHeight),
         ) {
-            item.thumbnailUrl?.let { artwork ->
-                AsyncImage(
-                    model = artwork,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    colorFilter = tone.duotone,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+            MoodCover(item.backThumbnailUrl, BACK_COVER, scale, faded = covered(BACK_COVER))
+            MoodCover(item.thumbnailUrl, FRONT_COVER, scale, faded = covered(FRONT_COVER))
         }
-        // Pale stripes (Energize's cream, Feel good's mint) would swallow
-        // white type; a soft shade under the title keeps it legible.
-        Box(
-            Modifier
-                .matchParentSize()
-                .background(Brush.verticalGradient(0f to Color.Black.copy(alpha = .24f), .62f to Color.Transparent)),
-        )
         Text(
             text = item.title,
             style = titleStyle.copy(
@@ -208,46 +239,50 @@ fun MoodGenreSleeve(
             color = Color.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            onTextLayout = { layout ->
+                val right = (0 until layout.lineCount).maxOf(layout::getLineRight)
+                titleEnd = with(density) { MOOD_TITLE_PADDING.toPx() } + right
+            },
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .align(Alignment.CenterStart)
+                .padding(horizontal = MOOD_TITLE_PADDING),
         )
     }
 }
 
-private class MoodTone(val stripe: Color, val placeholder: Color, val duotone: ColorFilter)
-
-private fun moodTone(item: MoodGenre): MoodTone {
-    val base = item.stripeColor?.let { Color(it.toInt()) } ?: fallbackMoodColor(item.title)
-    // YouTube's palette is already pastel; a touch of black keeps it from
-    // glowing against the black page.
-    val stripe = lerp(base, Color.Black, .08f)
-    val shadow = lerp(base, Color.Black, .68f)
-    val highlight = lerp(base, Color.White, .32f)
-    return MoodTone(
-        stripe = stripe,
-        placeholder = lerp(shadow, highlight, .45f),
-        duotone = duotone(shadow, highlight),
-    )
+@Composable
+private fun BoxScope.MoodCover(url: String?, spec: MoodCoverSpec, scale: Float, faded: Boolean) {
+    Box(
+        Modifier
+            .align(Alignment.CenterStart)
+            .offset(spec.x * scale, spec.y * scale)
+            .size(spec.size * scale)
+            .graphicsLayer {
+                rotationZ = spec.rotation
+                alpha = if (faded) MOOD_COVER_FADED_ALPHA else 1f
+            }
+            .clip(MOOD_COVER_SHAPE)
+            .background(Color.White.copy(alpha = .08f)),
+    ) {
+        url?.let {
+            AsyncImage(
+                model = it,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
 }
 
 /**
- * Maps each pixel's luminance onto the ramp [shadow] to [highlight]. Offsets
- * are in 0..255, which Compose honours on Skia too (it rescales them).
+ * YouTube's button colour pulled toward a mid grey, so neon and near-black
+ * hues alike land as the muted washes Spotify's browse tiles use.
  */
-private fun duotone(shadow: Color, highlight: Color): ColorFilter {
-    fun channel(from: Float, to: Float): FloatArray {
-        val span = to - from
-        return floatArrayOf(span * .299f, span * .587f, span * .114f, 0f, from * 255f)
-    }
-    return ColorFilter.colorMatrix(
-        ColorMatrix(
-            channel(shadow.red, highlight.red) +
-                channel(shadow.green, highlight.green) +
-                channel(shadow.blue, highlight.blue) +
-                floatArrayOf(0f, 0f, 0f, 1f, 0f),
-        ),
-    )
+private fun moodTint(item: MoodGenre): Color {
+    val base = item.stripeColor?.let { Color(it.toInt()) } ?: fallbackMoodColor(item.title)
+    fun lift(c: Float) = (c + (170f / 255f - c) * .45f).coerceIn(40f / 255f, 220f / 255f)
+    return Color(lift(base.red), lift(base.green), lift(base.blue))
 }
 
 /** For a button that came without YouTube's colour: muted, never neon. */
@@ -262,16 +297,39 @@ private fun fallbackMoodColor(title: String): Color = when ((title.hashCode() an
     else -> Color(0xFF86B890)
 }
 
+/** The dark ground the tint is washed over. */
+private val MOOD_TILE = Color(0xFF121214)
+
 /** Gap between mood cards, in both directions. */
-private val MOOD_SPACING = 12.dp
+private val MOOD_SPACING = 10.dp
 
-private val MOOD_CARD_SHAPE = RoundedCornerShape(18.dp)
+/** Space after a section's last row, before the next header. */
+private val MOOD_SECTION_GAP = 22.dp
 
-/** Width over height; a two-column phone row lands at about 100dp tall. */
-const val MOOD_CARD_ASPECT = 1.72f
+private val MOOD_CARD_SHAPE = RoundedCornerShape(14.dp)
 
-/** How much of the card the solid stripe covers before the artwork starts. */
-private const val MOOD_STRIPE_FRACTION = .28f
+private val MOOD_COVER_SHAPE = RoundedCornerShape(8.dp)
+
+private val MOOD_TITLE_PADDING = 14.dp
+
+/** How much of a cover still shows once the title runs over it. */
+private const val MOOD_COVER_FADED_ALPHA = .22f
+
+/** One fanned cover, in dp at a 76dp-tall tile, placed in the covers' box. */
+private class MoodCoverSpec(val size: Dp, val rotation: Float, val x: Dp, val y: Dp) {
+    /** Left edge of the tilted square's bounds: its corner swings out past [x]. */
+    val left: Dp = x + size / 2 - size / 2 * (abs(cos(rotation * PI / 180)) + abs(sin(rotation * PI / 180))).toFloat()
+}
+
+private val BACK_COVER = MoodCoverSpec(size = 44.dp, rotation = -24f, x = (-2).dp, y = 2.dp)
+private val FRONT_COVER = MoodCoverSpec(size = 48.dp, rotation = -6f, x = 28.dp, y = 13.dp)
+
+/** The covers' box at a 76dp-tall tile, and its inset from the card's right edge. */
+private val MOOD_COVERS_WIDTH = 84.dp
+private val MOOD_COVERS_END = 2.dp
+
+/** Width over height; a two-column phone row lands at about 76dp tall. */
+const val MOOD_CARD_ASPECT = 2.1f
 
 /**
  * The narrowest a mood card is let get before the row drops a column.
