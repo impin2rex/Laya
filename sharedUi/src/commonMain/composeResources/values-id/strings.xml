@@ -738,4 +738,11 @@
     <string name="recognize_shortcut_steps">Buka Pusat Kontrol, ketuk + di kiri atas, lalu Tambahkan Kontrol dan cari Laya.</string>
     <string name="recognize_shortcut_ok">Mengerti</string>
     <string name="recognize_shortcut_close">Tutup</string>
+    <string name="lossless_verified">Terverifikasi</string>
+    <string name="lossless_verify_on_enable">Diverifikasi saat dinyalakan</string>
+    <string name="lossless_verify_title">Verifikasi %1$s</string>
+    <string name="lossless_verify_failed">Verifikasi gagal</string>
+    <string name="lossless_verify_unreachable">Layanan verifikasi tidak dapat dijangkau</string>
+    <string name="lossless_verify_expired_notice">Verifikasi %1$s kedaluwarsa. Nyalakan lagi di Sumber agar tetap lossless.</string>
+    <string name="lossless_verify_expired">Verifikasi kedaluwarsa · nyalakan lagi</string>
 </resources>

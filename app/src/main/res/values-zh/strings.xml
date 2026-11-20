@@ -1370,4 +1370,13 @@
     <string name="recognize_cancel">取消</string>
     <string name="recognize_try_again">重试</string>
     <string name="recognize_channel_results">已识别的歌曲</string>
+    <string name="lossless_verified">已验证</string>
+    <string name="lossless_verify_on_enable">开启时验证</string>
+    <string name="lossless_verify_title">验证 %1$s</string>
+    <string name="lossless_verify_browser_hint">请在浏览器中完成 Cloudflare 验证，Laya 会自动完成。</string>
+    <string name="lossless_verified_toast">%1$s 已验证</string>
+    <string name="lossless_verify_failed">验证失败</string>
+    <string name="lossless_verify_unreachable">无法连接验证服务</string>
+    <string name="lossless_verify_expired_notice">%1$s 验证已过期。请在“来源”中重新开启以继续无损播放。</string>
+    <string name="lossless_verify_expired">验证已过期 · 请重新开启</string>
 </resources>

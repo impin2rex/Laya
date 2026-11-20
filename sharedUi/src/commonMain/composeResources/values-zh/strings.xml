@@ -738,4 +738,11 @@
     <string name="recognize_shortcut_steps">打开控制中心，轻触左上角的 +，然后轻触“添加控制”并搜索 Laya。</string>
     <string name="recognize_shortcut_ok">知道了</string>
     <string name="recognize_shortcut_close">关闭</string>
+    <string name="lossless_verified">已验证</string>
+    <string name="lossless_verify_on_enable">开启时验证</string>
+    <string name="lossless_verify_title">验证 %1$s</string>
+    <string name="lossless_verify_failed">验证失败</string>
+    <string name="lossless_verify_unreachable">无法连接验证服务</string>
+    <string name="lossless_verify_expired_notice">%1$s 验证已过期。请在“来源”中重新开启以继续无损播放。</string>
+    <string name="lossless_verify_expired">验证已过期 · 请重新开启</string>
 </resources>

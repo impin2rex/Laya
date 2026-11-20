@@ -43,6 +43,23 @@ internal enum class DesktopSourceKind(
         supportsLossless = true,
         rank = 1,
     ),
+    /** Built-in Tidal through the SpotiFLAC extensions' broker; see [DesktopLossless]. */
+    TIDAL(
+        label = "Tidal",
+        detail = "Lossless FLAC from Tidal",
+        labels = listOf("FLAC", "Lossless"),
+        needsServer = false,
+        supportsLossless = true,
+        rank = 1,
+    ),
+    QOBUZ(
+        label = "Qobuz",
+        detail = "Lossless and Hi-Res FLAC from Qobuz",
+        labels = listOf("FLAC", "Lossless", "Hi-Res"),
+        needsServer = false,
+        supportsLossless = true,
+        rank = 1,
+    ),
     JIOSAAVN(
         label = "JioSaavn",
         detail = "High Quality · 320kbps",

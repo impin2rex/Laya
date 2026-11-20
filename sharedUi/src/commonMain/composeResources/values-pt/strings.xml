@@ -743,4 +743,11 @@
     <string name="recognize_shortcut_steps">Abra a Central de Controle, toque em + no canto superior esquerdo, depois em Adicionar um Controle e procure Laya.</string>
     <string name="recognize_shortcut_ok">Entendi</string>
     <string name="recognize_shortcut_close">Fechar</string>
+    <string name="lossless_verified">Verificado</string>
+    <string name="lossless_verify_on_enable">Verifica ao ativar</string>
+    <string name="lossless_verify_title">Verificar %1$s</string>
+    <string name="lossless_verify_failed">Falha na verificação</string>
+    <string name="lossless_verify_unreachable">Serviço de verificação indisponível</string>
+    <string name="lossless_verify_expired_notice">A verificação do %1$s expirou. Ative de novo em Fontes para continuar sem perdas.</string>
+    <string name="lossless_verify_expired">Verificação expirada · ative de novo</string>
 </resources>

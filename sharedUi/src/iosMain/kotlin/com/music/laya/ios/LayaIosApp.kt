@@ -244,6 +244,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val signedIn by IosAuth.signedIn.collectAsState()
     val account by IosAuth.account.collectAsState()
     var showLogin by remember { mutableStateOf(false) }
+    // The source being verified, and its row: closed without a session, the switch goes back off.
+    var verifying by remember { mutableStateOf<Pair<com.music.laya.data.sources.lossless.LosslessProvider, String>?>(null) }
     val spotifyConnected = AppSettings.spotifySpdcToken.collectAsState().value.isNotBlank()
     var showSpotifyLogin by remember { mutableStateOf(false) }
     var showSpotifyImport by remember { mutableStateOf(false) }
@@ -1056,6 +1058,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     )
                                     IosPage.Sources -> SourcesPage(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                        onVerify = { provider, configId -> verifying = provider to configId },
                                     )
                                     IosPage.Equalizer -> EqualizerScreen(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
@@ -1581,6 +1584,12 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         }
                     }
                     if (showLogin) IosLoginScreen(onClose = { showLogin = false })
+                    verifying?.let { (provider, configId) ->
+                        IosLosslessVerifyScreen(provider, onClose = {
+                            if (!provider.session.verified.value) SourceRegistry.setEnabled(configId, false)
+                            verifying = null
+                        })
+                    }
                     if (showSpotifyLogin) IosSpotifyLoginScreen(onClose = { showSpotifyLogin = false })
                     if (showSpotifyImport) IosSpotifyImportDialog(
                         onImported = { id, name, count ->

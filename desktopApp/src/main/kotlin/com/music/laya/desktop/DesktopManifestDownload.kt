@@ -55,8 +55,10 @@ internal object DesktopManifestDownload {
                     response.body.bytes()
                 }
 
-        val base = URI(stream.url)
-        val index = String(fetch(stream.url), Charsets.UTF_8)
+        // Tidal's manifest is kept in a local file; its segment URLs are absolute.
+        val local = !stream.url.contains("://")
+        val base = if (local) File(stream.url).toURI() else URI(stream.url)
+        val index = if (local) File(stream.url).readText() else String(fetch(stream.url), Charsets.UTF_8)
         val (initRef, mediaRefs) = if (transportOf(stream) == DesktopAddonStream.DASH) {
             parseDash(index).let { it.initialization to it.media }
         } else {

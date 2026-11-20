@@ -1393,4 +1393,13 @@
     <string name="recognize_cancel">Abbrechen</string>
     <string name="recognize_try_again">Erneut versuchen</string>
     <string name="recognize_channel_results">Erkannte Songs</string>
+    <string name="lossless_verified">Verifiziert</string>
+    <string name="lossless_verify_on_enable">Wird beim Einschalten verifiziert</string>
+    <string name="lossless_verify_title">%1$s verifizieren</string>
+    <string name="lossless_verify_browser_hint">Schließe die Cloudflare-Prüfung im Browser ab. Laya macht danach von selbst weiter.</string>
+    <string name="lossless_verified_toast">%1$s verifiziert</string>
+    <string name="lossless_verify_failed">Verifizierung fehlgeschlagen</string>
+    <string name="lossless_verify_unreachable">Verifizierungsdienst nicht erreichbar</string>
+    <string name="lossless_verify_expired_notice">%1$s-Verifizierung abgelaufen. Schalte es unter Quellen wieder ein, um verlustfrei zu hören.</string>
+    <string name="lossless_verify_expired">Verifizierung abgelaufen · wieder einschalten</string>
 </resources>

@@ -1395,4 +1395,13 @@
     <string name="recognize_cancel">ביטול</string>
     <string name="recognize_try_again">נסה שוב</string>
     <string name="recognize_channel_results">שירים שזוהו</string>
+    <string name="lossless_verified">אומת</string>
+    <string name="lossless_verify_on_enable">יאומת בעת ההפעלה</string>
+    <string name="lossless_verify_title">אימות %1$s</string>
+    <string name="lossless_verify_browser_hint">השלימו את בדיקת Cloudflare בדפדפן. Laya תסיים לבד.</string>
+    <string name="lossless_verified_toast">%1$s אומת</string>
+    <string name="lossless_verify_failed">האימות נכשל</string>
+    <string name="lossless_verify_unreachable">שירות האימות אינו זמין</string>
+    <string name="lossless_verify_expired_notice">האימות של %1$s פג. הפעילו אותו שוב במקורות כדי להמשיך באיכות ללא אובדן.</string>
+    <string name="lossless_verify_expired">האימות פג · הפעילו שוב</string>
 </resources>

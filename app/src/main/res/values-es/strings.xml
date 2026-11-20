@@ -1365,4 +1365,13 @@
     <string name="recognize_cancel">Cancelar</string>
     <string name="recognize_try_again">Reintentar</string>
     <string name="recognize_channel_results">Canciones reconocidas</string>
+    <string name="lossless_verified">Verificado</string>
+    <string name="lossless_verify_on_enable">Se verifica al activarlo</string>
+    <string name="lossless_verify_title">Verificar %1$s</string>
+    <string name="lossless_verify_browser_hint">Completa la comprobación de Cloudflare en tu navegador. Laya termina por sí sola.</string>
+    <string name="lossless_verified_toast">%1$s verificado</string>
+    <string name="lossless_verify_failed">Error de verificación</string>
+    <string name="lossless_verify_unreachable">Servicio de verificación no disponible</string>
+    <string name="lossless_verify_expired_notice">La verificación de %1$s caducó. Actívalo de nuevo en Fuentes para seguir escuchando sin pérdida.</string>
+    <string name="lossless_verify_expired">Verificación caducada · vuelve a activarlo</string>
 </resources>

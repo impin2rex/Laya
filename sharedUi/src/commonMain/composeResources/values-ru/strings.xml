@@ -750,4 +750,11 @@
     <string name="recognize_shortcut_steps">Откройте Пункт управления, нажмите + в левом верхнем углу, затем «Добавить элемент» и найдите Laya.</string>
     <string name="recognize_shortcut_ok">Понятно</string>
     <string name="recognize_shortcut_close">Закрыть</string>
+    <string name="lossless_verified">Подтверждено</string>
+    <string name="lossless_verify_on_enable">Подтверждается при включении</string>
+    <string name="lossless_verify_title">Подтвердить %1$s</string>
+    <string name="lossless_verify_failed">Не удалось подтвердить</string>
+    <string name="lossless_verify_unreachable">Сервис подтверждения недоступен</string>
+    <string name="lossless_verify_expired_notice">Срок подтверждения %1$s истёк. Включите его снова в разделе «Источники», чтобы слушать без потерь.</string>
+    <string name="lossless_verify_expired">Подтверждение истекло · включите снова</string>
 </resources>
