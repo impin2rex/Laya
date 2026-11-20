@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.window.ComposeUIViewController
 import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.lossless_verify_expired_notice
 import com.music.laya.ui.theme.SFProDisplay
 import kotlinx.coroutines.runBlocking
 import coil3.ImageLoader
@@ -70,7 +71,14 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     watchIosConnection()
     IosParty.install()
     com.music.laya.ui.screens.PartyPlatform.host = IosPartyPlatform
+    com.music.laya.data.sources.lossless.LosslessStore.read = { Keychain.get(it) }
+    com.music.laya.data.sources.lossless.LosslessStore.write = { key, value -> Keychain.set(key, value) }
+    // A session that ran out while the app was closed is reported (and its source switched off) like any other.
+    com.music.laya.data.sources.lossless.LosslessProvider.all.forEach { it.session.reload() }
     SourceRegistry.init(IosSourcesHost)
+    com.music.laya.data.sources.LosslessSource.watchExpiry(kotlinx.coroutines.MainScope()) { provider ->
+        IosPlayerHost.showMessage(org.jetbrains.compose.resources.getString(Res.string.lossless_verify_expired_notice, provider.label))
+    }
     // Names only, in the order they are asked: addon addresses carry their owner's token.
     TrackLog.sourcesLine = {
         "sources: " + SourceRegistry.active().joinToString(" > ") { it.displayName }.ifEmpty { "none" } +

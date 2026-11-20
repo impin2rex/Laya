@@ -1371,4 +1371,13 @@
     <string name="recognize_cancel">キャンセル</string>
     <string name="recognize_try_again">再試行</string>
     <string name="recognize_channel_results">認識した曲</string>
+    <string name="lossless_verified">確認済み</string>
+    <string name="lossless_verify_on_enable">オンにすると確認します</string>
+    <string name="lossless_verify_title">%1$sを確認</string>
+    <string name="lossless_verify_browser_hint">ブラウザでCloudflareの確認を完了してください。Layaが自動で続けます。</string>
+    <string name="lossless_verified_toast">%1$sを確認しました</string>
+    <string name="lossless_verify_failed">確認に失敗しました</string>
+    <string name="lossless_verify_unreachable">確認サービスに接続できません</string>
+    <string name="lossless_verify_expired_notice">%1$sの確認の有効期限が切れました。ロスレスを続けるには、ソースで再度オンにしてください。</string>
+    <string name="lossless_verify_expired">確認の有効期限切れ · もう一度オンにしてください</string>
 </resources>

@@ -1309,4 +1309,13 @@
     <string name="recognize_cancel">取消</string>
     <string name="recognize_try_again">重試</string>
     <string name="recognize_channel_results">已辨識的歌曲</string>
+    <string name="lossless_verified">已驗證</string>
+    <string name="lossless_verify_on_enable">開啟時驗證</string>
+    <string name="lossless_verify_title">驗證 %1$s</string>
+    <string name="lossless_verify_browser_hint">請在瀏覽器中完成 Cloudflare 驗證，Laya 會自動完成。</string>
+    <string name="lossless_verified_toast">%1$s 已驗證</string>
+    <string name="lossless_verify_failed">驗證失敗</string>
+    <string name="lossless_verify_unreachable">無法連線驗證服務</string>
+    <string name="lossless_verify_expired_notice">%1$s 驗證已過期。請在「來源」中重新開啟以繼續無損播放。</string>
+    <string name="lossless_verify_expired">驗證已過期 · 請重新開啟</string>
 </resources>

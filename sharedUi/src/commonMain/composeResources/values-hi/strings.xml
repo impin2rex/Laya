@@ -743,4 +743,11 @@
     <string name="recognize_shortcut_steps">कंट्रोल सेंटर खोलें, ऊपर बाईं ओर + पर टैप करें, फिर कंट्रोल जोड़ें पर टैप करके Laya खोजें।</string>
     <string name="recognize_shortcut_ok">समझ गया</string>
     <string name="recognize_shortcut_close">बंद करें</string>
+    <string name="lossless_verified">सत्यापित</string>
+    <string name="lossless_verify_on_enable">चालू करने पर सत्यापित होगा</string>
+    <string name="lossless_verify_title">%1$s सत्यापित करें</string>
+    <string name="lossless_verify_failed">सत्यापन विफल</string>
+    <string name="lossless_verify_unreachable">सत्यापन सेवा उपलब्ध नहीं</string>
+    <string name="lossless_verify_expired_notice">%1$s का सत्यापन समाप्त हो गया। लॉसलेस जारी रखने के लिए स्रोत में इसे फिर से चालू करें।</string>
+    <string name="lossless_verify_expired">सत्यापन समाप्त · फिर से चालू करें</string>
 </resources>

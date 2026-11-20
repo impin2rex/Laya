@@ -44,14 +44,21 @@ class DesktopSourceParityTest {
                 DesktopSourceKind.ADDON,
                 DesktopSourceKind.CUSTOM_MODULE,
                 DesktopSourceKind.MODULE,
+                DesktopSourceKind.TIDAL,
+                DesktopSourceKind.QOBUZ,
                 DesktopSourceKind.JIOSAAVN,
                 DesktopSourceKind.YOUTUBE,
             ),
             DesktopSourceKind.entries,
         )
+        // Android parity: same names, same ranks.
+        assertEquals(
+            com.music.laya.data.sources.SourceKind.entries.map { it.name to it.rank },
+            DesktopSourceKind.entries.map { it.name to it.rank },
+        )
         // The walk is ranked rather than declared.
         assertEquals(
-            listOf(0, 0, 1, 2, 3),
+            listOf(0, 0, 1, 1, 1, 2, 3),
             DesktopSourceKind.entries.map { it.rank },
         )
     }

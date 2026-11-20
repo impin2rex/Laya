@@ -765,4 +765,11 @@
     <string name="recognize_shortcut_steps">Open Control Center, tap + at the top left, then Add a Control and search for Laya.</string>
     <string name="recognize_shortcut_ok">Got it</string>
     <string name="recognize_shortcut_close">Close</string>
+    <string name="lossless_verified">Verified</string>
+    <string name="lossless_verify_on_enable">Verifies when turned on</string>
+    <string name="lossless_verify_title">Verify %1$s</string>
+    <string name="lossless_verify_failed">Verification failed</string>
+    <string name="lossless_verify_unreachable">Verification service unreachable</string>
+    <string name="lossless_verify_expired_notice">%1$s verification expired. Turn it on again in Sources to keep lossless.</string>
+    <string name="lossless_verify_expired">Verification expired · turn on again</string>
 </resources>

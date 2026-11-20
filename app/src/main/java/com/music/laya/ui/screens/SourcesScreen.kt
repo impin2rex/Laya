@@ -27,6 +27,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import com.music.laya.auth.LosslessVerifyDialog
+import com.music.laya.data.sources.LosslessSource
+import com.music.laya.data.sources.lossless.LosslessProvider
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -139,6 +142,18 @@ fun SourcesScreen(
 
     /** Last known reachability per source, filled in as the probes come back. */
     val health = remember { mutableStateMapOf<String, SourceHealth>() }
+    val tidalVerified by LosslessProvider.Tidal.session.verified.collectAsStateWithLifecycle()
+    val qobuzVerified by LosslessProvider.Qobuz.session.verified.collectAsStateWithLifecycle()
+    val tidalExpired by LosslessProvider.Tidal.session.expired.collectAsStateWithLifecycle()
+    val qobuzExpired by LosslessProvider.Qobuz.session.expired.collectAsStateWithLifecycle()
+    // The source being verified, and its row: closed without a session, the switch goes back off.
+    var verifying by remember { mutableStateOf<Pair<LosslessProvider, String>?>(null) }
+    verifying?.let { (provider, configId) ->
+        LosslessVerifyDialog(provider) {
+            if (!provider.session.verified.value) SourceRegistry.setEnabled(configId, false)
+            verifying = null
+        }
+    }
     val losslessOutput by LosslessOutput.state.collectAsStateWithLifecycle()
 
     // Every source that has a server to reach is probed, so an addon gets a
@@ -235,7 +250,18 @@ fun SourcesScreen(
                     SourceRow(
                         position = position,
                         config = config,
-                        health = health[config.id],
+                        health = if (config.kind.isLossless) {
+                            val qobuz = config.kind == SourceKind.QOBUZ
+                            when {
+                                config.enabled && (if (qobuz) qobuzVerified else tidalVerified) ->
+                                    SourceHealth.Ok(stringResource(R.string.lossless_verified))
+                                (if (qobuz) qobuzExpired else tidalExpired) ->
+                                    SourceHealth.Rejected(stringResource(R.string.lossless_verify_expired))
+                                else -> SourceHealth.Rejected(stringResource(R.string.lossless_verify_on_enable))
+                            }
+                        } else {
+                            health[config.id]
+                        },
                         // Switched on, but not reached on this connection. Said
                         // on the row rather than by moving the switch, so the
                         // switch keeps meaning "I want this source" and the
@@ -248,7 +274,10 @@ fun SourcesScreen(
                         // Anything the user configured is theirs to edit or
                         // delete. JioSaavn and YouTube have no address to
                         // change, so a tap on them would open an empty editor.
-                        onClick = if (config.kind.needsServer) ({ onEditSource(config) }) else null,
+                        onClick = when {
+                            config.kind.needsServer -> ({ onEditSource(config) })
+                            else -> null
+                        },
                         // YouTube gets no switch at all — see
                         // [SourceRegistry.setEnabled] for why one would be a lie.
                         onToggle = if (config.kind == SourceKind.YOUTUBE) {
@@ -259,6 +288,10 @@ fun SourcesScreen(
                                     onConfirmJioSaavn()
                                 } else {
                                     SourceRegistry.setEnabled(config.id, enabled)
+                                    if (config.kind.isLossless) {
+                                        LosslessSource.toggled(enabled, LosslessSource.providerFor(config.kind))
+                                            ?.let { verifying = it to config.id }
+                                    }
                                 }
                             })
                         },
@@ -795,6 +828,7 @@ private fun SourceRow(
                 SourceKind.CUSTOM_MODULE -> Icons.Rounded.Extension
                 SourceKind.MODULE -> Icons.Rounded.Extension
                 SourceKind.JIOSAAVN -> Icons.Rounded.GraphicEq // or some other icon
+                SourceKind.TIDAL, SourceKind.QOBUZ -> Icons.Rounded.GraphicEq
                 SourceKind.YOUTUBE -> Icons.Rounded.PlayCircle
             },
             contentDescription = null,

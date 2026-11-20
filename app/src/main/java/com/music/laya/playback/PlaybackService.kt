@@ -1740,7 +1740,14 @@ class PlaybackService : MediaLibraryService() {
             // Innermost, so it chunks the real googlevideo URL the resolver
             // above has already substituted in — see [ChunkedDataSource] for
             // why an open-ended read of one is worth avoiding.
-            ChunkedDataSource.Factory(OkHttpDataSource.Factory(Http.client), STREAM_CHUNK_BYTES),
+            //
+            // Behind a DefaultDataSource because a source can resolve to a file: Tidal's DASH
+            // manifest is kept in the cache dir, and OkHttp calls a file:// URL malformed. http(s)
+            // still goes to the chunked OkHttp source, and the manifest's https segments with it.
+            DefaultDataSource.Factory(
+                this,
+                ChunkedDataSource.Factory(OkHttpDataSource.Factory(Http.client), STREAM_CHUNK_BYTES),
+            ),
         ) { dataSpec ->
             // Wrapped rather than folded into the resolver above so the record
             // is made in one place for every branch of it, and made from what

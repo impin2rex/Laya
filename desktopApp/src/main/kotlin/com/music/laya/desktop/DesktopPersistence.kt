@@ -142,6 +142,9 @@ class DesktopPersistence {
             if (none { it.kind == DesktopSourceKind.YOUTUBE }) {
                 add(DesktopSourceConfig("youtube", DesktopSourceKind.YOUTUBE))
             }
+            // Off until the listener turns them on and passes the broker's check.
+            if (none { it.kind == DesktopSourceKind.TIDAL }) add(DesktopSourceConfig("tidal", DesktopSourceKind.TIDAL, enabled = false))
+            if (none { it.kind == DesktopSourceKind.QOBUZ }) add(DesktopSourceConfig("qobuz", DesktopSourceKind.QOBUZ, enabled = false))
         }
 
         // YouTube remains the non-removable catalogue fallback, matching the Android source

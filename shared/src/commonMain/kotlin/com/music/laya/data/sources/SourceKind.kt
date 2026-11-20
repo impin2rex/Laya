@@ -127,6 +127,29 @@ enum class SourceKind(
         rank = 1,
     ),
 
+    /**
+     * Built-in Tidal, streamed through the broker the SpotiFLAC extensions use — see
+     * [LosslessSource]. Off until enabled and verified on the sources screen.
+     */
+    TIDAL(
+        label = "Tidal",
+        detail = "Lossless FLAC from Tidal. Verifies each time it is turned on.",
+        labels = listOf("FLAC", "Lossless"),
+        needsServer = false,
+        canServeLossless = true,
+        rank = 1,
+    ),
+
+    /** Built-in Qobuz; same broker and verification as [TIDAL]. */
+    QOBUZ(
+        label = "Qobuz",
+        detail = "Lossless and Hi-Res FLAC from Qobuz. Verifies each time it is turned on.",
+        labels = listOf("FLAC", "Lossless", "Hi-Res"),
+        needsServer = false,
+        canServeLossless = true,
+        rank = 1,
+    ),
+
     JIOSAAVN(
         label = "JioSaavn",
         detail = "Optional JioSaavn streams up to 320kbps AAC/MP4. Catalogue matching can select the wrong song.",
@@ -153,6 +176,9 @@ enum class SourceKind(
         rank = 3,
     ),
     ;
+
+    /** The built-in broker-backed lossless sources, which every platform can build. */
+    val isLossless: Boolean get() = this == TIDAL || this == QOBUZ
 
     /** Whether this is a source the user configured, rather than one that ships. */
     val isUserAdded: Boolean get() = rank == USER_ADDED

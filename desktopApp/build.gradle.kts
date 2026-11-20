@@ -85,7 +85,7 @@ dependencies {
         else -> "linux"
     }
     listOf("base", "graphics", "controls", "media", "web").forEach { module ->
-        implementation("org.openjfx:javafx-$module:21.0.10:$javafxClassifier")
+        implementation("org.openjfx:javafx-$module:21.0.13:$javafxClassifier")
     }
 
     // The shared player loads artwork through Coil, as the phone does.

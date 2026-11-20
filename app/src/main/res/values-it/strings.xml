@@ -1332,4 +1332,13 @@
     <string name="recognize_cancel">Annulla</string>
     <string name="recognize_try_again">Riprova</string>
     <string name="recognize_channel_results">Brani riconosciuti</string>
+    <string name="lossless_verified">Verificato</string>
+    <string name="lossless_verify_on_enable">Verifica all\'attivazione</string>
+    <string name="lossless_verify_title">Verifica %1$s</string>
+    <string name="lossless_verify_browser_hint">Completa il controllo Cloudflare nel browser. Laya finisce da sola.</string>
+    <string name="lossless_verified_toast">%1$s verificato</string>
+    <string name="lossless_verify_failed">Verifica non riuscita</string>
+    <string name="lossless_verify_unreachable">Servizio di verifica non raggiungibile</string>
+    <string name="lossless_verify_expired_notice">La verifica di %1$s è scaduta. Riattivalo in Sorgenti per continuare in lossless.</string>
+    <string name="lossless_verify_expired">Verifica scaduta · riattivalo</string>
 </resources>

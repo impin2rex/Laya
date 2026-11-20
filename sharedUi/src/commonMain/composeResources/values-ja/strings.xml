@@ -738,4 +738,11 @@
     <string name="recognize_shortcut_steps">コントロールセンターを開き、左上の + をタップして「コントロールを追加」から Laya を検索してください。</string>
     <string name="recognize_shortcut_ok">OK</string>
     <string name="recognize_shortcut_close">閉じる</string>
+    <string name="lossless_verified">確認済み</string>
+    <string name="lossless_verify_on_enable">オンにすると確認します</string>
+    <string name="lossless_verify_title">%1$sを確認</string>
+    <string name="lossless_verify_failed">確認に失敗しました</string>
+    <string name="lossless_verify_unreachable">確認サービスに接続できません</string>
+    <string name="lossless_verify_expired_notice">%1$sの確認の有効期限が切れました。ロスレスを続けるには、ソースで再度オンにしてください。</string>
+    <string name="lossless_verify_expired">確認の有効期限切れ · もう一度オンにしてください</string>
 </resources>

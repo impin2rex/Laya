@@ -1,5 +1,7 @@
 package com.music.laya.ui.screens
 
+import com.music.laya.data.sources.LosslessSource
+import com.music.laya.data.sources.lossless.LosslessProvider
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -61,7 +63,16 @@ import org.jetbrains.compose.resources.stringResource
  * arrows (a drag handle needs the Android-only reorderable list).
  */
 @Composable
-fun SourcesPage(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
+fun SourcesPage(
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    /** Opens the platform's verification page for a built-in Tidal/Qobuz source, row id alongside. */
+    onVerify: (LosslessProvider, String) -> Unit = { _, _ -> },
+) {
+    val tidalVerified by LosslessProvider.Tidal.session.verified.collectAsStateWithLifecycle()
+    val qobuzVerified by LosslessProvider.Qobuz.session.verified.collectAsStateWithLifecycle()
+    val tidalExpired by LosslessProvider.Tidal.session.expired.collectAsStateWithLifecycle()
+    val qobuzExpired by LosslessProvider.Qobuz.session.expired.collectAsStateWithLifecycle()
     val configs by SourceRegistry.configs.collectAsStateWithLifecycle()
     val wifiQuality by AppSettings.audioQualityWifi.collectAsStateWithLifecycle()
     val cellularQuality by AppSettings.audioQualityCellular.collectAsStateWithLifecycle()
@@ -131,10 +142,26 @@ fun SourcesPage(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
                     subtitle = if (skipped) {
                         stringResource(Res.string.source_skipped_by_quality, skippedOn, ceilingLabel)
                     } else {
-                        config.statusLine(health[config.id])
+                        config.statusLine(
+                            if (config.kind.isLossless) {
+                                val qobuz = config.kind == SourceKind.QOBUZ
+                                when {
+                                    config.enabled && (if (qobuz) qobuzVerified else tidalVerified) ->
+                                        SourceHealth.Ok(stringResource(Res.string.lossless_verified))
+                                    (if (qobuz) qobuzExpired else tidalExpired) ->
+                                        SourceHealth.Rejected(stringResource(Res.string.lossless_verify_expired))
+                                    else -> SourceHealth.Rejected(stringResource(Res.string.lossless_verify_on_enable))
+                                }
+                            } else {
+                                health[config.id]
+                            },
+                        )
                     },
                     enabled = config.enabled || config.kind == SourceKind.YOUTUBE,
-                    onClick = if (config.kind.needsServer) ({ editing = config }) else null,
+                    onClick = when {
+                        config.kind.needsServer -> ({ editing = config })
+                        else -> null
+                    },
                     trailing = {
                         if (config.kind == SourceKind.YOUTUBE) {
                             Text(
@@ -154,7 +181,12 @@ fun SourcesPage(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
                             }
                             Switch(
                                 checked = config.enabled,
-                                onCheckedChange = { SourceRegistry.setEnabled(config.id, it) },
+                                onCheckedChange = {
+                                    SourceRegistry.setEnabled(config.id, it)
+                                    if (config.kind.isLossless) {
+                                        LosslessSource.toggled(it, LosslessSource.providerFor(config.kind))?.let { p -> onVerify(p, config.id) }
+                                    }
+                                },
                                 colors = SwitchDefaults.colors(
                                     checkedTrackColor = MaterialTheme.colorScheme.primary,
                                     checkedBorderColor = MaterialTheme.colorScheme.primary,

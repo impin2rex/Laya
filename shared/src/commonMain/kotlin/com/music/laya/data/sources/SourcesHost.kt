@@ -16,7 +16,7 @@ interface SourcesHost {
     val playsDolbyAtmos: Boolean get() = false
 
     /** Whether this platform can play a source of [kind] at all. Addons and YouTube always can. */
-    fun supports(kind: SourceKind): Boolean = kind == SourceKind.ADDON || kind == SourceKind.YOUTUBE
+    fun supports(kind: SourceKind): Boolean = kind == SourceKind.ADDON || kind == SourceKind.YOUTUBE || kind.isLossless
 
     /** Builds the kinds the shared code can't (modules, JioSaavn); null when [supports] says no. */
     fun build(config: SourceConfig): MusicSource? = null

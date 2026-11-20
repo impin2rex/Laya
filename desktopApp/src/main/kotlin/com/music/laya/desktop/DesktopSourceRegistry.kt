@@ -100,6 +100,18 @@ internal object DesktopSourceRegistry {
         override suspend fun matches(song: Song): List<Song> = DesktopJioSaavn.matches(song)
     }
 
+    private class LosslessAdapter(
+        override val config: DesktopSourceConfig,
+    ) : SourceAdapter {
+        override val descriptor: DesktopSourceDescriptor
+            get() = config.descriptor()
+
+        override suspend fun resolve(song: Song, quality: String?): Result<DesktopStream?> =
+            DesktopLossless.stream(config, song)
+
+        override suspend fun matches(song: Song): List<Song> = DesktopLossless.matches(config.kind, song)
+    }
+
     private class YouTubeAdapter(
         override val config: DesktopSourceConfig,
     ) : SourceAdapter {
@@ -191,6 +203,7 @@ internal object DesktopSourceRegistry {
                     DesktopSourceKind.MODULE,
                     -> ModuleAdapter(config)
                     DesktopSourceKind.JIOSAAVN -> JioAdapter(config)
+                    DesktopSourceKind.TIDAL, DesktopSourceKind.QOBUZ -> LosslessAdapter(config)
                     DesktopSourceKind.YOUTUBE -> YouTubeAdapter(config)
                 }
             }

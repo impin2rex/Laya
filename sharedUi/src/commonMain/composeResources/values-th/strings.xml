@@ -738,4 +738,11 @@
     <string name="recognize_shortcut_steps">เปิดศูนย์ควบคุม แตะ + ที่มุมซ้ายบน แล้วแตะเพิ่มตัวควบคุมและค้นหา Laya</string>
     <string name="recognize_shortcut_ok">เข้าใจแล้ว</string>
     <string name="recognize_shortcut_close">ปิด</string>
+    <string name="lossless_verified">ยืนยันแล้ว</string>
+    <string name="lossless_verify_on_enable">ยืนยันเมื่อเปิดใช้</string>
+    <string name="lossless_verify_title">ยืนยัน %1$s</string>
+    <string name="lossless_verify_failed">การยืนยันล้มเหลว</string>
+    <string name="lossless_verify_unreachable">ไม่สามารถเชื่อมต่อบริการยืนยันได้</string>
+    <string name="lossless_verify_expired_notice">การยืนยัน %1$s หมดอายุแล้ว เปิดอีกครั้งในแหล่งเพลงเพื่อฟังแบบไม่สูญเสียคุณภาพต่อ</string>
+    <string name="lossless_verify_expired">การยืนยันหมดอายุ · เปิดอีกครั้ง</string>
 </resources>

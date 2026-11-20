@@ -1245,4 +1245,13 @@
     <string name="recognize_cancel">Cancel</string>
     <string name="recognize_try_again">Try again</string>
     <string name="recognize_channel_results">Recognized songs</string>
+    <string name="lossless_verified">Verified</string>
+    <string name="lossless_verify_on_enable">Verifies when turned on</string>
+    <string name="lossless_verify_title">Verify %1$s</string>
+    <string name="lossless_verify_browser_hint">Complete the Cloudflare check in your browser. Laya finishes by itself.</string>
+    <string name="lossless_verified_toast">%1$s verified</string>
+    <string name="lossless_verify_failed">Verification failed</string>
+    <string name="lossless_verify_unreachable">Verification service unreachable</string>
+    <string name="lossless_verify_expired_notice">%1$s verification expired. Turn it on again in Sources to keep lossless.</string>
+    <string name="lossless_verify_expired">Verification expired · turn on again</string>
 </resources>

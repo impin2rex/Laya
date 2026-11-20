@@ -743,4 +743,11 @@
     <string name="recognize_shortcut_steps">Ouvrez le Centre de contrôle, touchez + en haut à gauche, puis Ajouter une commande et recherchez Laya.</string>
     <string name="recognize_shortcut_ok">Compris</string>
     <string name="recognize_shortcut_close">Fermer</string>
+    <string name="lossless_verified">Vérifié</string>
+    <string name="lossless_verify_on_enable">Vérification à l\'activation</string>
+    <string name="lossless_verify_title">Vérifier %1$s</string>
+    <string name="lossless_verify_failed">Échec de la vérification</string>
+    <string name="lossless_verify_unreachable">Service de vérification injoignable</string>
+    <string name="lossless_verify_expired_notice">La vérification de %1$s a expiré. Réactivez-le dans Sources pour garder le sans perte.</string>
+    <string name="lossless_verify_expired">Vérification expirée · réactivez-le</string>
 </resources>

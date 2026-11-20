@@ -1430,4 +1430,13 @@
     <string name="recognize_cancel">Anuluj</string>
     <string name="recognize_try_again">Spróbuj ponownie</string>
     <string name="recognize_channel_results">Rozpoznane utwory</string>
+    <string name="lossless_verified">Zweryfikowano</string>
+    <string name="lossless_verify_on_enable">Weryfikacja po włączeniu</string>
+    <string name="lossless_verify_title">Zweryfikuj %1$s</string>
+    <string name="lossless_verify_browser_hint">Dokończ weryfikację Cloudflare w przeglądarce. Laya dokończy resztę sama.</string>
+    <string name="lossless_verified_toast">Zweryfikowano %1$s</string>
+    <string name="lossless_verify_failed">Weryfikacja nie powiodła się</string>
+    <string name="lossless_verify_unreachable">Usługa weryfikacji jest niedostępna</string>
+    <string name="lossless_verify_expired_notice">Weryfikacja %1$s wygasła. Włącz ponownie w Źródłach, aby słuchać bezstratnie.</string>
+    <string name="lossless_verify_expired">Weryfikacja wygasła · włącz ponownie</string>
 </resources>

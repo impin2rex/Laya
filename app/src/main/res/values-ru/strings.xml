@@ -1425,4 +1425,13 @@
     <string name="recognize_cancel">Отмена</string>
     <string name="recognize_try_again">Повторить</string>
     <string name="recognize_channel_results">Распознанные песни</string>
+    <string name="lossless_verified">Подтверждено</string>
+    <string name="lossless_verify_on_enable">Подтверждается при включении</string>
+    <string name="lossless_verify_title">Подтвердить %1$s</string>
+    <string name="lossless_verify_browser_hint">Пройдите проверку Cloudflare в браузере. Laya завершит всё сама.</string>
+    <string name="lossless_verified_toast">%1$s подтверждён</string>
+    <string name="lossless_verify_failed">Не удалось подтвердить</string>
+    <string name="lossless_verify_unreachable">Сервис подтверждения недоступен</string>
+    <string name="lossless_verify_expired_notice">Срок подтверждения %1$s истёк. Включите его снова в разделе «Источники», чтобы слушать без потерь.</string>
+    <string name="lossless_verify_expired">Подтверждение истекло · включите снова</string>
 </resources>

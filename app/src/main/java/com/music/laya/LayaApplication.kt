@@ -121,7 +121,30 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         // threads racing to create it. Joined before onCreate returns, so
         // nothing that runs after startup can see any of them half open.
         val backgroundInit = thread(name = "startup-init") {
+            // Tidal/Qobuz broker sessions are secrets, so the encrypted store; wired before the
+            // registry builds those sources, which read it.
+            com.music.laya.auth.EncryptedPrefs.open(this, "laya_lossless", "laya_lossless_plain").let { prefs ->
+                com.music.laya.data.sources.lossless.LosslessStore.read = { prefs.getString(it, null) }
+                com.music.laya.data.sources.lossless.LosslessStore.write = { key, value -> prefs.edit().putString(key, value).apply() }
+            }
+            // A session that ran out while the app was closed is reported (and its source switched off) like any other.
+            com.music.laya.data.sources.lossless.LosslessProvider.all.forEach { it.session.reload() }
+            // Tidal's DASH manifests, played by ExoPlayer from a file; segment URLs are absolute.
+            java.io.File(cacheDir, "lossless-manifests").let { dir ->
+                dir.deleteRecursively()
+                com.music.laya.data.sources.lossless.LosslessStore.manifestFile = { name, mpd ->
+                    dir.mkdirs()
+                    android.net.Uri.fromFile(java.io.File(dir, name).apply { writeText(mpd) }).toString()
+                }
+            }
             SourceRegistry.init(AndroidSourcesHost(this))
+            com.music.laya.data.sources.LosslessSource.watchExpiry(CoroutineScope(Dispatchers.Main)) { provider ->
+                android.widget.Toast.makeText(
+                    this,
+                    getString(R.string.lossless_verify_expired_notice, provider.label),
+                    android.widget.Toast.LENGTH_LONG,
+                ).show()
+            }
             AndroidStreamHooks.initInnerTubeX(this)
             // Its own directory: canvas clips are looping video, not audio, and
             // belong in a cache AudioCache's own limit and eviction policy were
