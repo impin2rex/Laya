@@ -20,6 +20,15 @@
       "screenshots": [],
       "versions": [
         {
+          "version": "1.9.6",
+          "buildVersion": "37",
+          "date": "2026-11-21T12:17:46Z",
+          "localizedDescription": "*   **Tidal and Qobuz are now sources of their own.** Turn one on in **Settings → Sources**, verify once, and Laya streams FLAC straight from it. No addon, nothing to install.\n*   Verification lasts a while and says so: each source reads **Verified · until \\<time\\>**.\n*   Laya now checks that in the background, so an expired source switches itself off with a notice instead of failing silently the next time you press play.\n*   On iOS, **Qobuz only** — Tidal's streams are a format the iOS player can't play.\n\n*   **Last.fm and ListenBrainz scrobbling**, the same as Android, set up from the **Account** page. Track changes, pauses and resumes all count.",
+          "downloadURL": "https://github.com/impin2rex/Laya/releases/download/v1.9.6/Laya-1.9.6-ios.ipa",
+          "size": 81003405,
+          "minOSVersion": "16.0"
+        },
+        {
           "version": "1.9.5",
           "buildVersion": "36",
           "date": "2026-11-17T15:13:42Z",
