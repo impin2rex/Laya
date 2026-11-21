@@ -38,8 +38,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import platform.AVFoundation.AVMediaTypeAudio
 import platform.AVFoundation.AVPlayerItem
+import platform.AVFoundation.AVPlayerItemTrack
 import platform.AVFoundation.AVPlayerAudiovisualBackgroundPlaybackPolicyPauses
+import platform.AVFoundation.mediaType
+import platform.AVFoundation.tracks
 import platform.AVFoundation.AVPlayerLooper
 import platform.AVFoundation.audiovisualBackgroundPlaybackPolicy
 import platform.AVFoundation.AVQueuePlayer
@@ -91,6 +95,7 @@ private class CanvasPlayer(url: String) {
     }
     private var looper: AVPlayerLooper? = AVPlayerLooper.playerLooperWithPlayer(player!!, AVPlayerItem.playerItemWithURL(NSURL.URLWithString(url)!!).apply { preferredMaximumResolution = CGSizeMake(1280.0, 1280.0) })
     private var item: AVPlayerItem? = null
+    private var silenced: AVPlayerItem? = null
     private var output: AVPlayerItemVideoOutput? = null
     private var image: Image? = null
     private var bytes = ByteArray(0)
@@ -101,6 +106,24 @@ private class CanvasPlayer(url: String) {
     var alignTop = false
 
     fun play(on: Boolean) { if (on) player?.play() else player?.pause() }
+
+    /**
+     * Muting isn't enough: a clip whose (silent) audio track is rendering is still playback iOS credits to the
+     * app, so pausing the music left the lock screen / Dynamic Island button on Pause while the canvas looped on.
+     * A track disabled renders nothing, and video-only playback doesn't touch the now-playing state.
+     * AVPlayerLooper plays copies of the item, so each new current item is silenced once; tracks arrive only when
+     * the item is ready, so an empty list means try again on the next frame.
+     */
+    private fun silence(cur: AVPlayerItem) {
+        if (silenced?.isEqual(cur) == true) return
+        val tracks = cur.tracks
+        if (tracks.isEmpty()) return
+        tracks.forEach { t ->
+            val track = t as AVPlayerItemTrack
+            if (track.assetTrack?.mediaType == AVMediaTypeAudio) track.enabled = false
+        }
+        silenced = cur
+    }
 
     /** AVPlayerLooper swaps items each loop; an output belongs to one item, so re-attach on change. */
     private fun outputFor(cur: AVPlayerItem): AVPlayerItemVideoOutput? {
@@ -127,6 +150,7 @@ private class CanvasPlayer(url: String) {
     /** The newest decoded frame, or null when nothing new arrived since the last call. */
     fun nextFrame(): ImageBitmap? {
         val cur = player?.currentItem ?: return null
+        silence(cur)
         val o = outputFor(cur) ?: return null
         val t = o.itemTimeForHostTime(CACurrentMediaTime())
         if (!o.hasNewPixelBufferForItemTime(t)) return null
