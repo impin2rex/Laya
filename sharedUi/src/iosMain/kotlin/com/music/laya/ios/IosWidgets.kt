@@ -50,6 +50,12 @@ internal data class WidgetState(
 object IosWidgets {
     var host: WidgetHost? = null
 
+    /** The Swift audio engine, handed over at launch, so a widget tap can build the player with no UI. */
+    var engine: AudioEngine? = null
+
+    /** The commands that need no UI, run straight on the shared player when none is up. */
+    private val headless = setOf("toggle", "next", "previous", "shuffle")
+
     internal fun publish(s: WidgetState) = host?.publish(
         s.mediaId, s.title, s.artist, s.artworkUrl, s.isPlaying, s.hasPrevious, s.hasNext, s.isLiked, s.canLike, s.shuffleEnabled,
     )
@@ -66,6 +72,22 @@ object IosWidgets {
         // The Live Activity's Cancel, run at once: the app is in the background then, listening.
         if (command == "recognize_cancel") {
             com.music.laya.data.recognition.MusicRecognizer.cancel()
+            return true
+        }
+        // An AudioPlaybackIntent tap with the app's UI gone: iOS launched this process in the background and
+        // refuses to bring any UI up (continue-in-foreground from a widget is denied, NSCocoaErrorDomain 3072),
+        // so transport commands run headless on the shared player, which restores its queue in init.
+        val e = engine
+        if (!ready && e != null && command in headless) {
+            platform.darwin.dispatch_async(platform.darwin.dispatch_get_main_queue()) {
+                val p = IosPlayer.shared(e)
+                when (command) {
+                    "toggle" -> p.togglePlayPause()
+                    "next" -> p.next()
+                    "previous" -> p.previous()
+                    "shuffle" -> p.setShuffle(!com.music.laya.data.settings.AppSettings.shuffleEnabled.value)
+                }
+            }
             return true
         }
         queue.trySend(command)
