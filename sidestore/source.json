@@ -20,6 +20,15 @@
       "screenshots": [],
       "versions": [
         {
+          "version": "1.9.5",
+          "buildVersion": "36",
+          "date": "2026-11-17T15:13:42Z",
+          "localizedDescription": "- **Control Center control** to recognize from anywhere (iOS 18 and later).\n- **Live Activity** on the lock screen and in the Dynamic Island while Laya listens, with a Cancel button.\n- The result arrives as a notification, with **Try again** when it couldn't recognize the song.\n- **Long-press the Laya icon** for new **Search** and **Recognize music** shortcuts.\n- Your music stays on the speaker or your AirPods while Laya listens.",
+          "downloadURL": "https://github.com/impin2rex/Laya/releases/download/v1.9.5/Laya-1.9.5-ios.ipa",
+          "size": 80749709,
+          "minOSVersion": "16.0"
+        },
+        {
           "version": "1.9.4",
           "buildVersion": "35",
           "date": "2026-11-14T18:18:44Z",

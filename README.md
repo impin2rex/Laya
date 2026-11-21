@@ -41,6 +41,7 @@
 
 #### Playback
 - **Search, browse and play** anything available on YouTube Music.
+- **Recognize music** — name the song playing around you and play it on Laya, with a history of what you've found. Start it from the Quick Settings tile (Android), Control Center (iOS), the app icon's long-press menu, your Wear OS watch, or the app on any platform.
 - **Hi-Res lossless audio** — FLAC/ALAC from a configured module source, with YouTube Music as fallback.
 - **Gapless playback with true crossfade**, adjustable 0–12s.
 - **Automix [Beta]** — DJ-style transitions with beat-matching and tempo-stretching.
