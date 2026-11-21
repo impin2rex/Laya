@@ -5,7 +5,13 @@ import com.music.laya.data.model.Song
 import com.music.laya.data.sources.lossless.LosslessProvider
 import com.music.laya.data.sources.lossless.VerificationRequired
 import kotlinx.coroutines.CoroutineScope
+import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.AudioQuality
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.launch
 
@@ -80,18 +86,50 @@ class LosslessSource(
         fun kindOf(provider: LosslessProvider): SourceKind =
             if (provider == LosslessProvider.Qobuz) SourceKind.QOBUZ else SourceKind.TIDAL
 
+        /** Whether lossless is in use on the phones: the quality for the connection in hand asks for it. */
+        val losslessInUse: Flow<Boolean> = combine(
+            AppSettings.audioQualityWifi, AppSettings.audioQualityCellular,
+            AppSettings.meteredConnection, AppSettings.streamCeilingOverride,
+        ) { _, _, _, _ -> AppSettings.effectiveAudioQuality == AudioQuality.LOSSLESS }
+
+        /** Switches every [provider] row off in [SourceRegistry]; true when one was on. */
+        private fun switchOffInRegistry(provider: LosslessProvider): Boolean {
+            val on = SourceRegistry.configs.value.filter { it.kind == kindOf(provider) && it.enabled }
+            on.forEach { SourceRegistry.setEnabled(it.id, false) }
+            return on.isNotEmpty()
+        }
+
+        /** How often a held session's end date is compared with the clock. */
+        const val CHECK_EVERY_MS = 60_000L
+
         /**
-         * A lost session ([com.music.laya.data.sources.lossless.ZarzSession.lost]) switches its source off, so a
-         * switch that is on always means a source that works; [notify] is told once, for a short notice. Call once,
-         * after [SourceRegistry.init].
+         * A lost session ([com.music.laya.data.sources.lossless.ZarzSession.lost]) switches its source off at once,
+         * so the switch and its status are never wrong, whatever the quality. The notice ([notify], once) waits
+         * until lossless is in use ([inUse]): on a capped quality the user is told when they come back to it, not
+         * about a source they are not listening to; dropped if they verify again first. A session is also
+         * compared with the clock every [CHECK_EVERY_MS], since a capped quality makes no request that would find
+         * it expired. Call once at startup, after the sources are loaded; desktop passes its own switch and quality.
          */
-        fun watchExpiry(scope: CoroutineScope, notify: suspend (LosslessProvider) -> Unit) {
+        fun watchExpiry(
+            scope: CoroutineScope,
+            inUse: Flow<Boolean> = losslessInUse,
+            switchOff: (LosslessProvider) -> Boolean = ::switchOffInRegistry,
+            notify: suspend (LosslessProvider) -> Unit,
+        ) {
             LosslessProvider.all.forEach { provider ->
+                val owed = MutableStateFlow(false)
+                scope.launch { lossesOf(provider).collect { if (switchOff(provider)) owed.value = true } }
                 scope.launch {
-                    lossesOf(provider).collect {
-                        val on = SourceRegistry.configs.value.filter { it.kind == kindOf(provider) && it.enabled }
-                        on.forEach { SourceRegistry.setEnabled(it.id, false) }
-                        if (on.isNotEmpty()) notify(provider)
+                    while (true) {
+                        provider.session.check()
+                        delay(CHECK_EVERY_MS)
+                    }
+                }
+                scope.launch {
+                    combine(owed, inUse) { due, wanted -> due && wanted }.distinctUntilChanged().collect { due ->
+                        if (!due) return@collect
+                        owed.value = false
+                        if (provider.session.expired.value) notify(provider)
                     }
                 }
             }

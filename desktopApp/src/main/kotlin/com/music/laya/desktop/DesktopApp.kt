@@ -815,24 +815,29 @@ fun LayaDesktopApp() {
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
     var sourceConfigs by remember { mutableStateOf(persistence.sourceConfigs()) }
-    // A lost Tidal/Qobuz session switches its source off and says so once, as on the phones.
+    // A lost Tidal/Qobuz session switches its source off at once; the notice waits for Lossless quality (shared rule).
     LaunchedEffect(Unit) {
-        listOf(DesktopSourceKind.TIDAL, DesktopSourceKind.QOBUZ).forEach { kind ->
-            launch {
-                com.music.laya.data.sources.LosslessSource.lossesOf(DesktopLossless.provider(kind)).collect {
-                    val current = persistence.sourceConfigs()
-                    if (current.none { it.kind == kind && it.enabled }) return@collect
-                    persistence.saveSourceConfigs(current.map { if (it.kind == kind) it.copy(enabled = false) else it })
-                    sourceConfigs = persistence.sourceConfigs()
-                    DesktopModuleSource.reload()
-                    DesktopPlayerHost.showMessage(
-                        DesktopStrings.format(
-                            "lossless_verify_expired_notice", kind.label,
-                            fallback = "${kind.label} verification expired. Turn it on again in Sources to keep lossless.",
-                        ),
-                    )
+        com.music.laya.data.sources.LosslessSource.watchExpiry(
+            scope = this,
+            inUse = androidx.compose.runtime.snapshotFlow { audioQuality == DesktopAudioQuality.LOSSLESS },
+            switchOff = { provider ->
+                val kind = if (provider == DesktopLossless.provider(DesktopSourceKind.QOBUZ)) DesktopSourceKind.QOBUZ else DesktopSourceKind.TIDAL
+                val current = persistence.sourceConfigs()
+                current.any { it.kind == kind && it.enabled }.also { wasOn ->
+                    if (wasOn) {
+                        persistence.saveSourceConfigs(current.map { if (it.kind == kind) it.copy(enabled = false) else it })
+                        sourceConfigs = persistence.sourceConfigs()
+                        DesktopModuleSource.reload()
+                    }
                 }
-            }
+            },
+        ) { provider ->
+            DesktopPlayerHost.showMessage(
+                DesktopStrings.format(
+                    "lossless_verify_expired_notice", provider.label,
+                    fallback = "${provider.label} verification expired. Turn it on again in Sources to keep lossless.",
+                ),
+            )
         }
     }
     var sourceStatus by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -6432,6 +6437,9 @@ private fun DesktopSettingsScreen(
     val tidalExpired by DesktopLossless.provider(DesktopSourceKind.TIDAL).session.expired.collectAsState()
     val qobuzExpired by DesktopLossless.provider(DesktopSourceKind.QOBUZ).session.expired.collectAsState()
     val losslessExpired = mapOf(DesktopSourceKind.TIDAL to tidalExpired, DesktopSourceKind.QOBUZ to qobuzExpired)
+    val tidalUntil by DesktopLossless.provider(DesktopSourceKind.TIDAL).session.expiresAtMs.collectAsState()
+    val qobuzUntil by DesktopLossless.provider(DesktopSourceKind.QOBUZ).session.expiresAtMs.collectAsState()
+    val losslessUntil = mapOf(DesktopSourceKind.TIDAL to tidalUntil, DesktopSourceKind.QOBUZ to qobuzUntil)
     val verifyScope = rememberCoroutineScope()
     // The row being verified: cancelled without a session, its switch goes back off. The switch is the only
     // control, as on the phones: on always verifies afresh, off drops the session.
@@ -7177,7 +7185,10 @@ private fun DesktopSettingsScreen(
                             status = if (config.kind == DesktopSourceKind.TIDAL || config.kind == DesktopSourceKind.QOBUZ) {
                                 when {
                                     config.enabled && losslessVerified[config.kind] == true ->
-                                        DesktopStrings["lossless_verified", "Verified"] + " · ${config.kind.detail}"
+                                        (losslessUntil[config.kind]?.let { until ->
+                                            val at = com.music.laya.platform.localDateTime(until)
+                                            DesktopStrings.format("lossless_verified_until", at, fallback = "Verified · until $at")
+                                        } ?: DesktopStrings["lossless_verified", "Verified"]) + " · ${config.kind.detail}"
                                     losslessExpired[config.kind] == true -> DesktopStrings["lossless_verify_expired", "Verification expired · turn on again"]
                                     else -> DesktopStrings["lossless_verify_on_enable", "Verifies when turned on"]
                                 }

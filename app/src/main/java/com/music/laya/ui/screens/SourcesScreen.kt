@@ -146,6 +146,8 @@ fun SourcesScreen(
     val qobuzVerified by LosslessProvider.Qobuz.session.verified.collectAsStateWithLifecycle()
     val tidalExpired by LosslessProvider.Tidal.session.expired.collectAsStateWithLifecycle()
     val qobuzExpired by LosslessProvider.Qobuz.session.expired.collectAsStateWithLifecycle()
+    val tidalUntil by LosslessProvider.Tidal.session.expiresAtMs.collectAsStateWithLifecycle()
+    val qobuzUntil by LosslessProvider.Qobuz.session.expiresAtMs.collectAsStateWithLifecycle()
     // The source being verified, and its row: closed without a session, the switch goes back off.
     var verifying by remember { mutableStateOf<Pair<LosslessProvider, String>?>(null) }
     verifying?.let { (provider, configId) ->
@@ -253,8 +255,11 @@ fun SourcesScreen(
                         health = if (config.kind.isLossless) {
                             val qobuz = config.kind == SourceKind.QOBUZ
                             when {
-                                config.enabled && (if (qobuz) qobuzVerified else tidalVerified) ->
-                                    SourceHealth.Ok(stringResource(R.string.lossless_verified))
+                                config.enabled && (if (qobuz) qobuzVerified else tidalVerified) -> SourceHealth.Ok(
+                                    (if (qobuz) qobuzUntil else tidalUntil)
+                                        ?.let { stringResource(R.string.lossless_verified_until, com.music.laya.platform.localDateTime(it)) }
+                                        ?: stringResource(R.string.lossless_verified),
+                                )
                                 (if (qobuz) qobuzExpired else tidalExpired) ->
                                     SourceHealth.Rejected(stringResource(R.string.lossless_verify_expired))
                                 else -> SourceHealth.Rejected(stringResource(R.string.lossless_verify_on_enable))

@@ -73,6 +73,8 @@ fun SourcesPage(
     val qobuzVerified by LosslessProvider.Qobuz.session.verified.collectAsStateWithLifecycle()
     val tidalExpired by LosslessProvider.Tidal.session.expired.collectAsStateWithLifecycle()
     val qobuzExpired by LosslessProvider.Qobuz.session.expired.collectAsStateWithLifecycle()
+    val tidalUntil by LosslessProvider.Tidal.session.expiresAtMs.collectAsStateWithLifecycle()
+    val qobuzUntil by LosslessProvider.Qobuz.session.expiresAtMs.collectAsStateWithLifecycle()
     val configs by SourceRegistry.configs.collectAsStateWithLifecycle()
     val wifiQuality by AppSettings.audioQualityWifi.collectAsStateWithLifecycle()
     val cellularQuality by AppSettings.audioQualityCellular.collectAsStateWithLifecycle()
@@ -146,8 +148,11 @@ fun SourcesPage(
                             if (config.kind.isLossless) {
                                 val qobuz = config.kind == SourceKind.QOBUZ
                                 when {
-                                    config.enabled && (if (qobuz) qobuzVerified else tidalVerified) ->
-                                        SourceHealth.Ok(stringResource(Res.string.lossless_verified))
+                                    config.enabled && (if (qobuz) qobuzVerified else tidalVerified) -> SourceHealth.Ok(
+                                        (if (qobuz) qobuzUntil else tidalUntil)
+                                            ?.let { stringResource(Res.string.lossless_verified_until, com.music.laya.platform.localDateTime(it)) }
+                                            ?: stringResource(Res.string.lossless_verified),
+                                    )
                                     (if (qobuz) qobuzExpired else tidalExpired) ->
                                         SourceHealth.Rejected(stringResource(Res.string.lossless_verify_expired))
                                     else -> SourceHealth.Rejected(stringResource(Res.string.lossless_verify_on_enable))

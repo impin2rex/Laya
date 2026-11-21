@@ -1,5 +1,7 @@
 package com.music.laya
 
+import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.AudioQuality
 import com.music.laya.data.sources.LosslessSource
 import com.music.laya.data.sources.SourceConfig
 import com.music.laya.data.sources.SourceKind
@@ -29,6 +31,8 @@ class LosslessExpiryTest {
 
     private val store = mutableMapOf<String, String?>()
     private val configsBefore = SourceRegistry.configs.value
+    private val wifiBefore = AppSettings.audioQualityWifi.value
+    private val meteredBefore = AppSettings.meteredConnection.value
 
     @Before
     fun setUp() {
@@ -37,12 +41,21 @@ class LosslessExpiryTest {
         LosslessStore.write = { key, value -> store[key] = value }
         LosslessProvider.Qobuz.session.forget() // the singleton's state outlives a test
         store.clear()
+        AppSettings.meteredConnection.value = false
+        quality(AudioQuality.LOSSLESS)
     }
+
+    private fun quality(q: AudioQuality) { AppSettings.audioQualityWifi.value = q }
+
+    /** Lets the watcher's chain (loss, then the owed notice, then the quality gate) run through. */
+    private suspend fun settle() = repeat(10) { yield() }
 
     @After
     fun tearDown() {
         LosslessProvider.Qobuz.session.forget()
         SourceRegistry.configs.value = configsBefore
+        AppSettings.audioQualityWifi.value = wifiBefore
+        AppSettings.meteredConnection.value = meteredBefore
         LosslessStore.read = { null }
         LosslessStore.write = { _, _ -> }
     }
@@ -115,6 +128,25 @@ class LosslessExpiryTest {
     }
 
     @Test
+    fun `a held session states when it ends, and nothing once dropped`() {
+        store["zarz_session_until-test"] = record(future)
+        val session = ZarzSession("until-test@1") { "test" }
+        assertEquals(kotlin.time.Instant.parse(future).toEpochMilliseconds(), session.expiresAtMs.value)
+        assertTrue("shown as a local date", com.music.laya.platform.localDateTime(session.expiresAtMs.value!!).contains("2999"))
+
+        session.forget()
+        assertEquals(null, session.expiresAtMs.value)
+    }
+
+    @Test
+    fun `an expired session states no end time`() {
+        store["zarz_session_gone-test"] = record(past)
+        val session = ZarzSession("gone-test@1") { "test" }
+        session.reload()
+        assertEquals(null, session.expiresAtMs.value)
+    }
+
+    @Test
     fun `a session still valid at launch is kept`() {
         store["zarz_session_valid-test"] = record(future)
         val session = ZarzSession("valid-test@1") { "test" }
@@ -130,11 +162,11 @@ class LosslessExpiryTest {
         val qobuz = qobuzOn(enabled = true)
         val notified = mutableListOf<LosslessProvider>()
         LosslessSource.watchExpiry(this) { notified += it }
-        yield()
+        settle()
 
         store["zarz_session_qobuz-web"] = record(past)
         LosslessProvider.Qobuz.session.reload()
-        yield()
+        settle()
 
         assertFalse(enabled(qobuz))
         assertEquals(listOf<LosslessProvider>(LosslessProvider.Qobuz), notified)
@@ -149,7 +181,7 @@ class LosslessExpiryTest {
 
         val notified = mutableListOf<LosslessProvider>()
         LosslessSource.watchExpiry(this) { notified += it }
-        yield()
+        settle()
 
         assertFalse(enabled(qobuz))
         assertEquals(listOf<LosslessProvider>(LosslessProvider.Qobuz), notified)
@@ -161,15 +193,76 @@ class LosslessExpiryTest {
         val qobuz = qobuzOn(enabled = false)
         val notified = mutableListOf<LosslessProvider>()
         LosslessSource.watchExpiry(this) { notified += it }
-        yield()
+        settle()
 
         store["zarz_session_qobuz-web"] = record(past)
         LosslessProvider.Qobuz.session.reload()
-        yield()
+        settle()
 
         assertFalse(enabled(qobuz))
         assertTrue(notified.isEmpty())
         coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `on a capped quality the source goes off at once but the notice waits for Lossless`() = runBlocking {
+        quality(AudioQuality.HIGH)
+        val qobuz = qobuzOn(enabled = true)
+        val notified = mutableListOf<LosslessProvider>()
+        LosslessSource.watchExpiry(this) { notified += it }
+        settle()
+
+        store["zarz_session_qobuz-web"] = record(past)
+        LosslessProvider.Qobuz.session.reload()
+        settle()
+        assertFalse("switched off straight away", enabled(qobuz))
+        assertTrue("no notice while not listening in lossless", notified.isEmpty())
+
+        quality(AudioQuality.LOSSLESS)
+        settle()
+        assertEquals(listOf<LosslessProvider>(LosslessProvider.Qobuz), notified)
+
+        quality(AudioQuality.HIGH)
+        settle()
+        quality(AudioQuality.LOSSLESS)
+        settle()
+        assertEquals("told once, not every time Lossless comes back", 1, notified.size)
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `a notice owed is dropped once the user verifies again`() = runBlocking {
+        quality(AudioQuality.HIGH)
+        qobuzOn(enabled = true)
+        val notified = mutableListOf<LosslessProvider>()
+        LosslessSource.watchExpiry(this) { notified += it }
+        settle()
+        store["zarz_session_qobuz-web"] = record(past)
+        LosslessProvider.Qobuz.session.reload()
+        settle()
+
+        LosslessSource.toggled(on = true, LosslessProvider.Qobuz) // turned on again to verify
+        quality(AudioQuality.LOSSLESS)
+        settle()
+
+        assertTrue(notified.isEmpty())
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `a session that runs out with no request at all is found by the clock`() = runBlocking {
+        quality(AudioQuality.HIGH) // capped: nothing asks the broker
+        store["zarz_session_clock-test"] = record(past)
+        val session = ZarzSession("clock-test@1") { "test" } // held, never reloaded or used
+        val losses = mutableListOf<Unit>()
+        val watcher = launch(start = CoroutineStart.UNDISPATCHED) { session.lost.collect { losses += it } }
+
+        session.check()
+        settle()
+
+        assertEquals(1, losses.size)
+        assertTrue(session.expired.value)
+        watcher.cancel()
     }
 
     @Test

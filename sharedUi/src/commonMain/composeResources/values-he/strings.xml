@@ -750,4 +750,5 @@
     <string name="lossless_verify_unreachable">שירות האימות אינו זמין</string>
     <string name="lossless_verify_expired_notice">האימות של %1$s פג. הפעילו אותו שוב במקורות כדי להמשיך באיכות ללא אובדן.</string>
     <string name="lossless_verify_expired">האימות פג · הפעילו שוב</string>
+    <string name="lossless_verified_until">אומת · עד %1$s</string>
 </resources>

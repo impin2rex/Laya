@@ -13,3 +13,6 @@ actual fun decimalSeparator(): Char = java.text.DecimalFormatSymbols.getInstance
 
 actual fun monthName(month: Int): String =
     java.time.Month.of(month).getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault())
+
+actual fun localDateTime(epochMs: Long): String =
+    java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(epochMs))

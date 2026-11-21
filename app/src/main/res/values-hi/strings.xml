@@ -1402,4 +1402,5 @@
     <string name="lossless_verify_unreachable">सत्यापन सेवा उपलब्ध नहीं</string>
     <string name="lossless_verify_expired_notice">%1$s का सत्यापन समाप्त हो गया। लॉसलेस जारी रखने के लिए स्रोत में इसे फिर से चालू करें।</string>
     <string name="lossless_verify_expired">सत्यापन समाप्त · फिर से चालू करें</string>
+    <string name="lossless_verified_until">सत्यापित · %1$s तक</string>
 </resources>

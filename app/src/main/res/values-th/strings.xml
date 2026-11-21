@@ -1385,4 +1385,5 @@
     <string name="lossless_verify_unreachable">ไม่สามารถเชื่อมต่อบริการยืนยันได้</string>
     <string name="lossless_verify_expired_notice">การยืนยัน %1$s หมดอายุแล้ว เปิดอีกครั้งในแหล่งเพลงเพื่อฟังแบบไม่สูญเสียคุณภาพต่อ</string>
     <string name="lossless_verify_expired">การยืนยันหมดอายุ · เปิดอีกครั้ง</string>
+    <string name="lossless_verified_until">ยืนยันแล้ว · ถึง %1$s</string>
 </resources>
