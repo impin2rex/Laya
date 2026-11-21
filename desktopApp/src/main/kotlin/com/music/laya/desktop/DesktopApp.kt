@@ -7046,14 +7046,31 @@ private fun DesktopSettingsScreen(
                     )
                     var editingSignatureApi by remember { mutableStateOf(false) }
                     if (signatureEnabled) {
-                        val signatureUrl by DesktopSignatureSettings.url.collectAsState()
+                        // Only the saved address is ever shown; the built-in one stays out of the UI.
+                        val signatureUrl by DesktopSignatureSettings.customUrl.collectAsState()
+                        val signatureServerOnline by DesktopSignatureSettings.server.online.collectAsState()
+                        LaunchedEffect(signatureUrl) { DesktopSignatureSettings.refreshServer() }
+                        val serverName = signatureUrl.ifBlank {
+                            if (DesktopSignatureSettings.defaultUrl.isNotBlank()) {
+                                DesktopStrings["artist_signatures_builtin", "Built-in server"]
+                            } else {
+                                DesktopStrings["artist_signatures_unconfigured", "Not configured — tap to set the API URL"]
+                            }
+                        }
+                        val serverStatus = signatureServerOnline?.let { online ->
+                            if (online) {
+                                DesktopStrings["artist_signatures_online", "Online"] to Color(0xFF34C759)
+                            } else {
+                                DesktopStrings["listen_together_server_offline", "Can’t be reached right now"] to Color(0xFFFF453A)
+                            }
+                        }
                         SettingsRow(
                             Icons.Rounded.Edit,
                             DesktopStrings["artist_signatures_url", "Signature API URL"],
-                            signatureUrl.ifBlank {
-                                DesktopStrings["artist_signatures_unconfigured", "Not configured — tap to set the API URL"]
-                            },
-                        ) { editingSignatureApi = true }
+                            serverName,
+                            onClick = { editingSignatureApi = true },
+                            status = serverStatus,
+                        )
                     }
                     if (editingSignatureApi) DesktopSignatureApiDialog { editingSignatureApi = false }
                 }
@@ -7212,7 +7229,7 @@ private fun DesktopSettingsScreen(
                         Icons.Rounded.Share,
                         DesktopStrings["account_integrations", "Account & integrations"],
                         DesktopStrings["d_discord_rich_presence_last_fm_and_listenbrainz", "Discord rich presence, Last.fm and ListenBrainz"],
-                        onOpenIntegrations,
+                        onClick = onOpenIntegrations,
                     )
                 }
             }
@@ -8662,6 +8679,8 @@ private fun SettingsRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
+    /** A coloured line under [subtitle], such as a server's status. */
+    status: Pair<String, Color>? = null,
     onClick: (() -> Unit)? = null,
 ) {
     if (!settingsRowVisible(title, subtitle)) return
@@ -8682,6 +8701,7 @@ private fun SettingsRow(
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(subtitle, color = DesktopSecondary, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+            status?.let { (text, color) -> Text(text, color = color, style = MaterialTheme.typography.bodySmall) }
         }
         if (onClick != null) {
             Spacer(Modifier.width(10.dp))

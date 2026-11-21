@@ -37,6 +37,7 @@ import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.settings.AppSettingsHost
 import com.russhwolf.settings.NSUserDefaultsSettings
+import kotlinx.coroutines.launch
 
 /** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]; [onStatusBarLight] tells the host VC which status bar icon colour the screen needs. */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -65,6 +66,8 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
     AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
+    // Falls back to the built-in signature server when a saved one is down.
+    kotlinx.coroutines.MainScope().launch { com.music.laya.data.canvas.ArtistSignatureRepository.refreshServer() }
     // The device's own listening record (Replay), under Application Support the way Android keeps it in filesDir.
     ListeningStats.init(dir.toPath() / ListeningStats.DIRECTORY)
     ArtistFacts.init(dir.toPath() / ArtistFacts.FILE_NAME)

@@ -310,7 +310,8 @@ internal object DesktopSignatureImages {
 @Composable
 internal fun DesktopSignatureApiDialog(onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val stored = DesktopSignatureSettings.url.value
+    // The saved address only: the built-in one is never put in front of the listener.
+    val stored = DesktopSignatureSettings.customUrl.value
     // A draft of the stored address, seeded once.
     var input by remember { mutableStateOf(stored) }
     var status by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
@@ -366,8 +367,8 @@ internal fun DesktopSignatureApiDialog(onDismiss: () -> Unit) {
         },
         dismissButton = {
             Row {
-                // The build's own default is not a saved address, so there is nothing to remove.
-                if (stored.isNotBlank() && stored != DesktopSignatureSettings.defaultUrl) {
+                // Removing a saved server goes back to the built-in one.
+                if (stored.isNotBlank()) {
                     TextButton(onClick = {
                         DesktopSignatureSettings.setUrl("")
                         DesktopArtistSignatures.clear()

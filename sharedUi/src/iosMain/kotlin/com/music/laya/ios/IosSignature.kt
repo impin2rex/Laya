@@ -53,7 +53,8 @@ internal object IosDetailHost : DetailHost {
 @Composable
 internal fun IosSignatureApiEditor(onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val stored by AppSettings.signatureApiUrl.collectAsState()
+    // The saved address only: the built-in one is never put in front of the listener.
+    val stored by AppSettings.customSignatureApiUrl.collectAsState()
     var input by remember { mutableStateOf(stored) }
     var status by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -101,8 +102,8 @@ internal fun IosSignatureApiEditor(onDismiss: () -> Unit) {
         },
         confirmButton = { TextButton(onClick = ::save, enabled = input.isNotBlank() && !busy) { Text(stringResource(Res.string.save)) } },
         dismissButton = {
-            // The build's own default is not a saved address, so there is nothing to remove.
-            if (stored.isNotBlank() && stored != AppSettings.defaultSignatureApiUrl) {
+            // Removing a saved server goes back to the built-in one.
+            if (stored.isNotBlank()) {
                 TextButton(onClick = {
                     AppSettings.setSignatureApiUrl("")
                     ArtistSignatureRepository.clear()

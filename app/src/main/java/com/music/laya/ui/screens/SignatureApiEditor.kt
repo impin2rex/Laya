@@ -28,7 +28,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SignatureApiEditor(hazeState: HazeState, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val stored by AppSettings.signatureApiUrl.collectAsStateWithLifecycle()
+    // The saved address only: the built-in one is never put in front of the listener.
+    val stored by AppSettings.customSignatureApiUrl.collectAsStateWithLifecycle()
 
     // A draft of the stored address, seeded once: re-seeding it from the store
     // would overwrite typing the first time anything else touched it.
@@ -85,8 +86,8 @@ fun SignatureApiEditor(hazeState: HazeState, onDismiss: () -> Unit) {
                 onDismiss()
             }
         },
-        // The build's own default is not a saved address, so there is nothing to remove.
-        onRemove = remove.takeIf { stored.isNotBlank() && stored != AppSettings.defaultSignatureApiUrl },
+        // Removing a saved server goes back to the built-in one.
+        onRemove = remove.takeIf { stored.isNotBlank() },
         removeLabel = stringResource(R.string.remove),
         onDismiss = onDismiss,
     )

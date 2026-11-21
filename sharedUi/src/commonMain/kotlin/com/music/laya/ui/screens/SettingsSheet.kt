@@ -128,6 +128,7 @@ import com.music.laya.ui.components.thumbnailBorder
 import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.data.model.Account
 import com.music.laya.data.NerdStats
+import com.music.laya.data.canvas.ArtistSignatureRepository
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.OutputPcmMode
 import com.music.laya.data.settings.AutomixPerformanceMode
@@ -200,7 +201,10 @@ fun SettingsScreen(
     val animatedCanvas by AppSettings.animatedCanvas.collectAsStateWithLifecycle()
     val canvasOverCellular by AppSettings.canvasOverCellular.collectAsStateWithLifecycle()
     val signatureApiEnabled by AppSettings.signatureApiEnabled.collectAsStateWithLifecycle()
-    val signatureApiUrl by AppSettings.signatureApiUrl.collectAsStateWithLifecycle()
+    // Only the saved address is ever shown; the built-in one stays out of the UI.
+    val signatureApiUrl by AppSettings.customSignatureApiUrl.collectAsStateWithLifecycle()
+    val signatureServerOnline by ArtistSignatureRepository.server.online.collectAsStateWithLifecycle()
+    LaunchedEffect(signatureApiEnabled, signatureApiUrl) { ArtistSignatureRepository.refreshServer() }
     val fullBleedArtwork by AppSettings.fullBleedArtwork.collectAsStateWithLifecycle()
     val legacyMeshGradient by AppSettings.legacyMeshGradient.collectAsStateWithLifecycle()
     val syncedLyrics by AppSettings.syncedLyrics.collectAsStateWithLifecycle()
@@ -966,16 +970,32 @@ fun SettingsScreen(
                                 .padding(start = ROW_INSET, end = ROW_INSET, top = 4.dp, bottom = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = signatureApiUrl.ifBlank {
-                                    stringResource(Res.string.artist_signatures_unconfigured)
-                                },
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = signatureApiUrl.ifBlank {
+                                        if (AppSettings.defaultSignatureApiUrl.isNotBlank()) {
+                                            stringResource(Res.string.artist_signatures_builtin)
+                                        } else {
+                                            stringResource(Res.string.artist_signatures_unconfigured)
+                                        }
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                signatureServerOnline?.let { online ->
+                                    Text(
+                                        text = stringResource(
+                                            if (online) Res.string.artist_signatures_online else Res.string.listen_together_server_offline,
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (online) SERVER_ONLINE_GREEN else MaterialTheme.colorScheme.error,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
                             Chevron()
                         }
                     }
@@ -2556,3 +2576,6 @@ fun SegmentedControl(
         }
     }
 }
+
+/** The signature server's "Online" line. */
+private val SERVER_ONLINE_GREEN = Color(0xFF34C759)

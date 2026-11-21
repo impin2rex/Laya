@@ -33,7 +33,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun TvSignatureApiDialog(onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val stored by AppSettings.signatureApiUrl.collectAsState()
+    // The saved address only: the built-in one is never put in front of the listener.
+    val stored by AppSettings.customSignatureApiUrl.collectAsState()
     // A draft of the stored address, seeded once.
     var input by remember { mutableStateOf(stored) }
     var status by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
@@ -93,8 +94,8 @@ fun TvSignatureApiDialog(onDismiss: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(6.dp))
         TvDialogButton(text = "Test", enabled = input.isNotBlank() && !busy, onClick = { test {} })
-        // The build's own default is not a saved address, so there is nothing to remove.
-        if (stored.isNotBlank() && stored != AppSettings.defaultSignatureApiUrl) {
+        // Removing a saved server goes back to the built-in one.
+        if (stored.isNotBlank()) {
             Spacer(modifier = Modifier.height(6.dp))
             TvDialogButton(
                 text = "Remove",

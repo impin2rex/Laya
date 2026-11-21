@@ -350,6 +350,8 @@
     <string name="artist_signatures_url">Signature API URL</string>
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">Not configured — tap to set the API URL</string>
+    <string name="artist_signatures_builtin">Built-in server</string>
+    <string name="artist_signatures_online">Online</string>
     <string name="artist_signatures_test_failed">Could not reach the API at that URL</string>
     <string name="synced_lyrics">Synced lyrics</string>
     <string name="synced_lyrics_subtitle">Lights up the words on the player as they’re sung</string>
