@@ -303,9 +303,99 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  ios:
+    name: iOS · unsigned IPA
+    # Xcode 26+: the alternate app icons are Icon Composer (.icon) documents, which Xcode 16 silently leaves out.
+    runs-on: macos-26
+    timeout-minutes: 150
+    env:
+      # Runner has an Android SDK; point at nothing so settings.gradle.kts only configures KMP modules.
+      ANDROID_HOME: /nonexistent
+      ANDROID_SDK_ROOT: /nonexistent
+      SIGNATURE_API_URL: ${{ secrets.SIGNATURE_API_URL }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+      LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
+      LOSSLESS_USER_AGENT: ${{ vars.LOSSLESS_USER_AGENT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out the version
+        id: version
+        run: |
+          version="${{ inputs.version }}"
+          [ -n "$version" ] || version="${GITHUB_REF_NAME#v}"
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "Building $version"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Cache Kotlin/Native toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('build.gradle.kts') }}
+
+      - run: chmod +x gradlew
+
+      - name: Generate Xcode project
+        run: |
+          xcodebuild -version
+          brew install xcodegen
+          cd iosApp && xcodegen generate
+
+      - name: Build app (unsigned)
+        run: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd \
+            MARKETING_VERSION=${{ steps.version.outputs.value }} \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      # installd rejects a bundle with no signature; Sideloadly/AltStore re-sign it.
+      - name: Ad-hoc sign
+        run: |
+          APP=build/dd/Build/Products/Release-iphoneos/Laya.app
+          find "$APP" -type d -empty -delete
+          # Embedded frameworks (ONNX Runtime, Google Cast) are signed before the bundle that contains them.
+          for f in "$APP"/Frameworks/*.framework; do [ -e "$f" ] && codesign --force --sign - --timestamp=none "$f"; done
+          # The widgets extension, then the app, with the App Group they share: an unsigned build carries no
+          # entitlements, and a re-signing sideloader only sets up the groups it finds here.
+          codesign --force --sign - --timestamp=none --generate-entitlement-der \
+            --entitlements iosApp/LayaWidgets/LayaWidgets.entitlements "$APP/PlugIns/LayaWidgets.appex"
+          codesign --force --sign - --timestamp=none --generate-entitlement-der \
+            --entitlements iosApp/iosApp/iosApp.entitlements "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
+          # The Settings icon picker needs these; an older Xcode drops them without an error.
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP/Info.plist" \
+            || { echo "::error::No alternate app icons in the build; the icon picker would do nothing"; exit 1; }
+
+      - name: Package .ipa
+        run: |
+          mkdir -p dist build/ipa/Payload
+          cp -R build/dd/Build/Products/Release-iphoneos/Laya.app build/ipa/Payload/
+          cd build/ipa && zip -qry "../../dist/Laya-${{ steps.version.outputs.value }}-ios.ipa" Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-artifacts
+          path: dist/*
+          if-no-files-found: error
+
   release:
     name: Publish
-    needs: [linux, windows, macos, android]
+    needs: [linux, windows, macos, android, ios]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

@@ -7,7 +7,7 @@ options:
   preGenCommand: sh scripts/fetch-cast-sdk.sh
 settings:
   base:
-    # A tag build overrides this with the tag's version (.github/workflows/ios.yml).
+    # A tag build overrides this with the tag's version (.github/workflows/release.yml).
     MARKETING_VERSION: "1.9.5"
     CURRENT_PROJECT_VERSION: "36"
 packages:
