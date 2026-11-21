@@ -38,12 +38,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import platform.AVFoundation.AVMediaTypeAudio
+import platform.AVFoundation.AVAssetTrack
+import platform.AVFoundation.AVMediaTypeVideo
+import platform.AVFoundation.AVMutableComposition
 import platform.AVFoundation.AVPlayerItem
-import platform.AVFoundation.AVPlayerItemTrack
 import platform.AVFoundation.AVPlayerAudiovisualBackgroundPlaybackPolicyPauses
-import platform.AVFoundation.mediaType
-import platform.AVFoundation.tracks
+import platform.AVFoundation.AVURLAsset
+import platform.AVFoundation.addMutableTrackWithMediaType
+import platform.AVFoundation.duration
+import platform.AVFoundation.preferredTransform
+import platform.AVFoundation.tracksWithMediaType
 import platform.AVFoundation.AVPlayerLooper
 import platform.AVFoundation.audiovisualBackgroundPlaybackPolicy
 import platform.AVFoundation.AVQueuePlayer
@@ -71,6 +75,9 @@ import platform.CoreVideo.CVPixelBufferLockBaseAddress
 import platform.CoreVideo.CVPixelBufferUnlockBaseAddress
 import platform.CoreVideo.kCVPixelFormatType_32BGRA
 import platform.CoreGraphics.CGSizeMake
+import platform.CoreMedia.CMTimeMake
+import platform.CoreMedia.CMTimeRangeMake
+import platform.CoreMedia.kCMPersistentTrackID_Invalid
 import platform.AVFoundation.preferredMaximumResolution
 import platform.Foundation.NSNumber
 import platform.Foundation.NSURL
@@ -86,16 +93,15 @@ import platform.posix.memcpy
 private class CanvasPlayer(url: String) {
     // Dropped on release: each AVPlayer holds a connection to mediaplaybackd until the ObjC object goes, and a K/N
     // wrapper is only freed by a later GC. One clip per song piling up crashed the media server ("too many clients").
-    // Paused in the background: a clip still looping there, muted or not, is playback iOS credits to the app, so the
-    // lock screen kept showing Pause over music that had stopped.
+    // The pauses policy is kept for the iOS versions that honor it, but iOS 26 doesn't apply it: the
+    // composable also pauses the clip itself whenever the app leaves the foreground (see the play gate).
     private var player: AVQueuePlayer? = AVQueuePlayer().apply {
         muted = true
         preventsDisplaySleepDuringVideoPlayback = false
         audiovisualBackgroundPlaybackPolicy = AVPlayerAudiovisualBackgroundPlaybackPolicyPauses
     }
-    private var looper: AVPlayerLooper? = AVPlayerLooper.playerLooperWithPlayer(player!!, AVPlayerItem.playerItemWithURL(NSURL.URLWithString(url)!!).apply { preferredMaximumResolution = CGSizeMake(1280.0, 1280.0) })
+    private var looper: AVPlayerLooper? = AVPlayerLooper.playerLooperWithPlayer(player!!, videoOnlyItem(url).apply { preferredMaximumResolution = CGSizeMake(1280.0, 1280.0) })
     private var item: AVPlayerItem? = null
-    private var silenced: AVPlayerItem? = null
     private var output: AVPlayerItemVideoOutput? = null
     private var image: Image? = null
     private var bytes = ByteArray(0)
@@ -106,24 +112,6 @@ private class CanvasPlayer(url: String) {
     var alignTop = false
 
     fun play(on: Boolean) { if (on) player?.play() else player?.pause() }
-
-    /**
-     * Muting isn't enough: a clip whose (silent) audio track is rendering is still playback iOS credits to the
-     * app, so pausing the music left the lock screen / Dynamic Island button on Pause while the canvas looped on.
-     * A track disabled renders nothing, and video-only playback doesn't touch the now-playing state.
-     * AVPlayerLooper plays copies of the item, so each new current item is silenced once; tracks arrive only when
-     * the item is ready, so an empty list means try again on the next frame.
-     */
-    private fun silence(cur: AVPlayerItem) {
-        if (silenced?.isEqual(cur) == true) return
-        val tracks = cur.tracks
-        if (tracks.isEmpty()) return
-        tracks.forEach { t ->
-            val track = t as AVPlayerItemTrack
-            if (track.assetTrack?.mediaType == AVMediaTypeAudio) track.enabled = false
-        }
-        silenced = cur
-    }
 
     /** AVPlayerLooper swaps items each loop; an output belongs to one item, so re-attach on change. */
     private fun outputFor(cur: AVPlayerItem): AVPlayerItemVideoOutput? {
@@ -150,7 +138,6 @@ private class CanvasPlayer(url: String) {
     /** The newest decoded frame, or null when nothing new arrived since the last call. */
     fun nextFrame(): ImageBitmap? {
         val cur = player?.currentItem ?: return null
-        silence(cur)
         val o = outputFor(cur) ?: return null
         val t = o.itemTimeForHostTime(CACurrentMediaTime())
         if (!o.hasNewPixelBufferForItemTime(t)) return null
@@ -211,6 +198,27 @@ private class CanvasPlayer(url: String) {
     }
 }
 
+/**
+ * The clip's video track alone, in a composition with no audio track at all. Muting wasn't enough (a rendering
+ * silent audio track is still playback iOS credits to the app), and disabling the item's audio tracks wasn't
+ * either: AVPlayerLooper plays fresh copies whose tracks arrive only once each copy is ready, so every loop
+ * began with its audio track enabled and flipped the lock screen / Dynamic Island back to the playing state
+ * while the music sat paused. An item with no audio track never opens an audio pipeline to be credited.
+ * Sync track/duration loads are fine here: CanvasPlayer is built off the main thread (see produceState below).
+ */
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+private fun videoOnlyItem(url: String): AVPlayerItem {
+    val asset = AVURLAsset.URLAssetWithURL(NSURL.URLWithString(url)!!, null)
+    val video = asset.tracksWithMediaType(AVMediaTypeVideo).firstOrNull() as? AVAssetTrack
+        ?: return AVPlayerItem.playerItemWithAsset(asset)
+    val comp = AVMutableComposition.composition()
+    val track = comp.addMutableTrackWithMediaType(AVMediaTypeVideo, kCMPersistentTrackID_Invalid)
+        ?: return AVPlayerItem.playerItemWithAsset(asset)
+    track.insertTimeRange(CMTimeRangeMake(CMTimeMake(0, 1), asset.duration), video, CMTimeMake(0, 1), null)
+    track.preferredTransform = video.preferredTransform
+    return AVPlayerItem.playerItemWithAsset(comp)
+}
+
 /** Android's applyContentTransform: crop to fill, or fit a portrait clip (pinned to the top when asked). */
 private fun placement(frame: IntSize, view: androidx.compose.ui.geometry.Size, mode: CanvasContentMode, alignTop: Boolean): Pair<IntOffset, IntSize> {
     val aspect = frame.width.toFloat() / frame.height
@@ -250,11 +258,18 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
             current.onAspectRatioChanged(0f)
         }
     }
-    LaunchedEffect(clip, spec.pausedForTransition) {
+    // Gated on the app being on screen, as Android's CanvasArtworkPlayer gates its decoder. Not left to
+    // audiovisualBackgroundPlaybackPolicy: iOS 26 no longer applies the pauses policy, so a backgrounded
+    // clip looped on at rate 1 and its mediaplaybackd session re-asserted IsPlaying=1 every loop — playback
+    // the system credits to the app, keeping the lock screen / Dynamic Island on the playing state over
+    // paused music no matter what the app published to MPNowPlayingInfoCenter.
+    val foreground = com.music.laya.ui.rememberIsForeground()
+    LaunchedEffect(clip, spec.pausedForTransition, foreground) {
         val clip = clip ?: return@LaunchedEffect
-        clip.play(!spec.pausedForTransition)
+        val run = foreground && !spec.pausedForTransition
+        clip.play(run)
         // Poll once per display frame, only while playing: a paused clip has nothing new to show.
-        while (!spec.pausedForTransition) {
+        while (run) {
             androidx.compose.runtime.withFrameNanos { }
             clip.nextFrame()?.let { frame = it }
         }
