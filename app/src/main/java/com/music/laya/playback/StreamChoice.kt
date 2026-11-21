@@ -101,6 +101,20 @@ object StreamChoice {
     }
 
     /**
+     * [remember], unless playback already chose a copy of [videoId]; returns whether it was kept.
+     *
+     * For read-ahead, whose patient lookup can still be running when the player
+     * opens the track itself. That open picked a stream and started filling the
+     * cache entry with it; pinning a different one now would finish the entry
+     * from another file. The playing track's own upgrade picks the better copy
+     * up instead.
+     */
+    fun rememberIfAbsent(videoId: String, stream: SourceStream, substituted: Boolean): Boolean {
+        if (of(videoId) != null) return false
+        return chosen.putIfAbsent(videoId, Choice(stream, SystemClock.elapsedRealtime(), substituted)) == null
+    }
+
+    /**
      * Whether the copy currently serving [videoId] came from a source standing
      * in for YouTube.
      *

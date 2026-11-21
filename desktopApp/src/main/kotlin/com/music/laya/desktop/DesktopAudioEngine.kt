@@ -624,7 +624,10 @@ class DesktopPlaybackEngine(
             // Android does not read an addon's track ahead; it is asked for a stream only once the
             // track is about to play. Held here and armed shortly before the transition — see
             // [armAddonUpcoming].
-            DesktopTrackLog.log("'${song.title}' may come from an addon, so it is not read ahead")
+            DesktopTrackLog.log("'${song.title}' may come from an addon, so its stream is not read ahead")
+            // The search is, though: a slow addon's search used to start at arm time and run past
+            // it, so the track began on a quick copy and reached the FLAC only mid-song.
+            DesktopMusicSources.warmMatches(song, audioQuality)
             awaitingArm.set(song)
             return
         }

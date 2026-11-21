@@ -745,4 +745,5 @@
     <string name="lossless_verify_unreachable">Không thể kết nối dịch vụ xác minh</string>
     <string name="lossless_verify_expired_notice">Xác minh %1$s đã hết hạn. Bật lại trong Nguồn để tiếp tục nghe lossless.</string>
     <string name="lossless_verify_expired">Xác minh đã hết hạn · bật lại</string>
+    <string name="lossless_verified_until">Đã xác minh · đến %1$s</string>
 </resources>

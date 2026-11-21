@@ -496,12 +496,24 @@ object AppSettings {
     val prioritizeSpotifyCanvas = MutableStateFlow(false)
 
     /**
-     * Secondary artist art: a user-hosted artist-signature API used only when
-     * Apple Music has no title logo. Blank URL means unconfigured and the
-     * lookup is skipped entirely — there is no hosted default.
+     * Secondary artist art: an artist-signature API used only when Apple Music
+     * has no title logo.
      */
     val signatureApiEnabled = MutableStateFlow(false)
+
+    /**
+     * The address lookups go to: the saved server, or this build's built-in one
+     * when none is saved or the saved one is down (see
+     * [ArtistSignatureRepository.refreshServer][com.music.laya.data.canvas.ArtistSignatureRepository.refreshServer]).
+     * Blank means unconfigured and lookups are skipped.
+     *
+     * **Never show this on screen**: it may be the built-in address, which is
+     * kept out of the UI. Show [customSignatureApiUrl] instead.
+     */
     val signatureApiUrl = MutableStateFlow(defaultSignatureApiUrl)
+
+    /** The server the listener saved; "" when they use the built-in one. The only address the UI shows. */
+    val customSignatureApiUrl = MutableStateFlow("")
 
     /**
      * Blows the player's cover art out to a full-bleed banner running off the
@@ -928,8 +940,11 @@ object AppSettings {
         spotifyCanvasAutoHide.value = prefs.getBoolean(KEY_SPOTIFY_CANVAS_AUTO_HIDE, true)
         prioritizeSpotifyCanvas.value = prefs.getBoolean(KEY_PRIORITIZE_SPOTIFY_CANVAS, false)
         signatureApiEnabled.value = prefs.getBoolean(KEY_SIGNATURE_API_ENABLED, false)
-        signatureApiUrl.value = normalizeSignatureApiUrl(prefs.getString(KEY_SIGNATURE_API_URL, "").orEmpty())
-            .ifBlank { defaultSignatureApiUrl }
+        // Older builds seeded the editor with the built-in address, so a save could store it; that
+        // copy is not the listener's own server and must not be shown as one.
+        customSignatureApiUrl.value = normalizeSignatureApiUrl(prefs.getString(KEY_SIGNATURE_API_URL, "").orEmpty())
+            .takeUnless { it == defaultSignatureApiUrl }.orEmpty()
+        signatureApiUrl.value = customSignatureApiUrl.value.ifBlank { defaultSignatureApiUrl }
         fullBleedArtwork.value = prefs.getBoolean(KEY_FULL_BLEED_ARTWORK, true)
         legacyMeshGradient.value = prefs.getBoolean(KEY_LEGACY_MESH_GRADIENT, false)
         lastPlayerScreen.value = runCatching {
@@ -1517,9 +1532,11 @@ object AppSettings {
         prefs.edit().putBoolean(KEY_SIGNATURE_API_ENABLED, value).apply()
     }
 
-    /** Normalizes (trim + strip trailing slash); blank forgets the provider. */
+    /** Normalizes (trim + strip trailing slash); blank goes back to the built-in server. */
     fun setSignatureApiUrl(value: String) {
-        val normalized = normalizeSignatureApiUrl(value)
+        // The built-in address is never kept as a saved one.
+        val normalized = normalizeSignatureApiUrl(value).takeUnless { it == defaultSignatureApiUrl }.orEmpty()
+        customSignatureApiUrl.value = normalized
         signatureApiUrl.value = normalized.ifBlank { defaultSignatureApiUrl }
         prefs.edit().putString(KEY_SIGNATURE_API_URL, normalized).apply()
     }

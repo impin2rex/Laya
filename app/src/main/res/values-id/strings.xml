@@ -1379,4 +1379,5 @@
     <string name="lossless_verify_unreachable">Layanan verifikasi tidak dapat dijangkau</string>
     <string name="lossless_verify_expired_notice">Verifikasi %1$s kedaluwarsa. Nyalakan lagi di Sumber agar tetap lossless.</string>
     <string name="lossless_verify_expired">Verifikasi kedaluwarsa · nyalakan lagi</string>
+    <string name="lossless_verified_until">Terverifikasi · hingga %1$s</string>
 </resources>

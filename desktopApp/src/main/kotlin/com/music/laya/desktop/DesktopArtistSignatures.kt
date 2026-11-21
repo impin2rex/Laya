@@ -1,6 +1,9 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.canvas.SignatureServer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -44,12 +47,42 @@ internal object DesktopSignatureSettings {
         System.getProperty("laya.signature.url").orEmpty(),
     )
 
-    private val _url = MutableStateFlow(
-        DesktopArtistSignatures.normalizeBaseUrl(persistence.string(KEY_URL, "")).ifBlank { defaultUrl },
+    // Older builds seeded the editor with the built-in address, so a save could store it; that copy
+    // is not the listener's own server and must not be shown as one.
+    private val _customUrl = MutableStateFlow(
+        DesktopArtistSignatures.normalizeBaseUrl(persistence.string(KEY_URL, "")).takeUnless { it == defaultUrl }.orEmpty(),
     )
 
+    private val _url = MutableStateFlow(_customUrl.value.ifBlank { defaultUrl })
+
     val enabled: StateFlow<Boolean> = _enabled
+
+    /**
+     * The address lookups go to: the saved server, or the built-in one when none is saved or the
+     * saved one is down. **Never show this**: it may be the built-in address. Show [customUrl].
+     */
     val url: StateFlow<String> = _url
+
+    /** The server the listener saved; "" when they use the built-in one. The only address shown. */
+    val customUrl: StateFlow<String> = _customUrl
+
+    /** Whether the server answers; drives the status line under the setting. */
+    val server = SignatureServer(DesktopArtistSignatures::checkHealth)
+
+    init {
+        // Falls back to the built-in server when a saved one is down.
+        CoroutineScope(Dispatchers.IO).launch { refreshServer() }
+    }
+
+    /** Re-checks the server and points lookups at whichever address answers. Nothing while off. */
+    suspend fun refreshServer() {
+        if (!_enabled.value) return
+        val active = server.refresh(_customUrl.value, defaultUrl)
+        if (active != _url.value) {
+            _url.value = active
+            DesktopArtistSignatures.clear()
+        }
+    }
 
     fun setEnabled(value: Boolean) {
         persistence.saveBoolean(KEY_ENABLED, value)
@@ -57,8 +90,10 @@ internal object DesktopSignatureSettings {
     }
 
     fun setUrl(raw: String) {
-        val normalized = DesktopArtistSignatures.normalizeBaseUrl(raw)
+        // The built-in address is never kept as a saved one (see [_customUrl]).
+        val normalized = DesktopArtistSignatures.normalizeBaseUrl(raw).takeUnless { it == defaultUrl }.orEmpty()
         persistence.saveString(KEY_URL, normalized)
+        _customUrl.value = normalized
         _url.value = normalized.ifBlank { defaultUrl }
     }
 

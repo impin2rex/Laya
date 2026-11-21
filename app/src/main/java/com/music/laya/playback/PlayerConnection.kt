@@ -182,10 +182,11 @@ fun MediaController.revertToOriginal() {
 /**
  * Asks the service to smoothly transition the playing track to another version/rendition.
  */
-fun MediaController.swapToVersion(targetSong: Song) {
+/** [play]: start playback once the version is in place, for a caller that paused while resolving it. */
+fun MediaController.swapToVersion(targetSong: Song, play: Boolean = false) {
     sendCustomCommand(
         SessionCommand(ACTION_SWAP_VERSION, Bundle.EMPTY),
-        bundleOf(EXTRA_SWAP_MEDIA_ITEM to targetSong.toSongBundle()),
+        bundleOf(EXTRA_SWAP_MEDIA_ITEM to targetSong.toSongBundle(), EXTRA_SWAP_PLAY to play),
     )
 }
 

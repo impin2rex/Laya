@@ -745,4 +745,5 @@
     <string name="lossless_verify_unreachable">无法连接验证服务</string>
     <string name="lossless_verify_expired_notice">%1$s 验证已过期。请在“来源”中重新开启以继续无损播放。</string>
     <string name="lossless_verify_expired">验证已过期 · 请重新开启</string>
+    <string name="lossless_verified_until">已验证 · 有效期至 %1$s</string>
 </resources>

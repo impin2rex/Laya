@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.music.laya.BuildConfig
 import com.music.laya.data.AppUpdateChecker
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Color
+import com.music.laya.data.canvas.ArtistSignatureRepository
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.TvSettings
 import com.music.laya.ui.MainViewModel
@@ -88,7 +91,10 @@ fun TvSettingsScreen(
     val lyricsCanvas by TvSettings.tvLyricsCanvasEnabled.collectAsState()
     val nerdStats by AppSettings.showNerdStats.collectAsState()
     val signatureEnabled by AppSettings.signatureApiEnabled.collectAsState()
-    val signatureUrl by AppSettings.signatureApiUrl.collectAsState()
+    // Only the saved address is ever shown; the built-in one stays out of the UI.
+    val signatureUrl by AppSettings.customSignatureApiUrl.collectAsState()
+    val signatureServerOnline by ArtistSignatureRepository.server.online.collectAsState()
+    LaunchedEffect(signatureEnabled, signatureUrl) { ArtistSignatureRepository.refreshServer() }
     val themeId by TvSettings.tvTheme.collectAsState()
     val uiScale by TvSettings.tvUiScale.collectAsState()
     val refreshRate by TvRefreshRateController.preference.collectAsState()
@@ -289,7 +295,11 @@ fun TvSettingsScreen(
                 item {
                     TvListRow(
                         title = "Signature API",
-                        value = signatureUrl.removePrefix("https://").removePrefix("http://").ifBlank { "Not Set" },
+                        value = signatureUrl.removePrefix("https://").removePrefix("http://").ifBlank {
+                            if (AppSettings.defaultSignatureApiUrl.isNotBlank()) "Built-in" else "Not Set"
+                        },
+                        subtitle = signatureServerOnline?.let { if (it) "Online" else "Can’t be reached right now" },
+                        subtitleColor = signatureServerOnline?.let { if (it) Color(0xFF34C759) else Color(0xFFFF453A) },
                         onFocused = { blurb = "The address of the artist-signature API to ask. Select to change it." },
                         onClick = { sheet = SettingsSheet.SignatureApi },
                     )

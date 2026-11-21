@@ -84,6 +84,13 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
     /** Whether a usable session is held, for the sources screens. */
     val verified: StateFlow<Boolean> get() = _verified
 
+    private val _expiresAt = MutableStateFlow(record.expiry()?.takeIf { _verified.value }?.toEpochMilliseconds())
+    /**
+     * When the session held ends, as the broker stated it (epoch ms), or null when none is held or it states no end.
+     * Moves later when the session is renewed, which happens by itself during its last hour of use.
+     */
+    val expiresAtMs: StateFlow<Long?> get() = _expiresAt
+
     private val _expired = MutableStateFlow(false)
     /** The last session ran out or was revoked (not [forget]); cleared once verified again or switched by hand. */
     val expired: StateFlow<Boolean> get() = _expired
@@ -96,6 +103,14 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
      * [com.music.laya.data.sources.LosslessSource.lossesOf].
      */
     val lost: SharedFlow<Unit> get() = _lost
+
+    /**
+     * Reports a session that has passed its end as lost without waiting for the next request: a capped quality never
+     * makes one, and the sources screen would go on saying "Verified" for a session that no longer works.
+     */
+    fun check() {
+        if (!record.usable(Clock.System.now())) lose(record)
+    }
 
     /** Drops [stale] (if still the one held) and reports it lost. */
     private fun lose(stale: Record) {
@@ -111,6 +126,7 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
             ?.let { runCatching { json.decodeFromString(Record.serializer(), it) }.getOrNull() }
             ?: record
         _verified.value = record.usable(Clock.System.now())
+        _expiresAt.value = record.expiry()?.takeIf { _verified.value }?.toEpochMilliseconds()
         if (!_verified.value) lose(record)
     }
 
@@ -118,6 +134,7 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
         record = next
         LosslessStore.write(key, json.encodeToString(Record.serializer(), next))
         _verified.value = next.usable(Clock.System.now())
+        _expiresAt.value = next.expiry()?.takeIf { _verified.value }?.toEpochMilliseconds()
         if (_verified.value) _expired.value = false
     }
 

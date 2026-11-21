@@ -673,6 +673,8 @@ fun TvListRow(
     enabled: Boolean = true,
     resting: Color = Color.White.copy(alpha = 0.06f),
     onFocused: (() -> Unit)? = null,
+    /** Overrides the subtitle's grey, for a status line. */
+    subtitleColor: Color? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
@@ -719,7 +721,7 @@ fun TvListRow(
                 Text(
                     text = subtitle,
                     style = TvType.Caption,
-                    color = secondaryColor,
+                    color = subtitleColor ?: secondaryColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -832,8 +834,8 @@ fun TvSongRow(
 }
 
 /**
- * A mood or genre card — the phone's own sleeve ([MoodGenreSleeve]: colour stripe,
- * duotone cover, title), lifted on focus.
+ * A mood or genre card — the phone's own sleeve ([MoodGenreSleeve]: tinted tile,
+ * fanned covers, title), lifted on focus.
  */
 @Composable
 fun TvMoodCard(

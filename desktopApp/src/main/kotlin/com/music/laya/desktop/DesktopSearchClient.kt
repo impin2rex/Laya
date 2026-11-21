@@ -50,7 +50,7 @@ object DesktopSearchClient {
     suspend fun moodGenreShelves(browseId: String, params: String?): Result<List<HomeShelf>> =
         YtMusicRepository.moodGenreShelves(browseId, params)
 
-    suspend fun moodGenreArtwork(browseId: String, params: String?): Result<String?> =
+    suspend fun moodGenreArtwork(browseId: String, params: String?): Result<List<String>> =
         YtMusicRepository.moodGenreArtwork(browseId, params)
 
     /** An album, playlist or artist song list, in the shape the desktop's collection page draws. */

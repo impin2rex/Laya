@@ -1611,17 +1611,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     launch {
                         val artwork = limiter.withPermit {
                             YtMusicRepository.moodGenreArtwork(item.browseId, item.params).getOrNull()
-                        } ?: return@launch
+                        }?.takeIf { it.isNotEmpty() } ?: return@launch
                         val current = (_explore.value as? UiState.Success)?.data ?: return@launch
-                        _explore.value = UiState.Success(current.map { section ->
-                            section.copy(items = section.items.map { currentItem ->
-                                if (currentItem.browseId == item.browseId && currentItem.params == item.params) {
-                                    currentItem.copy(thumbnailUrl = artwork)
-                                } else {
-                                    currentItem
-                                }
-                            })
-                        })
+                        _explore.value = UiState.Success(YtMusicRepository.withMoodGenreArtwork(current, item, artwork))
                     }
                 }
             }

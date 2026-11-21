@@ -28,3 +28,8 @@ actual fun decimalSeparator(): Char = NSLocale.currentLocale.decimalSeparator.fi
 
 actual fun monthName(month: Int): String =
     (platform.Foundation.NSDateFormatter().monthSymbols.getOrNull(month - 1) as? String) ?: month.toString()
+
+actual fun localDateTime(epochMs: Long): String = platform.Foundation.NSDateFormatter().apply {
+    dateStyle = platform.Foundation.NSDateFormatterMediumStyle
+    timeStyle = platform.Foundation.NSDateFormatterShortStyle
+}.stringFromDate(platform.Foundation.NSDate(timeIntervalSinceReferenceDate = epochMs / 1000.0 - 978_307_200.0))

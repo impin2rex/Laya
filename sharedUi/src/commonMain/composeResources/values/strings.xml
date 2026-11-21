@@ -283,6 +283,8 @@
     <string name="artist_signatures">Artist signatures</string>
     <string name="artist_signatures_subtitle">Shows a handwritten signature when Apple Music has no title logo</string>
     <string name="artist_signatures_unconfigured">Not configured — tap to set the API URL</string>
+    <string name="artist_signatures_builtin">Built-in server</string>
+    <string name="artist_signatures_online">Online</string>
     <string name="artist_signatures_url">Signature API URL</string>
     <string name="audio_quality">Audio quality</string>
     <string name="audio_quality_connection">While on %1$s</string>
@@ -772,4 +774,5 @@
     <string name="lossless_verify_unreachable">Verification service unreachable</string>
     <string name="lossless_verify_expired_notice">%1$s verification expired. Turn it on again in Sources to keep lossless.</string>
     <string name="lossless_verify_expired">Verification expired · turn on again</string>
+    <string name="lossless_verified_until">Verified · until %1$s</string>
 </resources>

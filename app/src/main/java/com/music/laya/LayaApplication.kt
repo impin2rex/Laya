@@ -175,6 +175,8 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
             CoroutineScope(Dispatchers.IO).launch { Innertube.ensureSessionScope() }
         }
         AppSettings.init(this, authStore)
+        // Falls back to the built-in signature server when a saved one is down.
+        CoroutineScope(Dispatchers.IO).launch { com.music.laya.data.canvas.ArtistSignatureRepository.refreshServer() }
         // Before anything resolves a track: an addon with `checkValidLossless`
         // is gated on this, and the gate reads "no" until it has looked.
         com.music.laya.playback.audio.LosslessOutput.init(this)
