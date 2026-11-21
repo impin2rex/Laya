@@ -1294,7 +1294,8 @@ private fun LayaApp(
             // The same line in the finally is the catch-all for every path
             // that never got this far, where nothing else would release it.
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
-            c.swapToVersion(target)
+            // Paused above while resolving; the swap keeps that state, so it has to be told to resume.
+            c.swapToVersion(target, play = resumeAfterResolution)
         } finally {
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
             switchingAudioVersion = false
@@ -1373,7 +1374,8 @@ private fun LayaApp(
             // music-only path above: the service owns the flag from here, and
             // the finally only exists for the paths that never send.
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
-            c.swapToVersion(target)
+            // Paused above while resolving; the swap keeps that state, so it has to be told to resume.
+            c.swapToVersion(target, play = resumeAfterResolution)
         } finally {
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
             switchingAudioVersion = false

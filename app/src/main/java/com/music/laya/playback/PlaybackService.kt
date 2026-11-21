@@ -205,6 +205,12 @@ const val EXTRA_BOUNDED_CONTEXT_CONTINUATION = "laya.boundedContext.continuation
 const val ACTION_SWAP_VERSION = "com.music.laya.action.SWAP_VERSION"
 const val EXTRA_SWAP_MEDIA_ITEM = "laya.swap.media_item"
 
+/** How long a preload of the next track waits for read-ahead's lossless lookup before racing. */
+private const val PRELOAD_WARM_UP_WAIT_MS = 20_000L
+
+/** Start playing once the swapped-in version is in place: the caller paused while it resolved. */
+const val EXTRA_SWAP_PLAY = "laya.swap.play"
+
 /** Session command used by the media notification's and the 4×1 widget's Favorite button. */
 /** How long the service may stay in the foreground, paused, while the watch plays. */
 private const val WATCH_SESSION_FOREGROUND_MS = 6 * 60 * 60 * 1000L
@@ -569,6 +575,14 @@ class PlaybackService : MediaLibraryService() {
      * capturing it.
      */
     private var player: ExoPlayer? = null
+
+    /**
+     * The session player's current media id, for the loader thread: asking the
+     * main thread instead timed out whenever the UI was busy (app start), and a
+     * preload of the next track then raced instead of waiting — see [isCurrentItem].
+     */
+    @Volatile
+    private var playingMediaId: String? = null
 
     /**
      * The idle player. Between transitions it holds nothing; to arm one,
@@ -1004,6 +1018,7 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            playingMediaId = mediaItem?.mediaId
             // The player this fired on, which is by definition the one the
             // session is currently pointed at.
             val exoPlayer = player ?: return
@@ -1610,6 +1625,15 @@ class PlaybackService : MediaLibraryService() {
             // the end of the cached bytes. Deciding afresh each time is how
             // the middle of an MP4 ended up appended to a WebM. See
             // [StreamChoice].
+            // ExoPlayer (or automix's standby) opens the *next* track early,
+            // while this one plays. Racing it then pinned JioSaavn's quick 320
+            // seconds before read-ahead's patient lookup found the FLAC, and
+            // the FLAC came only as a mid-track upgrade. A preload has time to
+            // spare, so it waits for that lookup and opens on its pin; a track
+            // the listener skipped to does not wait.
+            if (StreamChoice.of(videoId) == null && !isCurrentItem(videoId)) {
+                AudioCache.awaitWarmUp(videoId, PRELOAD_WARM_UP_WAIT_MS) { !isCurrentItem(videoId) }
+            }
             StreamChoice.of(videoId)?.let { serving ->
                 // What the stream claims to be, restated on every open rather
                 // than only on the one that chose it.
@@ -1730,6 +1754,7 @@ class PlaybackService : MediaLibraryService() {
         }
 
         this.streamResolver = streamResolver
+        AudioCache.onPinned = { mediaId, mime -> scope.launch { declareQueuedManifest(mediaId, mime) } }
 
         // No user agent on the factory: the right one depends on which client
         // minted the URL, so it is set per request below. Setting it here as
@@ -2524,6 +2549,7 @@ class PlaybackService : MediaLibraryService() {
         outgoing.removeAnalyticsListener(formatListener)
 
         player = incoming
+        playingMediaId = incoming.currentMediaItem?.mediaId
         spare = outgoing
 
         val heldFilter = activeFilter
@@ -3403,6 +3429,7 @@ class PlaybackService : MediaLibraryService() {
         // The fields move before the listeners are attached, so anything the
         // first callback reads already describes the new arrangement.
         player = incoming
+        playingMediaId = incoming.currentMediaItem?.mediaId
         spare = outgoing
         val heldFilter = activeFilter
         activeFilter = spareFilter
@@ -6311,6 +6338,38 @@ class PlaybackService : MediaLibraryService() {
     }
 
     /** Stops both rendition selection and byte read-ahead, and makes resume retry. */
+    /**
+     * Read-ahead pinned a manifest for a queued track: declare its type now, so it opens
+     * as DASH/HLS from the first note instead of starting lossy and swapping mid-track.
+     * Same rebuild as [replayAsManifest], done before the track plays rather than after it fails.
+     * A null [mime] (a later re-pin landed on a plain file) puts a declared item back to progressive.
+     *
+     * ponytail: a pin that expires ([StreamChoice] TTL) before a declared item opens leaves it to the
+     * live race, which may hand DASH a plain file; ordinary error recovery covers that rare case.
+     */
+    /** Loader thread: whether [mediaId] is the session player's current item. Unknown counts as current (no wait). */
+    private fun isCurrentItem(mediaId: String): Boolean = playingMediaId.let { it == null || it == mediaId }
+
+    private fun declareQueuedManifest(mediaId: String, mime: String?) {
+        val live = player ?: return
+        val index = (live.currentMediaItemIndex + 1 until live.mediaItemCount)
+            .firstOrNull { live.getMediaItemAt(it).mediaId == mediaId } ?: return
+        val item = live.getMediaItemAt(index)
+        val config = item.localConfiguration ?: return
+        if (config.mimeType == mime) return
+        // Only ever undo our own declaration, never a type the item was built with.
+        if (mime == null && config.uri.getQueryParameter("manifest_reopen") == null) return
+        val plain = config.uri.buildUpon().clearQuery().apply {
+            config.uri.queryParameterNames.filter { it != "manifest_reopen" }.forEach { name ->
+                config.uri.getQueryParameters(name).forEach { appendQueryParameter(name, it) }
+            }
+        }.build().toString()
+        val uri = if (mime == null) plain else StreamContainer.markedForManifestReopen(plain, mime)
+        if (mime != null && uri == plain) return
+        TrackLog.d("Laya", "$mediaId pinned ahead of time; queued as ${mime ?: "progressive"}", about = mediaId)
+        live.replaceMediaItem(index, item.buildUpon().setUri(uri).setMimeType(mime).build())
+    }
+
     private fun cancelPrefetch() {
         preferredPrefetchRequest = null
         preferredPrefetchJob?.cancel()
@@ -7525,6 +7584,7 @@ class PlaybackService : MediaLibraryService() {
 
 
     override fun onDestroy() {
+        AudioCache.onPinned = null
         WearBridge.attachStreams(null)
         WearBridge.releaseSpeaker()
         // Let go of the receiver's player but leave its session alone: a
@@ -8271,7 +8331,13 @@ class PlaybackService : MediaLibraryService() {
                     val bundle = args.getBundle(EXTRA_SWAP_MEDIA_ITEM)
                     if (bundle != null) {
                         val targetSong = songFromBundle(bundle)
-                        smoothSwapCurrentTrackVersion(targetSong.toMediaItem())
+                        // The swap keeps whatever play state it finds, which is paused
+                        // when the caller held playback while the version resolved.
+                        val resume = args.getBoolean(EXTRA_SWAP_PLAY, false)
+                        smoothSwapCurrentTrackVersion(
+                            targetSong.toMediaItem(),
+                            onSwapCommitted = if (resume) ({ player?.play() }) else null,
+                        )
                     }
                 }
                 ACTION_QUEUE_DRAG -> {

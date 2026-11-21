@@ -440,6 +440,39 @@ internal object DesktopSourceRegistry {
         }
     }
 
+    /**
+     * The upcoming song's catalogue searches, started early by [warmMatches]: its id, and each
+     * source's search by config id. One song at a time.
+     */
+    @Volatile
+    private var warmed: Pair<String, Map<String, Deferred<List<Song>>>>? = null
+
+    /**
+     * Starts every source's search for [song] now, while the track before it plays.
+     *
+     * An addon's track is armed only shortly before its transition, so its stream URL is fresh
+     * when it plays; the search was armed with it, and a slow addon's search ran past that lead,
+     * starting the track on a quick copy and upgrading mid-song. Only the search moves earlier —
+     * [openBest] takes these results, and the stream itself is still asked for at arm time.
+     */
+    fun warmMatches(song: Song, quality: String?) {
+        if (song.isVideo || song.title.isBlank()) return
+        val sources = playbackAdapters(quality).filter { it.config.kind != DesktopSourceKind.YOUTUBE }
+        if (sources.any { it.owns(song) }) return // played as itself, never matched
+        warmed?.second?.values?.forEach { it.cancel() }
+        warmed = song.videoId to sources.associate { source ->
+            source.config.id to scope.async { runCatching { source.matches(song) }.getOrDefault(emptyList()) }
+        }
+        DesktopTrackLog.log("searching ahead for '${song.title}' on ${sources.joinToString { it.descriptor.name }}")
+    }
+
+    /** [source]'s matches for [song]: the early search from [warmMatches] when there is one. */
+    private suspend fun matchesFor(source: SourceAdapter, song: Song): List<Song> =
+        warmed?.takeIf { it.first == song.videoId }?.second?.get(source.config.id)
+            ?.takeUnless { it.isCancelled }
+            ?.await()
+            ?: source.matches(song)
+
     /** The first usable stream from any of [sources], each asked in parallel. */
     private suspend fun firstSubstitute(
         sources: List<SourceAdapter>,
@@ -488,6 +521,7 @@ internal object DesktopSourceRegistry {
         // This is an explicit second look. Empty catalogue answers and failed/expired stream URLs
         // from the first pass must not make the retry a cache hit.
         DesktopAddonSource.clearCompletedTrackCalls()
+        if (warmed?.first == song.videoId) warmed = null
         val playingRank = configs().firstOrNull { it.id == playing?.sourceId }?.kind?.rank
             ?: DesktopSourceKind.YOUTUBE.rank
         val better = playbackAdapters(quality).filter {
@@ -515,7 +549,7 @@ internal object DesktopSourceRegistry {
         song: Song,
         quality: String?,
     ): DesktopStream? {
-        val matches = source.matches(song)
+        val matches = matchesFor(source, song)
         if (matches.isEmpty()) {
             // A leg cancelled by a sibling winning the race has not missed anything.
             if (currentCoroutineContext().isActive) {

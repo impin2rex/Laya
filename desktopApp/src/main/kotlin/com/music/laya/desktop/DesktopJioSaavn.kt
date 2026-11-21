@@ -223,4 +223,8 @@ internal object DesktopMusicSources {
     fun hasYouTubeOriginal(song: Song): Boolean = DesktopSourceRegistry.hasYouTubeOriginal(song)
 
     fun mayServeFromAddon(song: Song): Boolean = DesktopSourceRegistry.mayServeFromAddon(song)
+
+    /** Starts the sources' searches for an upcoming [song] now; see [DesktopSourceRegistry.warmMatches]. */
+    fun warmMatches(song: Song, qualityOverride: String? = null) =
+        DesktopSourceRegistry.warmMatches(song, qualityOverride)
 }
