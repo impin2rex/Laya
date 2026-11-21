@@ -42,6 +42,7 @@ jobs:
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
           echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
+          echo "LOSSLESS_USER_AGENT=${{ vars.LOSSLESS_USER_AGENT }}" >> local.properties
           echo "LISTEN_TOGETHER_SERVER=${{ secrets.LISTEN_TOGETHER_SERVER }}" >> local.properties
           echo "SIGNATURE_API_URL=${{ secrets.SIGNATURE_API_URL }}" >> local.properties
 
@@ -128,6 +129,7 @@ jobs:
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
           echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
+          echo "LOSSLESS_USER_AGENT=${{ vars.LOSSLESS_USER_AGENT }}" >> local.properties
           echo "LISTEN_TOGETHER_SERVER=${{ secrets.LISTEN_TOGETHER_SERVER }}" >> local.properties
           echo "SIGNATURE_API_URL=${{ secrets.SIGNATURE_API_URL }}" >> local.properties
 
@@ -197,6 +199,7 @@ jobs:
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
           echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
+          echo "LOSSLESS_USER_AGENT=${{ vars.LOSSLESS_USER_AGENT }}" >> local.properties
           echo "LISTEN_TOGETHER_SERVER=${{ secrets.LISTEN_TOGETHER_SERVER }}" >> local.properties
           echo "SIGNATURE_API_URL=${{ secrets.SIGNATURE_API_URL }}" >> local.properties
 
@@ -242,6 +245,7 @@ jobs:
       SIGNATURE_API_URL: ${{ secrets.SIGNATURE_API_URL }}
       LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
       LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
+      LOSSLESS_USER_AGENT: ${{ vars.LOSSLESS_USER_AGENT }}
     steps:
       - uses: actions/checkout@v4
 
