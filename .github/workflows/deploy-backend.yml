@@ -6,7 +6,7 @@ name: Deploy backend
 on:
   push:
     # ci/** so the pipeline itself can be tested on a branch before it is on main.
-    branches: [main, 'ci/**']
+    branches: [main, 'ci/**', 'feat/listen-together-vm-deploy']
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
