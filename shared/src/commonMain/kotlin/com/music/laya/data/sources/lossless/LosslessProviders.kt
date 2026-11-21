@@ -223,8 +223,9 @@ sealed class LosslessProvider(val id: String, val label: String, appVersion: Str
         /**
          * Sent on every broker and catalogue call. Matches what Mornye sends to api.zarz.moe
          * (`Mornye/{AppInfo.version}`, no `v`, no platform); bump with Mornye's releases.
+         * Set at build time from LOSSLESS_USER_AGENT (local.properties or the environment).
          */
-        const val userAgent: String = "Mornye/5.4.0"
+        const val userAgent: String = LOSSLESS_USER_AGENT
 
         val all: List<LosslessProvider> get() = listOf(Tidal, Qobuz)
 

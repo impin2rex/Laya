@@ -47,7 +47,7 @@ files (karaoke, reverb, system font, etc.), never pasted over them.
     — needed because googlevideo throttles/403s long unranged reads.
   - `TransitionFilter.swift`: EQ + transition filter via `MTAudioProcessingTap`.
   - `Analysis/AnalysisBridge.swift`: C++ analyzer + Beat This! / open-unmix ONNX on iOS.
-- **CI with no Mac**: `.github/workflows/ios.yml` — XcodeGen generates the Xcode project, ad-hoc
+- **CI with no Mac**: the `ios` job in `.github/workflows/release.yml` — XcodeGen generates the Xcode project, ad-hoc
   `codesign --sign -`, zips an `.ipa` artifact; installed with Sideloadly + free Apple ID.
 - Gaps: real Android UI not ported (sources parked, out of build); scrobbling, Discord, canvas,
   module sources, PoToken, Listen Together still todo. Quality capped at AAC ~130 kbps (AVPlayer
@@ -78,7 +78,7 @@ files (karaoke, reverb, system font, etc.), never pasted over them.
 | `commonMain` migration of `shared` / `sharedUi` | **B** as a reference diff | Re-do the move on Laya's files; use B's diffs to speed up the JVM→common rewrites |
 | InnerTubeX on iOS | **A** | Bump to upstream `v0.7.4+` (multiplatform). Drop NewPipe on iOS |
 | Audio engine, chunked loader, EQ tap, analysis bridge | **A** | Copy the Swift files, rename package, wire to Laya's `CrossfadeController` / processors |
-| CI + unsigned `.ipa` + sideload | **A** | Copy `ios.yml` + `project.yml` (XcodeGen) |
+| CI + unsigned `.ipa` + sideload | **A** | Copy the `ios` job + `project.yml` (XcodeGen) |
 | Keychain, PoToken, sandbox storage, share sheet, haptics | **B** | Review, test on device, keep what works |
 | Real phone UI | neither | Our own work (Phase 4) |
 | Shims (`okhttp3`, `android.*`) | **no** | Can't live in a shared `commonMain` next to real OkHttp on JVM; convert to Ktor instead |
@@ -135,7 +135,7 @@ files (karaoke, reverb, system font, etc.), never pasted over them.
    static framework `LayaKit`.
 2. Copy A's `ios/iosApp/project.yml` + `iOSApp.swift` into `iosApp/`, rename bundle id to
    `com.music.laya`, host `MainViewController()` (Compose) from SwiftUI.
-3. Copy A's `.github/workflows/ios.yml`, adjust paths (our root Gradle build, not `ios/`), output
+3. Copy A's iOS CI job into `.github/workflows/release.yml`, adjust paths (our root Gradle build, not `ios/`), output
    `Laya.ipa` artifact.
 4. `settings.gradle.kts` already skips Android modules without an SDK — make sure the macOS CI
    runner builds only what iOS needs.

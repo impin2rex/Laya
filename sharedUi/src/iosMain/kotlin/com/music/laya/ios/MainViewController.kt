@@ -65,7 +65,14 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     KaraokeModel.install { NSBundle.mainBundle.pathForResource("UVR_MDXNET_9482", "onnx")!! }
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
-    AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
+    AppSettings.init(
+        NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults),
+        object : AppSettingsHost() {
+            override val signatureApiUrl = SIGNATURE_API_URL
+            override val lastfmApiKey = LASTFM_API_KEY
+            override val lastfmSecret = LASTFM_SECRET
+        },
+    )
     // Falls back to the built-in signature server when a saved one is down.
     kotlinx.coroutines.MainScope().launch { com.music.laya.data.canvas.ArtistSignatureRepository.refreshServer() }
     // The device's own listening record (Replay), under Application Support the way Android keeps it in filesDir.

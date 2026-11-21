@@ -103,6 +103,40 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.TextButton
+import com.music.laya.data.scrobbling.LastFM
+import com.music.laya.ui.components.PillTextField
+import com.music.laya.sharedui.resources.api_token
+import com.music.laya.sharedui.resources.cancel
+import com.music.laya.sharedui.resources.enter_token_to_enable
+import com.music.laya.sharedui.resources.lastfm_api_key
+import com.music.laya.sharedui.resources.lastfm_api_secret
+import com.music.laya.sharedui.resources.lastfm_login
+import com.music.laya.sharedui.resources.lastfm_login_description
+import com.music.laya.sharedui.resources.lastfm_now_playing_subtitle
+import com.music.laya.sharedui.resources.lastfm_own_credentials
+import com.music.laya.sharedui.resources.listenbrainz_token
+import com.music.laya.sharedui.resources.listenbrainz_token_description
+import com.music.laya.sharedui.resources.login_failed
+import com.music.laya.sharedui.resources.now_playing
+import com.music.laya.sharedui.resources.password
+import com.music.laya.sharedui.resources.save
+import com.music.laya.sharedui.resources.scrobble_primary_artist_only
+import com.music.laya.sharedui.resources.scrobble_primary_artist_only_subtitle
+import com.music.laya.sharedui.resources.scrobble_tracks
+import com.music.laya.sharedui.resources.scrobble_tracks_subtitle
+import com.music.laya.sharedui.resources.scrobbling
+import com.music.laya.sharedui.resources.scrobbling_footer
+import com.music.laya.sharedui.resources.sign_in
+import com.music.laya.sharedui.resources.signed_in_as
+import com.music.laya.sharedui.resources.tap_to_sign_in
+import com.music.laya.sharedui.resources.username
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.DetailPage
 import com.music.laya.data.model.HomeShelf
@@ -393,7 +427,231 @@ internal fun IosAccountPage(
                 DestructiveRow(label = stringResource(Res.string.spotify_disconnect), onClick = onSpotifyDisconnect)
             }
         }
+        if (AppSettings.scrobblingAvailable) IosScrobblingGroup()
     }
+}
+
+/** Android's AccountAndScrobblingScreen scrobbling card: ListenBrainz and Last.fm, driven by [IosScrobbler]. */
+@Composable
+private fun IosScrobblingGroup() {
+    val lastfmEnabled by AppSettings.lastfmEnabled.collectAsState()
+    val lastfmUsername by AppSettings.lastfmUsername.collectAsState()
+    val lastfmSessionKey by AppSettings.lastfmSessionKey.collectAsState()
+    val lastfmScrobble by AppSettings.lastfmScrobbleEnabled.collectAsState()
+    val lastfmNowPlaying by AppSettings.lastfmNowPlaying.collectAsState()
+    val lastfmPrimaryOnly by AppSettings.lastfmPrimaryArtistOnly.collectAsState()
+    val lbEnabled by AppSettings.listenBrainzEnabled.collectAsState()
+    val lbToken by AppSettings.listenBrainzToken.collectAsState()
+    val lbPrimaryOnly by AppSettings.listenBrainzPrimaryArtistOnly.collectAsState()
+    var showLastfmLogin by remember { mutableStateOf(false) }
+    var showLbToken by remember { mutableStateOf(false) }
+
+    @Composable
+    fun RowDivider() = HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
+
+    @Composable
+    fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) = SettingsRow(
+        title = title,
+        subtitle = subtitle,
+        trailing = { Switch(checked = checked, onCheckedChange = onChange) },
+        onClick = { onChange(!checked) },
+    )
+
+    SettingsGroup(header = stringResource(Res.string.scrobbling), footer = stringResource(Res.string.scrobbling_footer)) {
+        SettingsRow(
+            title = "ListenBrainz",
+            subtitle = stringResource(if (lbEnabled && lbToken.isNotBlank()) Res.string.connected else Res.string.enter_token_to_enable),
+            trailing = {
+                Switch(
+                    checked = lbEnabled,
+                    onCheckedChange = { checked ->
+                        if (checked && lbToken.isBlank()) showLbToken = true else AppSettings.setListenBrainzEnabled(checked)
+                    },
+                )
+            },
+            onClick = { showLbToken = true },
+        )
+        if (lbEnabled && lbToken.isNotBlank()) {
+            RowDivider()
+            Toggle(
+                stringResource(Res.string.scrobble_primary_artist_only),
+                stringResource(Res.string.scrobble_primary_artist_only_subtitle),
+                lbPrimaryOnly,
+                AppSettings::setListenBrainzPrimaryArtistOnly,
+            )
+        }
+        RowDivider()
+        SettingsRow(
+            title = "Last.fm",
+            subtitle = if (lastfmSessionKey.isNotBlank()) {
+                stringResource(Res.string.signed_in_as, lastfmUsername)
+            } else {
+                stringResource(Res.string.tap_to_sign_in)
+            },
+            trailing = {
+                Switch(
+                    checked = lastfmEnabled,
+                    onCheckedChange = { checked ->
+                        if (checked && lastfmSessionKey.isBlank()) showLastfmLogin = true else AppSettings.setLastfmEnabled(checked)
+                    },
+                )
+            },
+            onClick = {
+                // As Android: a tap on a signed-in row signs out, otherwise it opens the login.
+                if (lastfmSessionKey.isNotBlank()) {
+                    AppSettings.setLastfmSessionKey("")
+                    AppSettings.setLastfmUsername("")
+                    AppSettings.setLastfmEnabled(false)
+                    AppSettings.setLastfmScrobbleEnabled(false)
+                    AppSettings.setLastfmNowPlaying(false)
+                } else {
+                    showLastfmLogin = true
+                }
+            },
+        )
+        if (lastfmEnabled && lastfmSessionKey.isNotBlank()) {
+            RowDivider()
+            Toggle(
+                stringResource(Res.string.scrobble_tracks),
+                stringResource(Res.string.scrobble_tracks_subtitle),
+                lastfmScrobble,
+                AppSettings::setLastfmScrobbleEnabled,
+            )
+            RowDivider()
+            Toggle(
+                stringResource(Res.string.scrobble_primary_artist_only),
+                stringResource(Res.string.scrobble_primary_artist_only_subtitle),
+                lastfmPrimaryOnly,
+                AppSettings::setLastfmPrimaryArtistOnly,
+            )
+            RowDivider()
+            Toggle(
+                stringResource(Res.string.now_playing),
+                stringResource(Res.string.lastfm_now_playing_subtitle),
+                lastfmNowPlaying,
+                AppSettings::setLastfmNowPlaying,
+            )
+        }
+    }
+
+    if (showLbToken) ListenBrainzTokenDialog(onDismiss = { showLbToken = false })
+    if (showLastfmLogin) LastfmLoginDialog(onDismiss = { showLastfmLogin = false })
+}
+
+@Composable
+private fun ListenBrainzTokenDialog(onDismiss: () -> Unit) {
+    var token by remember { mutableStateOf(AppSettings.listenBrainzToken.value) }
+    fun save() {
+        AppSettings.setListenBrainzToken(token.trim())
+        AppSettings.setListenBrainzEnabled(token.isNotBlank())
+        onDismiss()
+    }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.listenbrainz_token)) },
+        text = {
+            Column {
+                Text(stringResource(Res.string.listenbrainz_token_description), Modifier.padding(bottom = 12.dp))
+                PillTextField(
+                    value = token,
+                    onValueChange = { token = it },
+                    placeholder = stringResource(Res.string.api_token),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = ::save) { Text(stringResource(Res.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun LastfmLoginDialog(onDismiss: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    // A release build bakes Laya's own Last.fm app credentials in; a build without them
+    // asks the listener for their own API account's key and secret as well, as on desktop.
+    val needsOwnKey = AppSettings.lastfmApiKey.value.isBlank() || AppSettings.lastfmSecret.value.isBlank()
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var apiKey by remember { mutableStateOf("") }
+    var secret by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var loading by remember { mutableStateOf(false) }
+    val failedText = stringResource(Res.string.login_failed)
+    val canSignIn = username.isNotBlank() && password.isNotBlank() &&
+        (!needsOwnKey || (apiKey.isNotBlank() && secret.isNotBlank()))
+
+    fun signIn() {
+        loading = true
+        error = null
+        scope.launch {
+            try {
+                if (needsOwnKey) {
+                    AppSettings.setLastfmApiKey(apiKey.trim())
+                    AppSettings.setLastfmSecret(secret.trim())
+                }
+                LastFM.initialize(AppSettings.lastfmApiKey.value, AppSettings.lastfmSecret.value)
+                LastFM.getMobileSession(username.trim(), password)
+                    .onSuccess { auth ->
+                        AppSettings.setLastfmSessionKey(auth.session.key)
+                        AppSettings.setLastfmUsername(auth.session.name)
+                        AppSettings.setLastfmEnabled(true)
+                        onDismiss()
+                    }
+                    .onFailure { error = it.message ?: failedText }
+            } catch (e: Exception) {
+                error = e.message ?: failedText
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { if (!loading) onDismiss() },
+        title = { Text(stringResource(Res.string.lastfm_login)) },
+        text = {
+            Column {
+                Text(
+                    error ?: stringResource(Res.string.lastfm_login_description),
+                    color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                PillTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    placeholder = stringResource(Res.string.username),
+                    enabled = !loading,
+                )
+                Spacer(Modifier.height(8.dp))
+                PillTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    placeholder = stringResource(Res.string.password),
+                    enabled = !loading,
+                    isPassword = true,
+                )
+                if (needsOwnKey) {
+                    Text(stringResource(Res.string.lastfm_own_credentials), Modifier.padding(vertical = 8.dp))
+                    PillTextField(
+                        value = apiKey,
+                        onValueChange = { apiKey = it },
+                        placeholder = stringResource(Res.string.lastfm_api_key),
+                        enabled = !loading,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    PillTextField(
+                        value = secret,
+                        onValueChange = { secret = it },
+                        placeholder = stringResource(Res.string.lastfm_api_secret),
+                        enabled = !loading,
+                        isPassword = true,
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = ::signIn, enabled = canSignIn && !loading) { Text(stringResource(Res.string.sign_in)) } },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !loading) { Text(stringResource(Res.string.cancel)) } },
+    )
 }
 
 /**

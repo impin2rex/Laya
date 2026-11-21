@@ -1,13 +1,10 @@
 name: SideStore source
 
 on:
-  # An entry needs both a published release (draft assets can't be downloaded) and ios.yml's IPA on it.
-  # Either can come last, so both trigger this; the earlier one finds the other missing and steps aside.
+  # release.yml attaches the IPA to the draft, so a published release already carries it
+  # (draft assets can't be downloaded).
   release:
     types: [published]
-  workflow_run:
-    workflows: ["iOS IPA"]
-    types: [completed]
   workflow_dispatch:
     inputs:
       tag:
@@ -23,10 +20,6 @@ concurrency:
 
 jobs:
   update:
-    # Only a successful IPA build for a release tag; a manual ios.yml run on a branch has no release to add.
-    if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -37,7 +30,7 @@ jobs:
     - name: Add the release's IPA to sidestore/source.json
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TAG: ${{ github.event.release.tag_name || github.event.workflow_run.head_branch || inputs.tag }}
+        TAG: ${{ github.event.release.tag_name || inputs.tag }}
       run: |
         tag="${TAG:-$(gh release view --json tagName -q .tagName)}"
         if [ "$(gh release view "$tag" --json isDraft -q .isDraft)" = "true" ]; then
@@ -46,7 +39,7 @@ jobs:
         fi
         name=$(gh release view "$tag" --json assets -q '.assets[].name | select(endswith("-ios.ipa"))' | head -1)
         if [ -z "$name" ]; then
-          echo "::notice::$tag has no -ios.ipa yet; ios.yml adds it to the source once it attaches one"
+          echo "::notice::$tag has no -ios.ipa; re-run this workflow once release.yml attaches one"
           exit 0
         fi
         gh release download "$tag" -p "$name" -O app.ipa
