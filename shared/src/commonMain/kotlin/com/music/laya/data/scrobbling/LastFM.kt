@@ -1,7 +1,7 @@
 package com.music.laya.data.scrobbling
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
+import com.music.laya.platform.ktorClient
+import com.music.laya.platform.md5Hex
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.FormDataContent
@@ -10,13 +10,12 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Parameters
+import io.ktor.http.Url
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlin.concurrent.Volatile
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.net.URI
-import java.security.MessageDigest
-import java.util.Locale
 
 object LastFM {
     const val DEFAULT_API_ENDPOINT = "https://ws.audioscrobbler.com/2.0/"
@@ -63,7 +62,7 @@ object LastFM {
         }
 
     private val client by lazy {
-        HttpClient(OkHttp) {
+        ktorClient {
             install(ContentNegotiation) {
                 json(json)
             }
@@ -72,10 +71,8 @@ object LastFM {
     }
 
     private fun Map<String, String>.apiSig(secret: String): String {
-        val sorted = toSortedMap()
-        val toHash = sorted.entries.joinToString("") { it.key + it.value } + secret
-        val digest = MessageDigest.getInstance("MD5").digest(toHash.toByteArray())
-        return digest.joinToString("") { "%02x".format(Locale.ROOT, it) }
+        val toHash = entries.sortedBy { it.key }.joinToString("") { it.key + it.value } + secret
+        return md5Hex(toHash)
     }
 
     private fun HttpRequestBuilder.lastfmParams(
@@ -226,27 +223,20 @@ object LastFM {
     fun isInitialized(): Boolean = runtimeConfig.apiKey.isNotEmpty() && runtimeConfig.secret.isNotEmpty()
 
     fun normalizeEndpoint(endpoint: String): String {
-        val uri = URI(endpoint.trim())
-        val scheme = uri.scheme?.lowercase(Locale.ROOT)
+        val url = Url(endpoint.trim())
+        val scheme = url.protocol.name.lowercase()
         require(scheme == "http" || scheme == "https")
-        require(!uri.host.isNullOrBlank())
-        require(uri.query == null && uri.fragment == null)
+        require(url.host.isNotBlank())
+        require(url.encodedQuery.isEmpty() && url.encodedFragment.isEmpty())
 
         val path =
-            uri.path
-                ?.takeIf { it.isNotBlank() && it != "/" }
+            url.encodedPath
+                .takeIf { it.isNotBlank() && it != "/" }
                 ?.trimEnd('/')
                 ?: "/2.0"
 
-        return URI(
-            scheme,
-            uri.userInfo,
-            uri.host,
-            uri.port,
-            "$path/",
-            null,
-            null,
-        ).toString()
+        val port = if (url.specifiedPort != 0 && url.specifiedPort != url.protocol.defaultPort) ":${url.specifiedPort}" else ""
+        return "$scheme://${url.host}$port$path/"
     }
 
     private fun requireSessionKey(): String = runtimeConfig.sessionKey ?: throw LastFmException(9, "Session key missing")

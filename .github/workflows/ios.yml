@@ -24,6 +24,8 @@ jobs:
       ANDROID_HOME: /nonexistent
       ANDROID_SDK_ROOT: /nonexistent
       SIGNATURE_API_URL: ${{ secrets.SIGNATURE_API_URL }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+      LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
     steps:
     - name: Checkout Repository

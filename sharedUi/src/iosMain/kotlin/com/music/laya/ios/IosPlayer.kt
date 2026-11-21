@@ -188,6 +188,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         engine.setListener(this)
         IosCast.player = this
         IosMusicVideo.player = this
+        IosScrobbler.attach(scope)
         IosVolume.level.value = localVolume()
         IosVolume.setter = ::setLocalVolume
         // "In-app volume" on or off, or its level moved: the engine plays at it, and the bar shows it.
@@ -960,6 +961,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         // A seek is asked now and answered a moment later; until then the receiver's clock still reads the old place.
         if (NSDate().timeIntervalSinceReferenceDate - castSeekAt > 1.5) position.report(positionMs)
         if (state == 4) autoNext().let { if (it >= 0) start(it) else isPlaying = false } // ran out of the few tracks it holds
+        IosScrobbler.onTick(song, isPlaying, position.positionMs, this.durationMs)
         if (!isPlaying && song != null) saveState()
     }
 
@@ -996,6 +998,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         this.isPlaying = isPlaying
         isLoading = isBuffering
         recordListening(isPlaying, durationMs)
+        IosScrobbler.onTick(song, isPlaying, positionMs, durationMs)
         if (isPlaying && AppSettings.smartFadeEnabled.value && pendingMs == null) syncTransition()
         // Position about every 5 s while playing, and straight away on pause.
         val now = NSDate().timeIntervalSinceReferenceDate.toLong()
@@ -1052,8 +1055,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
 
     override fun onEnded() {
         if (IosCast.active) return
-        if (sleepAfterTrack) { cancelSleep(); isPlaying = false; PlaybackTracker.onPlaybackFinished(trackedSec); return }
-        autoNext().let { if (it >= 0) start(it) else { isPlaying = false; PlaybackTracker.onPlaybackFinished(trackedSec) } }
+        if (sleepAfterTrack) { cancelSleep(); isPlaying = false; PlaybackTracker.onPlaybackFinished(trackedSec); IosScrobbler.onStopped(); return }
+        autoNext().let { if (it >= 0) start(it) else { isPlaying = false; PlaybackTracker.onPlaybackFinished(trackedSec); IosScrobbler.onStopped() } }
         party.onLocalIntent()
     }
 

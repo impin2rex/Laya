@@ -2,6 +2,7 @@ package com.music.laya.data.scrobbling
 
 import com.music.laya.data.DebugLog as Log
 import com.music.laya.data.model.Song
+import com.music.laya.platform.currentTimeMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -37,7 +38,7 @@ class ScrobbleManager(
         durationMs: Long? = null,
     ) {
         if (song == null) return
-        songStartedAt = System.currentTimeMillis() / 1000
+        songStartedAt = currentTimeMillis() / 1000
         songStarted = true
         startScrobbleTimer(song, durationMs)
         if (useNowPlaying) {
@@ -76,7 +77,7 @@ class ScrobbleManager(
             scrobbleSong(song, resolvedDurationSeconds)
             return
         }
-        scrobbleTimerStartedAt = System.currentTimeMillis()
+        scrobbleTimerStartedAt = currentTimeMillis()
         scrobbleJob =
             scope.launch {
                 delay(scrobbleRemainingMillis)
@@ -88,7 +89,7 @@ class ScrobbleManager(
     private fun pauseScrobbleTimer() {
         scrobbleJob?.cancel()
         if (scrobbleTimerStartedAt != 0L) {
-            val elapsed = System.currentTimeMillis() - scrobbleTimerStartedAt
+            val elapsed = currentTimeMillis() - scrobbleTimerStartedAt
             scrobbleRemainingMillis -= elapsed
             if (scrobbleRemainingMillis < 0) scrobbleRemainingMillis = 0
             scrobbleTimerStartedAt = 0L
@@ -98,7 +99,7 @@ class ScrobbleManager(
     private fun resumeScrobbleTimer(song: Song) {
         if (scrobbleRemainingMillis <= 0) return
         scrobbleJob?.cancel()
-        scrobbleTimerStartedAt = System.currentTimeMillis()
+        scrobbleTimerStartedAt = currentTimeMillis()
         scrobbleJob =
             scope.launch {
                 delay(scrobbleRemainingMillis)
