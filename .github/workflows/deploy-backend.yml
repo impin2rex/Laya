@@ -47,16 +47,18 @@ jobs:
           : "${DEPLOY_KEY:?set the DEPLOY_SSH_KEY secret}"
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
-          # Host key is learnt here, not pinned: the first connection of every run
-          # trusts whatever answers on that IP. Fine for a hobby VM, and the key is
-          # useless to anyone but the real host (it can only run laya-deploy there).
+          # Host key is learnt here, not pinned: every run trusts whatever answers
+          # on that IP. Set DEPLOY_KNOWN_HOSTS and write it here instead if the key
+          # is worth more than one redeploy (i.e. it is not forced-command bound).
           ssh-keyscan -T 20 "$HOST" > ~/.ssh/known_hosts 2>/dev/null
           test -s ~/.ssh/known_hosts
-          # The key is pinned to laya-deploy by a forced command, so the only thing
-          # we can say is which branch to deploy; the VM pulls it and re-runs setup.sh.
+          # Works both ways round: an ordinary key runs this command, and a key
+          # pinned to laya-deploy by a forced command gets it as
+          # SSH_ORIGINAL_COMMAND, whose last word is the branch either way.
+          # The VM pulls that branch, rebuilds and restarts the service.
           ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
               -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
-              "$USER_NAME@$HOST" "$BRANCH"
+              "$USER_NAME@$HOST" "sudo /usr/local/sbin/laya-deploy $BRANCH"
 
       - name: Health check
         env:

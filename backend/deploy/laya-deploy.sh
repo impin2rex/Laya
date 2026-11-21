@@ -6,9 +6,14 @@ set -euo pipefail
 SRC=/opt/laya-src
 REPO=https://github.com/impin2rex/Laya.git
 
-# The SSH client's command line is the branch to deploy, if it sent one.
-BRANCH="${SSH_ORIGINAL_COMMAND:-main}"
-BRANCH="${BRANCH:-main}"
+# The branch to deploy comes from the SSH client, two ways:
+#   - as an argument, when the key may run commands and CI calls this directly;
+#   - as SSH_ORIGINAL_COMMAND, when the key is pinned to this script by a forced
+#     command and sshd hands the requested command over instead of running it.
+# Taking the last word covers both, since CI sends "... laya-deploy <branch>".
+BRANCH="${1:-}"
+[ -n "$BRANCH" ] || BRANCH="${SSH_ORIGINAL_COMMAND##* }"
+[ -n "$BRANCH" ] || BRANCH=main
 # Anything but a plain branch name is refused: no flags, no refspecs, no URLs,
 # no shell metacharacters reaching git.
 if ! printf '%s' "$BRANCH" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]{0,100}$'; then

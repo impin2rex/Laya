@@ -299,13 +299,24 @@ sudo DEPLOY_PUBKEY="$(cat laya-deploy.pub)" bash deploy/setup.sh
 
 That creates the `deploy` user whose key may only run
 `/usr/local/sbin/laya-deploy` (a forced command), so a leaked key can do
-nothing but redeploy `main`. Then in GitHub → Settings:
+nothing but redeploy a branch of this repo.
+
+Or skip the separate account: put the CI public key in an existing sudo-capable
+account's `~/.ssh/authorized_keys` and run `sudo DEPLOY_USER=ubuntu bash
+deploy/setup.sh`, which writes the sudo rule for that account. The workflow
+sends `sudo /usr/local/sbin/laya-deploy <branch>` and works either way — but
+that key is then a key with full sudo on the VM, not one pinned to a redeploy.
+Prefix its `authorized_keys` line with
+`command="sudo /usr/local/sbin/laya-deploy",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty`
+to get the containment back without a second user.
+
+Then in GitHub → Settings:
 
 | Name | Kind | Value |
 | --- | --- | --- |
 | `DEPLOY_SSH_KEY` | secret | the private `laya-deploy` file |
 | `DEPLOY_HOST` | variable | the VM's IP, `140.245.238.245` |
-| `DEPLOY_USER` | variable | `deploy` |
+| `DEPLOY_USER` | variable | `deploy`, or the account holding the CI key |
 | `LISTEN_TOGETHER_HEALTH_URL` | variable | `https://together.layalisten.dpdns.org/healthz` |
 
 `.github/workflows/deploy-backend.yml` then builds, vets and tests the Go

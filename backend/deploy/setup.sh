@@ -16,6 +16,9 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 GO_VERSION="${GO_VERSION:-1.27.0}"
+# The account CI logs in as. `deploy` is created here when DEPLOY_PUBKEY is set;
+# name an existing account (DEPLOY_USER=ubuntu) to let it run the hook instead.
+DEPLOY_USER="${DEPLOY_USER:-deploy}"
 BACKEND_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 case "$(uname -m)" in
@@ -57,19 +60,26 @@ fi
 echo "== deploy hook"
 install -m 755 "$BACKEND_DIR/deploy/laya-deploy.sh" /usr/local/sbin/laya-deploy
 
-if [ -n "${DEPLOY_PUBKEY:-}" ]; then
-  echo "== deploy user"
-  # The GitHub Actions key may only run the deploy hook (forced command).
-  id deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash deploy
-  install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
-  printf 'command="sudo /usr/local/sbin/laya-deploy",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty %s\n' "$DEPLOY_PUBKEY" > /home/deploy/.ssh/authorized_keys
-  chown deploy:deploy /home/deploy/.ssh/authorized_keys && chmod 600 /home/deploy/.ssh/authorized_keys
-  # env_keep so the branch the workflow asks for survives sudo; laya-deploy
-  # validates it before it reaches git.
+# Let $DEPLOY_USER run the hook as root without a password, and keep
+# SSH_ORIGINAL_COMMAND across sudo so a forced-command key can still say which
+# branch to deploy. laya-deploy validates that value before it reaches git.
+if id "$DEPLOY_USER" >/dev/null 2>&1 || [ -n "${DEPLOY_PUBKEY:-}" ]; then
+  echo "== sudo rule for $DEPLOY_USER"
   printf '%s\n%s\n' \
-    'Defaults:deploy env_keep += "SSH_ORIGINAL_COMMAND"' \
-    'deploy ALL=(root) NOPASSWD: /usr/local/sbin/laya-deploy' > /etc/sudoers.d/laya-deploy
+    "Defaults:$DEPLOY_USER env_keep += \"SSH_ORIGINAL_COMMAND\"" \
+    "$DEPLOY_USER ALL=(root) NOPASSWD: /usr/local/sbin/laya-deploy" > /etc/sudoers.d/laya-deploy
   chmod 440 /etc/sudoers.d/laya-deploy && visudo -cf /etc/sudoers.d/laya-deploy
+fi
+
+if [ -n "${DEPLOY_PUBKEY:-}" ]; then
+  echo "== deploy user $DEPLOY_USER"
+  # Pinned to the hook by a forced command: this key can do nothing else, which
+  # is why it is worth a separate account rather than reusing a sudo login.
+  home="/home/$DEPLOY_USER"
+  id "$DEPLOY_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$DEPLOY_USER"
+  install -d -m 700 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$home/.ssh"
+  printf 'command="sudo /usr/local/sbin/laya-deploy",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty %s\n' "$DEPLOY_PUBKEY" > "$home/.ssh/authorized_keys"
+  chown "$DEPLOY_USER:$DEPLOY_USER" "$home/.ssh/authorized_keys" && chmod 600 "$home/.ssh/authorized_keys"
 fi
 
 echo "== kernel network limits"
