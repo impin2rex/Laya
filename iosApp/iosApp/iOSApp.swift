@@ -14,8 +14,10 @@ struct iOSApp: App {
         IosKaraoke.shared.native = KaraokeNativeImpl()
         IosAutomix.shared.native = AutomixNativeImpl()
         _ = iOSApp.castNative // statics are lazy
-        // Home-screen widgets: what they draw, and where their buttons' intents land.
+        // Home-screen widgets: what they draw, and where their buttons' intents land. The engine goes along
+        // so a widget tap that background-launched the app can play with no UI (iOS refuses to bring one up).
         IosWidgets.shared.host = WidgetHostImpl()
+        IosWidgets.shared.engine = iOSApp.audioEngine
         LayaWidgetCommands.handler = { IosWidgets.shared.perform(command: $0) }
         // Music recognition's lock-screen / Dynamic Island status while it listens.
         // A launch never starts mid-listen, so any one still up was left by the last run.

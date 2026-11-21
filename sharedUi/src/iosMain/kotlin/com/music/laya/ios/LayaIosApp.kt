@@ -213,7 +213,8 @@ private fun List<ShelfItem>.songs() = mapNotNull { it.toSong() }
 @Composable
 fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val scope = rememberCoroutineScope()
-    val player = remember { IosPlayer(engine, scope) }
+    // The process singleton: a widget intent may have built it, queue restored, before any UI existed.
+    val player = remember { IosPlayer.shared(engine) }
     var tab by remember { mutableIntStateOf(0) }
     var nowPlayingOpen by remember { mutableStateOf(false) }
     // Pushed pages (one global stack; a tab tap clears it) and the long-press menu.

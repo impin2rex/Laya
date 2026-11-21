@@ -67,6 +67,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSDate
@@ -140,6 +142,19 @@ private class KaraokeSource(val url: String, val headers: Map<String, String>, v
  * whoever composes this must `remember` it.
  */
 class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineScope) : AudioEngineListener {
+    companion object {
+        private var instance: IosPlayer? = null
+
+        /**
+         * The process's one player. A widget's AudioPlaybackIntent can start the app in the background, where
+         * iOS refuses to bring up any UI (continue-in-foreground from a widget is denied), so the player must
+         * be buildable with none: it restores its persisted queue in init, and the UI adopts the same instance
+         * when it later starts. Its scope is the process's, not a composition's, for the same reason.
+         */
+        fun shared(engine: AudioEngine): IosPlayer =
+            instance ?: IosPlayer(engine, CoroutineScope(SupervisorJob() + Dispatchers.Main)).also { instance = it }
+    }
+
     var queue by mutableStateOf(emptyList<Song>()); private set
     var index by mutableStateOf(-1); private set
     var isPlaying by mutableStateOf(false); private set
