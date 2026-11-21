@@ -38,6 +38,13 @@ func getCSV(key string, fallback string) []string {
 	return res
 }
 
+func getStr(key, fallback string) string {
+	if val := strings.TrimSpace(os.Getenv(key)); val != "" {
+		return val
+	}
+	return fallback
+}
+
 func getBool(key string, fallback bool) bool {
 	val := os.Getenv(key)
 	if val == "" {
@@ -84,7 +91,7 @@ var (
 	ControlRatePerSecond = float64(getInt("JAM_CONTROL_RATE_PER_SECOND", 25))
 	MaxUpcomingQueue     = getInt("JAM_MAX_UPCOMING_QUEUE", 25)
 	MaxQueueLength       = getInt("JAM_MAX_QUEUE_LENGTH", 1+MaxUpcomingQueue)
-	// Render Free has 0.1 CPU. Fifty rooms (at most 250 sockets) is a safe
+	// The Always Free VM has 1 OCPU. Fifty rooms (at most 250 sockets) is a safe
 	// starting ceiling; raise it only after measuring CPU and memory usage.
 	MaxParties           = getInt("JAM_MAX_PARTIES", 50)
 	CreateRatePerMinute  = getInt("JAM_CREATE_RATE_PER_MINUTE", 2)
@@ -97,6 +104,10 @@ var (
 	TrustProxy           = getBool("JAM_TRUST_PROXY", false)
 	PublicOrigin         = getOrigin("JAM_PUBLIC_ORIGIN")
 	Port                 = getInt("PORT", 8000)
+	// Loopback by default: a reverse proxy on the same host terminates TLS and
+	// forwards here, so nothing outside the box reaches this process. Set
+	// JAM_BIND=0.0.0.0 to reach a dev server from a phone on the same network.
+	BindHost             = getStr("JAM_BIND", "127.0.0.1")
 )
 
 // Open-app heartbeats. The interval is handed back on every ping, so it can be

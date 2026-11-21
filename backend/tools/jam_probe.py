@@ -20,7 +20,7 @@ import uuid
 import websockets
 from urllib.request import Request, urlopen
 
-DEFAULT_SERVER = "https://laya-listen-together.onrender.com"
+DEFAULT_SERVER = "https://together.layalisten.dpdns.org"
 
 
 def post(url, body):

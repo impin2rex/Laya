@@ -4,8 +4,8 @@ The party server behind **Listen together**: create a six-character code, share
 it, and up to five signed-in devices listen to the same thing at the same time.
 Anyone in the party can control the music.
 
-Go + a WebSocket per device, no database, deployed as a single Render web
-service.
+Go + a WebSocket per device, no database, deployed as a single Go process
+behind Caddy on one small VM.
 
 ```bash
 go run .
@@ -113,7 +113,7 @@ matching Kotlin's naming keeps `@SerialName` off every field.
 
 | | |
 |---|---|
-| `GET /healthz` | Render's health check. |
+| `GET /healthz` | Liveness check, answered by Caddy and the server alike. |
 | `GET /api/time` | `{"serverMs":…}` — a clock sample before the socket exists. |
 | `POST /api/parties` | Create a party and join it as host. Body: `userId`, `deviceId`, `displayName`, `avatarUrl?`. → `201` with `code`, `token`, `you`, `party`. Creation is capped per IP and by the service-wide party limit. |
 | `POST /api/parties/{code}/join` | Same body. `404` unknown code, `409` full, `422` no identity. The code is normalised first, so lower case, spaces, and `O`/`I`/`L` typed for `0`/`1` all work. |
@@ -241,51 +241,110 @@ To keep memory, bandwidth, and latency strictly bounded:
 
 ## Deploying to Oracle Cloud (Always Free)
 
-This is what runs `https://laya-listen-together.onrender.com`: one Always Free
-`VM.Standard.E2.1.Micro` (1 OCPU, 1 GB) on Ubuntu 24.04 in ap-mumbai-1, with
-Caddy in front for HTTPS and WebSockets. Files are in `deploy/`.
+This is what runs `https://together.layalisten.dpdns.org`: one Always Free
+`VM.Standard.E2.1.Micro` (1 OCPU, 1 GB) on Ubuntu 24.04 in ap-mumbai-1. The
+server itself listens on **127.0.0.1:8000** and nothing else; a reverse proxy on
+the same VM owns the public name and the certificate.
 
 1. **Create the VM**: Compute -> Instances -> Create. Image *Canonical Ubuntu
    24.04*, shape *VM.Standard.E2.1.Micro* (tagged Always Free), public subnet,
    public IPv4 on, paste your SSH public key.
 2. **Open 80/443 in the VCN**: Networking -> VCN -> Security -> *Default
    Security List* -> Add Ingress Rule: source `0.0.0.0/0`, TCP, destination
-   ports `80,443`.
+   ports `80,443`. Do not open 8000.
 3. **DNS**: an `A` record for the host name pointing at the VM's public IP.
-   It has to resolve before step 4 can get a certificate.
-4. **Install** (from a copy of `backend/` on the VM):
+4. **Install the app** (from a copy of `backend/` on the VM):
 
    ```sh
-   sudo DOMAIN=laya-listen-together.onrender.com bash deploy/setup.sh
+   sudo bash deploy/setup.sh
    ```
 
    It installs Go, builds the server into `/opt/laya-jam`, runs it as the
-   `laya-jam` systemd service on `:8000`, installs Caddy for the domain, and
-   opens 80/443 in the VM's own iptables. Oracle's Ubuntu images carry a REJECT
-   rule besides the security list, so both have to be opened. Re-run the same
-   command to deploy a new build.
+   `laya-jam` systemd service on `127.0.0.1:8000`, raises conntrack and swap,
+   installs a watchdog timer that restarts the service if its own `/healthz`
+   fails twice, and opens 80/443 in the VM's own iptables for the proxy.
+   Oracle's Ubuntu images carry a REJECT rule besides the security list, so both
+   have to be opened. Re-run the same command to deploy a new build.
 
-Check it with `curl https://<domain>/healthz`. Logs are in
-`journalctl -u laya-jam` and `journalctl -u caddy`.
+   It does **not** install or configure a proxy, a certificate or anything that
+   knows the domain. `JAM_BIND` defaults to `127.0.0.1`; set it to `0.0.0.0`
+   only for a dev box you want to reach from a phone on the same network.
 
-## Deploying to Render
+5. **Put a reverse proxy in front, by hand.** It has to terminate TLS for the
+   domain, forward to `127.0.0.1:8000`, and pass WebSocket upgrades through.
+   Three things matter beyond the obvious:
 
-The blueprint is `render.yaml` at the repository root: **New → Blueprint**,
-connect this repo, apply. Or create the service by hand — which is one screen:
+   - **Answer `/healthz` in the proxy.** Over 90% of requests are the apps'
+     probe, and they only check for a 2xx whose body contains `"ok":true`.
+   - **Keep the proxy's read timeout above the server's own**
+     (`JAM_CONNECTION_IDLE_MS`, 15 minutes), so an idle party socket is closed
+     by the server and not pulled out from under it.
+   - **Pass `X-Forwarded-For` and `X-Forwarded-Proto`.** The unit sets
+     `JAM_TRUST_PROXY=true`, which is what makes per-IP rate limiting and
+     invite-link origins correct instead of seeing one client at `127.0.0.1`.
 
-- **New → Web Service**, connect this repo
-- **Root Directory** `backend`
-- **Runtime** Go
-- **Build Command** `go build -o server .`
-- **Start Command** `./server`
-- **Health check path** `/healthz`
-- **Instances** 1
+Check it with `curl http://127.0.0.1:8000/healthz` on the VM, and
+`curl https://<domain>/healthz` from outside once the proxy is up. Logs are in
+`journalctl -u laya-jam`.
 
-Then point the app at `https://<service>.onrender.com`, by adding this to
-`local.properties` at the repository root:
+### Automatic deploys
+
+Pushes can deploy themselves. First run `setup.sh` once with `DEPLOY_PUBKEY`
+set to the public half of a key pair made for CI:
+
+```sh
+ssh-keygen -t ed25519 -C laya-deploy -f laya-deploy -N ''
+sudo DEPLOY_PUBKEY="$(cat laya-deploy.pub)" bash deploy/setup.sh
+```
+
+That creates the `deploy` user whose key may only run
+`/usr/local/sbin/laya-deploy` (a forced command), so a leaked key can do
+nothing but redeploy a branch of this repo.
+
+Or skip the separate account: put the CI public key in an existing sudo-capable
+account's `~/.ssh/authorized_keys` and run `sudo DEPLOY_USER=ubuntu bash
+deploy/setup.sh`, which writes the sudo rule for that account. The workflow
+sends `sudo /usr/local/sbin/laya-deploy <branch>` and works either way — but
+that key is then a key with full sudo on the VM, not one pinned to a redeploy.
+Prefix its `authorized_keys` line with
+`command="sudo /usr/local/sbin/laya-deploy",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty`
+to get the containment back without a second user.
+
+Then in GitHub → Settings:
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `DEPLOY_SSH_KEY` | secret | the private `laya-deploy` file |
+| `DEPLOY_HOST` | variable | the VM's IP, `140.245.238.245` |
+| `DEPLOY_USER` | variable | `deploy`, or the account holding the CI key |
+| `LISTEN_TOGETHER_HEALTH_URL` | variable | `https://together.layalisten.dpdns.org/healthz` |
+
+`.github/workflows/deploy-backend.yml` then builds, vets and tests the Go
+module on every push to `main` that touches `backend/**`, and only then SSHes
+in. Nothing outside `backend/` triggers it, a commit message containing
+`[skip ci]` skips it (GitHub's own rule), and the run fails if `/healthz`
+does not come back `ok:true` within ~100 s. `workflow_dispatch` redeploys by
+hand. The host key is not pinned — the workflow `ssh-keyscan`s the IP each
+run, so it trusts whatever answers there.
+
+**Trying it before it is on `main`:** the same workflow also runs on any
+branch named `ci/**`, and the branch it ran on is the branch the VM deploys
+(the workflow passes it as the SSH command; `laya-deploy` refuses anything
+that is not a plain branch name). So `git push origin HEAD:ci/try` with a
+`backend/` change deploys that branch to the VM, and the next push to `main`
+puts it back. Keep in mind there is one VM — a `ci/**` run replaces what is
+live.
+
+The VM pulls the source itself (`git clone` of this repo in
+`laya-deploy.sh`), so the repo has to be readable from the VM — public, or
+give it its own read-only deploy key.
+
+## Pointing the app at it
+
+Add this to `local.properties` at the repository root:
 
 ```properties
-LISTEN_TOGETHER_SERVER=https://<service>.onrender.com
+LISTEN_TOGETHER_SERVER=https://<domain>
 ```
 
 That becomes `BuildConfig.LISTEN_TOGETHER_SERVER` and seeds the address box on
@@ -295,17 +354,10 @@ the build. `local.properties` is gitignored, so a fresh checkout builds with an
 empty default and simply asks for an address the first time the screen is
 opened.
 
-Two things about Render specifically:
-
-- **Keep it to one instance.** A party lives in the memory of the instance
-  holding its WebSockets, so a second instance is a second, disjoint set of
-  parties, and a join lands in whichever one the load balancer picked. Outgrowing
-  that is a Redis pub/sub swap behind `PartyStore` — nothing above it moves.
-- **The free plan spins down after ~15 minutes idle**, which closes every
-  WebSocket and drops every party, and the next request then waits ~30 s for a
-  cold start. Fine for development; for real use this wants the paid instance
-  type, where the process stays up (or a free uptime monitor pinging `/healthz`
-  every 12 minutes).
+**Keep it to one instance.** A party lives in the memory of the process holding
+its WebSockets, so a second instance is a second, disjoint set of parties, and a
+join lands in whichever one the load balancer picked. Outgrowing that is a Redis
+pub/sub swap behind `PartyStore` — nothing above it moves.
 
 ### Environment
 
@@ -323,7 +375,7 @@ Every one of these is optional — `config/config.go` carries the same defaults.
 | `JAM_PARTY_MAX_AGE_MS` | `43200000` | Hard ceiling on a party's life. |
 | `JAM_CONTROL_RATE_PER_SECOND` | `25` | Per-member control ceiling. |
 | `JAM_FRAME_RATE_PER_SECOND` | `30` | Per-member WebSocket frame ceiling, including ping and sync frames. |
-| `JAM_MAX_PARTIES` | `50` | Maximum concurrent parties. Conservative default for Render Free (250 sockets at five devices each). |
+| `JAM_MAX_PARTIES` | `50` | Maximum concurrent parties. The VM's unit sets `200`; 50 is the conservative in-code default (250 sockets at five devices each). |
 | `JAM_CREATE_RATE_PER_MINUTE` | `2` | Maximum new parties per client IP per minute. |
 | `JAM_RATE_LIMIT_MAX_ENTRIES` | `10000` | Maximum tracked client IPs before new creations are rejected, preventing the limiter itself from growing without bound. |
 | `JAM_REQUEST_MAX_BYTES` | `16384` | Maximum REST request size. |
@@ -332,6 +384,7 @@ Every one of these is optional — `config/config.go` carries the same defaults.
 | `JAM_ALLOWED_ORIGINS` | *(none)* | Comma-separated browser Origin allowlist. Native clients send no Origin and remain supported. |
 | `JAM_TRUST_PROXY` | `false` | Read `X-Forwarded-For` for rate limiting only when a trusted proxy terminates requests. |
 | `JAM_PUBLIC_ORIGIN` | *(none)* | Public origin emitted verbatim in invite deep links, e.g. `https://party.example.com`. Set it when TLS terminates upstream and `X-Forwarded-Proto` may be rewritten or dropped along the way. |
+| `JAM_BIND` | `127.0.0.1` | Interface to bind. Loopback, because a proxy on the same host publishes it; `0.0.0.0` to reach a dev server over the LAN. |
 | `PORT` | `8000` | Port the server listens on. |
 
 ## Layout

@@ -9,9 +9,11 @@ ExecStart=/opt/laya-jam/server
 Restart=always
 RestartSec=2
 
-# Caddy terminates TLS on 443 and forwards X-Forwarded-For; port 8000 stays
-# closed to the internet (only 80/443 are opened by setup.sh).
+# A reverse proxy on this host terminates TLS on 443 and forwards
+# X-Forwarded-For. The server binds 127.0.0.1 (JAM_BIND default), so :8000 is
+# not reachable off the box at all.
 Environment=PORT=8000
+Environment=JAM_BIND=127.0.0.1
 Environment=JAM_TRUST_PROXY=true
 Environment=JAM_MAX_MEMBERS=5
 Environment=JAM_STATE_HEARTBEAT_MS=5000

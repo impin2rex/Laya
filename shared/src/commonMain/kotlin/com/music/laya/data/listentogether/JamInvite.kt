@@ -9,7 +9,7 @@ package com.music.laya.data.listentogether
  */
 object JamInvite {
 
-    const val ORIGIN = "https://laya-listen-together.onrender.com"
+    const val ORIGIN = "https://together.layalisten.dpdns.org"
 
     /** How many characters a party code carries. */
     const val CODE_LENGTH = 6

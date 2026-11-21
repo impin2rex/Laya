@@ -116,7 +116,7 @@ class Presence(
     }
 
     companion object {
-        const val ENDPOINT = "https://laya-listen-together.onrender.com/api/presence"
+        const val ENDPOINT = "https://together.layalisten.dpdns.org/api/presence"
         private const val TAG = "Presence"
         private const val DEFAULT_INTERVAL_SEC = 300
         private const val MIN_INTERVAL_SEC = 60

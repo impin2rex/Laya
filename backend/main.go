@@ -73,7 +73,7 @@ func main() {
 
 	handler := corsMiddleware(mux)
 
-	addr := fmt.Sprintf("0.0.0.0:%d", config.Port)
+	addr := fmt.Sprintf("%s:%d", config.BindHost, config.Port)
 	log.Printf("Laya Listen Together (Go) starting on %s...", addr)
 	server := &http.Server{
 		Addr:              addr,

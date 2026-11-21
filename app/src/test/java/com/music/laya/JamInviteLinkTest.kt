@@ -23,7 +23,7 @@ class JamInviteLinkTest {
     fun `parses and normalizes a public invite`() {
         assertEquals(
             "A1B2C3",
-            JamInviteLink.parse("https://laya-listen-together.onrender.com/invite/a1b2c3"),
+            JamInviteLink.parse("https://together.layalisten.dpdns.org/invite/a1b2c3"),
         )
     }
 
@@ -31,25 +31,25 @@ class JamInviteLinkTest {
     fun `accepts query parameters without making them part of the code`() {
         assertEquals(
             "ABC123",
-            JamInviteLink.parse("https://laya-listen-together.onrender.com/invite/ABC123?from=share"),
+            JamInviteLink.parse("https://together.layalisten.dpdns.org/invite/ABC123?from=share"),
         )
     }
 
     @Test
     fun `rejects other hosts schemes paths and malformed codes`() {
-        assertNull(JamInviteLink.parse("http://laya-listen-together.onrender.com/invite/ABC123"))
+        assertNull(JamInviteLink.parse("http://together.layalisten.dpdns.org/invite/ABC123"))
         assertNull(JamInviteLink.parse("https://example.com/invite/ABC123"))
-        assertNull(JamInviteLink.parse("https://laya-listen-together.onrender.com/"))
-        assertNull(JamInviteLink.parse("https://laya-listen-together.onrender.com/download"))
-        assertNull(JamInviteLink.parse("https://laya-listen-together.onrender.com/invite/ABC123/"))
-        assertNull(JamInviteLink.parse("https://laya-listen-together.onrender.com/invite/ABC123/extra"))
-        assertNull(JamInviteLink.parse("https://laya-listen-together.onrender.com/invite/TOO-LONG"))
+        assertNull(JamInviteLink.parse("https://together.layalisten.dpdns.org/"))
+        assertNull(JamInviteLink.parse("https://together.layalisten.dpdns.org/download"))
+        assertNull(JamInviteLink.parse("https://together.layalisten.dpdns.org/invite/ABC123/"))
+        assertNull(JamInviteLink.parse("https://together.layalisten.dpdns.org/invite/ABC123/extra"))
+        assertNull(JamInviteLink.parse("https://together.layalisten.dpdns.org/invite/TOO-LONG"))
     }
 
     @Test
     fun `builds the canonical share URL`() {
         assertEquals(
-            "https://laya-listen-together.onrender.com/invite/ABC123",
+            "https://together.layalisten.dpdns.org/invite/ABC123",
             JamInviteLink.url("abc123"),
         )
     }
@@ -57,19 +57,19 @@ class JamInviteLinkTest {
     @Test
     fun `builds the custom server share URL`() {
         assertEquals(
-            "https://my-party.onrender.com/invite/ABC123",
-            JamInviteLink.url("abc123", "https://my-party.onrender.com"),
+            "https://my-party.example.com/invite/ABC123",
+            JamInviteLink.url("abc123", "https://my-party.example.com"),
         )
         assertEquals(
-            "https://my-party.onrender.com/invite/ABC123",
-            JamInviteLink.url("abc123", "https://my-party.onrender.com/"),
+            "https://my-party.example.com/invite/ABC123",
+            JamInviteLink.url("abc123", "https://my-party.example.com/"),
         )
         assertEquals(
-            "https://laya-listen-together.onrender.com/invite/ABC123",
+            "https://together.layalisten.dpdns.org/invite/ABC123",
             JamInviteLink.url("abc123", ""),
         )
         assertEquals(
-            "https://laya-listen-together.onrender.com/invite/ABC123",
+            "https://together.layalisten.dpdns.org/invite/ABC123",
             JamInviteLink.url("abc123", null),
         )
     }
@@ -77,8 +77,8 @@ class JamInviteLinkTest {
     @Test
     fun `builds custom scheme URL`() {
         assertEquals(
-            "laya://party/ABC123?server=https%3A%2F%2Fmy-party.onrender.com",
-            JamInviteLink.schemeUrl("abc123", "https://my-party.onrender.com"),
+            "laya://party/ABC123?server=https%3A%2F%2Fmy-party.example.com",
+            JamInviteLink.schemeUrl("abc123", "https://my-party.example.com"),
         )
         assertEquals(
             "laya://party/ABC123",
@@ -88,9 +88,9 @@ class JamInviteLinkTest {
 
     @Test
     fun `parses custom scheme invite with server`() {
-        val invite = JamInviteLink.parseInvite("laya://party/a1b2c3?server=https%3A%2F%2Fmy-party.onrender.com")
+        val invite = JamInviteLink.parseInvite("laya://party/a1b2c3?server=https%3A%2F%2Fmy-party.example.com")
         assertEquals("A1B2C3", invite?.code)
-        assertEquals("https://my-party.onrender.com", invite?.serverUrl)
+        assertEquals("https://my-party.example.com", invite?.serverUrl)
     }
 
     @Test
@@ -102,7 +102,7 @@ class JamInviteLinkTest {
 
     @Test
     fun `parses web invite with server parameter`() {
-        val invite = JamInviteLink.parseInvite("https://laya-listen-together.onrender.com/invite/ABC123?server=https%3A%2F%2Fcustom.example.com")
+        val invite = JamInviteLink.parseInvite("https://together.layalisten.dpdns.org/invite/ABC123?server=https%3A%2F%2Fcustom.example.com")
         assertEquals("ABC123", invite?.code)
         assertEquals("https://custom.example.com", invite?.serverUrl)
     }
@@ -135,7 +135,7 @@ class JamInviteLinkTest {
         } else {
             JamInviteLink.url(code, activePartyHost)
         }
-        assertEquals("https://laya-listen-together.onrender.com/invite/JAM001", link)
+        assertEquals("https://together.layalisten.dpdns.org/invite/JAM001", link)
     }
 
     @Test
@@ -148,7 +148,7 @@ class JamInviteLinkTest {
             JamInviteLink.url(code, customHost)
         }
         assertEquals("https://custom.jam.example.com/invite/JAM002", link)
-        assertNotEquals("https://laya-listen-together.onrender.com/invite/JAM002", link)
+        assertNotEquals("https://together.layalisten.dpdns.org/invite/JAM002", link)
     }
 
     @Test
@@ -165,7 +165,7 @@ class JamInviteLinkTest {
 
     @Test
     fun `invariant 4 explicit invite target ignores idle fallback`() {
-        val explicitInvite = "https://laya-listen-together.onrender.com/invite/JAM004?server=https%3A%2F%2Ftarget.party.com"
+        val explicitInvite = "https://together.layalisten.dpdns.org/invite/JAM004?server=https%3A%2F%2Ftarget.party.com"
         val parsed = JamInviteLink.parseInvite(explicitInvite)
         assertEquals("JAM004", parsed?.code)
         assertEquals("https://target.party.com", parsed?.serverUrl)
