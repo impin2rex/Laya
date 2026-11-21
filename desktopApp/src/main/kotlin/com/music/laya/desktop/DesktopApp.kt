@@ -815,6 +815,31 @@ fun LayaDesktopApp() {
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
     var sourceConfigs by remember { mutableStateOf(persistence.sourceConfigs()) }
+    // A lost Tidal/Qobuz session switches its source off at once; the notice waits for Lossless quality (shared rule).
+    LaunchedEffect(Unit) {
+        com.music.laya.data.sources.LosslessSource.watchExpiry(
+            scope = this,
+            inUse = androidx.compose.runtime.snapshotFlow { audioQuality == DesktopAudioQuality.LOSSLESS },
+            switchOff = { provider ->
+                val kind = if (provider == DesktopLossless.provider(DesktopSourceKind.QOBUZ)) DesktopSourceKind.QOBUZ else DesktopSourceKind.TIDAL
+                val current = persistence.sourceConfigs()
+                current.any { it.kind == kind && it.enabled }.also { wasOn ->
+                    if (wasOn) {
+                        persistence.saveSourceConfigs(current.map { if (it.kind == kind) it.copy(enabled = false) else it })
+                        sourceConfigs = persistence.sourceConfigs()
+                        DesktopModuleSource.reload()
+                    }
+                }
+            },
+        ) { provider ->
+            DesktopPlayerHost.showMessage(
+                DesktopStrings.format(
+                    "lossless_verify_expired_notice", provider.label,
+                    fallback = "${provider.label} verification expired. Turn it on again in Sources to keep lossless.",
+                ),
+            )
+        }
+    }
     var sourceStatus by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     val youtubeSourceEnabled = sourceConfigs.any {
         it.kind == DesktopSourceKind.YOUTUBE && it.enabled
@@ -3021,21 +3046,9 @@ fun LayaDesktopApp() {
                     launch {
                         val artwork = limiter.withPermit {
                             DesktopSearchClient.moodGenreArtwork(item.browseId, item.params).getOrNull()
-                        } ?: return@launch
+                        }?.takeIf { it.isNotEmpty() } ?: return@launch
                         val current = (exploreState as? UiState.Success)?.data ?: return@launch
-                        exploreState = UiState.Success(
-                            current.map { section ->
-                                section.copy(
-                                    items = section.items.map { entry ->
-                                        if (entry.browseId == item.browseId && entry.params == item.params) {
-                                            entry.copy(thumbnailUrl = artwork)
-                                        } else {
-                                            entry
-                                        }
-                                    },
-                                )
-                            },
-                        )
+                        exploreState = UiState.Success(YtMusicRepository.withMoodGenreArtwork(current, item, artwork))
                     }
                 }
         }
@@ -6418,6 +6431,65 @@ private fun DesktopSettingsScreen(
     onOpenLicenses: () -> Unit,
 ) {
     var editingSource by remember { mutableStateOf<DesktopSourceConfig?>(null) }
+    val tidalVerified by DesktopLossless.provider(DesktopSourceKind.TIDAL).session.verified.collectAsState()
+    val qobuzVerified by DesktopLossless.provider(DesktopSourceKind.QOBUZ).session.verified.collectAsState()
+    val losslessVerified = mapOf(DesktopSourceKind.TIDAL to tidalVerified, DesktopSourceKind.QOBUZ to qobuzVerified)
+    val tidalExpired by DesktopLossless.provider(DesktopSourceKind.TIDAL).session.expired.collectAsState()
+    val qobuzExpired by DesktopLossless.provider(DesktopSourceKind.QOBUZ).session.expired.collectAsState()
+    val losslessExpired = mapOf(DesktopSourceKind.TIDAL to tidalExpired, DesktopSourceKind.QOBUZ to qobuzExpired)
+    val tidalUntil by DesktopLossless.provider(DesktopSourceKind.TIDAL).session.expiresAtMs.collectAsState()
+    val qobuzUntil by DesktopLossless.provider(DesktopSourceKind.QOBUZ).session.expiresAtMs.collectAsState()
+    val losslessUntil = mapOf(DesktopSourceKind.TIDAL to tidalUntil, DesktopSourceKind.QOBUZ to qobuzUntil)
+    val verifyScope = rememberCoroutineScope()
+    // The row being verified: cancelled without a session, its switch goes back off. The switch is the only
+    // control, as on the phones: on always verifies afresh, off drops the session.
+    var verifying by remember { mutableStateOf<Pair<DesktopSourceConfig, kotlinx.coroutines.Job>?>(null) }
+    var verifyError by remember { mutableStateOf<String?>(null) }
+    fun verifyLossless(config: DesktopSourceConfig) {
+        val kind = config.kind
+        verifying?.second?.cancel()
+        verifyError = null
+        DesktopLossless.provider(kind).session.forget()
+        val job = verifyScope.launch {
+            runCatching { DesktopLossless.verify(kind) }
+                .onSuccess { verifying = null }
+                .onFailure {
+                    if (it !is kotlinx.coroutines.CancellationException) {
+                        DesktopTrackLog.log("${kind.label}: verification failed: ${it.message}")
+                        verifyError = it.message ?: DesktopStrings["lossless_verify_failed", "Verification failed"]
+                    }
+                }
+        }
+        verifying = config to job
+    }
+    verifying?.let { (config, job) ->
+        val kind = config.kind
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(DesktopStrings.format("lossless_verify_title", kind.label, fallback = "Verify ${kind.label}")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        DesktopStrings["lossless_verify_browser_hint", "Complete the Cloudflare check in your browser. Laya finishes by itself."],
+                        color = DesktopSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    verifyError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                if (verifyError != null) TextButton(onClick = { verifyLossless(config) }) { Text(DesktopStrings["try_again", "Try again"]) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    job.cancel()
+                    verifying = null
+                    verifyError = null
+                    onSourceEnabledChange(config, false)
+                }) { Text(DesktopStrings["cancel", "Cancel"]) }
+            },
+        )
+    }
     val sourceProbeKey = sourceConfigs
         .filter { it.kind.needsServer && it.isComplete }
         .joinToString { "${it.id}@${it.baseUrl}" }
@@ -6982,14 +7054,31 @@ private fun DesktopSettingsScreen(
                     )
                     var editingSignatureApi by remember { mutableStateOf(false) }
                     if (signatureEnabled) {
-                        val signatureUrl by DesktopSignatureSettings.url.collectAsState()
+                        // Only the saved address is ever shown; the built-in one stays out of the UI.
+                        val signatureUrl by DesktopSignatureSettings.customUrl.collectAsState()
+                        val signatureServerOnline by DesktopSignatureSettings.server.online.collectAsState()
+                        LaunchedEffect(signatureUrl) { DesktopSignatureSettings.refreshServer() }
+                        val serverName = signatureUrl.ifBlank {
+                            if (DesktopSignatureSettings.defaultUrl.isNotBlank()) {
+                                DesktopStrings["artist_signatures_builtin", "Built-in server"]
+                            } else {
+                                DesktopStrings["artist_signatures_unconfigured", "Not configured — tap to set the API URL"]
+                            }
+                        }
+                        val serverStatus = signatureServerOnline?.let { online ->
+                            if (online) {
+                                DesktopStrings["artist_signatures_online", "Online"] to Color(0xFF34C759)
+                            } else {
+                                DesktopStrings["listen_together_server_offline", "Can’t be reached right now"] to Color(0xFFFF453A)
+                            }
+                        }
                         SettingsRow(
                             Icons.Rounded.Edit,
                             DesktopStrings["artist_signatures_url", "Signature API URL"],
-                            signatureUrl.ifBlank {
-                                DesktopStrings["artist_signatures_unconfigured", "Not configured — tap to set the API URL"]
-                            },
-                        ) { editingSignatureApi = true }
+                            serverName,
+                            onClick = { editingSignatureApi = true },
+                            status = serverStatus,
+                        )
                     }
                     if (editingSignatureApi) DesktopSignatureApiDialog { editingSignatureApi = false }
                 }
@@ -7093,17 +7182,33 @@ private fun DesktopSettingsScreen(
                         DesktopSourceSettingsRow(
                             position = index + 1,
                             config = config,
-                            status = sourceStatus[config.id],
-                            skippedByQuality = config.enabled && !audioQuality.permits(config.kind),
-                            onEdit = if (config.kind.needsServer) {
-                                { editingSource = config }
+                            status = if (config.kind == DesktopSourceKind.TIDAL || config.kind == DesktopSourceKind.QOBUZ) {
+                                when {
+                                    config.enabled && losslessVerified[config.kind] == true ->
+                                        (losslessUntil[config.kind]?.let { until ->
+                                            val at = com.music.laya.platform.localDateTime(until)
+                                            DesktopStrings.format("lossless_verified_until", at, fallback = "Verified · until $at")
+                                        } ?: DesktopStrings["lossless_verified", "Verified"]) + " · ${config.kind.detail}"
+                                    losslessExpired[config.kind] == true -> DesktopStrings["lossless_verify_expired", "Verification expired · turn on again"]
+                                    else -> DesktopStrings["lossless_verify_on_enable", "Verifies when turned on"]
+                                }
                             } else {
-                                null
+                                sourceStatus[config.id]
+                            },
+                            skippedByQuality = config.enabled && !audioQuality.permits(config.kind),
+                            onEdit = when {
+                                config.kind.needsServer -> ({ editingSource = config })
+                                else -> null
                             },
                             onToggle = if (config.kind == DesktopSourceKind.YOUTUBE) {
                                 null
                             } else {
-                                { onSourceEnabledChange(config, it) }
+                                {
+                                    onSourceEnabledChange(config, it)
+                                    if (config.kind == DesktopSourceKind.TIDAL || config.kind == DesktopSourceKind.QOBUZ) {
+                                        if (it) verifyLossless(config) else DesktopLossless.provider(config.kind).session.forget()
+                                    }
+                                }
                             },
                             onMoveUp = if (userAddedIds.indexOf(config.id) > 0) {
                                 { onMoveSource(config, -1) }
@@ -7135,7 +7240,7 @@ private fun DesktopSettingsScreen(
                         Icons.Rounded.Share,
                         DesktopStrings["account_integrations", "Account & integrations"],
                         DesktopStrings["d_discord_rich_presence_last_fm_and_listenbrainz", "Discord rich presence, Last.fm and ListenBrainz"],
-                        onOpenIntegrations,
+                        onClick = onOpenIntegrations,
                     )
                 }
             }
@@ -7181,7 +7286,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet, as Android has it. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("laya.version") ?: "1.9.5" }
+    val version = remember { System.getProperty("laya.version") ?: "1.9.6" }
     val linkStyles = TextLinkStyles(
         style = SpanStyle(color = DesktopAccent, textDecoration = TextDecoration.Underline),
     )
@@ -7301,7 +7406,7 @@ private fun DesktopSourceSettingsRow(
             when (config.kind) {
                 DesktopSourceKind.ADDON -> Icons.Rounded.Extension
                 DesktopSourceKind.CUSTOM_MODULE, DesktopSourceKind.MODULE -> Icons.Rounded.Extension
-                DesktopSourceKind.JIOSAAVN -> Icons.Rounded.GraphicEq
+                DesktopSourceKind.JIOSAAVN, DesktopSourceKind.TIDAL, DesktopSourceKind.QOBUZ -> Icons.Rounded.GraphicEq
                 DesktopSourceKind.YOUTUBE -> Icons.Rounded.PlayCircle
             },
             contentDescription = null,
@@ -8585,6 +8690,8 @@ private fun SettingsRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
+    /** A coloured line under [subtitle], such as a server's status. */
+    status: Pair<String, Color>? = null,
     onClick: (() -> Unit)? = null,
 ) {
     if (!settingsRowVisible(title, subtitle)) return
@@ -8605,6 +8712,7 @@ private fun SettingsRow(
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(subtitle, color = DesktopSecondary, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+            status?.let { (text, color) -> Text(text, color = color, style = MaterialTheme.typography.bodySmall) }
         }
         if (onClick != null) {
             Spacer(Modifier.width(10.dp))

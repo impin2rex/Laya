@@ -743,4 +743,12 @@
     <string name="recognize_shortcut_steps">פתח את מרכז הבקרה, הקש על + בפינה השמאלית העליונה, ואז על הוספת פקד וחפש את Laya.</string>
     <string name="recognize_shortcut_ok">הבנתי</string>
     <string name="recognize_shortcut_close">סגור</string>
+    <string name="lossless_verified">אומת</string>
+    <string name="lossless_verify_on_enable">יאומת בעת ההפעלה</string>
+    <string name="lossless_verify_title">אימות %1$s</string>
+    <string name="lossless_verify_failed">האימות נכשל</string>
+    <string name="lossless_verify_unreachable">שירות האימות אינו זמין</string>
+    <string name="lossless_verify_expired_notice">האימות של %1$s פג. הפעילו אותו שוב במקורות כדי להמשיך באיכות ללא אובדן.</string>
+    <string name="lossless_verify_expired">האימות פג · הפעילו שוב</string>
+    <string name="lossless_verified_until">אומת · עד %1$s</string>
 </resources>

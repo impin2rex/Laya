@@ -20,6 +20,17 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Two decks: `player` is the one the app sees; `idle` holds the next track while a crossfade is armed or running.
     private var player = AVQueuePlayer()
     private var idle = AVQueuePlayer()
+
+    /// Scopes Now Playing to the two audio decks. Without a session, every AVPlayer in the process pushes
+    /// its own automatic updates to the system's now-playing state — the canvas loop and a music video's
+    /// silent picture included — so a canvas looping over paused music kept the lock screen / Dynamic
+    /// Island on the playing state no matter what the app published. A session follows only its players,
+    /// and the decks are the same two objects for the app's life (swapDecks only renames them).
+    private lazy var nowPlayingSession: MPNowPlayingSession = {
+        let session = MPNowPlayingSession(players: [player, idle])
+        session.automaticallyPublishesNowPlayingInfo = false
+        return session
+    }()
     private weak var listener: AudioEngineListener?
 
     private var timeObservers: [(AVQueuePlayer, Any)] = []
@@ -63,6 +74,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
         observeSystemEvents()
         configureRemoteCommands()
+        nowPlayingSession.becomeActiveIfPossible()
         let watchdog = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in self?.checkStuckEnd() }
         RunLoop.main.add(watchdog, forMode: .common)
     }
@@ -329,7 +341,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         if artworkUrl.hasPrefix("/") {
             if let image = UIImage(contentsOfFile: artworkUrl) {
                 nowPlaying[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
-                MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlaying
+                nowPlayingSession.nowPlayingInfoCenter.nowPlayingInfo = nowPlaying
             }
             return
         }
@@ -354,7 +366,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                 guard let self, self.nowPlaying[MPMediaItemPropertyTitle] as? String == expectedTitle else { return }
                 self.nowPlaying[MPMediaItemPropertyArtwork] =
                     MPMediaItemArtwork(boundsSize: square.size) { _ in square }
-                MPNowPlayingInfoCenter.default().nowPlayingInfo = self.nowPlaying
+                self.nowPlayingSession.nowPlayingInfoCenter.nowPlayingInfo = self.nowPlaying
             }
         }
         artworkTask?.resume()
@@ -372,14 +384,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     func setQueueCapabilities(hasNext: Bool, hasPrevious: Bool) {
-        let center = MPRemoteCommandCenter.shared()
+        let center = nowPlayingSession.remoteCommandCenter
         center.nextTrackCommand.isEnabled = hasNext
         center.previousTrackCommand.isEnabled = hasPrevious
     }
 
     // Like and Favorite (bookmark) both stand for the app's one like: whichever the system chooses to draw.
     func setLikeState(available: Bool, liked: Bool) {
-        let center = MPRemoteCommandCenter.shared()
+        let center = nowPlayingSession.remoteCommandCenter
         for command in [center.likeCommand, center.bookmarkCommand] {
             command.isEnabled = available
             command.isActive = liked
@@ -1142,7 +1154,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         nowPlaying[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position.isFinite ? position : 0
         let playing = player.timeControlStatus != .paused
         nowPlaying[MPNowPlayingInfoPropertyPlaybackRate] = player.timeControlStatus == .playing ? Double(speed) : 0.0
-        let center = MPNowPlayingInfoCenter.default()
+        let center = nowPlayingSession.nowPlayingInfoCenter
         center.nowPlayingInfo = nowPlaying
         // The lock screen's button reads this, not the rate: a pause the app made itself (another device in a
         // Listen Together party) stopped the audio and left the button on Pause.
@@ -1225,7 +1237,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     // MARK: - Remote commands (lock screen, Control Center, headphones)
 
     private func configureRemoteCommands() {
-        let center = MPRemoteCommandCenter.shared()
+        let center = nowPlayingSession.remoteCommandCenter
 
         // Through Kotlin, like the app's own button: a Listen Together party has to hear these, or its next
         // reconcile puts the music straight back on.

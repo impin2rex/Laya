@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.window.ComposeUIViewController
 import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.lossless_verify_expired_notice
 import com.music.laya.ui.theme.SFProDisplay
 import kotlinx.coroutines.runBlocking
 import coil3.ImageLoader
@@ -36,6 +37,7 @@ import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.settings.AppSettingsHost
 import com.russhwolf.settings.NSUserDefaultsSettings
+import kotlinx.coroutines.launch
 
 /** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]; [onStatusBarLight] tells the host VC which status bar icon colour the screen needs. */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -63,14 +65,30 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     KaraokeModel.install { NSBundle.mainBundle.pathForResource("UVR_MDXNET_9482", "onnx")!! }
     KaraokeStems.install(LyricsTranslation.cacheDir!!.div("karaoke"))
     KaraokeStems.exactClock = true // IosDsp counts the tap's frames, so the offset holds across seeks
-    AppSettings.init(NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults), object : AppSettingsHost() { override val signatureApiUrl = SIGNATURE_API_URL })
+    AppSettings.init(
+        NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults),
+        object : AppSettingsHost() {
+            override val signatureApiUrl = SIGNATURE_API_URL
+            override val lastfmApiKey = LASTFM_API_KEY
+            override val lastfmSecret = LASTFM_SECRET
+        },
+    )
+    // Falls back to the built-in signature server when a saved one is down.
+    kotlinx.coroutines.MainScope().launch { com.music.laya.data.canvas.ArtistSignatureRepository.refreshServer() }
     // The device's own listening record (Replay), under Application Support the way Android keeps it in filesDir.
     ListeningStats.init(dir.toPath() / ListeningStats.DIRECTORY)
     ArtistFacts.init(dir.toPath() / ArtistFacts.FILE_NAME)
     watchIosConnection()
     IosParty.install()
     com.music.laya.ui.screens.PartyPlatform.host = IosPartyPlatform
+    com.music.laya.data.sources.lossless.LosslessStore.read = { Keychain.get(it) }
+    com.music.laya.data.sources.lossless.LosslessStore.write = { key, value -> Keychain.set(key, value) }
+    // A session that ran out while the app was closed is reported (and its source switched off) like any other.
+    com.music.laya.data.sources.lossless.LosslessProvider.all.forEach { it.session.reload() }
     SourceRegistry.init(IosSourcesHost)
+    com.music.laya.data.sources.LosslessSource.watchExpiry(kotlinx.coroutines.MainScope()) { provider ->
+        IosPlayerHost.showMessage(org.jetbrains.compose.resources.getString(Res.string.lossless_verify_expired_notice, provider.label))
+    }
     // Names only, in the order they are asked: addon addresses carry their owner's token.
     TrackLog.sourcesLine = {
         "sources: " + SourceRegistry.active().joinToString(" > ") { it.displayName }.ifEmpty { "none" } +

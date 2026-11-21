@@ -14,9 +14,9 @@ data class ParsedJamInvite(
 /** Relays a Laya web or scheme invite from the platform's link handler to Compose. */
 object JamInviteLink {
 
-    const val ORIGIN = "https://laya-listen-together.onrender.com"
+    const val ORIGIN = "https://together.layalisten.dpdns.org"
 
-    private const val HOST = "laya-listen-together.onrender.com"
+    private const val HOST = "together.layalisten.dpdns.org"
     private const val CUSTOM_SCHEME = "laya"
     private const val CUSTOM_HOST = "party"
 
@@ -39,7 +39,7 @@ object JamInviteLink {
     /**
      * Parses an incoming invite:
      * 1. laya://party/<CODE>?server=<SERVER>
-     * 2. https://laya-listen-together.onrender.com/invite/<CODE>?server=<SERVER>
+     * 2. https://together.layalisten.dpdns.org/invite/<CODE>?server=<SERVER>
      */
     fun parseInvite(value: String?): ParsedJamInvite? {
         val uri = parseUri(value ?: return null) ?: return null
@@ -56,7 +56,7 @@ object JamInviteLink {
             return ParsedJamInvite(code = code, serverUrl = server)
         }
 
-        // 2. Official web domain: https://laya-listen-together.onrender.com/invite/<CODE>
+        // 2. Official web domain: https://together.layalisten.dpdns.org/invite/<CODE>
         if (scheme == "https" && host == HOST) {
             val match = INVITE_PATH.matchEntire(uri.path) ?: return null
             val code = match.groupValues[1].uppercase()

@@ -9,3 +9,6 @@ expect fun decimalSeparator(): Char
 
 /** The full name of calendar month [month] (1..12) in the device language, e.g. "August". */
 expect fun monthName(month: Int): String
+
+/** [epochMs] as a date and time in the device's language, medium date and short time ("21 Nov 2026, 14:30"). */
+expect fun localDateTime(epochMs: Long): String

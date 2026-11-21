@@ -391,13 +391,12 @@ object SourceResolver {
         // length to wait, so every source is asked and a lossless answer is
         // waited for — that is what lets automix cut straight into the FLAC.
         val (source, stream) = if (patient && losslessRanked) {
-            val late = CompletableDeferred<SourceStream?>()
-            val (first, quick) = bestAcross(ranked, target, request, late = late) ?: return null
-            // Cancelled on the way out so a queue that moves on stops the
-            // searches too; a no-op once [late] has completed.
-            val lossless = try { late.await() } finally { late.cancel() }
-            val losslessSource = lossless?.let { l -> ranked.firstOrNull { it.configId == l.sourceConfigId } }
-            if (lossless != null && losslessSource != null) losslessSource to lossless else first to quick
+            // Every source's *patient* search, all waited for, best kept. The
+            // quick per-source search this used before gave up on exactly the
+            // slow module or addon backend holding the FLAC, so the next track
+            // was pinned to JioSaavn's 320 and only reached lossless through a
+            // mid-track upgrade — the break this lookup exists to avoid.
+            bestAcross(ranked, target, request, waitForAll = true) ?: return null
         } else {
             val quick = ranked.filter { it.kind.worthPrefetching }
             if (quick.isEmpty()) return null

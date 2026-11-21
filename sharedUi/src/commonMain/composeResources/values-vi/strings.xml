@@ -738,4 +738,12 @@
     <string name="recognize_shortcut_steps">Mở Trung tâm điều khiển, chạm + ở góc trên bên trái, rồi Thêm điều khiển và tìm Laya.</string>
     <string name="recognize_shortcut_ok">Đã hiểu</string>
     <string name="recognize_shortcut_close">Đóng</string>
+    <string name="lossless_verified">Đã xác minh</string>
+    <string name="lossless_verify_on_enable">Xác minh khi bật</string>
+    <string name="lossless_verify_title">Xác minh %1$s</string>
+    <string name="lossless_verify_failed">Xác minh thất bại</string>
+    <string name="lossless_verify_unreachable">Không thể kết nối dịch vụ xác minh</string>
+    <string name="lossless_verify_expired_notice">Xác minh %1$s đã hết hạn. Bật lại trong Nguồn để tiếp tục nghe lossless.</string>
+    <string name="lossless_verify_expired">Xác minh đã hết hạn · bật lại</string>
+    <string name="lossless_verified_until">Đã xác minh · đến %1$s</string>
 </resources>

@@ -42,6 +42,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
@@ -1120,7 +1122,13 @@ object AudioCache {
 
             override fun open(dataSpec: DataSpec): Long {
                 val scheme = dataSpec.uri.scheme
-                activeDs = if (scheme == "file" || scheme == "content") {
+                // A manifest-typed item reads its manifest uncached too: its key is
+                // the track's own, and that falls back to a complete sibling — the
+                // Opus copy Automix analysis cached — so the DASH parser was handed
+                // audio bytes ("unterminated entity ref") and the track died.
+                // Its segments are plain https URLs and still cache under their own keys.
+                val manifestOpen = dataSpec.uri.getQueryParameter("manifest_reopen") != null
+                activeDs = if (scheme == "file" || scheme == "content" || manifestOpen) {
                     upstreamDs
                 } else {
                     cacheDs
@@ -1206,6 +1214,10 @@ object AudioCache {
      * is left alone, and a different one replaces it outright, since on a run
      * of skips only wherever the listener actually lands is worth chasing.
      */
+    /** Told when read-ahead pins a queued track's stream, with its manifest type or null; called off the main thread. */
+    @Volatile
+    var onPinned: ((mediaId: String, manifestMime: String?) -> Unit)? = null
+
     fun prefetchQueue(upcoming: List<Upcoming>) {
         val mediaIds = upcoming.map { it.mediaId }
         if (mediaIds == pendingQueue) return
@@ -1253,6 +1265,13 @@ object AudioCache {
             // never going to use. The URL half below is still worth having: a
             // reverted track resolves through YouTube, which is what it warms.
             val pinnedToYouTube = OriginalVersion.isPinned(next)
+            // Held open while the patient lookup below runs, so a preload of
+            // [next] can wait for it — see [awaitWarmUp].
+            val lookup = Job().also { lookups[next] = it }
+            fun lookupDone() {
+                lookups.remove(next, lookup)
+                lookup.complete()
+            }
             scope.launch {
                 // With substitution on, the *bytes* half above used to be
                 // switched off outright, and the paragraph explaining why is
@@ -1285,19 +1304,26 @@ object AudioCache {
                     runCatching { SourceResolver.prefetchSubstitute(target, patient = true) }
                         .onFailure { TrackLog.d(TAG, "warm-up substitute failed for $next: ${it.message}", about = next) }
                         .getOrNull()
-                        // Never a manifest: read-ahead fetches bytes through a
-                        // progressive source, which caches the DASH XML as if it
-                        // were audio — and the track then fails at 0ms on it.
-                        // Left unpinned, playback's own race handles manifests.
-                        ?.takeUnless { StreamContainer.isManifest(it.url) }
-                        ?.also { StreamChoice.remember(next, it, substituted = true) }
+                        // Only if playback has not opened the track meanwhile: see
+                        // [StreamChoice.rememberIfAbsent]. Unpinned, nothing is cached.
+                        ?.takeIf { StreamChoice.rememberIfAbsent(next, it, substituted = true) }
+                        // A manifest (Tidal's usual answer) is pinned too, but its
+                        // queued item is a progressive source that would fail on
+                        // the XML — so the service declares the item's type before
+                        // it plays. Left unpinned, the track started on JioSaavn
+                        // and reached the FLAC only through a mid-track swap.
+                        ?.also { pinned -> onPinned?.invoke(next, StreamContainer.manifestMimeOf(pinned.url)) }
                 } else {
                     null
                 }
+                lookupDone()
                 // Safe to fill for the same reason in both cases: either nothing
                 // outranks YouTube and read-ahead is the only writer, or a
                 // source has been pinned and every writer now resolves to it.
-                val cacheBytes = (!substitutable || warmed != null) && !pinnedToYouTube
+                // Never a manifest's bytes: a progressive fetch would cache the
+                // XML as if it were audio, and DASH caches its own segments.
+                val cacheBytes = (!substitutable || warmed != null) && !pinnedToYouTube &&
+                    warmed?.let { StreamContainer.isManifest(it.url) } != true
                 if (cacheBytes) {
                     launch(TrackLog.about(next)) {
                         delay(PREFETCH_DELAY_MS)
@@ -1318,9 +1344,36 @@ object AudioCache {
                         delay(QUEUE_RESOLVE_STAGGER_MS)
                     }
                 }
-            }
+            }.also { it.invokeOnCompletion { lookupDone() } }
         }
     }
+
+    /** Read-ahead's patient lookups still running, by video id. */
+    private val lookups = ConcurrentHashMap<String, Job>()
+
+    /**
+     * Blocks (loader thread) until read-ahead's patient lookup for [videoId] is done, at most
+     * [timeoutMs]. For a preload of the next track: racing it instead pins JioSaavn's quick 320
+     * before the lossless answer lands, and the FLAC then only arrives as a mid-track upgrade.
+     * A lookup that is cancelled and restarted (queue re-run) is followed to the new one.
+     * Stops early once [stillAhead] says the listener has reached the track, so a skip never waits.
+     */
+    fun awaitWarmUp(videoId: String, timeoutMs: Long, stillAhead: () -> Boolean) {
+        if (lookups[videoId] == null) return
+        val started = SystemClock.elapsedRealtime()
+        runBlocking {
+            withTimeoutOrNull(timeoutMs) {
+                while (true) {
+                    val lookup = lookups[videoId] ?: break
+                    withTimeoutOrNull(WARM_UP_POLL_MS) { lookup.join() }
+                    if (!stillAhead()) break
+                }
+            }
+        }
+        TrackLog.d(TAG, "preload of $videoId waited ${SystemClock.elapsedRealtime() - started}ms for read-ahead's lookup", about = videoId)
+    }
+
+    private const val WARM_UP_POLL_MS = 250L
 
     /**
      * A queued track as read-ahead needs it.

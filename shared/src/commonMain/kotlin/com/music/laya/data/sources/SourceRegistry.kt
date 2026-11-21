@@ -30,7 +30,7 @@ data class SourceConfig(
     val label: String = "",
     val baseUrl: String = "",
     /** JioSaavn is opt-in because catalogue matches can select the wrong recording. */
-    val enabled: Boolean = kind != SourceKind.JIOSAAVN,
+    val enabled: Boolean = kind != SourceKind.JIOSAAVN && !kind.isLossless,
     /**
      * The addon's `allowDownloads`, as its manifest last said. Stored rather
      * than asked each time so the answer is there without a request — see
@@ -460,6 +460,7 @@ object SourceRegistry {
     private fun build(config: SourceConfig): MusicSource? = when (config.kind) {
         SourceKind.ADDON -> AddonSource(config)
         SourceKind.YOUTUBE -> YouTubeSource(config)
+        SourceKind.TIDAL, SourceKind.QOBUZ -> if (host.supports(config.kind)) LosslessSource(config) else null
         // Modules (CUSTOM_MODULE and MODULE share an implementation — they differ only in rank) and
         // JioSaavn are the platform's to build, or to decline.
         else -> if (host.supports(config.kind)) host.build(config) else null
@@ -496,7 +497,7 @@ object SourceRegistry {
     /** The `(configId, trackId)` inside a [trackKey], or null if this is an ordinary YouTube id. */
     fun parseTrackKey(key: String): Pair<String, String>? = SourceTrackKeys.parse(key)
 
-    private val BUILT_IN_KINDS = listOf(SourceKind.JIOSAAVN, SourceKind.YOUTUBE)
+    private val BUILT_IN_KINDS = listOf(SourceKind.TIDAL, SourceKind.QOBUZ, SourceKind.JIOSAAVN, SourceKind.YOUTUBE)
 
     private const val PREFIX = "src:"
     private const val SEPARATOR = "::"

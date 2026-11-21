@@ -18,6 +18,8 @@ import platform.CoreCrypto.kCCOptionECBMode
 import platform.CoreCrypto.kCCOptionPKCS7Padding
 import platform.CoreCrypto.kCCSuccess
 import platform.posix.size_tVar
+import platform.CoreCrypto.CC_MD5
+import platform.CoreCrypto.CC_MD5_DIGEST_LENGTH
 import platform.CoreCrypto.CC_SHA1
 import platform.CoreCrypto.CC_SHA1_DIGEST_LENGTH
 import platform.CoreCrypto.CC_SHA256
@@ -27,6 +29,10 @@ import platform.CoreCrypto.kCCHmacAlgSHA256
 
 // Pad so addressOf(0) is legal on empty input; the length passed is still the real one.
 private fun ByteArray.safe() = if (isEmpty()) ByteArray(1) else this
+
+actual fun md5(data: ByteArray): ByteArray = ByteArray(CC_MD5_DIGEST_LENGTH).also { out ->
+    out.usePinned { o -> data.safe().usePinned { CC_MD5(it.addressOf(0), data.size.convert(), o.addressOf(0).reinterpret<UByteVar>()) } }
+}
 
 actual fun sha1(data: ByteArray): ByteArray = ByteArray(CC_SHA1_DIGEST_LENGTH).also { out ->
     out.usePinned { o -> data.safe().usePinned { CC_SHA1(it.addressOf(0), data.size.convert(), o.addressOf(0).reinterpret<UByteVar>()) } }

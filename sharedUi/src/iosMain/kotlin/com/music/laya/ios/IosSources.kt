@@ -16,7 +16,9 @@ internal object IosSourcesHost : SourcesHost {
     override val appVersion: String
         get() = NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
 
-    override fun supports(kind: SourceKind) = kind == SourceKind.ADDON || kind == SourceKind.YOUTUBE || kind == SourceKind.JIOSAAVN
+    // Qobuz only: Tidal's streams are segmented manifests, which this player does not play.
+    override fun supports(kind: SourceKind) =
+        kind == SourceKind.ADDON || kind == SourceKind.YOUTUBE || kind == SourceKind.JIOSAAVN || kind == SourceKind.QOBUZ
 
     override fun build(config: SourceConfig): MusicSource? = if (config.kind == SourceKind.JIOSAAVN) JioSaavnSource(config) else null
 

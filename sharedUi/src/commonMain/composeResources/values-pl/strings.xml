@@ -753,4 +753,12 @@
     <string name="recognize_shortcut_steps">Otwórz Centrum sterowania, stuknij + w lewym górnym rogu, potem Dodaj element sterujący i wyszukaj Laya.</string>
     <string name="recognize_shortcut_ok">Rozumiem</string>
     <string name="recognize_shortcut_close">Zamknij</string>
+    <string name="lossless_verified">Zweryfikowano</string>
+    <string name="lossless_verify_on_enable">Weryfikacja po włączeniu</string>
+    <string name="lossless_verify_title">Zweryfikuj %1$s</string>
+    <string name="lossless_verify_failed">Weryfikacja nie powiodła się</string>
+    <string name="lossless_verify_unreachable">Usługa weryfikacji jest niedostępna</string>
+    <string name="lossless_verify_expired_notice">Weryfikacja %1$s wygasła. Włącz ponownie w Źródłach, aby słuchać bezstratnie.</string>
+    <string name="lossless_verify_expired">Weryfikacja wygasła · włącz ponownie</string>
+    <string name="lossless_verified_until">Zweryfikowano · do %1$s</string>
 </resources>

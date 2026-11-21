@@ -1310,4 +1310,14 @@
     <string name="recognize_cancel">Hủy</string>
     <string name="recognize_try_again">Thử lại</string>
     <string name="recognize_channel_results">Bài hát đã nhận diện</string>
+    <string name="lossless_verified">Đã xác minh</string>
+    <string name="lossless_verify_on_enable">Xác minh khi bật</string>
+    <string name="lossless_verify_title">Xác minh %1$s</string>
+    <string name="lossless_verify_browser_hint">Hoàn tất kiểm tra Cloudflare trong trình duyệt. Laya sẽ tự hoàn tất.</string>
+    <string name="lossless_verified_toast">Đã xác minh %1$s</string>
+    <string name="lossless_verify_failed">Xác minh thất bại</string>
+    <string name="lossless_verify_unreachable">Không thể kết nối dịch vụ xác minh</string>
+    <string name="lossless_verify_expired_notice">Xác minh %1$s đã hết hạn. Bật lại trong Nguồn để tiếp tục nghe lossless.</string>
+    <string name="lossless_verify_expired">Xác minh đã hết hạn · bật lại</string>
+    <string name="lossless_verified_until">Đã xác minh · đến %1$s</string>
 </resources>

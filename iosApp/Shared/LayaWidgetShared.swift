@@ -89,21 +89,30 @@ struct LayaWidgetIntent: AudioPlaybackIntent {
     static var title: LocalizedStringResource = "Laya playback"
     static var isDiscoverable = false
 
+    /// iOS 26 deprecated ForegroundContinuableIntent and ignores its throw from a widget button, leaving the
+    /// tap dead when no player was running; dynamic foreground is its replacement and keeps the throw working.
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { [.background, .foreground(.dynamic)] }
+
     @Parameter(title: "Command") var command: String
 
     init() {}
     init(_ command: String) { self.command = command }
 
     func perform() async throws -> some IntentResult {
-        LayaWidgetStore.applyOptimistically(command)
         #if !LAYA_WIDGET_EXTENSION
-        // No player yet (the app was started in the background for this): bring it up; the command is queued and
-        // runs as soon as the player exists.
-        if LayaWidgetCommands.handler?(command) != true {
-            throw needsToContinueInForegroundError()
+        if LayaWidgetCommands.handler?(command) == true {
+            // Running now (the player is up, the app possibly in the background): answer the tap at once.
+            LayaWidgetStore.applyOptimistically(command)
+            return .result()
         }
-        #endif
+        // No player yet (the app was started in the background for this tap): the command is queued, so bring
+        // the app up to build one. The glyph is not flipped here — the tap has done nothing yet, and the app's
+        // own publish settles it once the queued command runs.
+        throw needsToContinueInForegroundError()
+        #else
         return .result()
+        #endif
     }
 }
 

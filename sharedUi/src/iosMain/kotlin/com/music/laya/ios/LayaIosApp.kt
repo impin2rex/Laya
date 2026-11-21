@@ -213,7 +213,8 @@ private fun List<ShelfItem>.songs() = mapNotNull { it.toSong() }
 @Composable
 fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val scope = rememberCoroutineScope()
-    val player = remember { IosPlayer(engine, scope) }
+    // The process singleton: a widget intent may have built it, queue restored, before any UI existed.
+    val player = remember { IosPlayer.shared(engine) }
     var tab by remember { mutableIntStateOf(0) }
     var nowPlayingOpen by remember { mutableStateOf(false) }
     // Pushed pages (one global stack; a tab tap clears it) and the long-press menu.
@@ -244,6 +245,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val signedIn by IosAuth.signedIn.collectAsState()
     val account by IosAuth.account.collectAsState()
     var showLogin by remember { mutableStateOf(false) }
+    // The source being verified, and its row: closed without a session, the switch goes back off.
+    var verifying by remember { mutableStateOf<Pair<com.music.laya.data.sources.lossless.LosslessProvider, String>?>(null) }
     val spotifyConnected = AppSettings.spotifySpdcToken.collectAsState().value.isNotBlank()
     var showSpotifyLogin by remember { mutableStateOf(false) }
     var showSpotifyImport by remember { mutableStateOf(false) }
@@ -320,11 +323,10 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         val limiter = Semaphore(4)
         (explore as? UiState.Success)?.data?.flatMap { it.items }?.forEach { item ->
             launch {
-                val art = limiter.withPermit { YtMusicRepository.moodGenreArtwork(item.browseId, item.params).getOrNull() } ?: return@launch
+                val art = limiter.withPermit { YtMusicRepository.moodGenreArtwork(item.browseId, item.params).getOrNull() }
+                    ?.takeIf { it.isNotEmpty() } ?: return@launch
                 val current = (explore as? UiState.Success)?.data ?: return@launch
-                explore = UiState.Success(current.map { sec ->
-                    sec.copy(items = sec.items.map { if (it.browseId == item.browseId && it.params == item.params) it.copy(thumbnailUrl = art) else it })
-                })
+                explore = UiState.Success(YtMusicRepository.withMoodGenreArtwork(current, item, art))
             }
         }
     }
@@ -1056,6 +1058,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     )
                                     IosPage.Sources -> SourcesPage(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
+                                        onVerify = { provider, configId -> verifying = provider to configId },
                                     )
                                     IosPage.Equalizer -> EqualizerScreen(
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
@@ -1581,6 +1584,12 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         }
                     }
                     if (showLogin) IosLoginScreen(onClose = { showLogin = false })
+                    verifying?.let { (provider, configId) ->
+                        IosLosslessVerifyScreen(provider, onClose = {
+                            if (!provider.session.verified.value) SourceRegistry.setEnabled(configId, false)
+                            verifying = null
+                        })
+                    }
                     if (showSpotifyLogin) IosSpotifyLoginScreen(onClose = { showSpotifyLogin = false })
                     if (showSpotifyImport) IosSpotifyImportDialog(
                         onImported = { id, name, count ->

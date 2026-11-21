@@ -50,7 +50,7 @@ val lastfmSecret: String = (
 val listenTogetherServer: String = (
     localProps.getProperty("LISTEN_TOGETHER_SERVER")
         ?: System.getenv("LISTEN_TOGETHER_SERVER")
-        ?: "https://laya-listen-together.onrender.com"
+        ?: "https://together.layalisten.dpdns.org"
     ).trim().trimEnd('/')
 
 /*

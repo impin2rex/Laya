@@ -1393,4 +1393,14 @@
     <string name="recognize_cancel">रद्द करें</string>
     <string name="recognize_try_again">फिर से कोशिश करें</string>
     <string name="recognize_channel_results">पहचाने गए गाने</string>
+    <string name="lossless_verified">सत्यापित</string>
+    <string name="lossless_verify_on_enable">चालू करने पर सत्यापित होगा</string>
+    <string name="lossless_verify_title">%1$s सत्यापित करें</string>
+    <string name="lossless_verify_browser_hint">अपने ब्राउज़र में Cloudflare जाँच पूरी करें। Laya अपने आप पूरा कर लेगा।</string>
+    <string name="lossless_verified_toast">%1$s सत्यापित</string>
+    <string name="lossless_verify_failed">सत्यापन विफल</string>
+    <string name="lossless_verify_unreachable">सत्यापन सेवा उपलब्ध नहीं</string>
+    <string name="lossless_verify_expired_notice">%1$s का सत्यापन समाप्त हो गया। लॉसलेस जारी रखने के लिए स्रोत में इसे फिर से चालू करें।</string>
+    <string name="lossless_verify_expired">सत्यापन समाप्त · फिर से चालू करें</string>
+    <string name="lossless_verified_until">सत्यापित · %1$s तक</string>
 </resources>

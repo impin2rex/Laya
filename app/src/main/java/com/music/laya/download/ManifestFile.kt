@@ -66,14 +66,16 @@ internal object ManifestFile {
             }
         }
 
-        val base = url.toHttpUrlOrNull() ?: error("Invalid manifest URL")
-        val index = String(fetch(url), Charsets.UTF_8)
+        // Tidal's manifest arrives as text and is kept in a cache file; its segment URLs are absolute.
+        val local = url.startsWith("file:")
+        val base = url.toHttpUrlOrNull() ?: if (local) null else error("Invalid manifest URL")
+        val index = if (local) File(java.net.URI(url)).readText() else String(fetch(url), Charsets.UTF_8)
         val (initRef, mediaRefs) = if (dash) {
             OfflineDash.parse(index).let { it.initialization to it.media }
         } else {
             hlsSegments(index)
         }
-        fun resolve(ref: String) = base.resolve(ref)?.toString() ?: error("Invalid segment URL")
+        fun resolve(ref: String) = (ref.toHttpUrlOrNull() ?: base?.resolve(ref))?.toString() ?: error("Invalid segment URL")
         val total = mediaRefs.size + 1L
 
         val init = fetch(resolve(initRef))

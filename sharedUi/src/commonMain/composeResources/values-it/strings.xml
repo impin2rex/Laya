@@ -743,4 +743,12 @@
     <string name="recognize_shortcut_steps">Apri il Centro di Controllo, tocca + in alto a sinistra, poi Aggiungi un controllo e cerca Laya.</string>
     <string name="recognize_shortcut_ok">Ho capito</string>
     <string name="recognize_shortcut_close">Chiudi</string>
+    <string name="lossless_verified">Verificato</string>
+    <string name="lossless_verify_on_enable">Verifica all\'attivazione</string>
+    <string name="lossless_verify_title">Verifica %1$s</string>
+    <string name="lossless_verify_failed">Verifica non riuscita</string>
+    <string name="lossless_verify_unreachable">Servizio di verifica non raggiungibile</string>
+    <string name="lossless_verify_expired_notice">La verifica di %1$s è scaduta. Riattivalo in Sorgenti per continuare in lossless.</string>
+    <string name="lossless_verify_expired">Verifica scaduta · riattivalo</string>
+    <string name="lossless_verified_until">Verificato · fino al %1$s</string>
 </resources>

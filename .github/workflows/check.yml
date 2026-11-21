@@ -28,6 +28,7 @@ jobs:
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
           echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
+          echo "LOSSLESS_USER_AGENT=${{ vars.LOSSLESS_USER_AGENT }}" >> local.properties
 
       - run: chmod +x gradlew
 
@@ -71,6 +72,7 @@ jobs:
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
           echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
+          echo "LOSSLESS_USER_AGENT=${{ vars.LOSSLESS_USER_AGENT }}" >> local.properties
 
       - name: CMake version
         run: cmake --version
@@ -118,6 +120,7 @@ jobs:
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
           echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
+          echo "LOSSLESS_USER_AGENT=${{ vars.LOSSLESS_USER_AGENT }}" >> local.properties
 
       - run: chmod +x gradlew
 
@@ -159,6 +162,7 @@ jobs:
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
           echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
+          echo "LOSSLESS_USER_AGENT=${{ vars.LOSSLESS_USER_AGENT }}" >> local.properties
           echo "LISTEN_TOGETHER_SERVER=${{ secrets.LISTEN_TOGETHER_SERVER }}" >> local.properties
           echo "SIGNATURE_API_URL=${{ secrets.SIGNATURE_API_URL }}" >> local.properties
       # The local debug key, so this APK installs over a local dev build and

@@ -1,0 +1,73 @@
+name: Deploy backend
+
+# Pushes the Listen Together server to the Oracle VM. Only backend changes get
+# here (paths filter), and GitHub itself skips the run when the head commit
+# message contains [skip ci], so a release chore commit never redeploys.
+on:
+  push:
+    # ci/** so the pipeline itself can be tested on a branch before it is on main.
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build, test, deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      # Gate: never redeploy a server that does not build or pass its tests.
+      - name: Build and test
+        working-directory: backend
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...
+
+      - name: Deploy over SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          USER_NAME: ${{ vars.DEPLOY_USER }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_KEY:?set the DEPLOY_SSH_KEY secret}"
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          # Host key is learnt here, not pinned: every run trusts whatever answers
+          # on that IP. Set DEPLOY_KNOWN_HOSTS and write it here instead if the key
+          # is worth more than one redeploy (i.e. it is not forced-command bound).
+          ssh-keyscan -T 20 "$HOST" > ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts
+          # Works both ways round: an ordinary key runs this command, and a key
+          # pinned to laya-deploy by a forced command gets it as
+          # SSH_ORIGINAL_COMMAND, whose last word is the branch either way.
+          # The VM pulls that branch, rebuilds and restarts the service.
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+              "$USER_NAME@$HOST" "sudo /usr/local/sbin/laya-deploy $BRANCH"
+
+      - name: Health check
+        env:
+          URL: ${{ vars.LISTEN_TOGETHER_HEALTH_URL }}
+        run: |
+          set -euo pipefail
+          : "${URL:?set the LISTEN_TOGETHER_HEALTH_URL variable, e.g. https://<domain>/healthz}"
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS -m 10 "$URL" | grep -q '"ok":true'; then echo "healthy"; exit 0; fi
+            echo "attempt $i: not healthy yet"; sleep 10
+          done
+          echo "::error::$URL never returned ok:true after the deploy"; exit 1

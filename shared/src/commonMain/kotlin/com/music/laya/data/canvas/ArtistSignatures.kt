@@ -1,6 +1,7 @@
 package com.music.laya.data.canvas
 
 import com.music.laya.data.DebugLog as Log
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.platform.HttpRequest
 import com.music.laya.platform.NetHttp
 import com.music.laya.platform.ioDispatcher
@@ -80,16 +81,17 @@ object ArtistSignatureRepository {
         if (baseUrl.isNullOrEmpty()) return null
         val key = cacheKey(artistName, baseUrl) ?: return null
         lookupCached(key)?.let {
-            Log.d(TAG, "cache hit for $artistName: ${it.signature?.imageUrl}")
+            Log.d(TAG, "cache hit for $artistName: ${it.signature != null}")
             return it.signature
         }
 
         val entry = withContext(ioDispatcher) {
             runCatching { lookup(artistName, baseUrl) }
-                .onFailure { Log.d(TAG, "lookup failed for $artistName: $it") }
+                // The class only: a message would carry the server's address.
+                .onFailure { Log.d(TAG, "lookup failed for $artistName: ${it::class.simpleName}") }
                 .getOrNull()
         } ?: return null
-        Log.d(TAG, "settled for $artistName: ${entry.signature?.imageUrl}")
+        Log.d(TAG, "settled for $artistName: ${entry.signature != null}")
         synchronized(guard) {
             cache.remove(key)
             cache[key] = entry
@@ -103,6 +105,23 @@ object ArtistSignatureRepository {
     fun clear() {
         synchronized(guard) { cache.clear() }
         _updates.value++
+    }
+
+    /** Whether the server answers; drives the status line under the setting. */
+    val server = SignatureServer(::checkHealth)
+
+    /**
+     * Re-checks the server and points lookups at whichever address answers —
+     * the saved one, or the built-in one while the saved one is down. Does
+     * nothing while the feature is off.
+     */
+    suspend fun refreshServer() {
+        if (!AppSettings.signatureApiEnabled.value) return
+        val active = server.refresh(AppSettings.customSignatureApiUrl.value, AppSettings.defaultSignatureApiUrl)
+        if (active != AppSettings.signatureApiUrl.value) {
+            AppSettings.signatureApiUrl.value = active
+            clear()
+        }
     }
 
     /** `true` when `GET base/v1/health` answers 2xx. Never throws. */

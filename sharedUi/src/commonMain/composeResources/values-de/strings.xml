@@ -743,4 +743,12 @@
     <string name="recognize_shortcut_steps">Öffne das Kontrollzentrum, tippe oben links auf +, dann auf „Steuerelement hinzufügen“ und suche nach Laya.</string>
     <string name="recognize_shortcut_ok">Verstanden</string>
     <string name="recognize_shortcut_close">Schließen</string>
+    <string name="lossless_verified">Verifiziert</string>
+    <string name="lossless_verify_on_enable">Wird beim Einschalten verifiziert</string>
+    <string name="lossless_verify_title">%1$s verifizieren</string>
+    <string name="lossless_verify_failed">Verifizierung fehlgeschlagen</string>
+    <string name="lossless_verify_unreachable">Verifizierungsdienst nicht erreichbar</string>
+    <string name="lossless_verify_expired_notice">%1$s-Verifizierung abgelaufen. Schalte es unter Quellen wieder ein, um verlustfrei zu hören.</string>
+    <string name="lossless_verify_expired">Verifizierung abgelaufen · wieder einschalten</string>
+    <string name="lossless_verified_until">Verifiziert · bis %1$s</string>
 </resources>

@@ -64,6 +64,7 @@
 - **Animated album canvas** — motion artwork on the now-playing screen.
 - **Word-synced lyrics** — word/syllable-level highlighting from multiple sources.
 - **Lyrics providers** — credit to [lrc.red](https://lrc.red), [BiniLyrics](https://github.com/binimum), [BetterLyrics](https://github.com/better-lyrics/better-lyrics), [PaxSenix](https://lyrics.paxsenix.org), [LyricsPlus](https://github.com/ibratabian17/YouLyPlus), [SimpMusic](https://github.com/maxrave-dev/SimpMusic), [Unison](https://unison.boidu.dev), [Megalobiz](https://www.megalobiz.com), [KuGou](https://www.kugou.com), [LRCLIB](https://lrclib.net), [Musixmatch](https://www.musixmatch.com) and [Genius](https://genius.com).
+- **Built-in Tidal & Qobuz lossless** — no addon needed; a one-time verification on the Sources screen. Protocol ported from [Mornye](https://github.com/mornyeapp/Mornye) and [SpotiFLAC-Extension](https://github.com/mornyeapp/Mornye-Extension) (LGPL-3.0). iPhone has Qobuz only: Tidal streams as segmented DASH, which the iOS player can't play.
 - **Dynamic, artwork-driven theming** — Material palette extracted from album art.
 - **Frosted-glass UI** — Telegram-style translucent bars via Haze, Material 3 theming.
 

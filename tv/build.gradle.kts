@@ -49,7 +49,7 @@ val lastfmSecret: String = (
 val listenTogetherServer: String = (
     localProps.getProperty("LISTEN_TOGETHER_SERVER")
         ?: System.getenv("LISTEN_TOGETHER_SERVER")
-        ?: "https://laya-listen-together.onrender.com"
+        ?: "https://together.layalisten.dpdns.org"
     ).trim().trimEnd('/')
 
 /*
@@ -93,8 +93,8 @@ android {
         // Haze falls back to a translucent scrim below that.
         minSdk = 26
         targetSdk = 36
-        versionCode = 36
-        versionName = "1.9.5"
+        versionCode = 37
+        versionName = "1.9.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

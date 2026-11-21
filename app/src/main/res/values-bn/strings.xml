@@ -1161,4 +1161,14 @@
     <string name="recognize_cancel">বাতিল</string>
     <string name="recognize_try_again">আবার চেষ্টা করুন</string>
     <string name="recognize_channel_results">শনাক্ত করা গান</string>
+    <string name="lossless_verified">যাচাই করা হয়েছে</string>
+    <string name="lossless_verify_on_enable">চালু করলে যাচাই হবে</string>
+    <string name="lossless_verify_title">%1$s যাচাই করুন</string>
+    <string name="lossless_verify_browser_hint">আপনার ব্রাউজারে Cloudflare যাচাই সম্পূর্ণ করুন। Laya নিজেই বাকিটা করবে।</string>
+    <string name="lossless_verified_toast">%1$s যাচাই হয়েছে</string>
+    <string name="lossless_verify_failed">যাচাই ব্যর্থ হয়েছে</string>
+    <string name="lossless_verify_unreachable">যাচাই পরিষেবা পাওয়া যাচ্ছে না</string>
+    <string name="lossless_verify_expired_notice">%1$s যাচাইয়ের মেয়াদ শেষ। লসলেস চালিয়ে যেতে সোর্সে আবার চালু করুন।</string>
+    <string name="lossless_verify_expired">যাচাইয়ের মেয়াদ শেষ · আবার চালু করুন</string>
+    <string name="lossless_verified_until">যাচাই করা হয়েছে · %1$s পর্যন্ত</string>
 </resources>

@@ -200,7 +200,18 @@ object InnertubeParser {
         return sections.mapNotNull { section ->
             section.o("musicCarouselShelfRenderer")?.let(::carouselShelf)
                 ?: section.o("musicShelfRenderer")?.let(::plainShelf)
+                ?: section.o("gridRenderer")?.let(::gridShelf)
         }
+    }
+
+    /**
+     * Seasonal mood pages (Hanukkah, Christmas) lay their playlists out as
+     * grids — "Spotlight", "Featured playlists" — rather than carousels.
+     */
+    private fun gridShelf(grid: JsonObject): HomeShelf? {
+        val title = grid.o("header").o("gridHeaderRenderer").o("title").runs()
+        val items = grid.a("items").orEmpty().mapNotNull { parseTwoRowItem(it.o("musicTwoRowItemRenderer")) }
+        return if (items.isEmpty()) null else HomeShelf(title.ifBlank { "For you" }, items)
     }
 
     /**

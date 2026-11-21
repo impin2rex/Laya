@@ -1350,4 +1350,14 @@
     <string name="recognize_cancel">İptal</string>
     <string name="recognize_try_again">Tekrar dene</string>
     <string name="recognize_channel_results">Tanınan şarkılar</string>
+    <string name="lossless_verified">Doğrulandı</string>
+    <string name="lossless_verify_on_enable">Açıldığında doğrulanır</string>
+    <string name="lossless_verify_title">%1$s doğrula</string>
+    <string name="lossless_verify_browser_hint">Tarayıcınızda Cloudflare kontrolünü tamamlayın. Laya gerisini kendisi halleder.</string>
+    <string name="lossless_verified_toast">%1$s doğrulandı</string>
+    <string name="lossless_verify_failed">Doğrulama başarısız</string>
+    <string name="lossless_verify_unreachable">Doğrulama hizmetine ulaşılamıyor</string>
+    <string name="lossless_verify_expired_notice">%1$s doğrulamasının süresi doldu. Kayıpsız dinlemeye devam etmek için Kaynaklar\'da yeniden açın.</string>
+    <string name="lossless_verify_expired">Doğrulamanın süresi doldu · yeniden açın</string>
+    <string name="lossless_verified_until">Doğrulandı · %1$s tarihine kadar</string>
 </resources>
