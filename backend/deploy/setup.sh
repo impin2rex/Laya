@@ -2,17 +2,19 @@
 # One-shot installer for the Listen Together server on an Oracle Cloud
 # (or any Ubuntu 22.04/24.04) VM. Safe to re-run: it rebuilds and restarts.
 #
-#   sudo DOMAIN=laya-listen-together.onrender.com bash deploy/setup.sh
+#   sudo bash deploy/setup.sh
+#
+# This installs the app only: Go, the binary, and the systemd service listening
+# on 127.0.0.1:8000. TLS and the public host name are not its business -- the
+# reverse proxy that publishes them is set up and owned by hand.
 #
 # First run on a fresh VM also takes DEPLOY_PUBKEY (the public half of the
 # GitHub Actions deploy key) to create the restricted `deploy` user.
 #
-# Run it from the backend/ directory of a checkout on the VM. The DNS A record
-# for $DOMAIN must already point at this VM, or Caddy cannot get a certificate.
+# Run it from the backend/ directory of a checkout on the VM.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
-DOMAIN="${DOMAIN:?set DOMAIN, e.g. DOMAIN=laya-listen-together.onrender.com}"
 GO_VERSION="${GO_VERSION:-1.27.0}"
 BACKEND_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -23,9 +25,9 @@ case "$(uname -m)" in
 esac
 
 echo "== packages"
-if ! dpkg -s curl git gnupg iptables-persistent >/dev/null 2>&1; then
+if ! dpkg -s curl git iptables-persistent >/dev/null 2>&1; then
   apt-get update -y
-  apt-get install -y curl git debian-keyring debian-archive-keyring apt-transport-https gnupg iptables-persistent
+  apt-get install -y curl git iptables-persistent
 fi
 
 echo "== Go $GO_VERSION"
@@ -52,31 +54,7 @@ if [ -f /etc/systemd/system/laya-keepalive.service ]; then
   systemctl daemon-reload
 fi
 
-echo "== caddy (HTTPS + WebSocket proxy)"
-if ! command -v caddy >/dev/null; then
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
-  apt-get update -y && apt-get install -y caddy
-fi
-sed "s/{\$DOMAIN}/$DOMAIN/" "$BACKEND_DIR/deploy/Caddyfile" > /tmp/Caddyfile
-if ! cmp -s /tmp/Caddyfile /etc/caddy/Caddyfile; then
-  mv /tmp/Caddyfile /etc/caddy/Caddyfile
-  systemctl reload caddy || systemctl restart caddy
-fi
-# Hard memory cap so a runaway Caddy is killed and restarted alone rather than the
-# whole 1 GB VM thrashing swap. No soft GOMEMLIMIT: a limit below the working set
-# made the Go GC run flat out on a CPU the hypervisor was already starving.
-install -d /etc/systemd/system/caddy.service.d
-cat > /etc/systemd/system/caddy.service.d/memory.conf <<'UNIT'
-[Service]
-MemoryMax=750M
-Restart=always
-RestartSec=2
-UNIT
-systemctl daemon-reload
-
 echo "== deploy hook"
-echo "$DOMAIN" > /etc/laya-domain
 install -m 755 "$BACKEND_DIR/deploy/laya-deploy.sh" /usr/local/sbin/laya-deploy
 
 if [ -n "${DEPLOY_PUBKEY:-}" ]; then
@@ -86,7 +64,11 @@ if [ -n "${DEPLOY_PUBKEY:-}" ]; then
   install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
   printf 'command="sudo /usr/local/sbin/laya-deploy",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty %s\n' "$DEPLOY_PUBKEY" > /home/deploy/.ssh/authorized_keys
   chown deploy:deploy /home/deploy/.ssh/authorized_keys && chmod 600 /home/deploy/.ssh/authorized_keys
-  echo 'deploy ALL=(root) NOPASSWD: /usr/local/sbin/laya-deploy' > /etc/sudoers.d/laya-deploy
+  # env_keep so the branch the workflow asks for survives sudo; laya-deploy
+  # validates it before it reaches git.
+  printf '%s\n%s\n' \
+    'Defaults:deploy env_keep += "SSH_ORIGINAL_COMMAND"' \
+    'deploy ALL=(root) NOPASSWD: /usr/local/sbin/laya-deploy' > /etc/sudoers.d/laya-deploy
   chmod 440 /etc/sudoers.d/laya-deploy && visudo -cf /etc/sudoers.d/laya-deploy
 fi
 
@@ -103,7 +85,7 @@ echo nf_conntrack > /etc/modules-load.d/nf_conntrack.conf
 sysctl --system >/dev/null 2>&1 || true
 
 echo "== swap"
-# 1 GB of RAM and no swap meant a connection spike could get Caddy OOM-killed.
+# 1 GB of RAM and no swap meant a connection spike could get something OOM-killed.
 if ! swapon --show --noheadings | grep -q .; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
   grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
@@ -120,24 +102,24 @@ SYSCTL
 sysctl -q -p /etc/sysctl.d/92-laya-tcp.conf || true
 cat > /usr/local/sbin/laya-watchdog <<'WATCHDOG'
 #!/usr/bin/env bash
-# Restarts Caddy when the public health check has failed twice in a row. The 1 GB
-# VM can get wedged under a connection surge; this heals it within ~2 minutes
-# instead of waiting for a human. At most one restart per 5 minutes.
-DOMAIN="$(cat /etc/laya-domain)"
+# Restarts the server when its own health check has failed twice in a row -- a
+# wedged process that is still alive, which Restart=always cannot see. Checks
+# the app directly, not the proxy, so it says nothing about TLS being up.
+# At most one restart per 5 minutes.
 F=/run/laya-watchdog.fails; L=/run/laya-watchdog.last
-if curl -sk -m6 -o /dev/null -f --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/healthz"; then echo 0 > $F; exit 0; fi
+if curl -s -m6 -o /dev/null -f http://127.0.0.1:8000/healthz; then echo 0 > $F; exit 0; fi
 n=$(( $(cat $F 2>/dev/null || echo 0) + 1 )); echo $n > $F
 [ "$n" -lt 2 ] && exit 0
 now=$(date +%s); last=$(cat $L 2>/dev/null || echo 0)
 [ $((now - last)) -lt 300 ] && exit 0
 echo $now > $L; echo 0 > $F
-logger -t laya-watchdog "health check failed twice; restarting caddy"
-systemctl restart caddy
+logger -t laya-watchdog "health check failed twice; restarting laya-jam"
+systemctl restart laya-jam
 WATCHDOG
 chmod 755 /usr/local/sbin/laya-watchdog
 cat > /etc/systemd/system/laya-watchdog.service <<'UNIT'
 [Unit]
-Description=Restart Caddy if the health check keeps failing
+Description=Restart laya-jam if its health check keeps failing
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/laya-watchdog
@@ -156,8 +138,9 @@ systemctl daemon-reload
 systemctl enable --now laya-watchdog.timer >/dev/null 2>&1 || true
 
 echo "== firewall"
-# Oracle's Ubuntu images ship an iptables REJECT rule that blocks everything
-# but SSH, independent of the VCN security list. Open 80/443 above it.
+# Oracle's Ubuntu images ship an iptables REJECT rule that blocks everything but
+# SSH, independent of the VCN security list. Open 80/443 above it for whatever
+# terminates TLS. Port 8000 stays closed, and the server binds 127.0.0.1 anyway.
 for port in 80 443; do
   while iptables -D INPUT -p tcp --dport "$port" -m state --state NEW -j ACCEPT 2>/dev/null; do :; done
   reject="$(iptables -L INPUT --line-numbers -n | awk '$2 == "REJECT" { print $1; exit }')"
@@ -168,4 +151,4 @@ netfilter-persistent save
 echo "== check"
 sleep 2
 curl -fsS http://127.0.0.1:8000/healthz && echo
-echo "Done. Once DNS resolves, https://$DOMAIN/healthz should answer."
+echo "Done. The server is on 127.0.0.1:8000; your proxy publishes it."

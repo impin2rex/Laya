@@ -33,7 +33,7 @@ class JamInviteTest {
 
     @Test
     fun `plain http is refused`() {
-        assertNull(JamInvite.parse("http://laya-listen-together.onrender.com/invite/ABC123"))
+        assertNull(JamInvite.parse("http://together.layalisten.dpdns.org/invite/ABC123"))
     }
 
     @Test

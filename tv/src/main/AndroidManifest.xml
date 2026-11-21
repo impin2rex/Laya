@@ -253,7 +253,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="laya-listen-together.onrender.com"
+                    android:host="together.layalisten.dpdns.org"
                     android:pathPattern="/invite/......" />
             </intent-filter>
 

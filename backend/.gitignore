@@ -1,2 +1,3 @@
 server
 *.exe
+deploy/nginx.conf
