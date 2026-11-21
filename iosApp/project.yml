@@ -11,9 +11,11 @@ settings:
     MARKETING_VERSION: "1.9.6"
     CURRENT_PROJECT_VERSION: "37"
 packages:
+  # Vendored: Microsoft deleted microsoft/onnxruntime-swift-package-manager (and
+  # onnxruntime itself) in November 2026, so the remote package cannot resolve.
+  # Vendor/README.md records where this copy came from and how to verify it.
   onnxruntime:
-    url: https://github.com/microsoft/onnxruntime-swift-package-manager
-    exactVersion: 1.19.2
+    path: Vendor/onnxruntime-swift-package-manager
 targets:
   iosApp:
     type: application

@@ -55,7 +55,12 @@ AGENTS.md
 
 # iOS (XcodeGen output)
 iosApp/*.xcodeproj
-iosApp/Vendor/
+# Vendor holds local pod archives and other build inputs, except the vendored
+# onnxruntime package, which has to be in the repo for the build to resolve at
+# all: upstream deleted it (iosApp/Vendor/README.md).
+iosApp/Vendor/*
+!iosApp/Vendor/README.md
+!iosApp/Vendor/onnxruntime-swift-package-manager/
 
 # graphify (local knowledge graph, rebuild with `graphify update .`)
 graphify-out/

@@ -11,6 +11,8 @@ trap 'rm -rf "$tmp"' EXIT
 curl -fsSL -o "$tmp/cast.zip" "https://dl.google.com/dl/chromecast/sdk/ios/GoogleCastSDK-ios-${VERSION}_dynamic.zip"
 echo "$SHA256  $tmp/cast.zip" | shasum -a 256 -c - >/dev/null
 unzip -q "$tmp/cast.zip" -d "$tmp/x"
-rm -rf Vendor && mkdir -p Vendor
+# Only this framework, not all of Vendor: the onnxruntime package lives there too
+# and this script runs as XcodeGen's preGenCommand, before every generate.
+rm -rf Vendor/GoogleCast.xcframework && mkdir -p Vendor
 mv "$tmp/x/GoogleCastSDK-ios-${VERSION}_dynamic_xcframework/GoogleCast.xcframework" Vendor/
 touch Vendor/GoogleCast.xcframework/.version-$VERSION
