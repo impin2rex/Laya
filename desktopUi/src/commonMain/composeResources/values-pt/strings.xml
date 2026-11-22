@@ -254,4 +254,19 @@
     <string name="recognize_minutes_ago">há %1$d min</string>
     <string name="recognize_hours_ago">há %1$d h</string>
     <string name="recognize_days_ago">há %1$d d</string>
+    <string name="add_to_queue">Adicionar à fila</string>
+    <string name="queue_selected_count">Selecionadas: %1$d</string>
+    <string name="queue_select_all">Selecionar tudo</string>
+    <string name="queue_select">Selecionar</string>
+    <string name="queue_close_selection">Fechar seleção</string>
+    <string name="queue_add_to_playlist">Playlist</string>
+    <string name="queue_selection_remove">Remover</string>
+    <string name="queue_add_all_to_playlist">Adicionar todas à playlist</string>
+    <string name="queue_removed_song">Removido: %1$s</string>
+    <string name="queue_undo_action">Desfazer</string>
+    <string name="queue_cleared">Fila limpa</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">%1$d música removida</item>
+        <item quantity="other">%1$d músicas removidas</item>
+    </plurals>
 </resources>

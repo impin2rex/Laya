@@ -823,6 +823,7 @@ class PlaybackService : MediaLibraryService() {
     private val upgradeQualityCommand = SessionCommand(ACTION_UPGRADE_QUALITY, Bundle.EMPTY)
     private val swapVersionCommand = SessionCommand(ACTION_SWAP_VERSION, Bundle.EMPTY)
     private val queueDragCommand = SessionCommand(ACTION_QUEUE_DRAG, Bundle.EMPTY)
+    private val queueScreenEdits = QueueScreenEdits()
 
     private var favoriteActionJob: Job? = null
     private var stationActionJob: Job? = null
@@ -8292,6 +8293,9 @@ class PlaybackService : MediaLibraryService() {
                 .add(upgradeQualityCommand)
                 .add(swapVersionCommand)
                 .add(queueDragCommand)
+                .add(SessionCommand(ACTION_QUEUE_REMOVE_ENTRIES, Bundle.EMPTY))
+                .add(SessionCommand(ACTION_QUEUE_UNDO_REMOVAL, Bundle.EMPTY))
+                .add(SessionCommand(ACTION_QUEUE_MOVE_TO_USER, Bundle.EMPTY))
                 .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
@@ -8316,6 +8320,14 @@ class PlaybackService : MediaLibraryService() {
             customCommand: SessionCommand,
             args: Bundle,
         ): ListenableFuture<SessionResult> {
+            // The queue screen's edits answer with a result: a removal's Undo token, or refusal.
+            when (customCommand.customAction) {
+                ACTION_QUEUE_REMOVE_ENTRIES -> return Futures.immediateFuture(queueScreenEdits.remove(session.player, args))
+                ACTION_QUEUE_UNDO_REMOVAL -> return Futures.immediateFuture(queueScreenEdits.undo(session.player, args))
+                ACTION_QUEUE_MOVE_TO_USER -> return Futures.immediateFuture(
+                    queueScreenEdits.moveToUser(session.player, args, AppSettings.swipeToPlayNext.value),
+                )
+            }
             when (customCommand.customAction) {
                 ACTION_START_BOUNDED_CONTEXT -> startBoundedContext(args)
                 ACTION_CLEAR_BOUNDED_CONTEXT -> clearBoundedContext()

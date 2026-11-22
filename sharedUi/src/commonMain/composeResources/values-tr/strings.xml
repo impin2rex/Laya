@@ -754,4 +754,19 @@
     <string name="lossless_verify_expired_notice">%1$s doğrulamasının süresi doldu. Kayıpsız dinlemeye devam etmek için Kaynaklar\'da yeniden açın.</string>
     <string name="lossless_verify_expired">Doğrulamanın süresi doldu · yeniden açın</string>
     <string name="lossless_verified_until">Doğrulandı · %1$s tarihine kadar</string>
+    <string name="add_to_queue">Sıraya ekle</string>
+    <string name="queue_selected_count">%1$d seçildi</string>
+    <string name="queue_select_all">Tümünü seç</string>
+    <string name="queue_select">Seç</string>
+    <string name="queue_close_selection">Seçim modunu kapat</string>
+    <string name="queue_add_to_playlist">Çalma listesi</string>
+    <string name="queue_selection_remove">Kaldır</string>
+    <string name="queue_add_all_to_playlist">Tümünü çalma listesine ekle</string>
+    <string name="queue_removed_song">%1$s kaldırıldı</string>
+    <string name="queue_undo_action">Geri al</string>
+    <string name="queue_cleared">Sıra temizlendi</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">%1$d şarkı kaldırıldı</item>
+        <item quantity="other">%1$d şarkı kaldırıldı</item>
+    </plurals>
 </resources>

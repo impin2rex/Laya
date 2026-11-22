@@ -749,4 +749,18 @@
     <string name="lossless_verify_expired_notice">Xác minh %1$s đã hết hạn. Bật lại trong Nguồn để tiếp tục nghe lossless.</string>
     <string name="lossless_verify_expired">Xác minh đã hết hạn · bật lại</string>
     <string name="lossless_verified_until">Đã xác minh · đến %1$s</string>
+    <string name="add_to_queue">Thêm vào hàng đợi</string>
+    <string name="queue_selected_count">Đã chọn %1$d</string>
+    <string name="queue_select_all">Chọn tất cả</string>
+    <string name="queue_select">Chọn</string>
+    <string name="queue_close_selection">Đóng chế độ chọn</string>
+    <string name="queue_add_to_playlist">Danh sách phát</string>
+    <string name="queue_selection_remove">Xóa</string>
+    <string name="queue_add_all_to_playlist">Thêm tất cả vào danh sách phát</string>
+    <string name="queue_removed_song">Đã xóa %1$s</string>
+    <string name="queue_undo_action">Hoàn tác</string>
+    <string name="queue_cleared">Đã xóa hàng đợi</string>
+    <plurals name="queue_removed_count">
+        <item quantity="other">Đã xóa %1$d bài hát</item>
+    </plurals>
 </resources>

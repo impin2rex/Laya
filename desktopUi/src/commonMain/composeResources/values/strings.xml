@@ -268,4 +268,19 @@
     <string name="recognize_minutes_ago">%1$d min ago</string>
     <string name="recognize_hours_ago">%1$d h ago</string>
     <string name="recognize_days_ago">%1$d d ago</string>
+    <string name="add_to_queue">Add to queue</string>
+    <string name="queue_selected_count">%1$d selected</string>
+    <string name="queue_select_all">Select all</string>
+    <string name="queue_select">Select</string>
+    <string name="queue_close_selection">Close selection mode</string>
+    <string name="queue_add_to_playlist">Playlist</string>
+    <string name="queue_selection_remove">Remove</string>
+    <string name="queue_add_all_to_playlist">Add all to playlist</string>
+    <string name="queue_removed_song">Removed %1$s</string>
+    <string name="queue_undo_action">Undo</string>
+    <string name="queue_cleared">Queue cleared</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">Removed %1$d song</item>
+        <item quantity="other">Removed %1$d songs</item>
+    </plurals>
 </resources>

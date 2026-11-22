@@ -254,4 +254,18 @@
     <string name="recognize_minutes_ago">%1$d นาทีที่แล้ว</string>
     <string name="recognize_hours_ago">%1$d ชม. ที่แล้ว</string>
     <string name="recognize_days_ago">%1$d วันที่แล้ว</string>
+    <string name="add_to_queue">เพิ่มลงคิว</string>
+    <string name="queue_selected_count">เลือก %1$d รายการ</string>
+    <string name="queue_select_all">เลือกทั้งหมด</string>
+    <string name="queue_select">เลือก</string>
+    <string name="queue_close_selection">ปิดโหมดเลือก</string>
+    <string name="queue_add_to_playlist">เพลย์ลิสต์</string>
+    <string name="queue_selection_remove">นำออก</string>
+    <string name="queue_add_all_to_playlist">เพิ่มทั้งหมดลงเพลย์ลิสต์</string>
+    <string name="queue_removed_song">นำ %1$s ออกแล้ว</string>
+    <string name="queue_undo_action">เลิกทำ</string>
+    <string name="queue_cleared">ล้างคิวแล้ว</string>
+    <plurals name="queue_removed_count">
+        <item quantity="other">นำออก %1$d เพลงแล้ว</item>
+    </plurals>
 </resources>

@@ -764,4 +764,21 @@
     <string name="lossless_verify_expired_notice">Weryfikacja %1$s wygasła. Włącz ponownie w Źródłach, aby słuchać bezstratnie.</string>
     <string name="lossless_verify_expired">Weryfikacja wygasła · włącz ponownie</string>
     <string name="lossless_verified_until">Zweryfikowano · do %1$s</string>
+    <string name="add_to_queue">Dodaj do kolejki</string>
+    <string name="queue_selected_count">Wybrano: %1$d</string>
+    <string name="queue_select_all">Zaznacz wszystko</string>
+    <string name="queue_select">Zaznacz</string>
+    <string name="queue_close_selection">Zamknij zaznaczanie</string>
+    <string name="queue_add_to_playlist">Playlista</string>
+    <string name="queue_selection_remove">Usuń</string>
+    <string name="queue_add_all_to_playlist">Dodaj wszystkie do playlisty</string>
+    <string name="queue_removed_song">Usunięto %1$s</string>
+    <string name="queue_undo_action">Cofnij</string>
+    <string name="queue_cleared">Kolejka wyczyszczona</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">Usunięto %1$d utwór</item>
+        <item quantity="few">Usunięto %1$d utwory</item>
+        <item quantity="many">Usunięto %1$d utworów</item>
+        <item quantity="other">Usunięto %1$d utworu</item>
+    </plurals>
 </resources>
