@@ -118,6 +118,14 @@
 <a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://api.jm26.net/badge?label=&icon=f17c&message=Linux&color=000000&labelcolor=000000&fontcolor=white&autofontcolor=false&scale=20" alt="Linux" height="55"/></a>
 <a href="https://github.com/impin2rex/Laya/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/ios/cozy.svg" alt="Download for iPhone" height="55"/></a>
 
+<br/>
+
+<a href="https://rookieenough.github.io/Orion-Data/app/?id=laya" target="_blank" rel="noopener noreferrer"><img src="https://raw.githubusercontent.com/RookieEnough/Orion-Store/refs/heads/main/assets/orion-badge.png" alt="Get Laya on Orion Store" height="55"/></a>
+
+<sub>Laya is listed on <a href="https://github.com/RookieEnough/Orion-Store">Orion Store</a>, which keeps the Android build updated for you. The badge opens the app directly, so install Orion Store first.</sub>
+
+<br/>
+
 Grab the latest build for your device from the [Releases](https://github.com/impin2rex/Laya/releases) page.
 
 | Platform | File | Notes |
