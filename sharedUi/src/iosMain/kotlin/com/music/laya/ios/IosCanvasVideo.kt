@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.music.laya.ui.player.CanvasContentMode
 import com.music.laya.ui.player.CanvasVideoSpec
+import com.music.laya.ui.player.canvasOrganicReveal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -300,7 +301,7 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     Canvas(modifier.onSizeChanged { viewSize = it; clip?.viewSize = it }.graphicsLayer {
         this.alpha = if (current.contentMode == CanvasContentMode.FIT_PORTRAIT && aspect <= 0f) 0f else alpha * current.presentationAlpha()
         if (current.bottomFade > 0.001f) compositingStrategy = CompositingStrategy.Offscreen
-    }) {
+    }.canvasOrganicReveal(spec.organicReveal)) {
         val f = frame ?: return@Canvas
         val (off, size) = placement(IntSize(f.width, f.height), this.size, current.contentMode, current.alignPortraitTop)
         clipRect { drawImage(f, srcOffset = IntOffset.Zero, srcSize = IntSize(f.width, f.height), dstOffset = off, dstSize = size) }

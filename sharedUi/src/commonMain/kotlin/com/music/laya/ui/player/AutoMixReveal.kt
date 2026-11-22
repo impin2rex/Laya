@@ -1,6 +1,7 @@
 package com.music.laya.ui.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -67,6 +68,14 @@ private class IncomingMask {
         filterQuality = FilterQuality.Low // a baked field is stretched over the layer
     }
     val fade = Paint()
+}
+
+/** [autoMixIncomingReveal] for a clip: the organic mask over the video's own drawing, without the blur. */
+@Composable
+fun Modifier.canvasOrganicReveal(reveal: CanvasOrganicReveal?): Modifier {
+    if (reveal == null) return this
+    val reduced = PlayerSettings.reduceAnimation.collectAsState()
+    return this.then(autoMixIncomingReveal({ reveal.progress() }, { reduced.value }, reveal.generation, blurEnabled = false))
 }
 
 /** Only the incoming picture is isolated by the effect, never the outgoing one under it. */

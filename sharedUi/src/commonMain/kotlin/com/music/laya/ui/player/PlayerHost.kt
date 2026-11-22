@@ -365,6 +365,13 @@ enum class CanvasContentMode {
     FIT_PORTRAIT,
 }
 
+/**
+ * An AutoMix reveal laid over a clip: the clip is cut through the organic mask as [progress] (the
+ * eased 0..1 reveal, read in drawing) climbs, hidden at 0 and whole at 1. [generation] seeds the
+ * mask, so the clip and the stills of one mix share a pattern.
+ */
+class CanvasOrganicReveal(val generation: Long, val progress: () -> Float)
+
 /** Everything [CanvasArtworkPlayer] is asked, handed to the platform's decoder as one value. */
 class CanvasVideoSpec(
     val canvas: CanvasArtwork,
@@ -382,6 +389,7 @@ class CanvasVideoSpec(
     val bottomFade: Float,
     val bottomFadeEndPx: Float?,
     val pausedForTransition: Boolean,
+    val organicReveal: CanvasOrganicReveal? = null,
 )
 
 /**
@@ -406,6 +414,7 @@ fun CanvasArtworkPlayer(
     bottomFade: Float = 0f,
     bottomFadeEndPx: Float? = null,
     pausedForTransition: Boolean = false,
+    organicReveal: CanvasOrganicReveal? = null,
 ) {
     PlayerPlatform.host.CanvasVideo(
         CanvasVideoSpec(
@@ -424,6 +433,7 @@ fun CanvasArtworkPlayer(
             bottomFade = bottomFade,
             bottomFadeEndPx = bottomFadeEndPx,
             pausedForTransition = pausedForTransition,
+            organicReveal = organicReveal,
         ),
         modifier,
     )

@@ -290,6 +290,12 @@ internal fun LandscapeArtwork(
     modifier: Modifier = Modifier,
     /** Halts the clip for a transition — see [CanvasArtworkPlayer]'s own. */
     pausedForTransition: Boolean = false,
+    /** The incoming clip of a live AutoMix blend, played beside [canvas] and revealed over it. */
+    standbyCanvas: CanvasArtwork? = null,
+    standbyReveal: CanvasOrganicReveal? = null,
+    onStandbyRenderedChange: (Boolean) -> Unit = {},
+    /** Holds [canvas] on its current frame while the standby is revealed over it. */
+    freezeCanvas: Boolean = false,
     /**
      * The sleeve's shape, asked for each frame: its corner rounds off into the
      * mini player's cover's as the player docks into it.
@@ -348,13 +354,14 @@ internal fun LandscapeArtwork(
                     modifier = artworkModifier,
                 )
             }
-            canvas?.let { clip ->
+            CanvasPresentationHost(canvas, standbyCanvas.takeIf { canvas != null }) { clip, standby ->
                 CanvasArtworkPlayer(
                     canvas = clip,
                     isPlaying = isPlaying,
                     presentationAlpha = canvasAlpha,
-                    pausedForTransition = pausedForTransition,
-                    onRenderedChanged = onCanvasRenderedChange,
+                    pausedForTransition = pausedForTransition || (if (standby) standbyReveal == null else freezeCanvas),
+                    onRenderedChanged = if (standby) onStandbyRenderedChange else onCanvasRenderedChange,
+                    organicReveal = if (standby) standbyReveal else null,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
