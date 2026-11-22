@@ -127,6 +127,9 @@
     <string name="downloaded">ডাউনলোড হয়েছে</string>
     <string name="explore">এক্সপ্লোর</string>
     <string name="library">লাইব্রেরি</string>
+    <string name="mixes_yours">আপনার মিক্স</string>
+    <string name="mixes_none">এখনও কোনো মিক্স নেই। শুনতে থাকুন, YouTube Music আপনার জন্য মিক্স বানাবে।</string>
+    <string name="radio">রেডিও</string>
     <string name="library_sign_in_description">আপনার পছন্দের গান, প্লেলিস্ট আর YouTube Music হিস্ট্রি দেখতে Google অ্যাকাউন্টে সাইন ইন করুন।</string>
     <string name="new_playlist">নতুন প্লেলিস্ট</string>
     <string name="on_device">ডিভাইসে</string>

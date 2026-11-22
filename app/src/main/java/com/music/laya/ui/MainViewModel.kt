@@ -47,6 +47,7 @@ import com.music.laya.data.model.PlaylistPrivacy
 import com.music.laya.data.model.SearchFilter
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.ShelfItem
+import com.music.laya.data.model.KeyedMix
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.SongMenu
 import com.music.laya.data.model.SubscriptionState
@@ -147,6 +148,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _explore = MutableStateFlow<UiState<List<MoodGenreSection>>>(UiState.Loading)
     val explore: StateFlow<UiState<List<MoodGenreSection>>> = _explore.asStateFlow()
+
+    /** The signed-in "Mixed for you" cards: My Mixes, Supermix, the mood mixes. */
+    private val _mixes = MutableStateFlow<UiState<List<KeyedMix>>>(UiState.Loading)
+    val mixes: StateFlow<UiState<List<KeyedMix>>> = _mixes.asStateFlow()
 
     private val _selectedMoodGenre = MutableStateFlow<MoodGenre?>(null)
     val selectedMoodGenre: StateFlow<MoodGenre?> = _selectedMoodGenre.asStateFlow()
@@ -1552,7 +1557,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * as one flag: a pull on Library while Home is still refreshing in the
      * background shouldn't leave the wrong tab showing a loader.
      */
-    enum class Feed { HOME, EXPLORE, LIBRARY }
+    enum class Feed { HOME, EXPLORE, LIBRARY, MIXES }
 
     private val _refreshing = MutableStateFlow(emptySet<Feed>())
     val refreshing: StateFlow<Set<Feed>> = _refreshing.asStateFlow()
@@ -1565,7 +1570,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun refresh(feed: Feed) {
         if (feed in _refreshing.value) return
-        if (feed == Feed.LIBRARY && !_signedIn.value) return
+        if ((feed == Feed.LIBRARY || feed == Feed.MIXES) && !_signedIn.value) return
         val identity = listenerKey()
         _refreshing.value = _refreshing.value + feed
         viewModelScope.launch {
@@ -1573,6 +1578,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 Feed.HOME -> refreshHome(identity)
                 Feed.EXPLORE -> fetchExplore()
                 Feed.LIBRARY -> fetchLibrary(identity)
+                Feed.MIXES -> fetchMixes(identity)
             }
             _refreshing.value = _refreshing.value - feed
         }
@@ -1581,6 +1587,37 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun loadExplore() {
         _explore.value = UiState.Loading
         viewModelScope.launch { fetchExplore() }
+    }
+
+    /** Whose mixes are on screen, so an account switch loads the new listener's. */
+    private var mixesRequestedFor: String? = null
+    private var mixesRequested = false
+
+    fun loadMixes() {
+        mixesRequested = true
+        val identity = listenerKey()
+        mixesRequestedFor = identity
+        _mixes.value = UiState.Loading
+        viewModelScope.launch { fetchMixes(identity) }
+    }
+
+    /**
+     * Call when the Radio page becomes visible, and again whenever the account
+     * may have changed; loads only the first time, or for a different listener.
+     */
+    fun onMixesShown() {
+        if (!_signedIn.value) return
+        if (!mixesRequested || mixesRequestedFor != listenerKey()) loadMixes()
+    }
+
+    private suspend fun fetchMixes(identity: String?) {
+        val state: UiState<List<KeyedMix>> = YtMusicRepository.mixedForYouKeyed().fold(
+            onSuccess = { UiState.Success(it) },
+            onFailure = { UiState.Error(it.friendly()) },
+        )
+        // A switch while this was in flight has already asked for the new
+        // listener's; this answer is for someone who is no longer here.
+        if (identity == listenerKey()) _mixes.value = state
     }
 
     private suspend fun fetchExplore() {

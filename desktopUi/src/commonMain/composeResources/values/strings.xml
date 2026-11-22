@@ -151,6 +151,9 @@
     <string name="downloaded">Downloaded</string>
     <string name="explore">Explore</string>
     <string name="library">Library</string>
+    <string name="mixes_yours">Your Mixes</string>
+    <string name="mixes_none">No mixes yet. Keep listening and YouTube Music will make some for you.</string>
+    <string name="radio">Radio</string>
     <string name="library_sign_in_description">Sign in to your Google account to see your liked songs, playlists, and YouTube Music history.</string>
     <string name="new_playlist">New playlist</string>
     <string name="on_device">On Device</string>

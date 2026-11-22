@@ -434,6 +434,13 @@ data class ShelfItem(
     val browseId: String?,
 )
 
+/**
+ * A "Mixed for you" card and its English title, which is what says what kind
+ * of mix it is whatever language [item] is shown in — see
+ * [com.music.laya.data.YtMusicRepository.mixedForYouKeyed].
+ */
+data class KeyedMix(val item: ShelfItem, val englishTitle: String)
+
 /** The signed-in Google account, as YouTube Music reports it. */
 data class Account(
     val name: String,

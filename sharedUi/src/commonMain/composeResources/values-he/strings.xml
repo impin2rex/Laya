@@ -152,6 +152,9 @@
     <string name="downloaded">הורד</string>
     <string name="explore">גלה</string>
     <string name="library">ספרייה</string>
+    <string name="mixes_yours">המיקסים שלך</string>
+    <string name="mixes_none">עדיין אין מיקסים. המשיכו להאזין ו-YouTube Music ייצור עבורכם מיקסים.</string>
+    <string name="radio">רדיו</string>
     <string name="library_sign_in_description">היכנס לחשבון הגוגל שלך כדי לראות את השירים שאהבת, רשימות ההשמעה והיסטוריית ה-YouTube Music.</string>
     <string name="new_playlist">פלייליסט חדש</string>
     <string name="on_device">במכשיר</string>

@@ -146,6 +146,9 @@
     <string name="downloaded">Baixado</string>
     <string name="explore">Explorar</string>
     <string name="library">Biblioteca</string>
+    <string name="mixes_yours">Seus mixes</string>
+    <string name="mixes_none">Ainda não há mixes. Continue ouvindo e o YouTube Music criará alguns para você.</string>
+    <string name="radio">Rádio</string>
     <string name="library_sign_in_description">Faça login em sua conta do Google para ver suas músicas curtidas, playlists e histórico do YouTube Music.</string>
     <string name="new_playlist">Nova playlist</string>
     <string name="on_device">No dispositivo</string>

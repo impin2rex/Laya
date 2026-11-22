@@ -111,6 +111,7 @@ private val PreviewSong = Song(
 private val PreviewTabs = listOf(
     BottomTab("Play", LayaIcons.Play),
     BottomTab("Explore", LayaIcons.TabExplore),
+    BottomTab("Radio", LayaIcons.TabRadio),
     BottomTab("Library", LayaIcons.TabLibrary),
     BottomTab("Search", LayaIcons.TabSearch),
 )

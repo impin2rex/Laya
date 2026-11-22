@@ -76,6 +76,7 @@ import com.music.laya.ui.tv.dialogs.TvUpdateDialog
 import com.music.laya.ui.tv.player.TvNowPlayingScreen
 import com.music.laya.ui.tv.screens.TvDetailScreen
 import com.music.laya.ui.tv.screens.TvExploreScreen
+import com.music.laya.ui.tv.screens.TvRadioScreen
 import com.music.laya.ui.tv.screens.TvHomeScreen
 import com.music.laya.ui.tv.screens.TvLibraryScreen
 import com.music.laya.ui.tv.screens.TvSearchScreen
@@ -88,6 +89,7 @@ import kotlinx.coroutines.delay
 enum class TvDestination(val label: String) {
     HOME("Home"),
     EXPLORE("Explore"),
+    RADIO("Radio"),
     LIBRARY("Library"),
     SEARCH("Search"),
     SETTINGS("Settings"),
@@ -459,6 +461,12 @@ private fun TvMainShell(
                                 onNavigateToDetail = openDetail,
                                 onNavigateToNowPlaying = openNowPlaying,
                             )
+                            TvDestination.RADIO -> TvRadioScreen(
+                                viewModel = viewModel,
+                                mediaController = mediaController,
+                                onNavigateToDetail = openDetail,
+                                onNavigateToNowPlaying = openNowPlaying,
+                            )
                             TvDestination.LIBRARY -> TvLibraryScreen(
                                 viewModel = viewModel,
                                 mediaController = mediaController,
@@ -532,7 +540,7 @@ private fun TvMainShell(
 
 /**
  * The Apple Music tvOS tab bar: a translucent capsule centred at the top holding
- * the four tabs and, at its end, Search and Settings. Home, Explore and Library
+ * the five tabs and, at its end, Search and Settings. Home, Explore, Radio and Library
  * switch as focus lands on them, the way tvOS tabs do; the rest act on select.
  */
 @Composable
@@ -594,7 +602,7 @@ private fun TvTopBar(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            listOf(TvDestination.HOME, TvDestination.EXPLORE, TvDestination.LIBRARY).forEach { tab ->
+            listOf(TvDestination.HOME, TvDestination.EXPLORE, TvDestination.RADIO, TvDestination.LIBRARY).forEach { tab ->
                 val interaction = remember { MutableInteractionSource() }
                 val focused by interaction.collectIsFocusedAsState()
                 LaunchedEffect(focused) {

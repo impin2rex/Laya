@@ -152,6 +152,9 @@
     <string name="downloaded">ダウンロード済み</string>
     <string name="explore">見つける</string>
     <string name="library">ライブラリ</string>
+    <string name="mixes_yours">あなたのミックス</string>
+    <string name="mixes_none">まだミックスはありません。聴き続けると、YouTube Music があなた向けのミックスを作成します。</string>
+    <string name="radio">ラジオ</string>
     <string name="library_sign_in_description">Googleアカウントにログインすると、高評価した曲、プレイリスト、YouTube Musicの履歴が表示されます。</string>
     <string name="new_playlist">新しいプレイリスト</string>
     <string name="on_device">デバイス内</string>

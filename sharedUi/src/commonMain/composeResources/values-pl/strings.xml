@@ -152,6 +152,9 @@
     <string name="downloaded">Pobrane</string>
     <string name="explore">Odkrywaj</string>
     <string name="library">Biblioteka</string>
+    <string name="mixes_yours">Twoje miksy</string>
+    <string name="mixes_none">Nie ma jeszcze miksów. Słuchaj dalej, a YouTube Music przygotuje je dla Ciebie.</string>
+    <string name="radio">Radio</string>
     <string name="library_sign_in_description">Zaloguj się na swoje konto Google, aby zobaczyć polubione piosenki, playlisty i historię YouTube Music.</string>
     <string name="new_playlist">Nowa playlista</string>
     <string name="on_device">Na urządzeniu</string>
