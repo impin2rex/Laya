@@ -107,7 +107,7 @@ import com.music.laya.sharedui.resources.ic_player_play
 import com.music.laya.sharedui.resources.ic_player_previous
 import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.ui.player.ArtworkMeshBackdrop
-import com.music.laya.ui.player.CanvasArtworkPlayer
+import com.music.laya.ui.player.AutoMixCanvasLayer
 import com.music.laya.ui.player.SyncedLyricsPanel
 import com.music.laya.ui.player.rememberArtworkMesh
 import com.music.laya.ui.tv.components.TvActivityIndicator
@@ -176,6 +176,9 @@ internal fun TvNowPlayingStage(
     modifier: Modifier = Modifier,
     /** A translation or romanization under each line — see [rememberLyricsVersions]. */
     subLines: List<LyricLine>? = null,
+    /** The queue and the song's place in it, for the AutoMix Canvas blend. */
+    queue: List<Song> = emptyList(),
+    queueIndex: Int = 0,
 ) {
     // While the transport is up the lyrics fade out above it rather than run under it.
     val underControls by animateFloatAsState(if (controlsVisible) 1f else 0f, tween(320), label = "lyricsFade")
@@ -213,7 +216,14 @@ internal fun TvNowPlayingStage(
                 },
         ) {
             TvArtwork(url = song.thumbnailUrl, px = 720, shape = RectangleShape, modifier = Modifier.fillMaxSize())
-            canvas?.let { CanvasArtworkPlayer(canvas = it, isPlaying = isPlaying, modifier = Modifier.fillMaxSize()) }
+            AutoMixCanvasLayer(
+                song = song,
+                queue = queue,
+                queueIndex = queueIndex,
+                isPlaying = isPlaying,
+                canvas = canvas,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         // With the transport away, the song is named under the cover: the title and

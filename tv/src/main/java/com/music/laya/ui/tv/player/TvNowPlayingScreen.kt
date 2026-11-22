@@ -342,6 +342,8 @@ fun TvNowPlayingScreen(
             controlsVisible = controlsVisible,
             onSeek = { mediaController?.seekTo(it) },
             subLines = lyricVersions.subLines,
+            queue = playerState.queue,
+            queueIndex = playerState.queueIndex,
             modifier = Modifier.graphicsLayer { alpha = dim },
         )
 
