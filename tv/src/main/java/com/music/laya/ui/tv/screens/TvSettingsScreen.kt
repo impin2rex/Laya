@@ -90,6 +90,7 @@ fun TvSettingsScreen(
     val canvas by AppSettings.animatedCanvas.collectAsState()
     val lyricsCanvas by TvSettings.tvLyricsCanvasEnabled.collectAsState()
     val nerdStats by AppSettings.showNerdStats.collectAsState()
+    val bestPart by AppSettings.showBestPart.collectAsState()
     val signatureEnabled by AppSettings.signatureApiEnabled.collectAsState()
     // Only the saved address is ever shown; the built-in one stays out of the UI.
     val signatureUrl by AppSettings.customSignatureApiUrl.collectAsState()
@@ -304,6 +305,14 @@ fun TvSettingsScreen(
                         onClick = { sheet = SettingsSheet.SignatureApi },
                     )
                 }
+            }
+            item {
+                TvListRow(
+                    title = "Best Part Button",
+                    value = onOff(bestPart),
+                    onFocused = { blurb = "A button on the player that skips to the part of the song people replay most." },
+                    onClick = { AppSettings.setShowBestPart(!bestPart) },
+                )
             }
             item {
                 TvListRow(
