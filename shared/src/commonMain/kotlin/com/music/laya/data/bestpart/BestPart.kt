@@ -2,11 +2,14 @@ package com.music.laya.data.bestpart
 
 import com.music.laya.data.innertube.Innertube
 import com.music.laya.data.lyrics.LyricLine
+import com.music.laya.data.lyrics.LyricsTranslation
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.durationMillis
+import com.music.laya.platform.ioDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -67,7 +70,9 @@ object BestPart {
 
     private val lock = Mutex()
 
-    /** Curves already had this run, by video id; null is "no curve". The lyrics are not kept: they come with the player. */
+    private val disk = HeatmapStore(root = { LyricsTranslation.cacheDir })
+
+    /** Curves already had this run (and the disk's, see [HeatmapStore]), by video id; null is "no curve". The lyrics are not kept: they come with the player. */
     private val known = HashMap<String, Heatmap?>()
 
     /**
@@ -81,7 +86,13 @@ object BestPart {
         if (song.localUri != null || !YOUTUBE_ID.matches(id)) return null
         val duration = song.durationText.durationMillis()
         val synced = lines.orEmpty().takeIf { l -> l.any { it.timeMs > 0L } }.orEmpty()
-        val cached = lock.withLock { if (id in known) listOf(known[id]) else null }
+        val cached = lock.withLock {
+            if (id in known) {
+                listOf(known[id])
+            } else {
+                withContext(ioDispatcher) { disk.get(id) }?.let { listOf(it.heat).also { _ -> known[id] = it.heat } }
+            }
+        }
         val heat = if (cached != null) {
             cached.single()
         } else {
@@ -95,7 +106,14 @@ object BestPart {
                     null
                 }
             }
-            if (answer == null) null else parseHeatmap(answer).also { lock.withLock { known[id] = it } }
+            if (answer == null) {
+                withContext(ioDispatcher) { disk.get(id, allowStale = true)?.heat } // stale beats nothing offline
+            } else {
+                parseHeatmap(answer).also {
+                    lock.withLock { known[id] = it }
+                    withContext(ioDispatcher) { disk.put(id, it) }
+                }
+            }
         }
         return pick(heat, synced, duration)
     }
