@@ -1398,4 +1398,7 @@
     <string name="lossless_verify_expired_notice">การยืนยัน %1$s หมดอายุแล้ว เปิดอีกครั้งในแหล่งเพลงเพื่อฟังแบบไม่สูญเสียคุณภาพต่อ</string>
     <string name="lossless_verify_expired">การยืนยันหมดอายุ · เปิดอีกครั้ง</string>
     <string name="lossless_verified_until">ยืนยันแล้ว · ถึง %1$s</string>
+    <string name="best_part_description">ข้ามไปท่อนเด็ด</string>
+    <string name="show_best_part">ปุ่มท่อนเด็ด</string>
+    <string name="show_best_part_subtitle">ปุ่มบนปกเพลงที่ข้ามไปยังช่วงของเพลงที่ผู้คนเล่นซ้ำมากที่สุด</string>
 </resources>

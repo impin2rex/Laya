@@ -1332,4 +1332,7 @@
     <string name="lossless_verify_expired_notice">Xác minh %1$s đã hết hạn. Bật lại trong Nguồn để tiếp tục nghe lossless.</string>
     <string name="lossless_verify_expired">Xác minh đã hết hạn · bật lại</string>
     <string name="lossless_verified_until">Đã xác minh · đến %1$s</string>
+    <string name="best_part_description">Chuyển đến đoạn hay nhất</string>
+    <string name="show_best_part">Nút Đoạn hay nhất</string>
+    <string name="show_best_part_subtitle">Nút trên ảnh bìa giúp chuyển đến đoạn bài hát được nghe lại nhiều nhất</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.music.laya.data.bestpart
 
 import com.music.laya.data.innertube.Innertube
+import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.durationMillis
 import kotlinx.coroutines.CancellationException
@@ -12,6 +13,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -65,31 +67,85 @@ object BestPart {
 
     private val lock = Mutex()
 
-    /** Answers already had this run, by video id; null is "no curve". */
-    private val known = HashMap<String, Long?>()
+    /** Curves already had this run, by video id; null is "no curve". The lyrics are not kept: they come with the player. */
+    private val known = HashMap<String, Heatmap?>()
 
     /**
      * Where [song]'s best part starts, in ms, or null when there is none to
-     * offer: a local file, a video too new to chart, a curve with no bump, or
-     * no answer from youtube.com. A failed lookup is not remembered, so the
-     * next play of the song asks again.
+     * offer: a local file, or neither a bump in the curve nor a chorus in the
+     * synced [lines]. A failed lookup is not remembered, so the next play of
+     * the song asks again; a song with no curve falls back to its chorus.
      */
-    suspend fun startFor(song: Song): Long? {
+    suspend fun startFor(song: Song, lines: List<LyricLine>? = null): Long? {
         val id = song.videoId
         if (song.localUri != null || !YOUTUBE_ID.matches(id)) return null
-        lock.withLock { if (id in known) return known[id] }
-        val answer = withTimeoutOrNull(LOOKUP_TIMEOUT_MS) {
-            try {
-                Innertube.webNext(id)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                null
+        val duration = song.durationText.durationMillis()
+        val synced = lines.orEmpty().takeIf { l -> l.any { it.timeMs > 0L } }.orEmpty()
+        val cached = lock.withLock { if (id in known) listOf(known[id]) else null }
+        val heat = if (cached != null) {
+            cached.single()
+        } else {
+            // No answer (offline, timed out) says nothing about the video: it is not remembered.
+            val answer = withTimeoutOrNull(LOOKUP_TIMEOUT_MS) {
+                try {
+                    Innertube.webNext(id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
             }
+            if (answer == null) null else parseHeatmap(answer).also { lock.withLock { known[id] = it } }
+        }
+        return pick(heat, synced, duration)
+    }
+
+    /** The best part from the curve's bump if it has one, else the first chorus in the synced [lines]; null when neither does. */
+    fun pick(heat: Heatmap?, lines: List<LyricLine>, durationMs: Long): Long? {
+        val starts = lines.filter { it.timeMs >= 0 && !it.isGap }.map { it.timeMs }
+        val target = heat?.let { peakMs(it, durationMs) } ?: chorusMs(lines, durationMs) ?: return null
+        return snap(target, starts)
+    }
+
+    /**
+     * The first time the chorus comes round, from time-synced [lines]: the
+     * earliest line of the most repeated lyric, walked back over the lines of
+     * its block that come before it. Null when nothing repeats.
+     */
+    fun chorusMs(lines: List<LyricLine>, durationMs: Long): Long? {
+        if (durationMs in 1 until MIN_SONG_MS) return null
+        val timed = lines.filter { it.timeMs >= 0 && !it.isGap && it.text.isNotBlank() }
+        if (timed.size < 4) return null
+        val keys = timed.map { line -> line.text.lowercase().filter { it.isLetterOrDigit() } }
+        val counts = keys.filter { it.length >= 4 }.groupingBy { it }.eachCount()
+        val most = counts.values.maxOrNull() ?: return null
+        if (most < 2) return null
+        val limit = if (durationMs > 0) durationMs - SKIP_TAIL_MS else Long.MAX_VALUE
+        val first = keys.indices.firstOrNull { i ->
+            counts[keys[i]] == most && timed[i].timeMs in SKIP_HEAD_MS..limit
         } ?: return null
-        val start = parseHeatmap(answer)?.let { startMs(it, song.durationText.durationMillis()) }
-        lock.withLock { known[id] = start }
-        return start
+        // Lines that repeat about as often are the same block: a chorus is heard from its first line, not its hook.
+        var start = first
+        while (start - 1 >= 0) {
+            val count = counts[keys[start - 1]] ?: 0
+            if (count < 2 || count < most - 1) break
+            if (timed[start - 1].timeMs < SKIP_HEAD_MS || first - start >= 4) break
+            start--
+        }
+        return timed[start].timeMs
+    }
+
+    /**
+     * Pulls [targetMs] back to a natural start: a lyric line beginning near it
+     * (just before, or a moment after), else a second before it, so the jump
+     * doesn't open mid-word.
+     */
+    fun snap(targetMs: Long, lineStarts: List<Long>): Long {
+        lineStarts
+            .filter { it in (targetMs - 4_000)..(targetMs + 1_500) }
+            .minByOrNull { abs(it - targetMs) + if (it > targetMs) 1_500 else 0 }
+            ?.let { return (it - 250).coerceAtLeast(0) }
+        return (targetMs - LEAD_IN_MS).coerceAtLeast(0)
     }
 
     /** [peakMs] pulled back a beat, so the skip lands just before the climb. */

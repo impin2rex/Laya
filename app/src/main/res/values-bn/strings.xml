@@ -1183,4 +1183,7 @@
     <string name="lossless_verify_expired_notice">%1$s যাচাইয়ের মেয়াদ শেষ। লসলেস চালিয়ে যেতে সোর্সে আবার চালু করুন।</string>
     <string name="lossless_verify_expired">যাচাইয়ের মেয়াদ শেষ · আবার চালু করুন</string>
     <string name="lossless_verified_until">যাচাই করা হয়েছে · %1$s পর্যন্ত</string>
+    <string name="best_part_description">সেরা অংশে যান</string>
+    <string name="show_best_part">সেরা অংশ বোতাম</string>
+    <string name="show_best_part_subtitle">আর্টওয়ার্কের একটি বোতাম, যা গানের সবচেয়ে বেশি রিপ্লে হওয়া অংশে নিয়ে যায়</string>
 </resources>

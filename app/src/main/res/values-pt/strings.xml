@@ -1417,4 +1417,7 @@
     <string name="lossless_verify_expired_notice">A verificação do %1$s expirou. Ative de novo em Fontes para continuar sem perdas.</string>
     <string name="lossless_verify_expired">Verificação expirada · ative de novo</string>
     <string name="lossless_verified_until">Verificado · até %1$s</string>
+    <string name="best_part_description">Pular para a melhor parte</string>
+    <string name="show_best_part">Botão Melhor parte</string>
+    <string name="show_best_part_subtitle">Um botão na capa que pula para a parte da música mais repetida</string>
 </resources>

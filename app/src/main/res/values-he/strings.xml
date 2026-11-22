@@ -1417,4 +1417,7 @@
     <string name="lossless_verify_expired_notice">האימות של %1$s פג. הפעילו אותו שוב במקורות כדי להמשיך באיכות ללא אובדן.</string>
     <string name="lossless_verify_expired">האימות פג · הפעילו שוב</string>
     <string name="lossless_verified_until">אומת · עד %1$s</string>
+    <string name="best_part_description">דלג לחלק הכי טוב</string>
+    <string name="show_best_part">כפתור החלק הכי טוב</string>
+    <string name="show_best_part_subtitle">כפתור על העטיפה שמדלג לחלק בשיר שהכי הרבה מאזינים חוזרים אליו</string>
 </resources>

@@ -1415,4 +1415,7 @@
     <string name="lossless_verify_expired_notice">%1$s का सत्यापन समाप्त हो गया। लॉसलेस जारी रखने के लिए स्रोत में इसे फिर से चालू करें।</string>
     <string name="lossless_verify_expired">सत्यापन समाप्त · फिर से चालू करें</string>
     <string name="lossless_verified_until">सत्यापित · %1$s तक</string>
+    <string name="best_part_description">सबसे अच्छे हिस्से पर जाएँ</string>
+    <string name="show_best_part">सबसे अच्छा हिस्सा बटन</string>
+    <string name="show_best_part_subtitle">आर्टवर्क पर एक बटन जो गाने के उस हिस्से पर ले जाता है जिसे लोग सबसे ज़्यादा दोबारा सुनते हैं</string>
 </resources>

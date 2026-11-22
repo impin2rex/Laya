@@ -91,6 +91,7 @@ fun TvSettingsScreen(
     val lyricsCanvas by TvSettings.tvLyricsCanvasEnabled.collectAsState()
     val nerdStats by AppSettings.showNerdStats.collectAsState()
     val bestPart by AppSettings.showBestPart.collectAsState()
+    val bestPartBlurb = androidx.compose.ui.res.stringResource(com.music.laya.R.string.show_best_part_subtitle)
     val signatureEnabled by AppSettings.signatureApiEnabled.collectAsState()
     // Only the saved address is ever shown; the built-in one stays out of the UI.
     val signatureUrl by AppSettings.customSignatureApiUrl.collectAsState()
@@ -308,9 +309,9 @@ fun TvSettingsScreen(
             }
             item {
                 TvListRow(
-                    title = "Best Part Button",
+                    title = androidx.compose.ui.res.stringResource(com.music.laya.R.string.show_best_part),
                     value = onOff(bestPart),
-                    onFocused = { blurb = "A button on the player that skips to the part of the song people replay most." },
+                    onFocused = { blurb = bestPartBlurb },
                     onClick = { AppSettings.setShowBestPart(!bestPart) },
                 )
             }

@@ -430,7 +430,7 @@ internal fun TvTransport(
                 bestPart?.let { start ->
                     TvTransportButton(
                         icon = Icons.Rounded.AutoAwesome,
-                        contentDescription = "Skip to the best part",
+                        contentDescription = androidx.compose.ui.res.stringResource(com.music.laya.R.string.best_part_description),
                         onClick = { onSeek?.invoke(start) },
                     )
                 }

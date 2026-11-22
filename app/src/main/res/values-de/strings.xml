@@ -1415,4 +1415,7 @@
     <string name="lossless_verify_expired_notice">%1$s-Verifizierung abgelaufen. Schalte es unter Quellen wieder ein, um verlustfrei zu hören.</string>
     <string name="lossless_verify_expired">Verifizierung abgelaufen · wieder einschalten</string>
     <string name="lossless_verified_until">Verifiziert · bis %1$s</string>
+    <string name="best_part_description">Zur besten Stelle springen</string>
+    <string name="show_best_part">Schaltfläche „Beste Stelle“</string>
+    <string name="show_best_part_subtitle">Eine Schaltfläche auf dem Cover, die zu der Stelle des Songs springt, die am häufigsten wiederholt wird</string>
 </resources>

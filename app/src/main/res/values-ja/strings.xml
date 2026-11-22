@@ -1393,4 +1393,7 @@
     <string name="lossless_verify_expired_notice">%1$sの確認の有効期限が切れました。ロスレスを続けるには、ソースで再度オンにしてください。</string>
     <string name="lossless_verify_expired">確認の有効期限切れ · もう一度オンにしてください</string>
     <string name="lossless_verified_until">確認済み · %1$sまで</string>
+    <string name="best_part_description">ベストパートへスキップ</string>
+    <string name="show_best_part">ベストパートボタン</string>
+    <string name="show_best_part_subtitle">アートワーク上のボタンで、みんなが最も繰り返し聴く曲の部分へスキップします</string>
 </resources>
