@@ -9,8 +9,17 @@ enum OpusRemux {
     /// The CAF for a whole WebM Opus file, or nil when it is not one this can read (no Opus audio track,
     /// laced blocks, truncated before any packet).
     static func cafFromWebm(_ webm: Data) -> Data? {
-        guard let track = WebmReader(webm).readOpus(), !track.packets.isEmpty else { return nil }
+        guard let track = WebmReader(webm).readOpus(limit: .max), !track.packets.isEmpty else { return nil }
         return caf(track)
+    }
+
+    /// A CAF of just the first [packets] packets of a WebM that is still downloading, so playback can start
+    /// before the rest has arrived. Nil until that many are in (or the file is not one this can read); [bytes]
+    /// [durationMs] is the audio they hold.
+    static func head(of webm: Data, packets: Int) -> (caf: Data, durationMs: Int64)? {
+        guard let track = WebmReader(webm).readOpus(limit: packets), track.packets.count >= packets else { return nil }
+        let samples = Int64(track.packets.reduce(0) { $0 + frames(inPacket: $1) })
+        return (caf(track), max(0, samples - Int64(track.preSkip)) * 1000 / 48_000)
     }
 
     struct Track {
@@ -89,7 +98,8 @@ enum OpusRemux {
             0xA0,       // BlockGroup
         ]
 
-        func readOpus() -> Track? {
+        /// Stops after [limit] packets, so reading the head of a partial download costs the head, not the file.
+        func readOpus(limit: Int) -> Track? {
             var r = self
             var track = Track()
             var opusNumber: UInt64?
@@ -123,6 +133,7 @@ enum OpusRemux {
                 case 0xA3, 0xA1:
                     guard let block = Self.block(body) else { return nil }
                     if block.track == opusNumber ?? block.track { track.packets.append(block.frame) }
+                    if track.packets.count >= limit { return opusNumber == nil ? nil : track }
                 default: break
                 }
             }

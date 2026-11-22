@@ -109,7 +109,7 @@ import com.music.laya.sharedui.resources.ic_player_play
 import com.music.laya.sharedui.resources.ic_player_previous
 import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.ui.player.ArtworkMeshBackdrop
-import com.music.laya.ui.player.CanvasArtworkPlayer
+import com.music.laya.ui.player.AutoMixCanvasLayer
 import com.music.laya.ui.player.SyncedLyricsPanel
 import com.music.laya.ui.player.rememberArtworkMesh
 import com.music.laya.ui.tv.components.TvActivityIndicator
@@ -178,6 +178,9 @@ internal fun TvNowPlayingStage(
     modifier: Modifier = Modifier,
     /** A translation or romanization under each line — see [rememberLyricsVersions]. */
     subLines: List<LyricLine>? = null,
+    /** The queue and the song's place in it, for the AutoMix Canvas blend. */
+    queue: List<Song> = emptyList(),
+    queueIndex: Int = 0,
 ) {
     // While the transport is up the lyrics fade out above it rather than run under it.
     val underControls by animateFloatAsState(if (controlsVisible) 1f else 0f, tween(320), label = "lyricsFade")
@@ -215,7 +218,14 @@ internal fun TvNowPlayingStage(
                 },
         ) {
             TvArtwork(url = song.thumbnailUrl, px = 720, shape = RectangleShape, modifier = Modifier.fillMaxSize())
-            canvas?.let { CanvasArtworkPlayer(canvas = it, isPlaying = isPlaying, modifier = Modifier.fillMaxSize()) }
+            AutoMixCanvasLayer(
+                song = song,
+                queue = queue,
+                queueIndex = queueIndex,
+                isPlaying = isPlaying,
+                canvas = canvas,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         // With the transport away, the song is named under the cover: the title and
@@ -359,13 +369,15 @@ internal fun TvTransport(
     versionSwitching: Boolean = false,
     /** Seeks straight to a moment; with it, the Best Part button is offered when the song has one. */
     onSeek: ((Long) -> Unit)? = null,
+    /** The song's synced lyrics, for the Best Part chorus fallback when its replay curve is flat. */
+    lyrics: List<com.music.laya.data.lyrics.LyricLine>? = null,
 ) {
     val showStats by AppSettings.showNerdStats.collectAsState()
     val bestPartOn by AppSettings.showBestPart.collectAsState()
     // ponytail: kept up for the whole track rather than hidden once heard as on
     // the phone, since a button vanishing under the D-pad's focus strands it.
-    val bestPart by produceState<Long?>(null, song.videoId, bestPartOn) {
-        value = if (bestPartOn && onSeek != null) BestPart.startFor(song) else null
+    val bestPart by produceState<Long?>(null, song.videoId, bestPartOn, lyrics) {
+        value = if (bestPartOn && onSeek != null) BestPart.startFor(song, lyrics) else null
     }
     val reverbOn by AppSettings.reverbEnabled.collectAsState()
     val karaokeOn by Karaoke.enabled.collectAsState()

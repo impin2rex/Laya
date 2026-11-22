@@ -15,6 +15,9 @@ import java.nio.ByteBuffer
 internal actual fun autoMixMaskShader(seedX: Float, seedY: Float): AutoMixMaskShader? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) AgslMask(seedX, seedY) else BakedMask(seedX, seedY)
 
+/** Compose's BlurEffect needs RenderEffect, API 31; below it the reveal crossfades from a soft stand-in. */
+internal actual val blurEffectSupported: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
 private const val RAMP_STEPS = 128
 
 // The ramp's filters are the same for every layer: built once, on first use of each step.

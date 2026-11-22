@@ -9,6 +9,8 @@ private val effect by lazy { RuntimeEffect.makeForShader(AUTOMIX_MOTTLED_MASK) }
 
 internal actual fun autoMixMaskShader(seedX: Float, seedY: Float): AutoMixMaskShader? = SkiaMask(seedX, seedY)
 
+internal actual val blurEffectSupported: Boolean = true
+
 private class SkiaMask(seedX: Float, seedY: Float) : AutoMixMaskShader {
     private val builder = RuntimeShaderBuilder(effect).apply { uniform("seedOffset", seedX, seedY) }
     private var last: Shader? = null

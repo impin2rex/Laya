@@ -344,6 +344,8 @@ fun TvNowPlayingScreen(
             controlsVisible = controlsVisible,
             onSeek = { mediaController?.seekTo(it) },
             subLines = lyricVersions.subLines,
+            queue = playerState.queue,
+            queueIndex = playerState.queueIndex,
             modifier = Modifier.graphicsLayer { alpha = dim },
         )
 
@@ -355,6 +357,7 @@ fun TvNowPlayingScreen(
         ) {
             TvTransport(
                 song = song,
+                lyrics = lyrics,
                 onSeek = { mediaController?.seekTo(it) },
                 isPlaying = isPlaying,
                 isLoading = playerState.isLoading,

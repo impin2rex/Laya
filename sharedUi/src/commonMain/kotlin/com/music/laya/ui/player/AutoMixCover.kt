@@ -455,9 +455,16 @@ internal fun AutoMixIncomingStill(
     val appReduced = PlayerSettings.reduceAnimation.collectAsState()
     val systemMotion = rememberCoroutineScope().coroutineContext[MotionDurationScale]
     val reducedMotion = remember(appReduced, systemMotion) { { appReduced.value || systemMotion?.scaleFactor == 0f } }
+    // Below Android 12 the blur effect is a no-op: crossfade from a soft copy instead.
+    val soft = if (blur && !blurEffectSupported) {
+        val context = LocalPlatformContext.current
+        remember(result.image, result.painter, context) {
+            softCoverOf(result.painter ?: result.image.asPainter(context))
+        }
+    } else null
     DecodedCover(
         result,
-        Modifier.fillMaxSize().then(autoMixIncomingReveal(eased, reducedMotion, generation, blur)),
+        Modifier.fillMaxSize().then(autoMixIncomingReveal(eased, reducedMotion, generation, blur, soft)),
     )
 }
 
