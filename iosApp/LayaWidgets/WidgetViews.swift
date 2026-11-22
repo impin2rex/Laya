@@ -50,7 +50,7 @@ private func transport(_ s: LayaWidgetSnapshot, size: CGFloat, insets: (CGFloat,
     }
 }
 
-private func titleText(_ s: LayaWidgetSnapshot) -> String { s.hasTrack ? s.title : "Nothing played yet" }
+private func titleText(_ s: LayaWidgetSnapshot) -> String { s.hasTrack ? s.title : String(localized: "Nothing played yet") }
 
 // MARK: - Now playing (2×2 and 4×2)
 
@@ -130,7 +130,7 @@ struct PillView: View {
             }
             .frame(width: 64 * k, height: 64 * k).clipShape(Circle())
             VStack(alignment: .leading, spacing: 0) {
-                Text(!s.hasTrack ? "Nothing played yet" : s.artist.isEmpty ? s.title : "\(s.title) - \(s.artist)")
+                Text(!s.hasTrack ? String(localized: "Nothing played yet") : s.artist.isEmpty ? s.title : "\(s.title) - \(s.artist)")
                     .font(.system(size: 16 * k, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
                     .padding(.horizontal, 10 * k)
                 HStack(spacing: 0) {

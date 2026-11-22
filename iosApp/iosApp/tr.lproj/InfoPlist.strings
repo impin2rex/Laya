@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "Sesle arama yaptığında veya yakında çalan bir şarkıyı tanıdığında Laya mikrofon üzerinden dinler.";
+"NSSpeechRecognitionUsageDescription" = "Laya söylediklerini şarkı, sanatçı, albüm ve çalma listesi aramasına dönüştürür.";
+"NSPhotoLibraryAddUsageDescription" = "Kaydet’e dokunduğunda Laya, Replay ve şarkı sözü kartlarını fotoğraf kitaplığına kaydeder.";
+"NSLocalNetworkUsageDescription" = "Laya, müzik çalabilmen için Wi-Fi ağındaki Chromecast ve Google Cast hoparlörlerini bulur.";

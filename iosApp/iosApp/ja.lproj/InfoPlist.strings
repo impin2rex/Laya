@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "音声検索や、近くで流れている曲の認識を行うときに、Laya がマイクで音を聞き取ります。";
+"NSSpeechRecognitionUsageDescription" = "話した内容を、曲・アーティスト・アルバム・プレイリストの検索に変換するために Laya が使用します。";
+"NSPhotoLibraryAddUsageDescription" = "「保存」をタップすると、Laya が Replay と歌詞のカードを写真ライブラリに保存します。";
+"NSLocalNetworkUsageDescription" = "Wi-Fi 上の Chromecast や Google Cast スピーカーを検索し、音楽を再生できるようにするために Laya が使用します。";

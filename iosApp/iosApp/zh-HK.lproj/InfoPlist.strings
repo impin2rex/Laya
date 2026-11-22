@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "當你語音搜尋或辨識附近播放的歌曲時，Laya 會透過麥克風聆聽。";
+"NSSpeechRecognitionUsageDescription" = "Laya 會把你說的話轉換為對歌曲、藝人、專輯和播放清單的搜尋。";
+"NSPhotoLibraryAddUsageDescription" = "當你點一下「儲存」時，Laya 會將你的 Replay 和歌詞卡片儲存到照片圖庫。";
+"NSLocalNetworkUsageDescription" = "Laya 會在你的 Wi-Fi 上尋找 Chromecast 和 Google Cast 喇叭，以便你在其上播放音樂。";
