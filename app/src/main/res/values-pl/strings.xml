@@ -1452,4 +1452,7 @@
     <string name="lossless_verify_expired_notice">Weryfikacja %1$s wygasła. Włącz ponownie w Źródłach, aby słuchać bezstratnie.</string>
     <string name="lossless_verify_expired">Weryfikacja wygasła · włącz ponownie</string>
     <string name="lossless_verified_until">Zweryfikowano · do %1$s</string>
+    <string name="best_part_description">Przejdź do najlepszego fragmentu</string>
+    <string name="show_best_part">Przycisk najlepszego fragmentu</string>
+    <string name="show_best_part_subtitle">Przycisk na okładce, który przeskakuje do fragmentu utworu odtwarzanego najczęściej</string>
 </resources>

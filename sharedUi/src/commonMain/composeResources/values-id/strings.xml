@@ -774,4 +774,8 @@
     <string name="automix_art_transition_subtitle">Memadukan sampul antar lagu dengan halus saat Automix.</string>
     <string name="automix_mini_art_transition">Transisi sampul mini player</string>
     <string name="automix_mini_art_transition_subtitle">Menampilkan transisi sampul di mini player saat Automix.</string>
+    <string name="best_part">Bagian Terbaik</string>
+    <string name="best_part_description">Lompat ke bagian terbaik</string>
+    <string name="show_best_part">Tombol Bagian Terbaik</string>
+    <string name="show_best_part_subtitle">Tombol di sampul yang melompat ke bagian lagu yang paling sering diputar ulang</string>
 </resources>

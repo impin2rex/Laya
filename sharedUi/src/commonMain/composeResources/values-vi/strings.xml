@@ -774,4 +774,8 @@
     <string name="automix_art_transition_subtitle">Hòa trộn mượt ảnh bìa giữa các bài hát khi dùng Automix.</string>
     <string name="automix_mini_art_transition">Chuyển ảnh bìa trình phát nhỏ</string>
     <string name="automix_mini_art_transition_subtitle">Hiển thị hiệu ứng chuyển ảnh bìa trong trình phát nhỏ khi dùng Automix.</string>
+    <string name="best_part">Đoạn hay nhất</string>
+    <string name="best_part_description">Chuyển đến đoạn hay nhất</string>
+    <string name="show_best_part">Nút Đoạn hay nhất</string>
+    <string name="show_best_part_subtitle">Nút trên ảnh bìa giúp chuyển đến đoạn bài hát được nghe lại nhiều nhất</string>
 </resources>

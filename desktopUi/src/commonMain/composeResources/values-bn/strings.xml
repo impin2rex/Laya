@@ -233,4 +233,6 @@
     <string name="recognize_minutes_ago">%1$d মিনিট আগে</string>
     <string name="recognize_hours_ago">%1$d ঘণ্টা আগে</string>
     <string name="recognize_days_ago">%1$d দিন আগে</string>
+    <string name="best_part">সেরা অংশ</string>
+    <string name="best_part_description">সেরা অংশে যান</string>
 </resources>

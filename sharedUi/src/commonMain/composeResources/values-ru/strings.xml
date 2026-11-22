@@ -789,4 +789,8 @@
     <string name="automix_art_transition_subtitle">Плавно смешивает обложки между треками во время Automix.</string>
     <string name="automix_mini_art_transition">Переход обложек в мини-плеере</string>
     <string name="automix_mini_art_transition_subtitle">Показывает переходы обложек в мини-плеере во время Automix.</string>
+    <string name="best_part">Лучший момент</string>
+    <string name="best_part_description">Перейти к лучшему моменту</string>
+    <string name="show_best_part">Кнопка «Лучший момент»</string>
+    <string name="show_best_part_subtitle">Кнопка на обложке, которая переходит к части песни, которую переслушивают чаще всего</string>
 </resources>

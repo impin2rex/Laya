@@ -268,4 +268,6 @@
     <plurals name="queue_removed_count">
         <item quantity="other">已移除 %1$d 首歌曲</item>
     </plurals>
+    <string name="best_part">精彩片段</string>
+    <string name="best_part_description">跳到精彩片段</string>
 </resources>

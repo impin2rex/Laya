@@ -844,4 +844,6 @@
     <string name="prefer_music_only_subtitle">মিউজিক ভিডিও গান হিসেবে, কভার আর্ট সহ বাজবে, যতক্ষণ না আপনি ভিডিওতে যান</string>
     <string name="youtube_premium_audio">YouTube Premium অডিও</string>
     <string name="youtube_premium_audio_subtitle">আমার Premium আছে: সাধারণ 160 kbps-এর বদলে উচ্চমানের ~256 kbps Opus স্ট্রিম করুন</string>
+    <string name="show_best_part">সেরা অংশ বোতাম</string>
+    <string name="show_best_part_subtitle">আর্টওয়ার্কের একটি বোতাম, যা গানের সবচেয়ে বেশি রিপ্লে হওয়া অংশে নিয়ে যায়</string>
 </resources>

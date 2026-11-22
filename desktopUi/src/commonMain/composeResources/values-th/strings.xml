@@ -268,4 +268,6 @@
     <plurals name="queue_removed_count">
         <item quantity="other">นำออก %1$d เพลงแล้ว</item>
     </plurals>
+    <string name="best_part">ท่อนเด็ด</string>
+    <string name="best_part_description">ข้ามไปท่อนเด็ด</string>
 </resources>

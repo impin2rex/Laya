@@ -269,4 +269,6 @@
         <item quantity="one">%1$d música removida</item>
         <item quantity="other">%1$d músicas removidas</item>
     </plurals>
+    <string name="best_part">Melhor parte</string>
+    <string name="best_part_description">Pular para a melhor parte</string>
 </resources>

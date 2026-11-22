@@ -268,4 +268,6 @@
     <plurals name="queue_removed_count">
         <item quantity="other">%1$d lagu dihapus</item>
     </plurals>
+    <string name="best_part">Bagian Terbaik</string>
+    <string name="best_part_description">Lompat ke bagian terbaik</string>
 </resources>

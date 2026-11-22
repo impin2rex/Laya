@@ -269,4 +269,6 @@
         <item quantity="one">%1$d שיר הוסר</item>
         <item quantity="other">%1$d שירים הוסרו</item>
     </plurals>
+    <string name="best_part">החלק הכי טוב</string>
+    <string name="best_part_description">דלג לחלק הכי טוב</string>
 </resources>

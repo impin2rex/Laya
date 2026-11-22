@@ -780,4 +780,8 @@
     <string name="automix_art_transition_subtitle">Automix के दौरान ट्रैक के बीच कवर आर्ट को सहज रूप से मिलाता है।</string>
     <string name="automix_mini_art_transition">मिनी-प्लेयर आर्ट ट्रांज़िशन</string>
     <string name="automix_mini_art_transition_subtitle">Automix के दौरान मिनी-प्लेयर में आर्टवर्क ट्रांज़िशन दिखाता है।</string>
+    <string name="best_part">सबसे अच्छा हिस्सा</string>
+    <string name="best_part_description">सबसे अच्छे हिस्से पर जाएँ</string>
+    <string name="show_best_part">सबसे अच्छा हिस्सा बटन</string>
+    <string name="show_best_part_subtitle">आर्टवर्क पर एक बटन जो गाने के उस हिस्से पर ले जाता है जिसे लोग सबसे ज़्यादा दोबारा सुनते हैं</string>
 </resources>

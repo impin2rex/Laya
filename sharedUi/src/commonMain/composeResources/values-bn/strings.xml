@@ -744,4 +744,8 @@
     <string name="automix_art_transition_subtitle">Automix-এর সময় ট্র্যাকের মধ্যে কভার আর্ট মসৃণভাবে মিশ্রিত করে।</string>
     <string name="automix_mini_art_transition">মিনি-প্লেয়ার আর্ট ট্রানজিশন</string>
     <string name="automix_mini_art_transition_subtitle">Automix-এর সময় মিনি-প্লেয়ারে আর্টওয়ার্ক ট্রানজিশন দেখায়।</string>
+    <string name="best_part">সেরা অংশ</string>
+    <string name="best_part_description">সেরা অংশে যান</string>
+    <string name="show_best_part">সেরা অংশ বোতাম</string>
+    <string name="show_best_part_subtitle">আর্টওয়ার্কের একটি বোতাম, যা গানের সবচেয়ে বেশি রিপ্লে হওয়া অংশে নিয়ে যায়</string>
 </resources>

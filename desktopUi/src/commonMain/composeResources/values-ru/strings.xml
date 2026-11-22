@@ -271,4 +271,6 @@
         <item quantity="many">Удалено %1$d треков</item>
         <item quantity="other">Удалено %1$d трека</item>
     </plurals>
+    <string name="best_part">Лучший момент</string>
+    <string name="best_part_description">Перейти к лучшему моменту</string>
 </resources>

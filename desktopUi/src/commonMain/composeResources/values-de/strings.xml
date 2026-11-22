@@ -269,4 +269,6 @@
         <item quantity="one">%1$d Song entfernt</item>
         <item quantity="other">%1$d Songs entfernt</item>
     </plurals>
+    <string name="best_part">Beste Stelle</string>
+    <string name="best_part_description">Zur besten Stelle springen</string>
 </resources>

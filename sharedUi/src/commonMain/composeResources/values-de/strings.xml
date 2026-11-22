@@ -780,4 +780,8 @@
     <string name="automix_art_transition_subtitle">Blendet das Cover bei Automix sanft zwischen Titeln über.</string>
     <string name="automix_mini_art_transition">Cover-Übergang im Mini-Player</string>
     <string name="automix_mini_art_transition_subtitle">Zeigt Cover-Übergänge im Mini-Player während Automix.</string>
+    <string name="best_part">Beste Stelle</string>
+    <string name="best_part_description">Zur besten Stelle springen</string>
+    <string name="show_best_part">Schaltfläche „Beste Stelle“</string>
+    <string name="show_best_part_subtitle">Eine Schaltfläche auf dem Cover, die zu der Stelle des Songs springt, die am häufigsten wiederholt wird</string>
 </resources>

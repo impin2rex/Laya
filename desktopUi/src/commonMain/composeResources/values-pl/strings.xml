@@ -271,4 +271,6 @@
         <item quantity="many">Usunięto %1$d utworów</item>
         <item quantity="other">Usunięto %1$d utworu</item>
     </plurals>
+    <string name="best_part">Najlepszy fragment</string>
+    <string name="best_part_description">Przejdź do najlepszego fragmentu</string>
 </resources>

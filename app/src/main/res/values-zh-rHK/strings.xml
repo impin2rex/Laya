@@ -1331,4 +1331,7 @@
     <string name="lossless_verified_until">已驗證 · 有效期至 %1$s</string>
     <string name="artist_signatures_builtin">內置伺服器</string>
     <string name="artist_signatures_online">在線</string>
+    <string name="best_part_description">跳到精華片段</string>
+    <string name="show_best_part">精華片段按鈕</string>
+    <string name="show_best_part_subtitle">封面上的按鈕，可跳到歌曲中大家最多人重播的部分</string>
 </resources>

@@ -780,4 +780,8 @@
     <string name="automix_art_transition_subtitle">מערבב בעדינות את עטיפות האלבום בין שירים במהלך Automix.</string>
     <string name="automix_mini_art_transition">מעבר עטיפות במיני-נגן</string>
     <string name="automix_mini_art_transition_subtitle">מציג מעברי עטיפות במיני-נגן במהלך Automix.</string>
+    <string name="best_part">החלק הכי טוב</string>
+    <string name="best_part_description">דלג לחלק הכי טוב</string>
+    <string name="show_best_part">כפתור החלק הכי טוב</string>
+    <string name="show_best_part_subtitle">כפתור על העטיפה שמדלג לחלק בשיר שהכי הרבה מאזינים חוזרים אליו</string>
 </resources>

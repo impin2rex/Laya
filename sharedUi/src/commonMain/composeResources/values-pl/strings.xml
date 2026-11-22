@@ -792,4 +792,8 @@
     <string name="automix_art_transition_subtitle">Płynnie łączy okładki między utworami podczas Automix.</string>
     <string name="automix_mini_art_transition">Przejście okładki w minimodule</string>
     <string name="automix_mini_art_transition_subtitle">Pokazuje przejścia okładek w minimodule podczas Automix.</string>
+    <string name="best_part">Najlepszy fragment</string>
+    <string name="best_part_description">Przejdź do najlepszego fragmentu</string>
+    <string name="show_best_part">Przycisk najlepszego fragmentu</string>
+    <string name="show_best_part_subtitle">Przycisk na okładce, który przeskakuje do fragmentu utworu odtwarzanego najczęściej</string>
 </resources>

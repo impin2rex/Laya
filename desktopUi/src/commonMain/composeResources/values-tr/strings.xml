@@ -269,4 +269,6 @@
         <item quantity="one">%1$d şarkı kaldırıldı</item>
         <item quantity="other">%1$d şarkı kaldırıldı</item>
     </plurals>
+    <string name="best_part">En iyi bölüm</string>
+    <string name="best_part_description">En iyi bölüme atla</string>
 </resources>

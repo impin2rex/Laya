@@ -1392,4 +1392,7 @@
     <string name="lossless_verify_expired_notice">%1$s 驗證已過期。請在「來源」中重新開啟以繼續無損播放。</string>
     <string name="lossless_verify_expired">驗證已過期 · 請重新開啟</string>
     <string name="lossless_verified_until">已驗證 · 有效期至 %1$s</string>
+    <string name="best_part_description">跳到精華片段</string>
+    <string name="show_best_part">精華片段按鈕</string>
+    <string name="show_best_part_subtitle">封面上的按鈕，可跳到歌曲中大家最常重播的部分</string>
 </resources>

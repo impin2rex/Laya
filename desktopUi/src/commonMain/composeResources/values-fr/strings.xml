@@ -269,4 +269,6 @@
         <item quantity="one">%1$d titre retiré</item>
         <item quantity="other">%1$d titres retirés</item>
     </plurals>
+    <string name="best_part">Meilleur passage</string>
+    <string name="best_part_description">Aller au meilleur passage</string>
 </resources>

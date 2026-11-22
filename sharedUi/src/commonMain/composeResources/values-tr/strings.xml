@@ -780,4 +780,8 @@
     <string name="automix_art_transition_subtitle">Automix sırasında parçalar arasında kapağı yumuşakça harmanlar.</string>
     <string name="automix_mini_art_transition">Mini oynatıcı kapak geçişi</string>
     <string name="automix_mini_art_transition_subtitle">Automix sırasında mini oynatıcıda kapak geçişlerini gösterir.</string>
+    <string name="best_part">En iyi bölüm</string>
+    <string name="best_part_description">En iyi bölüme atla</string>
+    <string name="show_best_part">En iyi bölüm düğmesi</string>
+    <string name="show_best_part_subtitle">Kapak görselinde, şarkının en çok tekrar dinlenen bölümüne atlayan bir düğme</string>
 </resources>

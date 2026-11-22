@@ -671,4 +671,6 @@
     <string name="prefer_music_only_subtitle">Video musik diputar sebagai lagu, dengan sampul albumnya, sampai kamu beralih ke video</string>
     <string name="youtube_premium_audio">Audio YouTube Premium</string>
     <string name="youtube_premium_audio_subtitle">Saya punya Premium: putar Opus berkualitas lebih tinggi ~256 kbps, bukan 160 kbps standar</string>
+    <string name="show_best_part">Tombol Bagian Terbaik</string>
+    <string name="show_best_part_subtitle">Tombol di sampul yang melompat ke bagian lagu yang paling sering diputar ulang</string>
 </resources>

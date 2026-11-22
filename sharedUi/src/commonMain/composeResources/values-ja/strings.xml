@@ -774,4 +774,8 @@
     <string name="automix_art_transition_subtitle">Automix中、トラック間でカバーアートを滑らかにブレンドします。</string>
     <string name="automix_mini_art_transition">ミニプレーヤーのアート切り替え</string>
     <string name="automix_mini_art_transition_subtitle">Automix中、ミニプレーヤーでもアートワークの切り替えを表示します。</string>
+    <string name="best_part">ベストパート</string>
+    <string name="best_part_description">ベストパートへスキップ</string>
+    <string name="show_best_part">ベストパートボタン</string>
+    <string name="show_best_part_subtitle">アートワーク上のボタンで、みんなが最も繰り返し聴く曲の部分へスキップします</string>
 </resources>

@@ -690,4 +690,6 @@
     <string name="prefer_music_only_subtitle">קליפים מתנגנים כשירים, עם עטיפת האלבום, עד שתעברו לווידאו</string>
     <string name="youtube_premium_audio">אודיו של YouTube Premium</string>
     <string name="youtube_premium_audio_subtitle">יש לי Premium: הזרמת Opus באיכות גבוהה יותר של ~256 kbps במקום 160 kbps הרגילים</string>
+    <string name="show_best_part">כפתור החלק הכי טוב</string>
+    <string name="show_best_part_subtitle">כפתור על העטיפה שמדלג לחלק בשיר שהכי הרבה מאזינים חוזרים אליו</string>
 </resources>

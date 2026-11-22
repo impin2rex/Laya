@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.semantics.Role
 import com.music.laya.data.bestpart.BestPart
+import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.playback.PlaybackPosition
 
 import org.jetbrains.compose.resources.DrawableResource
@@ -461,10 +462,12 @@ internal fun BestPartPill(
     position: PlaybackPosition,
     onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    /** The track's lyrics once loaded: a song with no curve gets its chorus, from the synced ones. */
+    lyrics: List<LyricLine>? = null,
 ) {
     val enabled by PlayerSettings.showBestPart.collectAsStateWithLifecycle()
     if (!enabled) return
-    val at by produceState<Long?>(null, song.videoId) { value = BestPart.startFor(song) }
+    val at by produceState<Long?>(null, song.videoId, lyrics) { value = BestPart.startFor(song, lyrics) }
     // Remembered per track: having been heard is what puts the button away.
     var heard by remember(song.videoId) { mutableStateOf(false) }
     val start = at

@@ -780,4 +780,8 @@
     <string name="automix_art_transition_subtitle">Mezcla suavemente la carátula entre pistas durante Automix.</string>
     <string name="automix_mini_art_transition">Transición de carátula en el minirreproductor</string>
     <string name="automix_mini_art_transition_subtitle">Muestra las transiciones de carátula en el minirreproductor durante Automix.</string>
+    <string name="best_part">Mejor parte</string>
+    <string name="best_part_description">Saltar a la mejor parte</string>
+    <string name="show_best_part">Botón de la mejor parte</string>
+    <string name="show_best_part_subtitle">Un botón sobre la portada que salta a la parte de la canción que más se repite</string>
 </resources>

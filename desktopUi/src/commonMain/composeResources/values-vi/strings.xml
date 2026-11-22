@@ -268,4 +268,6 @@
     <plurals name="queue_removed_count">
         <item quantity="other">Đã xóa %1$d bài hát</item>
     </plurals>
+    <string name="best_part">Đoạn hay nhất</string>
+    <string name="best_part_description">Chuyển đến đoạn hay nhất</string>
 </resources>

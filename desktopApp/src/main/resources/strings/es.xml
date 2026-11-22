@@ -718,4 +718,6 @@
     <string name="prefer_music_only_subtitle">Los videos musicales se reproducen como canciones, con su portada, hasta que cambies al video</string>
     <string name="youtube_premium_audio">Audio de YouTube Premium</string>
     <string name="youtube_premium_audio_subtitle">Tengo Premium: reproducir el Opus de mayor calidad a ~256 kbps en lugar de los 160 kbps habituales</string>
+    <string name="show_best_part">Botón de la mejor parte</string>
+    <string name="show_best_part_subtitle">Un botón sobre la portada que salta a la parte de la canción que más se repite</string>
 </resources>

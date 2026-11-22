@@ -737,4 +737,6 @@
     <string name="prefer_music_only_subtitle">Müzik videoları, siz videoya geçene kadar kapak görseliyle şarkı olarak çalınır</string>
     <string name="youtube_premium_audio">YouTube Premium sesi</string>
     <string name="youtube_premium_audio_subtitle">Premium\'um var: standart 160 kbps yerine daha yüksek kaliteli ~256 kbps Opus akışı</string>
+    <string name="show_best_part">En iyi bölüm düğmesi</string>
+    <string name="show_best_part_subtitle">Kapak görselinde, şarkının en çok tekrar dinlenen bölümüne atlayan bir düğme</string>
 </resources>
