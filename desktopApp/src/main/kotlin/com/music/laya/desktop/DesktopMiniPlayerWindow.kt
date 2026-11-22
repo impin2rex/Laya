@@ -79,7 +79,9 @@ import androidx.compose.ui.window.WindowScope
 import androidx.compose.ui.window.WindowState
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.model.ROW_ART_PX
+import com.music.laya.data.model.artworkAt
 import com.music.laya.ui.player.CanvasArtworkPlayer
+import com.music.laya.ui.player.rememberMiniAutoMixArtwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.music.laya.data.model.Song
@@ -104,6 +106,10 @@ internal object DesktopMiniWindow {
     /** Pushed by the app on every composition; the window only reads them. */
     val liked = MutableStateFlow(false)
     val videoId = MutableStateFlow<String?>(null)
+
+    /** The queue and the playing position in it, which the cover dissolve identifies its songs by. */
+    val queue = MutableStateFlow<List<Song>>(emptyList())
+    val queueIndex = MutableStateFlow(0)
     var onTogglePlay: () -> Unit = {}
     var onPrevious: () -> Unit = {}
     var onNext: () -> Unit = {}
@@ -205,10 +211,11 @@ internal fun DesktopMiniPlayerWindow() {
 private fun WindowScope.TallMiniPlayer(playback: DesktopPlaybackState) {
     val song = playback.song
     val videoId by DesktopMiniWindow.videoId.collectAsState()
+    val cover = rememberMiniCover(song, ART_PX)
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color.Black)) {
         WindowDraggableArea(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize()) {
-                DesktopArtwork(song?.thumbnailUrl, Modifier.fillMaxSize(), px = ART_PX)
+                cover(song?.thumbnailUrl.artworkAt(ART_PX), Modifier.fillMaxSize())
                 rememberMiniCanvas(song)?.let { canvas ->
                     CanvasArtworkPlayer(canvas, playback.isPlaying, Modifier.fillMaxSize())
                 }
@@ -284,6 +291,7 @@ private fun WindowScope.TallMiniPlayer(playback: DesktopPlaybackState) {
 @Composable
 private fun WindowScope.CompactMiniPlayer(playback: DesktopPlaybackState) {
     val song = playback.song
+    val cover = rememberMiniCover(song, ROW_ART_PX)
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)).background(Color(0xFF2A2A2D))) {
         // Glass from the cover itself, since the window has no system material of its own.
         DesktopArtwork(song?.thumbnailUrl, Modifier.fillMaxSize().blur(40.dp), px = ROW_ART_PX)
@@ -291,7 +299,7 @@ private fun WindowScope.CompactMiniPlayer(playback: DesktopPlaybackState) {
         Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
             WindowDraggableArea {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    MiniCover(song, Modifier.size(42.dp).clickable { DesktopMiniWindow.compact.value = false })
+                    MiniCover(song, cover, Modifier.size(42.dp).clickable { DesktopMiniWindow.compact.value = false })
                     Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                         Text(song?.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Text(song?.artist.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 11.sp, color = SECONDARY)
@@ -314,12 +322,24 @@ private fun WindowScope.CompactMiniPlayer(playback: DesktopPlaybackState) {
 }
 
 @Composable
-private fun MiniCover(song: Song?, modifier: Modifier) {
+private fun MiniCover(song: Song?, cover: @Composable (String?, Modifier) -> Unit, modifier: Modifier) {
     val videoId by DesktopMiniWindow.videoId.collectAsState()
     Box(modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF323236))) {
-        DesktopArtwork(song?.thumbnailUrl, Modifier.matchParentSize(), px = ROW_ART_PX)
+        cover(song?.thumbnailUrl.artworkAt(ROW_ART_PX), Modifier.matchParentSize())
         DesktopMiniPlayerVideo(videoId, Modifier.matchParentSize())
     }
+}
+
+/**
+ * The cover slot with AutoMix's artwork transition: as two songs mix, the picture dissolves from
+ * one to the other, under the "Mini-player art transition" setting. Without a mix it is the plain
+ * cover. The queue is pushed in by the app, as the main window is not composing behind this one.
+ */
+@Composable
+private fun rememberMiniCover(song: Song?, px: Int): @Composable (String?, Modifier) -> Unit {
+    val queue by DesktopMiniWindow.queue.collectAsState()
+    val index by DesktopMiniWindow.queueIndex.collectAsState()
+    return rememberMiniAutoMixArtwork(song, queue, index, px)
 }
 
 /**
