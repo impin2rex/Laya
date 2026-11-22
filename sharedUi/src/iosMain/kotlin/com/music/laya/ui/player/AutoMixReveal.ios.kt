@@ -1,7 +1,6 @@
 package com.music.laya.ui.player
 
 import androidx.compose.ui.graphics.Shader
-import androidx.compose.ui.graphics.asComposeShader
 import org.jetbrains.skia.RuntimeEffect
 import org.jetbrains.skia.RuntimeShaderBuilder
 
@@ -23,7 +22,7 @@ private class SkiaMask(seedX: Float, seedY: Float) : AutoMixMaskShader {
         last?.takeIf { width == lastWidth && height == lastHeight && progress == lastProgress }?.let { return it }
         builder.uniform("bounds", width, height)
         builder.uniform("progress", progress)
-        return builder.makeShader().asComposeShader().also {
+        return builder.makeShader().also {
             last = it
             lastWidth = width
             lastHeight = height

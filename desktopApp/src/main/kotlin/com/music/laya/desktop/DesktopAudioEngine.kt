@@ -6,6 +6,7 @@ import com.music.laya.data.settings.MixBlend
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TrackAnalysisState
 import com.music.laya.data.settings.TransitionWindow
+import com.music.laya.playback.AutoMixVisualFeed
 import com.music.laya.playback.EqCurve
 import com.music.laya.playback.Karaoke
 import com.music.laya.playback.KaraokeProcessor
@@ -828,6 +829,18 @@ class DesktopPlaybackEngine(
     /** The playing track's heard position, on the sink's played-frame count; see [play]. */
     private val playhead = DesktopPlayhead()
     private var fadeRemaining = 0
+
+    /**
+     * The AutoMix pair the artwork dissolves across, published from this audio thread only — see
+     * [AutoMixVisualFeed] — on the blend's own axis: [visualFadeSeconds] long, from its first sample.
+     */
+    private var visualGeneration: Long? = null
+    private var visualFadeSeconds = 0.0
+
+    private fun cancelAutoMixVisual() {
+        AutoMixVisualFeed.cancel(visualGeneration)
+        visualGeneration = null
+    }
     private var fadeTotal = 0
     /** Fade plus any echo/roll/reverb tail. [fadeTotal] remains the nominal fader span. */
     private var transitionTotal = 0
@@ -1084,7 +1097,15 @@ class DesktopPlaybackEngine(
         }
         val progress = ((transitionTotal - fadeRemaining).toFloat() / fadeTotal.coerceAtLeast(1))
         val handoffAt = plan?.let(DesktopTransitionRide::handoffAt) ?: DISPLAY_SWITCH_AT
-        if (!displaySwitched && progress >= handoffAt && fadeRemaining > 0) switchDisplay(incoming)
+        val visualAt = progress.coerceIn(0f, 1f) * visualFadeSeconds
+        if (!displaySwitched && progress >= handoffAt && fadeRemaining > 0) {
+            switchDisplay(incoming)
+            AutoMixVisualFeed.swap(visualGeneration, visualAt, visualFadeSeconds)
+        }
+        if (visualGeneration != null) {
+            AutoMixVisualFeed.advance(visualGeneration, visualAt, visualFadeSeconds)
+            if (progress >= 1f) AutoMixVisualFeed.complete(visualGeneration)
+        }
         if (fadeRemaining <= 0) promoteUpcoming() else publishBlend(playing = true)
         return mixed to count
     }
@@ -1305,6 +1326,8 @@ class DesktopPlaybackEngine(
      * carries out a [prepareNext] that arrived while it ran. Called however the blend ended.
      */
     private fun endBlend() {
+        // Completed already on an ordinary finish; anything else ends the pair where it stood.
+        cancelAutoMixVisual()
         DesktopPlayerSettings.smartMixBlend.value = null
         var had = false
         var next: Song? = null
@@ -1494,6 +1517,7 @@ class DesktopPlaybackEngine(
         if (current !== track) current?.decoder?.close()
         current = track
         fadeRemaining = 0
+        cancelAutoMixVisual()
 
         val decoded = track.decoder.outputFormat
         // Only renegotiate when the device would actually have to change.
@@ -1587,6 +1611,7 @@ class DesktopPlaybackEngine(
     }
 
     private fun performSeek(millis: Long) {
+        cancelAutoMixVisual()
         // Past the midpoint the listener is looking at — and seeking in — the incoming song, so
         // the blend is finished on the spot and the seek lands on that one.
         if (displaySwitched && upcoming != null) promoteUpcoming()
@@ -1819,6 +1844,14 @@ class DesktopPlaybackEngine(
         outgoingFilter.flush()
         incomingFilter.flush()
         blendActive = true
+        // An analysed mix dissolves the artwork with it; a plain crossfade keeps the cut.
+        cancelAutoMixVisual()
+        val outgoing = current
+        if (outgoing != null && isSmartMixInProgress()) {
+            visualFadeSeconds = seconds
+            visualGeneration = AutoMixVisualFeed.arm(listOf(outgoing.song, incoming.song), 0, 1)
+            AutoMixVisualFeed.start(visualGeneration, 0.0)
+        }
     }
 
     /**

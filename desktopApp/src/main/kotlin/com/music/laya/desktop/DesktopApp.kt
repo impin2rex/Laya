@@ -39,6 +39,7 @@ import com.music.laya.ui.screens.LibraryScreen
 import com.music.laya.ui.screens.MoodGenrePlaylistsScreen
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.data.NerdStats
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.playback.PlaybackPosition
 import com.music.laya.playback.QueueBuilder
 import com.music.laya.playback.QueueSource
@@ -692,6 +693,8 @@ fun LayaDesktopApp() {
     var automix by remember { mutableStateOf(persistence.boolean("automix", false)) }
     // A manual skip blends into the already-prepared next track over ~15s instead of cutting.
     var automixOnSkip by remember { mutableStateOf(persistence.boolean("automix_on_skip", false)) }
+    var automixArtTransition by remember { mutableStateOf(persistence.boolean("automix_art_transition", false)) }
+    var automixMiniArtTransition by remember { mutableStateOf(persistence.boolean("automix_mini_art_transition", false)) }
     // Apple-style Automix phrase length in bars: 0 = adaptive (default), 8 or 16 = fixed.
     var automixPhraseBars by remember {
         mutableStateOf(persistence.string("automix_phrase_bars", "0").toIntOrNull()?.let { if (it == 8 || it == 16) it else 0 } ?: 0)
@@ -3366,6 +3369,8 @@ fun LayaDesktopApp() {
         DesktopPlayerSettings.syncedLyrics.value = syncedLyrics
         DesktopPlayerSettings.showNerdStats.value = showNerdStats
         DesktopPlayerSettings.smartFadeEnabled.value = automix
+        DesktopPlayerSettings.autoMixArtwork.value =
+            AutoMixArtworkPreferences(automixArtTransition, automixMiniArtTransition)
         DesktopPlayerSettings.smartAnalysis.value = playback.smartAnalysis
         DesktopPlayerSettings.smartMixInProgress.value = playback.mixing
         DesktopPlayerSettings.smartTransitionWindow.value = playback.transitionWindow
@@ -4218,6 +4223,16 @@ fun LayaDesktopApp() {
                                     onAutomixOnSkipChange = {
                                         automixOnSkip = it
                                         persistence.saveBoolean("automix_on_skip", it)
+                                    },
+                                    automixArtTransition = automixArtTransition,
+                                    onAutomixArtTransitionChange = {
+                                        automixArtTransition = it
+                                        persistence.saveBoolean("automix_art_transition", it)
+                                    },
+                                    automixMiniArtTransition = automixMiniArtTransition,
+                                    onAutomixMiniArtTransitionChange = {
+                                        automixMiniArtTransition = it
+                                        persistence.saveBoolean("automix_mini_art_transition", it)
                                     },
                                     automixPerformance = automixPerformance,
                                     onAutomixPerformanceChange = {
@@ -6356,6 +6371,10 @@ private fun DesktopSettingsScreen(
     onAutomixChange: (Boolean) -> Unit,
     automixOnSkip: Boolean,
     onAutomixOnSkipChange: (Boolean) -> Unit,
+    automixArtTransition: Boolean,
+    onAutomixArtTransitionChange: (Boolean) -> Unit,
+    automixMiniArtTransition: Boolean,
+    onAutomixMiniArtTransitionChange: (Boolean) -> Unit,
     automixPerformance: AutomixPerformanceMode,
     onAutomixPerformanceChange: (AutomixPerformanceMode) -> Unit,
     /** Apple-style Automix phrase length in bars: 0 = adaptive, 8 or 16 = fixed. */
@@ -6567,6 +6586,18 @@ private fun DesktopSettingsScreen(
                         onAutomixOnSkipChange,
                     )
                     if (automix) {
+                        SettingsToggle(
+                            DesktopStrings["automix_art_transition", "Art transition"],
+                            DesktopStrings["automix_art_transition_subtitle", "Smoothly blends cover art between tracks during Automix."],
+                            automixArtTransition,
+                            onAutomixArtTransitionChange,
+                        )
+                        SettingsToggle(
+                            DesktopStrings["automix_mini_art_transition", "Mini-player art transition"],
+                            DesktopStrings["automix_mini_art_transition_subtitle", "Shows artwork transitions in the mini-player during Automix."],
+                            automixMiniArtTransition,
+                            onAutomixMiniArtTransitionChange,
+                        )
                         val phraseTitle = DesktopStrings["automix_phrase_length", "Automix phrase length"]
                         val phraseSubtitle =
                             DesktopStrings["automix_phrase_length_subtitle", "Blend over a fixed number of bars, beat-aligned"]

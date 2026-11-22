@@ -16,6 +16,7 @@ import com.music.laya.data.settings.LastPlayerScreen
 import com.music.laya.data.settings.MixBlend
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TransitionWindow
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.ui.player.AudioOutputDevice
 import com.music.laya.ui.player.AudioOutputKind
 import com.music.laya.ui.player.CanvasVideoSpec
@@ -236,6 +237,7 @@ internal object DesktopPlayerSettings : PlayerSettingsSource {
     override val showNerdStats = MutableStateFlow(false)
     override val smartAnalysis = MutableStateFlow(SmartAnalysis())
     override val smartFadeEnabled = MutableStateFlow(false)
+    override val autoMixArtwork = MutableStateFlow(AutoMixArtworkPreferences())
     override val smartMixInProgress = MutableStateFlow(false)
     override val smartMixBlend = MutableStateFlow<MixBlend?>(null)
     override val smartTransitionWindow = MutableStateFlow<TransitionWindow?>(null)
