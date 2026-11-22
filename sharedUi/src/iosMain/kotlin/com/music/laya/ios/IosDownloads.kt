@@ -56,6 +56,19 @@ import platform.Foundation.NSURL
 import platform.Foundation.NSURLIsExcludedFromBackupKey
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.timeIntervalSince1970
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.download_failed_generic
+import com.music.laya.sharedui.resources.download_http_failed
+import com.music.laya.sharedui.resources.download_no_length
+import com.music.laya.sharedui.resources.download_no_youtube_match
+import com.music.laya.sharedui.resources.download_stalled
+import com.music.laya.sharedui.resources.download_stopped
+import com.music.laya.sharedui.resources.download_stopped_of
+import com.music.laya.sharedui.resources.download_waiting_wifi
+import org.jetbrains.compose.resources.getPluralString
+import org.jetbrains.compose.resources.getString
+import com.music.laya.sharedui.resources.downloads
+import com.music.laya.sharedui.resources.song_count_plural
 
 /** Where a track is between "not on this device" and "on it" (Android's DownloadState). */
 internal sealed interface IosDownloadState {
@@ -155,15 +168,18 @@ internal object IosDownloads {
     /** The Downloads page, newest first. */
     fun page(): DetailPage {
         val songs = saved.value.values.filter(::onDisk).sortedByDescending { it.added }.map(::localSong)
-        return DetailPage(DOWNLOADS_BROWSE_ID, "Downloads", if (songs.size == 1) "1 song" else "${songs.size} songs", songs.firstOrNull()?.thumbnailUrl, UiState.Success(songs))
+        return DetailPage(DOWNLOADS_BROWSE_ID, blocking { getString(Res.string.downloads) }, blocking { getPluralString(Res.plurals.song_count_plural, songs.size, songs.size) }, songs.firstOrNull()?.thumbnailUrl, UiState.Success(songs))
     }
+
+    // ponytail: page() is called from composition and click handlers alike, so it reads its two labels synchronously.
+    private fun <T> blocking(block: suspend () -> T): T = kotlinx.coroutines.runBlocking { block() }
 
     // ---- Asking -------------------------------------------------------------
 
     fun enqueue(song: Song) {
         val id = song.videoId
         if (id in jobs || fileUrl(id) != null) return
-        if (!AppSettings.downloadsAllowedNow) return fail(id, "Waiting for Wi-Fi (see Settings, Downloads)")
+        if (!AppSettings.downloadsAllowedNow) { scope.launch { fail(id, getString(Res.string.download_waiting_wifi)) }; return }
         set(id, IosDownloadState.Queued)
         jobs[id] = scope.launch {
             try {
@@ -174,7 +190,7 @@ internal object IosDownloads {
                 throw e
             } catch (e: Throwable) {
                 TrackLog.w("Laya", "download of $id failed: ${e.message}", about = id)
-                fail(id, e.message?.takeIf { it.length < 80 } ?: "Download failed")
+                fail(id, e.message?.takeIf { it.length < 80 } ?: getString(Res.string.download_failed_generic))
             } finally {
                 jobs.remove(id)
             }
@@ -261,7 +277,7 @@ internal object IosDownloads {
                 ext, if (format.isDolbyAtmos) "DOLBY" else if (ext == "flac") "FLAC" else null,
             ) { sink, progress -> fetchDirect(stream.url, stream.headers, sink, progress) }
         }
-        val ytId = youtubeSeedFor(song) ?: error("No YouTube match for this track")
+        val ytId = youtubeSeedFor(song) ?: error(getString(Res.string.download_no_youtube_match))
         // m4a only: AVPlayer can't play the WebM/Opus rungs.
         val stream = StreamResolver.resolveForDownload(ytId, quality.maxKbps, requireM4a = true)
         return Route("m4a", if (stream.kbps > 0) "AAC · ${stream.kbps} kbps" else null) { sink, progress -> fetchRanged(stream.url, sink, progress) }
@@ -301,7 +317,7 @@ internal object IosDownloads {
         val total = Url(url).parameters["clen"]?.toLongOrNull()?.takeIf { it > 0 } ?: client.get(url) {
             headers.forEach { (k, v) -> header(k, v) }
             header("Range", "bytes=0-0")
-        }.headers["Content-Range"]?.substringAfter('/', "")?.toLongOrNull() ?: error("Track unavailable: no length to fetch")
+        }.headers["Content-Range"]?.substringAfter('/', "")?.toLongOrNull() ?: error(getString(Res.string.download_no_length))
         var pos = 0L
         while (pos < total) {
             val len = minOf(CHUNK_BYTES, PlayerClient.rangeBytesFor(url), total - pos)
@@ -309,9 +325,9 @@ internal object IosDownloads {
                 headers.forEach { (k, v) -> header(k, v) }
                 header("Range", "bytes=$pos-${pos + len - 1}")
             }
-            if (r.status.value !in 200..299) error("Download failed (HTTP ${r.status.value})")
+            if (r.status.value !in 200..299) error(getString(Res.string.download_http_failed, r.status.value))
             val bytes = r.bodyAsBytes()
-            if (bytes.isEmpty() || bytes.size > len) error("Download stalled at ${pos}B")
+            if (bytes.isEmpty() || bytes.size > len) error(getString(Res.string.download_stalled, pos))
             sink.write(bytes)
             pos += bytes.size
             progress(pos, total)
@@ -332,8 +348,8 @@ internal object IosDownloads {
                     headers.forEach { (k, v) -> header(k, v) }
                     if (written > 0) header("Range", "bytes=$written-")
                 }.execute { r ->
-                    if (written > 0 && r.status.value != 206) error("Download stopped at ${written}B")
-                    if (r.status.value !in 200..299) error("Download failed (HTTP ${r.status.value})")
+                    if (written > 0 && r.status.value != 206) error(getString(Res.string.download_stopped, written))
+                    if (r.status.value !in 200..299) error(getString(Res.string.download_http_failed, r.status.value))
                     if (written == 0L) total = r.contentLength()?.takeIf { it > 0 }
                     val channel = r.bodyAsChannel()
                     val buffer = ByteArray(64 * 1024)
@@ -345,7 +361,7 @@ internal object IosDownloads {
                         total?.let { progress(written, it) }
                     }
                 }
-                if (total != null && written < total!!) error("Download stopped at ${written}B of $total")
+                if (total != null && written < total!!) error(getString(Res.string.download_stopped_of, written, total.toString()))
                 return
             } catch (e: CancellationException) {
                 throw e

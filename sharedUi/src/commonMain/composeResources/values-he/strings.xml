@@ -884,4 +884,17 @@
         <item quantity="one">דקה %1$d</item>
         <item quantity="other">%1$d דקות</item>
     </plurals>
+    <string name="download_waiting_wifi">ממתין ל-Wi-Fi (ראו הגדרות, הורדות)</string>
+    <string name="download_failed_generic">ההורדה נכשלה</string>
+    <string name="download_no_youtube_match">לא נמצאה התאמה ב-YouTube לרצועה זו</string>
+    <string name="download_no_length">הרצועה אינה זמינה: אין אורך לאחזור</string>
+    <string name="download_http_failed">ההורדה נכשלה (HTTP ‏%1$d)</string>
+    <string name="download_stalled">ההורדה נתקעה ב-%1$d בתים</string>
+    <string name="download_stopped">ההורדה נעצרה ב-%1$d בתים</string>
+    <string name="download_stopped_of">ההורדה נעצרה ב-%1$d בתים מתוך %2$s</string>
+    <string name="ios_speaker_name">הרמקול של ה-iPhone</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$d שיר</item>
+        <item quantity="other">%1$d שירים</item>
+    </plurals>
 </resources>

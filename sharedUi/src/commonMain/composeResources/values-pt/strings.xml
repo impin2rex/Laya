@@ -884,4 +884,17 @@
         <item quantity="one">%1$d minuto</item>
         <item quantity="other">%1$d minutos</item>
     </plurals>
+    <string name="download_waiting_wifi">Aguardando Wi-Fi (veja Ajustes, Downloads)</string>
+    <string name="download_failed_generic">Falha no download</string>
+    <string name="download_no_youtube_match">Nenhuma correspondência no YouTube para esta faixa</string>
+    <string name="download_no_length">Faixa indisponível: sem tamanho para obter</string>
+    <string name="download_http_failed">Falha no download (HTTP %1$d)</string>
+    <string name="download_stalled">O download travou em %1$d B</string>
+    <string name="download_stopped">O download parou em %1$d B</string>
+    <string name="download_stopped_of">O download parou em %1$d B de %2$s</string>
+    <string name="ios_speaker_name">Alto-falante do iPhone</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$d música</item>
+        <item quantity="other">%1$d músicas</item>
+    </plurals>
 </resources>

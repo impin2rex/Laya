@@ -877,4 +877,16 @@
     <plurals name="minute_count">
         <item quantity="other">%1$d menit</item>
     </plurals>
+    <string name="download_waiting_wifi">Menunggu Wi-Fi (lihat Setelan, Unduhan)</string>
+    <string name="download_failed_generic">Unduhan gagal</string>
+    <string name="download_no_youtube_match">Tidak ada kecocokan YouTube untuk lagu ini</string>
+    <string name="download_no_length">Lagu tidak tersedia: tidak ada ukuran untuk diambil</string>
+    <string name="download_http_failed">Unduhan gagal (HTTP %1$d)</string>
+    <string name="download_stalled">Unduhan macet di %1$d B</string>
+    <string name="download_stopped">Unduhan berhenti di %1$d B</string>
+    <string name="download_stopped_of">Unduhan berhenti di %1$d B dari %2$s</string>
+    <string name="ios_speaker_name">Speaker iPhone</string>
+    <plurals name="song_count_plural">
+        <item quantity="other">%1$d lagu</item>
+    </plurals>
 </resources>

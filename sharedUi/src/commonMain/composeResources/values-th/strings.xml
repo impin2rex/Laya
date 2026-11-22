@@ -877,4 +877,16 @@
     <plurals name="minute_count">
         <item quantity="other">%1$d นาที</item>
     </plurals>
+    <string name="download_waiting_wifi">รอ Wi-Fi (ดูที่การตั้งค่า, ดาวน์โหลด)</string>
+    <string name="download_failed_generic">ดาวน์โหลดไม่สำเร็จ</string>
+    <string name="download_no_youtube_match">ไม่พบรายการที่ตรงกันบน YouTube สำหรับแทร็กนี้</string>
+    <string name="download_no_length">แทร็กไม่พร้อมใช้งาน: ไม่มีความยาวให้ดึง</string>
+    <string name="download_http_failed">ดาวน์โหลดไม่สำเร็จ (HTTP %1$d)</string>
+    <string name="download_stalled">ดาวน์โหลดค้างที่ %1$d B</string>
+    <string name="download_stopped">ดาวน์โหลดหยุดที่ %1$d B</string>
+    <string name="download_stopped_of">ดาวน์โหลดหยุดที่ %1$d B จาก %2$s</string>
+    <string name="ios_speaker_name">ลำโพง iPhone</string>
+    <plurals name="song_count_plural">
+        <item quantity="other">%1$d เพลง</item>
+    </plurals>
 </resources>

@@ -59,6 +59,7 @@ import com.music.laya.sharedui.resources.pipeline_track_info
 import com.music.laya.sharedui.resources.stereo
 import org.jetbrains.compose.resources.stringResource
 import com.music.laya.sharedui.resources.pipeline_sample_rate
+import com.music.laya.sharedui.resources.ios_speaker_name
 
 /** The audio session's current output route, as the Swift engine reports it. */
 internal class RouteInfo(val name: String, val portType: String, val rateHz: Int, val channels: Int, val ioBufferMs: Int)
@@ -156,7 +157,7 @@ internal fun IosAudioPipeline(hazeState: HazeState, onDismiss: () -> Unit) {
             Line(stringResource(Res.string.pipeline_io_rate), if (inRate != null && outRate != null) "${rateText(inRate)} → ${rateText(outRate)}" else none)
         }
         Section(stringResource(Res.string.pipeline_output_device)) {
-            Line(stringResource(Res.string.pipeline_device_name), outputs.firstOrNull { it.isActive }?.let { it.name.ifBlank { "iPhone Speaker" } } ?: none)
+            Line(stringResource(Res.string.pipeline_device_name), outputs.firstOrNull { it.isActive }?.let { it.name.ifBlank { stringResource(Res.string.ios_speaker_name) } } ?: none)
             Line(stringResource(Res.string.pipeline_route), route?.portType?.ifBlank { null } ?: none)
             Line(stringResource(Res.string.pipeline_sample_rate), outRate?.let(::rateText) ?: none)
             Line(stringResource(Res.string.pipeline_channels), route?.channels?.takeIf { it > 0 }?.toString() ?: none)
