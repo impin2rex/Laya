@@ -96,4 +96,6 @@
     <string name="d_voice_download">İndir (%1$s MB)</string>
     <string name="d_voice_downloading">İndiriliyor %%%1$s</string>
     <string name="d_voice_download_failed">İndirilemedi, tekrar deneyin</string>
+    <string name="d_add_n_songs">%1$d şarkı ekle</string>
+    <string name="d_some_tracks_not_from_youtube_music">Bu parçaların bazıları YouTube Music’ten olmadığı için yalnızca burada tutulan bir çalma listesine eklenebilir.</string>
 </resources>

@@ -96,4 +96,6 @@
     <string name="d_voice_download">ダウンロード（%1$s MB）</string>
     <string name="d_voice_downloading">ダウンロード中 %1$s%%</string>
     <string name="d_voice_download_failed">ダウンロードに失敗しました。もう一度お試しください</string>
+    <string name="d_add_n_songs">%1$d 曲を追加</string>
+    <string name="d_some_tracks_not_from_youtube_music">これらの曲の一部は YouTube Music のものではないため、ここに保存されたプレイリストにのみ追加できます。</string>
 </resources>

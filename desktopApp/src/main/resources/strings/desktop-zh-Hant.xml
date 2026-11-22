@@ -96,4 +96,6 @@
     <string name="d_voice_download">下載（%1$s MB）</string>
     <string name="d_voice_downloading">正在下載 %1$s%%</string>
     <string name="d_voice_download_failed">下載失敗，請再試一次</string>
+    <string name="d_add_n_songs">加入 %1$d 首歌曲</string>
+    <string name="d_some_tracks_not_from_youtube_music">其中部分曲目並非來自 YouTube Music，因此只能加入儲存在本機的播放清單。</string>
 </resources>

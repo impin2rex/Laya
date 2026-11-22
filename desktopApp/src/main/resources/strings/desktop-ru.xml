@@ -96,4 +96,6 @@
     <string name="d_voice_download">Скачать (%1$s МБ)</string>
     <string name="d_voice_downloading">Загрузка %1$s%%</string>
     <string name="d_voice_download_failed">Не удалось скачать, попробуйте ещё раз</string>
+    <string name="d_add_n_songs">Добавить песни: %1$d</string>
+    <string name="d_some_tracks_not_from_youtube_music">Некоторые из этих треков не из YouTube Music, поэтому их можно добавить только в плейлист, хранящийся здесь.</string>
 </resources>

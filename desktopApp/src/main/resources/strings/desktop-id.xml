@@ -96,4 +96,6 @@
     <string name="d_voice_download">Unduh (%1$s MB)</string>
     <string name="d_voice_downloading">Mengunduh %1$s%%</string>
     <string name="d_voice_download_failed">Gagal mengunduh, coba lagi</string>
+    <string name="d_add_n_songs">Tambahkan %1$d lagu</string>
+    <string name="d_some_tracks_not_from_youtube_music">Beberapa lagu ini bukan dari YouTube Music, jadi hanya bisa masuk ke playlist yang disimpan di sini.</string>
 </resources>

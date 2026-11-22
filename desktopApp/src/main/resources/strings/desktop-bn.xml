@@ -96,4 +96,6 @@
     <string name="d_voice_download">ডাউনলোড (%1$s MB)</string>
     <string name="d_voice_downloading">ডাউনলোড হচ্ছে %1$s%%</string>
     <string name="d_voice_download_failed">ডাউনলোড হয়নি, আবার চেষ্টা করুন</string>
+    <string name="d_add_n_songs">%1$dটি গান যোগ করুন</string>
+    <string name="d_some_tracks_not_from_youtube_music">এই ট্র্যাকগুলোর কিছু YouTube Music থেকে নয়, তাই সেগুলো শুধু এখানে রাখা প্লেলিস্টে যেতে পারে।</string>
 </resources>

@@ -96,4 +96,6 @@
     <string name="d_voice_download">डाउनलोड करें (%1$s MB)</string>
     <string name="d_voice_downloading">डाउनलोड हो रहा है %1$s%%</string>
     <string name="d_voice_download_failed">डाउनलोड नहीं हुआ, फिर कोशिश करें</string>
+    <string name="d_add_n_songs">%1$d गाने जोड़ें</string>
+    <string name="d_some_tracks_not_from_youtube_music">इनमें से कुछ ट्रैक YouTube Music के नहीं हैं, इसलिए वे सिर्फ़ यहाँ रखी प्लेलिस्ट में जा सकते हैं।</string>
 </resources>

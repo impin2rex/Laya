@@ -98,4 +98,6 @@
     <string name="d_voice_download">Download (%1$s MB)</string>
     <string name="d_voice_downloading">Downloading %1$s%%</string>
     <string name="d_voice_download_failed">Download failed, try again</string>
+    <string name="d_add_n_songs">Add %1$d songs</string>
+    <string name="d_some_tracks_not_from_youtube_music">Some of these tracks are not from YouTube Music, so they can only go in a playlist kept here.</string>
 </resources>

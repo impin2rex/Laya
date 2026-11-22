@@ -96,4 +96,6 @@
     <string name="d_voice_download">Télécharger (%1$s Mo)</string>
     <string name="d_voice_downloading">Téléchargement %1$s%%</string>
     <string name="d_voice_download_failed">Échec du téléchargement, réessayez</string>
+    <string name="d_add_n_songs">Ajouter %1$d titres</string>
+    <string name="d_some_tracks_not_from_youtube_music">Certains de ces titres ne viennent pas de YouTube Music, ils ne peuvent donc aller que dans une playlist conservée ici.</string>
 </resources>
