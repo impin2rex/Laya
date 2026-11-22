@@ -283,4 +283,16 @@
     <string name="saved_bang">¡Guardado!</string>
     <string name="sign_in_with_google">Iniciar sesión con Google</string>
     <string name="video_quality_auto">Automático</string>
+    <string name="best_part">Mejor parte</string>
+    <string name="best_part_description">Saltar a la mejor parte</string>
+    <string name="watch_output">Reloj</string>
+    <string name="watch_output_subtitle">Reproducir en el altavoz o los auriculares de tu reloj</string>
+    <string name="previously_played">Reproducido anteriormente</string>
+    <string name="search_addons_hint">Buscar en tus addons</string>
+    <string name="search_addons_empty">Busca en todos los addons activados a la vez. Las canciones se reproducen directamente desde el addon.</string>
+    <string name="search_addons_no_results">Ningún addon tiene “%1$s”.</string>
+    <string name="video_quality">Calidad de vídeo</string>
+    <string name="switch_to_audio">Cambiar a audio</string>
+    <string name="switch_to_video">Cambiar a vídeo</string>
+    <string name="audio_short">Audio</string>
 </resources>

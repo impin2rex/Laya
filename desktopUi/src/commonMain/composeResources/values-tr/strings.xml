@@ -283,4 +283,16 @@
     <string name="saved_bang">Kaydedildi!</string>
     <string name="sign_in_with_google">Google ile giriş yap</string>
     <string name="video_quality_auto">Otomatik</string>
+    <string name="best_part">En iyi bölüm</string>
+    <string name="best_part_description">En iyi bölüme atla</string>
+    <string name="watch_output">Saat</string>
+    <string name="watch_output_subtitle">Saatinizin hoparlöründen veya kulaklığından çalın</string>
+    <string name="previously_played">Daha önce çalınanlar</string>
+    <string name="search_addons_hint">Eklentilerde ara</string>
+    <string name="search_addons_empty">Etkin tüm eklentilerde aynı anda arar. Parçalar doğrudan eklentiden çalınır.</string>
+    <string name="search_addons_no_results">Hiçbir eklentide “%1$s” yok.</string>
+    <string name="video_quality">Video kalitesi</string>
+    <string name="switch_to_audio">Sese geç</string>
+    <string name="switch_to_video">Videoya geç</string>
+    <string name="audio_short">Ses</string>
 </resources>

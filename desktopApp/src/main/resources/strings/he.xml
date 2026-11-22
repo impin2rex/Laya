@@ -869,4 +869,20 @@
     <string name="song_info_unavailable">לא זמין</string>
     <string name="song_info_error">לא ניתן לטעון חלק מהמידע.</string>
     <string name="song_info_retry">ניסיון חוזר</string>
+    <string name="automix_phrase_length">אורך משפט ב-Automix</string>
+    <string name="automix_phrase_length_subtitle">מעבר הדרגתי על מספר קבוע של תיבות, מיושר לקצב</string>
+    <string name="automix_phrase_auto_detail">בוחר את אורך כל מעבר לפי שני הרצועות</string>
+    <string name="automix_phrase_8">8 תיבות</string>
+    <string name="automix_phrase_8_detail">מערבב בדיוק 8 תיבות, שני הקצוות על רשת הקצב</string>
+    <string name="automix_phrase_16">16 תיבות</string>
+    <string name="automix_phrase_16_detail">מערבב בדיוק 16 תיבות, שני הקצוות על רשת הקצב</string>
+    <string name="equalizer_float_subtitle">פלט float של 32 סיביות בשימוש</string>
+    <string name="equalizer_float_footer">Android מנגן אודיו float בנתיב ללא מקום לאפקטים, ולכן האקולייזר, האודיו המרחבי ודילוג השקט מעוקפים. הגדירו את הפלט ל-PCM של 16 סיביות כדי להשתמש בהם.</string>
+    <string name="show_best_part">כפתור החלק הכי טוב</string>
+    <string name="show_best_part_subtitle">כפתור על העטיפה שמדלג לחלק בשיר שחוזרים אליו הכי הרבה</string>
+    <string name="hide_from_sidebar">הסתר מסרגל הצד</string>
+    <string name="n_hidden">%1$d מוסתרים</string>
+    <string name="reorder_playlist">עריכת סדר</string>
+    <string name="d_reorder_subtitle">גררו את השורות לסדר הרצוי ואז שמרו.</string>
+    <string name="translate">תרגום</string>
 </resources>

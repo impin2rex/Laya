@@ -283,4 +283,16 @@
     <string name="saved_bang">Salvato!</string>
     <string name="sign_in_with_google">Accedi con Google</string>
     <string name="video_quality_auto">Automatica</string>
+    <string name="best_part">Parte migliore</string>
+    <string name="best_part_description">Vai alla parte migliore</string>
+    <string name="watch_output">Orologio</string>
+    <string name="watch_output_subtitle">Riproduci sull’altoparlante o sulle cuffie del tuo orologio</string>
+    <string name="previously_played">Riprodotti in precedenza</string>
+    <string name="search_addons_hint">Cerca nei tuoi addon</string>
+    <string name="search_addons_empty">Cerca in tutti gli addon attivi contemporaneamente. I brani vengono riprodotti direttamente dall’addon.</string>
+    <string name="search_addons_no_results">Nessun addon contiene “%1$s”.</string>
+    <string name="video_quality">Qualità video</string>
+    <string name="switch_to_audio">Passa ad Audio</string>
+    <string name="switch_to_video">Passa a Video</string>
+    <string name="audio_short">Audio</string>
 </resources>

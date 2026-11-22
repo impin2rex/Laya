@@ -815,4 +815,25 @@
     <string name="scrobble_primary_artist_only_subtitle">Использовать первого исполнителя при наличии нескольких</string>
     <string name="listen_together_ping">%1$d ms</string>
     <string name="video_quality_auto">Автоматически</string>
+    <string name="audio_output_bluetooth_airplay">Устройства Bluetooth и AirPlay</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">Выберите AirPods, колонки или приёмник AirPlay</string>
+    <string name="best_part">Лучший момент</string>
+    <string name="best_part_description">Перейти к лучшему моменту</string>
+    <string name="watch_output">Часы</string>
+    <string name="watch_output_subtitle">Воспроизводить через динамик или наушники часов</string>
+    <string name="previously_played">Ранее воспроизводилось</string>
+    <string name="search_addons_hint">Поиск по аддонам</string>
+    <string name="search_addons_empty">Ищет сразу во всех включённых аддонах. Треки воспроизводятся напрямую из аддона.</string>
+    <string name="search_addons_no_results">Ни в одном аддоне нет «%1$s».</string>
+    <string name="show_best_part">Кнопка «Лучший момент»</string>
+    <string name="show_best_part_subtitle">Кнопка на обложке, которая переходит к части песни, которую слушают чаще всего</string>
+    <string name="enter_token_to_enable">Введите токен для включения</string>
+    <string name="lastfm_api_key">Ключ API</string>
+    <string name="lastfm_api_secret">Общий секрет</string>
+    <string name="lastfm_own_credentials">В этой сборке нет учётных данных приложения Last.fm: вставьте также ключ и общий секрет своей учётной записи API.</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">Качество видео</string>
+    <string name="switch_to_audio">Переключиться на аудио</string>
+    <string name="switch_to_video">Переключиться на видео</string>
+    <string name="audio_short">Аудио</string>
 </resources>

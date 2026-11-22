@@ -868,4 +868,20 @@
     <string name="song_info_unavailable">Non disponible</string>
     <string name="song_info_error">Certaines informations n’ont pas pu être chargées.</string>
     <string name="song_info_retry">Réessayer</string>
+    <string name="automix_phrase_length">Longueur de phrase Automix</string>
+    <string name="automix_phrase_length_subtitle">Fondu sur un nombre fixe de mesures, aligné sur le tempo</string>
+    <string name="automix_phrase_auto_detail">Choisit la durée de chaque transition selon les deux titres</string>
+    <string name="automix_phrase_8">8 mesures</string>
+    <string name="automix_phrase_8_detail">Mixe sur exactement 8 mesures, les deux extrémités calées sur la grille du tempo</string>
+    <string name="automix_phrase_16">16 mesures</string>
+    <string name="automix_phrase_16_detail">Mixe sur exactement 16 mesures, les deux extrémités calées sur la grille du tempo</string>
+    <string name="equalizer_float_subtitle">La sortie flottante 32 bits est utilisée</string>
+    <string name="equalizer_float_footer">Android lit l’audio flottant par un chemin sans place pour les effets : l’égaliseur, l’audio spatial et le saut des silences sont donc contournés. Réglez la sortie sur PCM 16 bits pour les utiliser.</string>
+    <string name="show_best_part">Bouton Meilleur passage</string>
+    <string name="show_best_part_subtitle">Un bouton sur la pochette qui saute au passage du morceau le plus réécouté</string>
+    <string name="hide_from_sidebar">Masquer de la barre latérale</string>
+    <string name="n_hidden">%1$d masqués</string>
+    <string name="reorder_playlist">Modifier l’ordre</string>
+    <string name="d_reorder_subtitle">Faites glisser les lignes dans l’ordre souhaité, puis enregistrez.</string>
+    <string name="translate">Traduire</string>
 </resources>

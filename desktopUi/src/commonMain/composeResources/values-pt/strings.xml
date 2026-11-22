@@ -283,4 +283,16 @@
     <string name="saved_bang">Guardado!</string>
     <string name="sign_in_with_google">Entrar com o Google</string>
     <string name="video_quality_auto">Automático</string>
+    <string name="best_part">Melhor parte</string>
+    <string name="best_part_description">Ir para a melhor parte</string>
+    <string name="watch_output">Relógio</string>
+    <string name="watch_output_subtitle">Tocar no alto-falante ou nos fones do seu relógio</string>
+    <string name="previously_played">Tocadas anteriormente</string>
+    <string name="search_addons_hint">Pesquisar nos seus addons</string>
+    <string name="search_addons_empty">Pesquisa em todos os addons ativados ao mesmo tempo. As músicas tocam direto do addon.</string>
+    <string name="search_addons_no_results">Nenhum addon tem “%1$s”.</string>
+    <string name="video_quality">Qualidade do vídeo</string>
+    <string name="switch_to_audio">Mudar para áudio</string>
+    <string name="switch_to_video">Mudar para vídeo</string>
+    <string name="audio_short">Áudio</string>
 </resources>

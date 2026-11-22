@@ -285,4 +285,16 @@
     <string name="saved_bang">Сохранено!</string>
     <string name="sign_in_with_google">Войти через Google</string>
     <string name="video_quality_auto">Автоматически</string>
+    <string name="best_part">Лучший момент</string>
+    <string name="best_part_description">Перейти к лучшему моменту</string>
+    <string name="watch_output">Часы</string>
+    <string name="watch_output_subtitle">Воспроизводить через динамик или наушники часов</string>
+    <string name="previously_played">Ранее воспроизводилось</string>
+    <string name="search_addons_hint">Поиск по аддонам</string>
+    <string name="search_addons_empty">Ищет сразу во всех включённых аддонах. Треки воспроизводятся напрямую из аддона.</string>
+    <string name="search_addons_no_results">Ни в одном аддоне нет «%1$s».</string>
+    <string name="video_quality">Качество видео</string>
+    <string name="switch_to_audio">Переключиться на аудио</string>
+    <string name="switch_to_video">Переключиться на видео</string>
+    <string name="audio_short">Аудио</string>
 </resources>

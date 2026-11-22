@@ -283,4 +283,16 @@
     <string name="saved_bang">सहेजा गया!</string>
     <string name="sign_in_with_google">Google से साइन इन करें</string>
     <string name="video_quality_auto">अपने आप</string>
+    <string name="best_part">सबसे अच्छा हिस्सा</string>
+    <string name="best_part_description">सबसे अच्छे हिस्से पर जाएँ</string>
+    <string name="watch_output">घड़ी</string>
+    <string name="watch_output_subtitle">अपनी घड़ी के स्पीकर या हेडफ़ोन पर चलाएँ</string>
+    <string name="previously_played">पहले चलाए गए</string>
+    <string name="search_addons_hint">अपने ऐडऑन खोजें</string>
+    <string name="search_addons_empty">सभी चालू ऐडऑन में एक साथ खोजें। ट्रैक सीधे ऐडऑन से चलते हैं।</string>
+    <string name="search_addons_no_results">किसी भी ऐडऑन में “%1$s” नहीं है।</string>
+    <string name="video_quality">वीडियो गुणवत्ता</string>
+    <string name="switch_to_audio">ऑडियो पर स्विच करें</string>
+    <string name="switch_to_video">वीडियो पर स्विच करें</string>
+    <string name="audio_short">ऑडियो</string>
 </resources>

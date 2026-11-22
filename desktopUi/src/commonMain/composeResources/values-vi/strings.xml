@@ -282,4 +282,16 @@
     <string name="saved_bang">Đã lưu!</string>
     <string name="sign_in_with_google">Đăng nhập bằng Google</string>
     <string name="video_quality_auto">Tự động</string>
+    <string name="best_part">Đoạn hay nhất</string>
+    <string name="best_part_description">Chuyển đến đoạn hay nhất</string>
+    <string name="watch_output">Đồng hồ</string>
+    <string name="watch_output_subtitle">Phát trên loa hoặc tai nghe của đồng hồ</string>
+    <string name="previously_played">Đã phát trước đó</string>
+    <string name="search_addons_hint">Tìm trong addon của bạn</string>
+    <string name="search_addons_empty">Tìm trong tất cả addon đã bật cùng lúc. Bài hát phát trực tiếp từ addon.</string>
+    <string name="search_addons_no_results">Không có addon nào có “%1$s”.</string>
+    <string name="video_quality">Chất lượng video</string>
+    <string name="switch_to_audio">Chuyển sang âm thanh</string>
+    <string name="switch_to_video">Chuyển sang video</string>
+    <string name="audio_short">Âm thanh</string>
 </resources>

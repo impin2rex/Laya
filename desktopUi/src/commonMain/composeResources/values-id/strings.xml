@@ -282,4 +282,16 @@
     <string name="saved_bang">Tersimpan!</string>
     <string name="sign_in_with_google">Masuk dengan Google</string>
     <string name="video_quality_auto">Otomatis</string>
+    <string name="best_part">Bagian Terbaik</string>
+    <string name="best_part_description">Lompat ke bagian terbaik</string>
+    <string name="watch_output">Jam tangan</string>
+    <string name="watch_output_subtitle">Putar di speaker atau headphone jam tangan Anda</string>
+    <string name="previously_played">Pernah diputar</string>
+    <string name="search_addons_hint">Cari addon Anda</string>
+    <string name="search_addons_empty">Cari di semua addon yang aktif sekaligus. Lagu diputar langsung dari addon.</string>
+    <string name="search_addons_no_results">Tidak ada addon yang memiliki “%1$s”.</string>
+    <string name="video_quality">Kualitas video</string>
+    <string name="switch_to_audio">Beralih ke Audio</string>
+    <string name="switch_to_video">Beralih ke Video</string>
+    <string name="audio_short">Audio</string>
 </resources>

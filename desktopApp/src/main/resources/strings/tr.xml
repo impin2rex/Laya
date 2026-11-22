@@ -868,4 +868,20 @@
     <string name="song_info_unavailable">Mevcut değil</string>
     <string name="song_info_error">Bazı bilgiler yüklenemedi.</string>
     <string name="song_info_retry">Yeniden dene</string>
+    <string name="automix_phrase_length">Automix cümle uzunluğu</string>
+    <string name="automix_phrase_length_subtitle">Sabit sayıda ölçü boyunca, ritme hizalı geçiş yapar</string>
+    <string name="automix_phrase_auto_detail">Her geçişin uzunluğunu iki parçaya göre seçer</string>
+    <string name="automix_phrase_8">8 ölçü</string>
+    <string name="automix_phrase_8_detail">Tam 8 ölçü boyunca karıştırır, iki uç da ritim ızgarasında</string>
+    <string name="automix_phrase_16">16 ölçü</string>
+    <string name="automix_phrase_16_detail">Tam 16 ölçü boyunca karıştırır, iki uç da ritim ızgarasında</string>
+    <string name="equalizer_float_subtitle">32 bit float çıkış kullanılıyor</string>
+    <string name="equalizer_float_footer">Android, float sesi efektlere yer olmayan bir yoldan çalar; bu yüzden ekolayzır, uzamsal ses ve sessizliği atlama devre dışı kalır. Bunları kullanmak için çıkışı 16 bit PCM yapın.</string>
+    <string name="show_best_part">En iyi bölüm düğmesi</string>
+    <string name="show_best_part_subtitle">Kapak görselinde, şarkının en çok tekrar dinlenen bölümüne atlayan düğme</string>
+    <string name="hide_from_sidebar">Kenar çubuğundan gizle</string>
+    <string name="n_hidden">%1$d gizli</string>
+    <string name="reorder_playlist">Sırayı düzenle</string>
+    <string name="d_reorder_subtitle">Satırları istediğiniz sıraya sürükleyin, sonra kaydedin.</string>
+    <string name="translate">Çevir</string>
 </resources>

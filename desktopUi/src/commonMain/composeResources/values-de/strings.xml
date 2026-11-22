@@ -283,4 +283,16 @@
     <string name="saved_bang">Gespeichert!</string>
     <string name="sign_in_with_google">Mit Google anmelden</string>
     <string name="video_quality_auto">Automatisch</string>
+    <string name="best_part">Bester Teil</string>
+    <string name="best_part_description">Zum besten Teil springen</string>
+    <string name="watch_output">Uhr</string>
+    <string name="watch_output_subtitle">Über den Lautsprecher oder die Kopfhörer deiner Uhr wiedergeben</string>
+    <string name="previously_played">Zuletzt gespielt</string>
+    <string name="search_addons_hint">Addons durchsuchen</string>
+    <string name="search_addons_empty">Durchsucht alle aktivierten Addons gleichzeitig. Titel werden direkt vom Addon abgespielt.</string>
+    <string name="search_addons_no_results">Kein Addon hat „%1$s“.</string>
+    <string name="video_quality">Videoqualität</string>
+    <string name="switch_to_audio">Zu Audio wechseln</string>
+    <string name="switch_to_video">Zu Video wechseln</string>
+    <string name="audio_short">Audio</string>
 </resources>

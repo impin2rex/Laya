@@ -800,4 +800,25 @@
     <string name="scrobble_primary_artist_only_subtitle">ใช้ศิลปินคนแรกเมื่อแทร็กมีเครดิตหลายศิลปิน</string>
     <string name="listen_together_ping">%1$d ms</string>
     <string name="video_quality_auto">อัตโนมัติ</string>
+    <string name="audio_output_bluetooth_airplay">อุปกรณ์ Bluetooth &amp; AirPlay</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">เลือก AirPods, ลำโพง หรือตัวรับ AirPlay</string>
+    <string name="best_part">ท่อนเด็ด</string>
+    <string name="best_part_description">ข้ามไปท่อนเด็ด</string>
+    <string name="watch_output">นาฬิกา</string>
+    <string name="watch_output_subtitle">เล่นผ่านลำโพงหรือหูฟังของนาฬิกา</string>
+    <string name="previously_played">เล่นก่อนหน้านี้</string>
+    <string name="search_addons_hint">ค้นหาแอดออนของคุณ</string>
+    <string name="search_addons_empty">ค้นหาในแอดออนที่เปิดใช้งานทั้งหมดพร้อมกัน เพลงจะเล่นตรงจากแอดออน</string>
+    <string name="search_addons_no_results">ไม่มีแอดออนใดมี “%1$s”</string>
+    <string name="show_best_part">ปุ่มท่อนเด็ด</string>
+    <string name="show_best_part_subtitle">ปุ่มบนภาพปกที่ข้ามไปยังช่วงของเพลงที่คนเล่นซ้ำมากที่สุด</string>
+    <string name="enter_token_to_enable">ป้อนโทเค็นเพื่อเปิดใช้งาน</string>
+    <string name="lastfm_api_key">คีย์ API</string>
+    <string name="lastfm_api_secret">Shared secret</string>
+    <string name="lastfm_own_credentials">บิลด์นี้ไม่มีข้อมูลรับรองแอป Last.fm: โปรดวางคีย์และ shared secret ของบัญชี API ของคุณเองด้วย</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">คุณภาพวิดีโอ</string>
+    <string name="switch_to_audio">สลับเป็นเสียง</string>
+    <string name="switch_to_video">สลับเป็นวิดีโอ</string>
+    <string name="audio_short">เสียง</string>
 </resources>

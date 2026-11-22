@@ -282,4 +282,16 @@
     <string name="saved_bang">已保存！</string>
     <string name="sign_in_with_google">使用 Google 登录</string>
     <string name="video_quality_auto">自动</string>
+    <string name="best_part">最佳片段</string>
+    <string name="best_part_description">跳到最佳片段</string>
+    <string name="watch_output">手表</string>
+    <string name="watch_output_subtitle">在手表的扬声器或耳机上播放</string>
+    <string name="previously_played">之前播放过</string>
+    <string name="search_addons_hint">搜索你的插件</string>
+    <string name="search_addons_empty">同时搜索所有已启用的插件。歌曲直接从插件播放。</string>
+    <string name="search_addons_no_results">没有插件包含“%1$s”。</string>
+    <string name="video_quality">视频画质</string>
+    <string name="switch_to_audio">切换到音频</string>
+    <string name="switch_to_video">切换到视频</string>
+    <string name="audio_short">音频</string>
 </resources>

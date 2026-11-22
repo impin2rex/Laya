@@ -869,4 +869,20 @@
     <string name="song_info_unavailable">Não disponível</string>
     <string name="song_info_error">Não foi possível carregar algumas informações.</string>
     <string name="song_info_retry">Tentar novamente</string>
+    <string name="automix_phrase_length">Duração da frase do Automix</string>
+    <string name="automix_phrase_length_subtitle">Mistura por um número fixo de compassos, alinhado à batida</string>
+    <string name="automix_phrase_auto_detail">Escolhe a duração de cada transição com base nas duas músicas</string>
+    <string name="automix_phrase_8">8 compassos</string>
+    <string name="automix_phrase_8_detail">Mistura por exatamente 8 compassos, com as duas pontas na grade de batidas</string>
+    <string name="automix_phrase_16">16 compassos</string>
+    <string name="automix_phrase_16_detail">Mistura por exatamente 16 compassos, com as duas pontas na grade de batidas</string>
+    <string name="equalizer_float_subtitle">Saída float de 32 bits em uso</string>
+    <string name="equalizer_float_footer">O Android reproduz áudio float por um caminho sem espaço para efeitos, então o equalizador, o áudio espacial e o salto de silêncio são ignorados. Defina a saída como PCM de 16 bits para usá-los.</string>
+    <string name="show_best_part">Botão Melhor parte</string>
+    <string name="show_best_part_subtitle">Um botão na capa que pula para a parte da música mais repetida</string>
+    <string name="hide_from_sidebar">Ocultar da barra lateral</string>
+    <string name="n_hidden">%1$d ocultos</string>
+    <string name="reorder_playlist">Editar ordem</string>
+    <string name="d_reorder_subtitle">Arraste as linhas para a ordem desejada e depois salve.</string>
+    <string name="translate">Traduzir</string>
 </resources>

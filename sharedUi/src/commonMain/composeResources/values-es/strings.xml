@@ -806,4 +806,25 @@
     <string name="scrobble_primary_artist_only_subtitle">Usar el primer artista cuando una pista acredite a varios</string>
     <string name="listen_together_ping">%1$d ms</string>
     <string name="video_quality_auto">Automático</string>
+    <string name="audio_output_bluetooth_airplay">Dispositivos Bluetooth y AirPlay</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">Elige AirPods, altavoces o un receptor AirPlay</string>
+    <string name="best_part">Mejor parte</string>
+    <string name="best_part_description">Saltar a la mejor parte</string>
+    <string name="watch_output">Reloj</string>
+    <string name="watch_output_subtitle">Reproducir en el altavoz o los auriculares de tu reloj</string>
+    <string name="previously_played">Reproducido anteriormente</string>
+    <string name="search_addons_hint">Buscar en tus addons</string>
+    <string name="search_addons_empty">Busca en todos los addons activados a la vez. Las canciones se reproducen directamente desde el addon.</string>
+    <string name="search_addons_no_results">Ningún addon tiene “%1$s”.</string>
+    <string name="show_best_part">Botón Mejor parte</string>
+    <string name="show_best_part_subtitle">Un botón sobre la carátula que salta a la parte de la canción que más se repite</string>
+    <string name="enter_token_to_enable">Introduce tu token para activar</string>
+    <string name="lastfm_api_key">Clave de API</string>
+    <string name="lastfm_api_secret">Secreto compartido</string>
+    <string name="lastfm_own_credentials">Esta compilación no incluye credenciales de Last.fm: pega también la clave y el secreto compartido de tu propia cuenta de API.</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">Calidad de vídeo</string>
+    <string name="switch_to_audio">Cambiar a audio</string>
+    <string name="switch_to_video">Cambiar a vídeo</string>
+    <string name="audio_short">Audio</string>
 </resources>

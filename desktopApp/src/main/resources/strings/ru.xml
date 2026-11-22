@@ -892,4 +892,20 @@
     <string name="song_info_unavailable">Недоступно</string>
     <string name="song_info_error">Не удалось загрузить часть информации.</string>
     <string name="song_info_retry">Повторить</string>
+    <string name="automix_phrase_length">Длина фразы Automix</string>
+    <string name="automix_phrase_length_subtitle">Плавный переход на фиксированное число тактов, по биту</string>
+    <string name="automix_phrase_auto_detail">Выбирает длину каждого перехода по двум трекам</string>
+    <string name="automix_phrase_8">8 тактов</string>
+    <string name="automix_phrase_8_detail">Микширует ровно 8 тактов, оба края привязаны к сетке битов</string>
+    <string name="automix_phrase_16">16 тактов</string>
+    <string name="automix_phrase_16_detail">Микширует ровно 16 тактов, оба края привязаны к сетке битов</string>
+    <string name="equalizer_float_subtitle">Используется 32-битный float-вывод</string>
+    <string name="equalizer_float_footer">Android воспроизводит float-аудио по тракту без места для эффектов, поэтому эквалайзер, пространственное аудио и пропуск тишины обходятся. Выберите 16-битный PCM, чтобы их использовать.</string>
+    <string name="show_best_part">Кнопка «Лучший момент»</string>
+    <string name="show_best_part_subtitle">Кнопка на обложке, которая переходит к части песни, которую слушают чаще всего</string>
+    <string name="hide_from_sidebar">Скрыть из боковой панели</string>
+    <string name="n_hidden">Скрыто: %1$d</string>
+    <string name="reorder_playlist">Изменить порядок</string>
+    <string name="d_reorder_subtitle">Перетащите строки в нужном порядке, затем сохраните.</string>
+    <string name="translate">Перевести</string>
 </resources>

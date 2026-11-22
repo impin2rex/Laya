@@ -283,4 +283,16 @@
     <string name="saved_bang">Enregistré !</string>
     <string name="sign_in_with_google">Se connecter avec Google</string>
     <string name="video_quality_auto">Automatique</string>
+    <string name="best_part">Meilleur passage</string>
+    <string name="best_part_description">Aller au meilleur passage</string>
+    <string name="watch_output">Montre</string>
+    <string name="watch_output_subtitle">Lire sur le haut-parleur ou le casque de votre montre</string>
+    <string name="previously_played">Écoutés précédemment</string>
+    <string name="search_addons_hint">Rechercher dans vos addons</string>
+    <string name="search_addons_empty">Recherche dans tous les addons activés à la fois. Les titres sont lus directement depuis l’addon.</string>
+    <string name="search_addons_no_results">Aucun addon ne contient « %1$s ».</string>
+    <string name="video_quality">Qualité vidéo</string>
+    <string name="switch_to_audio">Passer à l’audio</string>
+    <string name="switch_to_video">Passer à la vidéo</string>
+    <string name="audio_short">Audio</string>
 </resources>

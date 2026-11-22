@@ -806,4 +806,25 @@
     <string name="scrobble_primary_artist_only_subtitle">कई कलाकार होने पर पहले कलाकार का उपयोग करें</string>
     <string name="listen_together_ping">%1$d ms</string>
     <string name="video_quality_auto">अपने आप</string>
+    <string name="audio_output_bluetooth_airplay">Bluetooth और AirPlay डिवाइस</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">AirPods, स्पीकर या AirPlay रिसीवर चुनें</string>
+    <string name="best_part">सबसे अच्छा हिस्सा</string>
+    <string name="best_part_description">सबसे अच्छे हिस्से पर जाएँ</string>
+    <string name="watch_output">घड़ी</string>
+    <string name="watch_output_subtitle">अपनी घड़ी के स्पीकर या हेडफ़ोन पर चलाएँ</string>
+    <string name="previously_played">पहले चलाए गए</string>
+    <string name="search_addons_hint">अपने ऐडऑन खोजें</string>
+    <string name="search_addons_empty">सभी चालू ऐडऑन में एक साथ खोजें। ट्रैक सीधे ऐडऑन से चलते हैं।</string>
+    <string name="search_addons_no_results">किसी भी ऐडऑन में “%1$s” नहीं है।</string>
+    <string name="show_best_part">सबसे अच्छा हिस्सा बटन</string>
+    <string name="show_best_part_subtitle">आर्टवर्क पर एक बटन जो गाने के सबसे ज़्यादा दोबारा सुने जाने वाले हिस्से पर ले जाता है</string>
+    <string name="enter_token_to_enable">चालू करने के लिए अपना टोकन डालें</string>
+    <string name="lastfm_api_key">API कुंजी</string>
+    <string name="lastfm_api_secret">साझा सीक्रेट</string>
+    <string name="lastfm_own_credentials">इस बिल्ड में Last.fm ऐप क्रेडेंशियल नहीं हैं: अपने API खाते की कुंजी और साझा सीक्रेट भी पेस्ट करें।</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">वीडियो गुणवत्ता</string>
+    <string name="switch_to_audio">ऑडियो पर स्विच करें</string>
+    <string name="switch_to_video">वीडियो पर स्विच करें</string>
+    <string name="audio_short">ऑडियो</string>
 </resources>

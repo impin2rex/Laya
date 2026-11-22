@@ -806,4 +806,25 @@
     <string name="scrobble_primary_artist_only_subtitle">השתמש באמן הראשון כאשר רשומים מספר אמנים</string>
     <string name="listen_together_ping">%1$d ms</string>
     <string name="video_quality_auto">אוטומטי</string>
+    <string name="audio_output_bluetooth_airplay">מכשירי Bluetooth ו-AirPlay</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">בחרו AirPods, רמקולים או מקלט AirPlay</string>
+    <string name="best_part">החלק הכי טוב</string>
+    <string name="best_part_description">דלג לחלק הכי טוב</string>
+    <string name="watch_output">שעון</string>
+    <string name="watch_output_subtitle">הפעלה ברמקול או באוזניות של השעון</string>
+    <string name="previously_played">הושמעו קודם</string>
+    <string name="search_addons_hint">חיפוש בתוספים</string>
+    <string name="search_addons_empty">מחפש בכל התוספים המופעלים בו-זמנית. הרצועות מושמעות ישירות מהתוסף.</string>
+    <string name="search_addons_no_results">אף תוסף לא מכיל “%1$s”.</string>
+    <string name="show_best_part">כפתור החלק הכי טוב</string>
+    <string name="show_best_part_subtitle">כפתור על העטיפה שמדלג לחלק בשיר שחוזרים אליו הכי הרבה</string>
+    <string name="enter_token_to_enable">הזינו את האסימון להפעלה</string>
+    <string name="lastfm_api_key">מפתח API</string>
+    <string name="lastfm_api_secret">סוד משותף</string>
+    <string name="lastfm_own_credentials">בגרסה זו אין פרטי כניסה של Last.fm: הדביקו גם את המפתח והסוד המשותף של חשבון ה-API שלכם.</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">איכות וידאו</string>
+    <string name="switch_to_audio">מעבר לאודיו</string>
+    <string name="switch_to_video">מעבר לוידאו</string>
+    <string name="audio_short">אודיו</string>
 </resources>

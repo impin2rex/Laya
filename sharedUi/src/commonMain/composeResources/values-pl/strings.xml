@@ -818,4 +818,25 @@
     <string name="scrobble_primary_artist_only_subtitle">Użyj pierwszego wykonawcy, gdy wymieniono kilku</string>
     <string name="listen_together_ping">%1$d ms</string>
     <string name="video_quality_auto">Automatycznie</string>
+    <string name="audio_output_bluetooth_airplay">Urządzenia Bluetooth i AirPlay</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">Wybierz AirPods, głośniki lub odbiornik AirPlay</string>
+    <string name="best_part">Najlepszy fragment</string>
+    <string name="best_part_description">Przejdź do najlepszego fragmentu</string>
+    <string name="watch_output">Zegarek</string>
+    <string name="watch_output_subtitle">Odtwarzaj przez głośnik lub słuchawki zegarka</string>
+    <string name="previously_played">Ostatnio odtwarzane</string>
+    <string name="search_addons_hint">Przeszukaj dodatki</string>
+    <string name="search_addons_empty">Przeszukuje jednocześnie wszystkie włączone dodatki. Utwory są odtwarzane bezpośrednio z dodatku.</string>
+    <string name="search_addons_no_results">Żaden dodatek nie ma „%1$s”.</string>
+    <string name="show_best_part">Przycisk Najlepszy fragment</string>
+    <string name="show_best_part_subtitle">Przycisk na okładce, który przechodzi do fragmentu utworu odtwarzanego najczęściej</string>
+    <string name="enter_token_to_enable">Wpisz token, aby włączyć</string>
+    <string name="lastfm_api_key">Klucz API</string>
+    <string name="lastfm_api_secret">Wspólny sekret</string>
+    <string name="lastfm_own_credentials">Ta wersja nie ma danych uwierzytelniających Last.fm: wklej również klucz i wspólny sekret własnego konta API.</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">Jakość wideo</string>
+    <string name="switch_to_audio">Przełącz na audio</string>
+    <string name="switch_to_video">Przełącz na wideo</string>
+    <string name="audio_short">Audio</string>
 </resources>

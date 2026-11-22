@@ -282,4 +282,16 @@
     <string name="saved_bang">已儲存！</string>
     <string name="sign_in_with_google">使用 Google 登入</string>
     <string name="video_quality_auto">自動</string>
+    <string name="best_part">最佳片段</string>
+    <string name="best_part_description">跳到最佳片段</string>
+    <string name="watch_output">手錶</string>
+    <string name="watch_output_subtitle">在手錶的喇叭或耳機上播放</string>
+    <string name="previously_played">先前播放過</string>
+    <string name="search_addons_hint">搜尋你的外掛</string>
+    <string name="search_addons_empty">同時搜尋所有已啟用的外掛。歌曲直接從外掛播放。</string>
+    <string name="search_addons_no_results">沒有外掛包含「%1$s」。</string>
+    <string name="video_quality">影片畫質</string>
+    <string name="switch_to_audio">切換到音訊</string>
+    <string name="switch_to_video">切換到影片</string>
+    <string name="audio_short">音訊</string>
 </resources>

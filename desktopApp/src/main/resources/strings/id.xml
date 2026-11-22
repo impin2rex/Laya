@@ -849,4 +849,20 @@
     <string name="song_info_unavailable">Tidak tersedia</string>
     <string name="song_info_error">Sebagian informasi tidak dapat dimuat.</string>
     <string name="song_info_retry">Coba lagi</string>
+    <string name="automix_phrase_length">Panjang frasa Automix</string>
+    <string name="automix_phrase_length_subtitle">Menyatu selama jumlah bar tetap, selaras dengan ketukan</string>
+    <string name="automix_phrase_auto_detail">Memilih panjang tiap transisi berdasarkan kedua lagu</string>
+    <string name="automix_phrase_8">8 bar</string>
+    <string name="automix_phrase_8_detail">Mencampur tepat 8 bar, kedua ujung pada kisi ketukan</string>
+    <string name="automix_phrase_16">16 bar</string>
+    <string name="automix_phrase_16_detail">Mencampur tepat 16 bar, kedua ujung pada kisi ketukan</string>
+    <string name="equalizer_float_subtitle">Output float 32-bit sedang digunakan</string>
+    <string name="equalizer_float_footer">Android memutar audio float melalui jalur tanpa ruang untuk efek, sehingga ekualizer, audio spasial, dan lewati hening dilewati. Atur output ke PCM 16-bit untuk menggunakannya.</string>
+    <string name="show_best_part">Tombol Bagian Terbaik</string>
+    <string name="show_best_part_subtitle">Tombol di sampul yang melompat ke bagian lagu yang paling sering diputar ulang</string>
+    <string name="hide_from_sidebar">Sembunyikan dari bilah sisi</string>
+    <string name="n_hidden">%1$d disembunyikan</string>
+    <string name="reorder_playlist">Ubah urutan</string>
+    <string name="d_reorder_subtitle">Seret baris ke urutan yang Anda inginkan, lalu simpan.</string>
+    <string name="translate">Terjemahkan</string>
 </resources>

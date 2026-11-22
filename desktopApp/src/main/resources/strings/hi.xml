@@ -868,4 +868,20 @@
     <string name="song_info_unavailable">उपलब्ध नहीं</string>
     <string name="song_info_error">कुछ जानकारी लोड नहीं हो सकी।</string>
     <string name="song_info_retry">फिर कोशिश करें</string>
+    <string name="automix_phrase_length">Automix वाक्यांश की लंबाई</string>
+    <string name="automix_phrase_length_subtitle">तय संख्या के बार पर बीट के साथ मिलाएँ</string>
+    <string name="automix_phrase_auto_detail">दोनों ट्रैक के आधार पर हर ट्रांज़िशन की लंबाई चुनता है</string>
+    <string name="automix_phrase_8">8 बार</string>
+    <string name="automix_phrase_8_detail">ठीक 8 बार में मिक्स करता है, दोनों सिरे बीट ग्रिड पर</string>
+    <string name="automix_phrase_16">16 बार</string>
+    <string name="automix_phrase_16_detail">ठीक 16 बार में मिक्स करता है, दोनों सिरे बीट ग्रिड पर</string>
+    <string name="equalizer_float_subtitle">32-बिट फ़्लोट आउटपुट उपयोग में है</string>
+    <string name="equalizer_float_footer">Android फ़्लोट ऑडियो को ऐसे पथ से चलाता है जिसमें इफ़ेक्ट के लिए जगह नहीं है, इसलिए इक्वलाइज़र, स्पेशियल ऑडियो और साइलेंस स्किपिंग बायपास हो जाते हैं। इन्हें इस्तेमाल करने के लिए आउटपुट को 16-बिट PCM पर सेट करें।</string>
+    <string name="show_best_part">सबसे अच्छा हिस्सा बटन</string>
+    <string name="show_best_part_subtitle">आर्टवर्क पर एक बटन जो गाने के सबसे ज़्यादा दोबारा सुने जाने वाले हिस्से पर ले जाता है</string>
+    <string name="hide_from_sidebar">साइडबार से छिपाएँ</string>
+    <string name="n_hidden">%1$d छिपे हैं</string>
+    <string name="reorder_playlist">क्रम बदलें</string>
+    <string name="d_reorder_subtitle">पंक्तियों को मनचाहे क्रम में खींचें, फिर सेव करें।</string>
+    <string name="translate">अनुवाद करें</string>
 </resources>

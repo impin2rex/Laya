@@ -853,4 +853,30 @@
     <string name="song_info_unavailable">পাওয়া যাচ্ছে না</string>
     <string name="song_info_error">কিছু তথ্য লোড করা যায়নি।</string>
     <string name="song_info_retry">আবার চেষ্টা করুন</string>
+    <string name="show_best_part">সেরা অংশ বোতাম</string>
+    <string name="show_best_part_subtitle">আর্টওয়ার্কের একটি বোতাম, যা গানের সবচেয়ে বেশি আবার শোনা অংশে নিয়ে যায়</string>
+    <string-array name="lyrics_intro_lines"><item>বিট ধরা পড়ছে</item>
+        <item>গান শুরু হচ্ছে</item>
+        <item>গরম হচ্ছে</item>
+        <item>মেজাজ তৈরি হচ্ছে</item>
+        <item>আগে বেস, পরে কথা</item>
+        <item>একটু অপেক্ষা করুন</item>
+        <item>বিল্ড-আপটা অনুভব করুন</item>
+        <item>আপাতত শুধু গ্রুভ</item>
+        <item>হুক আসছে</item>
+        <item>একটু শ্বাস নিতে দিন</item>
+        <item>ভোকাল আসছে</item>
+        <item>প্রথম সুর এসে গেছে</item></string-array>
+    <string-array name="lyrics_loading_lines"><item>গানের কথা আনা হচ্ছে</item>
+        <item>কথাগুলো খোঁজা হচ্ছে</item>
+        <item>স্তবকগুলো আনা হচ্ছে</item>
+        <item>গানের কথা লোড হচ্ছে</item>
+        <item>লিরিক শিট দেখা হচ্ছে</item>
+        <item>গানের বই খোঁজা হচ্ছে</item>
+        <item>গানের কথা সাজানো হচ্ছে</item>
+        <item>কথাগুলো আসছে</item>
+        <item>আর্কাইভ দেখা হচ্ছে</item>
+        <item>সঠিক কথা খোঁজা হচ্ছে</item>
+        <item>গানের কথা জোড়া লাগছে</item>
+        <item>প্রায় কথাগুলো পেয়ে গেছি</item></string-array>
 </resources>

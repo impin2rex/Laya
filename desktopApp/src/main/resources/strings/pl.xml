@@ -899,4 +899,20 @@
     <string name="song_info_unavailable">Niedostępne</string>
     <string name="song_info_error">Nie udało się wczytać części informacji.</string>
     <string name="song_info_retry">Spróbuj ponownie</string>
+    <string name="automix_phrase_length">Długość frazy Automix</string>
+    <string name="automix_phrase_length_subtitle">Płynne przejście przez stałą liczbę taktów, zgodnie z rytmem</string>
+    <string name="automix_phrase_auto_detail">Dobiera długość każdego przejścia na podstawie obu utworów</string>
+    <string name="automix_phrase_8">8 taktów</string>
+    <string name="automix_phrase_8_detail">Miksuje dokładnie 8 taktów, oba brzegi na siatce rytmu</string>
+    <string name="automix_phrase_16">16 taktów</string>
+    <string name="automix_phrase_16_detail">Miksuje dokładnie 16 taktów, oba brzegi na siatce rytmu</string>
+    <string name="equalizer_float_subtitle">Używane jest wyjście float 32-bitowe</string>
+    <string name="equalizer_float_footer">Android odtwarza dźwięk float ścieżką bez miejsca na efekty, więc korektor, dźwięk przestrzenny i pomijanie ciszy są omijane. Ustaw wyjście na 16-bitowe PCM, aby ich używać.</string>
+    <string name="show_best_part">Przycisk Najlepszy fragment</string>
+    <string name="show_best_part_subtitle">Przycisk na okładce, który przechodzi do fragmentu utworu odtwarzanego najczęściej</string>
+    <string name="hide_from_sidebar">Ukryj z panelu bocznego</string>
+    <string name="n_hidden">Ukryte: %1$d</string>
+    <string name="reorder_playlist">Edytuj kolejność</string>
+    <string name="d_reorder_subtitle">Przeciągnij wiersze w żądanej kolejności, a następnie zapisz.</string>
+    <string name="translate">Tłumacz</string>
 </resources>

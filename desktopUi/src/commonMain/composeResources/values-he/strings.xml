@@ -283,4 +283,16 @@
     <string name="saved_bang">נשמר!</string>
     <string name="sign_in_with_google">התחברות עם Google</string>
     <string name="video_quality_auto">אוטומטי</string>
+    <string name="best_part">החלק הכי טוב</string>
+    <string name="best_part_description">דלג לחלק הכי טוב</string>
+    <string name="watch_output">שעון</string>
+    <string name="watch_output_subtitle">הפעלה ברמקול או באוזניות של השעון</string>
+    <string name="previously_played">הושמעו קודם</string>
+    <string name="search_addons_hint">חיפוש בתוספים</string>
+    <string name="search_addons_empty">מחפש בכל התוספים המופעלים בו-זמנית. הרצועות מושמעות ישירות מהתוסף.</string>
+    <string name="search_addons_no_results">אף תוסף לא מכיל “%1$s”.</string>
+    <string name="video_quality">איכות וידאו</string>
+    <string name="switch_to_audio">מעבר לאודיו</string>
+    <string name="switch_to_video">מעבר לוידאו</string>
+    <string name="audio_short">אודיו</string>
 </resources>

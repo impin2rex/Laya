@@ -806,4 +806,25 @@
     <string name="scrobble_primary_artist_only_subtitle">Bir parçanın birden fazla sanatçısı olduğunda ilk sanatçıyı kullan</string>
     <string name="listen_together_ping">%1$d ms</string>
     <string name="video_quality_auto">Otomatik</string>
+    <string name="audio_output_bluetooth_airplay">Bluetooth ve AirPlay cihazları</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">AirPods, hoparlör veya AirPlay alıcısı seçin</string>
+    <string name="best_part">En iyi bölüm</string>
+    <string name="best_part_description">En iyi bölüme atla</string>
+    <string name="watch_output">Saat</string>
+    <string name="watch_output_subtitle">Saatinizin hoparlöründen veya kulaklığından çalın</string>
+    <string name="previously_played">Daha önce çalınanlar</string>
+    <string name="search_addons_hint">Eklentilerde ara</string>
+    <string name="search_addons_empty">Etkin tüm eklentilerde aynı anda arar. Parçalar doğrudan eklentiden çalınır.</string>
+    <string name="search_addons_no_results">Hiçbir eklentide “%1$s” yok.</string>
+    <string name="show_best_part">En iyi bölüm düğmesi</string>
+    <string name="show_best_part_subtitle">Kapak görselinde, şarkının en çok tekrar dinlenen bölümüne atlayan düğme</string>
+    <string name="enter_token_to_enable">Etkinleştirmek için jetonunuzu girin</string>
+    <string name="lastfm_api_key">API anahtarı</string>
+    <string name="lastfm_api_secret">Paylaşılan gizli anahtar</string>
+    <string name="lastfm_own_credentials">Bu sürümde Last.fm uygulama kimlik bilgileri yok: kendi API hesabınızın anahtarını ve paylaşılan gizli anahtarını da yapıştırın.</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">Video kalitesi</string>
+    <string name="switch_to_audio">Sese geç</string>
+    <string name="switch_to_video">Videoya geç</string>
+    <string name="audio_short">Ses</string>
 </resources>

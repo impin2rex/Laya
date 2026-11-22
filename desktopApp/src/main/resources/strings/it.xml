@@ -868,4 +868,20 @@
     <string name="song_info_unavailable">Non disponibile</string>
     <string name="song_info_error">Impossibile caricare alcune informazioni.</string>
     <string name="song_info_retry">Riprova</string>
+    <string name="automix_phrase_length">Lunghezza frase Automix</string>
+    <string name="automix_phrase_length_subtitle">Sfuma su un numero fisso di battute, allineato al ritmo</string>
+    <string name="automix_phrase_auto_detail">Sceglie la durata di ogni transizione in base ai due brani</string>
+    <string name="automix_phrase_8">8 battute</string>
+    <string name="automix_phrase_8_detail">Mixa esattamente su 8 battute, con entrambi i bordi sulla griglia del ritmo</string>
+    <string name="automix_phrase_16">16 battute</string>
+    <string name="automix_phrase_16_detail">Mixa esattamente su 16 battute, con entrambi i bordi sulla griglia del ritmo</string>
+    <string name="equalizer_float_subtitle">È in uso l’uscita float a 32 bit</string>
+    <string name="equalizer_float_footer">Android riproduce l’audio float tramite un percorso senza spazio per gli effetti, quindi equalizzatore, audio spaziale e salto dei silenzi vengono bypassati. Imposta l’uscita su PCM a 16 bit per usarli.</string>
+    <string name="show_best_part">Pulsante Parte migliore</string>
+    <string name="show_best_part_subtitle">Un pulsante sulla copertina che salta alla parte del brano più riascoltata</string>
+    <string name="hide_from_sidebar">Nascondi dalla barra laterale</string>
+    <string name="n_hidden">%1$d nascosti</string>
+    <string name="reorder_playlist">Modifica ordine</string>
+    <string name="d_reorder_subtitle">Trascina le righe nell’ordine desiderato, poi salva.</string>
+    <string name="translate">Traduci</string>
 </resources>

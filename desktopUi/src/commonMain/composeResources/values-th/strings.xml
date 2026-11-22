@@ -282,4 +282,16 @@
     <string name="saved_bang">บันทึกแล้ว!</string>
     <string name="sign_in_with_google">ลงชื่อเข้าใช้ด้วย Google</string>
     <string name="video_quality_auto">อัตโนมัติ</string>
+    <string name="best_part">ท่อนเด็ด</string>
+    <string name="best_part_description">ข้ามไปท่อนเด็ด</string>
+    <string name="watch_output">นาฬิกา</string>
+    <string name="watch_output_subtitle">เล่นผ่านลำโพงหรือหูฟังของนาฬิกา</string>
+    <string name="previously_played">เล่นก่อนหน้านี้</string>
+    <string name="search_addons_hint">ค้นหาแอดออนของคุณ</string>
+    <string name="search_addons_empty">ค้นหาในแอดออนที่เปิดใช้งานทั้งหมดพร้อมกัน เพลงจะเล่นตรงจากแอดออน</string>
+    <string name="search_addons_no_results">ไม่มีแอดออนใดมี “%1$s”</string>
+    <string name="video_quality">คุณภาพวิดีโอ</string>
+    <string name="switch_to_audio">สลับเป็นเสียง</string>
+    <string name="switch_to_video">สลับเป็นวิดีโอ</string>
+    <string name="audio_short">เสียง</string>
 </resources>

@@ -849,4 +849,20 @@
     <string name="song_info_unavailable">暂无信息</string>
     <string name="song_info_error">部分信息无法加载。</string>
     <string name="song_info_retry">重试</string>
+    <string name="automix_phrase_length">Automix 乐句长度</string>
+    <string name="automix_phrase_length_subtitle">在固定的小节数内混合，并对齐节拍</string>
+    <string name="automix_phrase_auto_detail">根据两首歌曲选择每次过渡的长度</string>
+    <string name="automix_phrase_8">8 小节</string>
+    <string name="automix_phrase_8_detail">恰好混合 8 小节，两端都对齐节拍网格</string>
+    <string name="automix_phrase_16">16 小节</string>
+    <string name="automix_phrase_16_detail">恰好混合 16 小节，两端都对齐节拍网格</string>
+    <string name="equalizer_float_subtitle">正在使用 32 位浮点输出</string>
+    <string name="equalizer_float_footer">Android 通过没有效果处理空间的通路播放浮点音频，因此均衡器、空间音频和跳过静音都会被绕过。将输出设为 16 位 PCM 即可使用它们。</string>
+    <string name="show_best_part">最佳片段按钮</string>
+    <string name="show_best_part_subtitle">封面上的按钮，可跳到歌曲中被重复播放最多的部分</string>
+    <string name="hide_from_sidebar">从侧边栏隐藏</string>
+    <string name="n_hidden">已隐藏 %1$d 项</string>
+    <string name="reorder_playlist">编辑顺序</string>
+    <string name="d_reorder_subtitle">将各行拖动到想要的顺序，然后保存。</string>
+    <string name="translate">翻译</string>
 </resources>

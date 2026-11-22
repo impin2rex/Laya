@@ -868,4 +868,20 @@
     <string name="song_info_unavailable">Nicht verfügbar</string>
     <string name="song_info_error">Einige Informationen konnten nicht geladen werden.</string>
     <string name="song_info_retry">Erneut versuchen</string>
+    <string name="automix_phrase_length">Automix-Phrasenlänge</string>
+    <string name="automix_phrase_length_subtitle">Überblendet über eine feste Anzahl Takte, am Beat ausgerichtet</string>
+    <string name="automix_phrase_auto_detail">Wählt die Länge jedes Übergangs anhand der beiden Titel</string>
+    <string name="automix_phrase_8">8 Takte</string>
+    <string name="automix_phrase_8_detail">Mischt über genau 8 Takte, beide Enden am Beat-Raster</string>
+    <string name="automix_phrase_16">16 Takte</string>
+    <string name="automix_phrase_16_detail">Mischt über genau 16 Takte, beide Enden am Beat-Raster</string>
+    <string name="equalizer_float_subtitle">32-Bit-Float-Ausgabe aktiv</string>
+    <string name="equalizer_float_footer">Android gibt Float-Audio über einen Pfad ohne Platz für Effekte wieder, daher werden Equalizer, räumliches Audio und Stille überspringen umgangen. Stelle die Ausgabe auf 16-Bit-PCM, um sie zu nutzen.</string>
+    <string name="show_best_part">Schaltfläche „Bester Teil“</string>
+    <string name="show_best_part_subtitle">Eine Schaltfläche auf dem Cover, die zu der Stelle springt, die am häufigsten wiederholt wird</string>
+    <string name="hide_from_sidebar">In der Seitenleiste ausblenden</string>
+    <string name="n_hidden">%1$d ausgeblendet</string>
+    <string name="reorder_playlist">Reihenfolge bearbeiten</string>
+    <string name="d_reorder_subtitle">Ziehe die Zeilen in die gewünschte Reihenfolge und speichere dann.</string>
+    <string name="translate">Übersetzen</string>
 </resources>

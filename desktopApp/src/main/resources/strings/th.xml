@@ -849,4 +849,20 @@
     <string name="song_info_unavailable">ไม่มีข้อมูล</string>
     <string name="song_info_error">ไม่สามารถโหลดข้อมูลบางส่วนได้</string>
     <string name="song_info_retry">ลองใหม่</string>
+    <string name="automix_phrase_length">ความยาววลีของ Automix</string>
+    <string name="automix_phrase_length_subtitle">เบลนด์ตามจำนวนห้องเพลงที่กำหนด ตรงจังหวะ</string>
+    <string name="automix_phrase_auto_detail">เลือกความยาวของแต่ละการเปลี่ยนตามเพลงทั้งสอง</string>
+    <string name="automix_phrase_8">8 ห้อง</string>
+    <string name="automix_phrase_8_detail">มิกซ์ 8 ห้องพอดี ทั้งสองปลายตรงตามเส้นจังหวะ</string>
+    <string name="automix_phrase_16">16 ห้อง</string>
+    <string name="automix_phrase_16_detail">มิกซ์ 16 ห้องพอดี ทั้งสองปลายตรงตามเส้นจังหวะ</string>
+    <string name="equalizer_float_subtitle">กำลังใช้เอาต์พุต float 32 บิต</string>
+    <string name="equalizer_float_footer">Android เล่นเสียง float ผ่านเส้นทางที่ไม่มีที่สำหรับเอฟเฟกต์ อีควอไลเซอร์ เสียงสเปเชียล และการข้ามช่วงเงียบจึงถูกข้าม ตั้งเอาต์พุตเป็น PCM 16 บิตเพื่อใช้งาน</string>
+    <string name="show_best_part">ปุ่มท่อนเด็ด</string>
+    <string name="show_best_part_subtitle">ปุ่มบนภาพปกที่ข้ามไปยังช่วงของเพลงที่คนเล่นซ้ำมากที่สุด</string>
+    <string name="hide_from_sidebar">ซ่อนจากแถบด้านข้าง</string>
+    <string name="n_hidden">ซ่อนอยู่ %1$d</string>
+    <string name="reorder_playlist">แก้ไขลำดับ</string>
+    <string name="d_reorder_subtitle">ลากแถวตามลำดับที่ต้องการ แล้วบันทึก</string>
+    <string name="translate">แปล</string>
 </resources>

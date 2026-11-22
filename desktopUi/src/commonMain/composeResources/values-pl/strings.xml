@@ -285,4 +285,16 @@
     <string name="saved_bang">Zapisano!</string>
     <string name="sign_in_with_google">Zaloguj się przez Google</string>
     <string name="video_quality_auto">Automatycznie</string>
+    <string name="best_part">Najlepszy fragment</string>
+    <string name="best_part_description">Przejdź do najlepszego fragmentu</string>
+    <string name="watch_output">Zegarek</string>
+    <string name="watch_output_subtitle">Odtwarzaj przez głośnik lub słuchawki zegarka</string>
+    <string name="previously_played">Ostatnio odtwarzane</string>
+    <string name="search_addons_hint">Przeszukaj dodatki</string>
+    <string name="search_addons_empty">Przeszukuje jednocześnie wszystkie włączone dodatki. Utwory są odtwarzane bezpośrednio z dodatku.</string>
+    <string name="search_addons_no_results">Żaden dodatek nie ma „%1$s”.</string>
+    <string name="video_quality">Jakość wideo</string>
+    <string name="switch_to_audio">Przełącz na audio</string>
+    <string name="switch_to_video">Przełącz na wideo</string>
+    <string name="audio_short">Audio</string>
 </resources>
