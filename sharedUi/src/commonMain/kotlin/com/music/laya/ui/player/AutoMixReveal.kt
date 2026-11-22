@@ -13,7 +13,18 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.RenderEffect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shader
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
@@ -39,6 +50,47 @@ internal interface AutoMixMaskShader {
 
 /** Null where the platform cannot draw the field at all or it failed to compile. Android before 13 bakes it. */
 internal expect fun autoMixMaskShader(seedX: Float, seedY: Float): AutoMixMaskShader?
+
+/** Whether [BlurEffect] does anything here: it is a no-op on Android before 12. */
+internal expect val blurEffectSupported: Boolean
+
+/** How much of the soft stand-in still shows at [eased]: the blur's own quadratic fall-off, gone at its end. */
+internal fun softCoverAlpha(eased: Float): Float {
+    val remaining = (1f - eased / Tuning.BLUR_END_PROGRESS).coerceIn(0f, 1f)
+    return remaining * remaining
+}
+
+/**
+ * A tiny, cover-cropped copy of [painter]. Drawn stretched over the layer with bilinear filtering
+ * it reads as a heavy blur, so the blur-to-sharp step needs no RenderEffect. Built once per cover.
+ */
+internal fun softCoverOf(painter: Painter): ImageBitmap {
+    val side = SOFT_COVER_PX
+    val bitmap = ImageBitmap(side, side)
+    val source = painter.intrinsicSize.takeIf { it.isSpecified && it.width > 0f && it.height > 0f } ?: Size(1f, 1f)
+    val scale = maxOf(side / source.width, side / source.height)
+    val w = source.width * scale
+    val h = source.height * scale
+    CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(bitmap), Size(side.toFloat(), side.toFloat())) {
+        translate((side - w) / 2f, (side - h) / 2f) { with(painter) { draw(Size(w, h)) } }
+    }
+    return bitmap
+}
+
+private const val SOFT_COVER_PX = 40
+
+/** Draws [soft] over the content at [eased]'s remaining blur. Allocation-free: inline sizes, no objects. */
+private fun DrawScope.drawSoftCover(soft: ImageBitmap?, eased: Float) {
+    if (soft == null) return
+    val alpha = softCoverAlpha(eased)
+    if (alpha <= 0f) return
+    drawImage(
+        soft,
+        dstSize = IntSize(size.width.toInt(), size.height.toInt()),
+        alpha = alpha,
+        filterQuality = FilterQuality.Low,
+    )
+}
 
 // UI thread only. A driver/shader failure must not be retried on every transition.
 internal var autoMixRevealFailed = false
@@ -85,6 +137,8 @@ internal fun autoMixIncomingReveal(
     reducedMotion: () -> Boolean,
     generation: Long,
     blurEnabled: Boolean,
+    /** [softCoverOf] the picture, for platforms where the blur effect does nothing; null elsewhere. */
+    soft: ImageBitmap? = null,
 ): Modifier {
     val density = LocalDensity.current.density
     val blur = if (blurEnabled) remember(density) {
@@ -100,7 +154,14 @@ internal fun autoMixIncomingReveal(
     val blurLayer = Modifier.graphicsLayer {
         renderEffect = if (blur == null || reducedMotion()) null else blur.at(eased())
     }
-    if (mask == null) return Modifier.graphicsLayer { alpha = eased() }.then(blurLayer)
+    if (mask == null) {
+        return Modifier.graphicsLayer { alpha = eased() }.then(blurLayer).then(
+            if (soft == null) Modifier else Modifier.drawWithContent {
+                drawContent()
+                if (!reducedMotion()) drawSoftCover(soft, eased())
+            },
+        )
+    }
     val (field, layer) = mask
     return Modifier
         // The mask cuts this layer only: DstIn against the picture it holds.
@@ -122,6 +183,7 @@ internal fun autoMixIncomingReveal(
                 return@drawWithContent
             }
             drawContent()
+            drawSoftCover(soft, e)
             val shader = runCatching { field.shader(size.width, size.height, e) }
                 .onFailure { autoMixRevealFailed = true }.getOrNull() ?: return@drawWithContent
             layer.paint.shader = shader
