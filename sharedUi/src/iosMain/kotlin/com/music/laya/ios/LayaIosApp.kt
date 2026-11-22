@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -112,6 +113,7 @@ import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.delay
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.ShelfItem
+import com.music.laya.data.model.KeyedMix
 import com.music.laya.data.model.Song
 import kotlinx.coroutines.withContext
 import com.music.laya.platform.ioDispatcher
@@ -135,6 +137,7 @@ import com.music.laya.ui.utils.guardSheetFromContentTouches
 import com.music.laya.ui.player.NowPlayingScreen
 import com.music.laya.ui.screens.DetailScreen
 import com.music.laya.ui.screens.ExploreScreen
+import com.music.laya.ui.screens.MixesScreen
 import com.music.laya.ui.screens.MoodGenrePlaylistsScreen
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -198,6 +201,7 @@ import com.music.laya.data.LikeState
 import com.music.laya.data.model.LibraryPage
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.recognize_title
+import com.music.laya.sharedui.resources.radio
 import com.music.laya.sharedui.resources.history_empty
 import com.music.laya.sharedui.resources.library_empty
 import com.music.laya.ui.screens.HistoryScreen
@@ -353,6 +357,22 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         )
     }
     val sessionVersion by IosAuth.sessionVersion.collectAsState()
+    // Radio: the signed-in "Mixed for you" cards, fetched the first time the tab opens
+    // and again for a different account (MainViewModel's onMixesShown).
+    var mixes by remember { mutableStateOf<UiState<List<KeyedMix>>>(UiState.Loading) }
+    var mixesRefreshing by remember { mutableStateOf(false) }
+    suspend fun loadMixes() {
+        mixes = YtMusicRepository.mixedForYouKeyed().fold({ UiState.Success(it) }, { UiState.Error(friendly(it)) })
+    }
+    var mixesLoadedFor by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(tab == 2, signedIn, sessionVersion) {
+        if (!signedIn) mixesLoadedFor = null
+        else if (tab == 2 && mixesLoadedFor != sessionVersion) {
+            mixesLoadedFor = sessionVersion
+            mixes = UiState.Loading
+            loadMixes()
+        }
+    }
     // Keyed on the identity too: switching account or profile keeps signedIn true but changes whose library this is.
     LaunchedEffect(signedIn, sessionVersion) {
         if (signedIn) { library = UiState.Loading; loadLibrary(); loadHome() }
@@ -456,7 +476,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     command == "search" -> {
                         nowPlayingOpen = false
                         stack = emptyList()
-                        tab = 3
+                        tab = 4
                     }
                     // The Control Center control / Shortcuts action: straight to listening.
                     command == "recognize" -> {
@@ -849,7 +869,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
 
-    val replayOpen = stack.lastOrNull() === IosPage.Replay || replayStory != null || showReplayShare || (tab == 2 && stack.isEmpty())
+    val replayOpen = stack.lastOrNull() === IosPage.Replay || replayStory != null || showReplayShare || (tab == 3 && stack.isEmpty())
     val (replay, setReplayPeriod) = rememberReplayState(replayOpen)
     val replayCards = remember(replay.summary) { replay.summary?.takeUnless { it.isEmpty }?.cards().orEmpty() }
     // Debug only: SIMCTL_CHILD_LAYA_SEED_PLAYS=1 fills the listening record with fake plays (never set in normal use).
@@ -891,8 +911,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 }
             }
             what == "downloads" -> stack = stack + IosPage.Detail(IosDownloads.page())
-            what == "search" -> tab = 3
-            what == "library" -> tab = 2
+            what == "search" -> tab = 4
+            what == "library" -> tab = 3
             what == "sources" -> stack = stack + IosPage.Sources
             what == "party" -> stack = stack + IosPage.ListenTogether
             what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
@@ -908,10 +928,13 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val homePull = rememberPullToRefreshState()
     val explorePull = rememberPullToRefreshState()
     val libraryPull = rememberPullToRefreshState()
+    val mixesList = rememberLazyListState()
+    val mixesPull = rememberPullToRefreshState()
     val tabs = remember {
         listOf(
             BottomTab("Home", Icons.Filled.Home),
             BottomTab("Explore", Icons.Filled.Explore),
+            BottomTab("Radio", Icons.Filled.Radio),
             BottomTab("Library", Icons.Filled.LibraryMusic),
             BottomTab("Search", Icons.Filled.Search),
         )
@@ -1143,7 +1166,21 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 pullState = explorePull,
                                 contentPadding = noPadding,
                             )
-                            2 -> LibraryScreen(
+                            2 -> MixesScreen(
+                                title = stringResource(Res.string.radio),
+                                state = mixes,
+                                signedIn = signedIn,
+                                listState = mixesList,
+                                // A mix opens as the playlist it is, as its card does on Home.
+                                onItemClick = ::openShelfItem,
+                                onRetry = { scope.launch { mixes = UiState.Loading; loadMixes() } },
+                                onSignIn = { showLogin = true },
+                                refreshing = mixesRefreshing,
+                                onRefresh = { scope.launch { mixesRefreshing = true; loadMixes(); mixesRefreshing = false } },
+                                pullState = mixesPull,
+                                contentPadding = noPadding,
+                            )
+                            3 -> LibraryScreen(
                                 signedIn = signedIn,
                                 state = library,
                                 listState = libraryList,
@@ -1287,7 +1324,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     Modifier.align(Alignment.TopStart).fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    if (tab == 3) {
+                                    if (tab == 4) {
                                         SearchField(
                                             query = query,
                                             onQueryChange = ::onQueryChange,
@@ -1321,7 +1358,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     } else Spacer(Modifier.weight(1f))
                                     IosTopPill(
                                         account = account,
-                                        onHistory = if (tab == 2 && signedIn) ({ openHistory() }) else null,
+                                        onHistory = if (tab == 3 && signedIn) ({ openHistory() }) else null,
                                         onAccount = { stack = stack + IosPage.Settings },
                                     )
                                 }

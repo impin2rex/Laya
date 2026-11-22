@@ -31,6 +31,7 @@ import com.music.laya.data.model.EntityType
 import com.music.laya.data.model.SearchHistoryEntity
 import com.music.laya.ui.LocalPullToRefreshEnabled
 import com.music.laya.ui.screens.ExploreScreen
+import com.music.laya.ui.screens.MixesScreen
 import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.CompactTrackRow
 import com.music.laya.ui.screens.LibraryGridPage
@@ -296,6 +297,7 @@ import com.music.laya.data.model.ROW_ART_PX
 import com.music.laya.data.model.SearchFilter
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.ShelfItem
+import com.music.laya.data.model.KeyedMix
 import com.music.laya.data.model.PlaybackSourceType
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.SubscriptionState
@@ -500,6 +502,7 @@ internal fun desktopTypography(): Typography {
 private enum class DesktopDestination(val id: String, val label: String) {
     LISTEN_NOW("listen-now", "Home"),
     EXPLORE("explore", "Explore"),
+    RADIO("radio", "Radio"),
     LIBRARY("library", "Library"),
     SEARCH("search", "Search"),
     HISTORY("history", "History"),
@@ -602,6 +605,7 @@ fun LayaDesktopApp() {
     // Held out here so a page keeps its place when another is visited and it is come back to.
     val homeListState = rememberLazyListState()
     val exploreListState = rememberLazyListState()
+    val mixesListState = rememberLazyListState()
     val moodGenreListState = rememberLazyListState()
     val searchListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
@@ -625,6 +629,10 @@ fun LayaDesktopApp() {
     // Bumped by a retry so the loaders below re-run without the state they are keyed on having to
     // change to something and back again.
     var exploreReloads by remember { mutableStateOf(0) }
+    /** Radio's "Mixed for you" cards, and whose they are, so an account switch loads the new one's. */
+    var mixesState by remember { mutableStateOf<UiState<List<KeyedMix>>>(UiState.Loading) }
+    var mixesLoadedFor by remember { mutableStateOf<String?>(null) }
+    var mixesReloads by remember { mutableStateOf(0) }
     var moodGenreReloads by remember { mutableStateOf(0) }
     var moodGenreShelves by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
     var selectedSong by remember { mutableStateOf<Song?>(null) }
@@ -3033,6 +3041,24 @@ fun LayaDesktopApp() {
         }
     }
 
+    // Radio loads the first time it is opened, again for a different account, and on a retry.
+    LaunchedEffect(destination, youtubeSignedIn, activeAccountId, activeProfileId, sessionRevision, mixesReloads) {
+        if (destination != DesktopDestination.RADIO || !youtubeSignedIn) return@LaunchedEffect
+        if (!youtubeSourceEnabled) {
+            mixesState = UiState.Error("YouTube Music is disabled")
+            mixesLoadedFor = null
+            return@LaunchedEffect
+        }
+        val identity = "$activeAccountId/$activeProfileId/$sessionRevision/$mixesReloads"
+        if (identity == mixesLoadedFor) return@LaunchedEffect
+        mixesLoadedFor = identity
+        mixesState = UiState.Loading
+        mixesState = YtMusicRepository.mixedForYouKeyed().fold(
+            onSuccess = { UiState.Success(it) },
+            onFailure = { UiState.Error(it.message ?: "Could not load Radio") },
+        )
+    }
+
     // Category buttons carry no artwork of their own, so a few are resolved at a time from the
     // shelves they open.
     LaunchedEffect(exploreState) {
@@ -4576,6 +4602,20 @@ fun LayaDesktopApp() {
                             contentPadding = sharedPagePadding,
                             showTitle = false,
                         )
+                        destination == DesktopDestination.RADIO -> MixesScreen(
+                            // The desktop's pages carry no big heading; the sidebar names the page.
+                            title = null,
+                            state = mixesState,
+                            signedIn = youtubeSignedIn,
+                            listState = mixesListState,
+                            onItemClick = { openShelfItem(it) },
+                            onRetry = { mixesReloads++ },
+                            onSignIn = { overlays.accounts = true },
+                            refreshing = false,
+                            onRefresh = { mixesReloads++ },
+                            pullState = rememberPullToRefreshState(),
+                            contentPadding = sharedPagePadding,
+                        )
                         destination == DesktopDestination.SEARCH -> SearchScreen(
                             query = query,
                             onQueryChange = ::editQuery,
@@ -5191,6 +5231,9 @@ private fun DesktopSidebar(
             DesktopSidebarItem(LayaIcons.Explore, "Explore", destination == DesktopDestination.EXPLORE) {
                 onDestinationSelected(DesktopDestination.EXPLORE)
             }
+            DesktopSidebarItem(LayaIcons.TabRadio, "Radio", destination == DesktopDestination.RADIO) {
+                onDestinationSelected(DesktopDestination.RADIO)
+            }
             DesktopSidebarItem(LayaIcons.Library, "Library", destination == DesktopDestination.LIBRARY) {
                 onDestinationSelected(DesktopDestination.LIBRARY)
             }
@@ -5459,6 +5502,7 @@ private fun DesktopFloatingNavigation(
     val tabs = listOf(
         DesktopDestination.LISTEN_NOW to (LayaIcons.Play to "Play"),
         DesktopDestination.EXPLORE to (LayaIcons.Explore to "Explore"),
+        DesktopDestination.RADIO to (LayaIcons.TabRadio to "Radio"),
         DesktopDestination.LIBRARY to (LayaIcons.Library to "Library"),
         DesktopDestination.SEARCH to (LayaIcons.Search to "Search"),
     )

@@ -369,10 +369,10 @@ private fun FeatureCard(
  * @property key the mood's English name, lower-case — stable across languages.
  * @property name the heading, in the language the mixes are shown in.
  */
-internal data class MoodMixes(val key: String, val name: String, val items: List<ShelfItem>)
+data class MoodMixes(val key: String, val name: String, val items: List<ShelfItem>)
 
 /** The mixes sorted into the page's three kinds; see [groupMixes]. */
-internal class MixSections(
+class MixSections(
     val stations: List<ShelfItem>,
     val yours: List<ShelfItem>,
     val moods: List<MoodMixes>,
@@ -395,7 +395,7 @@ internal class MixSections(
  * - Everything else is the listener's own: the My Mixes, which YouTube titles
  *   by what they sound like ("Modern Punjabi Beats") rather than by number.
  */
-internal fun groupMixes(mixes: List<KeyedMix>): MixSections {
+fun groupMixes(mixes: List<KeyedMix>): MixSections {
     val unique = mixes.distinctBy { it.item.browseId ?: it.item.title }
     val stations = mutableListOf<Pair<Int, ShelfItem>>()
     val yours = mutableListOf<ShelfItem>()

@@ -74,8 +74,8 @@ import com.music.laya.ui.player.rememberRemoteArtworkUrl
  * The liquid glass navigation bar: the iOS 26 shape where the now playing
  * controls and the tabs are one component rather than two stacked bars.
  *
- * Expanded, it is a full width now playing pill sitting over the tab pill and a
- * separate circular Search tab. Scrolling down collapses it inline — the tabs
+ * Expanded, it is a full width now playing pill sitting over the tab pill, with
+ * Search as the pill's last tab. Scrolling down collapses it inline — the tabs
  * fold down to just the selected one, the now playing controls narrow into the
  * gap between it and Search, and the whole thing becomes a single row the width
  * of the screen. Scrolling back up expands it. The fold is driven by
@@ -127,9 +127,10 @@ fun GlassNavBar(
     // handler out of the key.
     val currentOnTabSelected by rememberUpdatedState(onTabSelected)
 
-    // Search is the odd one out in the iOS 26 layout: a circle of its own beside
-    // the pill rather than a quarter of it. It is the last tab in Laya's
-    // order, which is where the shape wants it anyway.
+    // Search is the odd one out when collapsed: a circle of its own at the end
+    // of the row. It is the last tab in Laya's order, which is where the
+    // shape wants it anyway. Expanded, it is folded back into the pill, so the
+    // five tabs share one row instead of squeezing four beside a circle.
     val standaloneIndex = tabs.lastIndex
 
     // A factory, not a value — see the note in FloatingTabBar's header. Each of
@@ -218,6 +219,7 @@ fun GlassNavBar(
         contentKey = remember(selectedIndex, tabs, contentColor) {
             listOf(selectedIndex, tabs, contentColor)
         },
+        mergeStandaloneWhenExpanded = true,
     ) {
         tabs.forEachIndexed { index, tab ->
             val isSelected = index == selectedIndex
@@ -226,45 +228,32 @@ fun GlassNavBar(
                 if (!isSelected) haptics.play(Haptic.Select)
                 currentOnTabSelected(index)
             }
+            val icon = @Composable {
+                Icon(
+                    imageVector = tab.icon,
+                    contentDescription = tab.label,
+                    tint = tint,
+                    modifier = Modifier.size(25.dp),
+                )
+            }
+            val title = @Composable {
+                Text(
+                    text = tab.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = tint,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    // The library's Tab stacks the glyph and the label
+                    // with nothing between them; the plain bar spaces
+                    // them, and this is where that gap goes.
+                    modifier = Modifier.padding(top = TAB_ICON_LABEL_GAP),
+                )
+            }
             if (index == standaloneIndex) {
-                standaloneTab(
-                    key = index,
-                    icon = {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = tab.label,
-                            tint = tint,
-                            modifier = Modifier.size(25.dp),
-                        )
-                    },
-                    onClick = onClick,
-                )
+                // Titled for the expanded bar, where it is the pill's last tab.
+                standaloneTab(key = index, icon = icon, onClick = onClick, title = title)
             } else {
-                tab(
-                    key = index,
-                    icon = {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = tab.label,
-                            tint = tint,
-                            modifier = Modifier.size(25.dp),
-                        )
-                    },
-                    title = {
-                        Text(
-                            text = tab.label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = tint,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            // The library's Tab stacks the glyph and the label
-                            // with nothing between them; the plain bar spaces
-                            // them, and this is where that gap goes.
-                            modifier = Modifier.padding(top = TAB_ICON_LABEL_GAP),
-                        )
-                    },
-                    onClick = onClick,
-                )
+                tab(key = index, icon = icon, title = title, onClick = onClick)
             }
         }
     }
