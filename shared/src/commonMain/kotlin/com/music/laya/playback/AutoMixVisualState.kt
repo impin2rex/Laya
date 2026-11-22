@@ -27,6 +27,10 @@ object AutoMixArtworkTuning {
     const val MAX_PROGRESS_EXTRAPOLATION_SECONDS = 0.12
     /** How long an outgoing animated cover takes to fade back to its still once a mix starts. */
     const val CANVAS_RETIRE_MS = 700
+    // How long an incoming Canvas video gets to show its first frame once the mix has begun.
+    const val CANVAS_PREPARE_TIMEOUT_MS = 4_000L
+    // The incoming clip must be on screen this long before its reveal starts, or it is not used.
+    const val CANVAS_READY_MARGIN_SECONDS = 0.05
 
     /**
      * The artwork window for a swap observed at [swap], with the overlap ending at [end].

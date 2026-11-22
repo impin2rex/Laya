@@ -96,4 +96,8 @@
     <string name="d_voice_download">Baixar (%1$s MB)</string>
     <string name="d_voice_downloading">Baixando %1$s%%</string>
     <string name="d_voice_download_failed">Falha no download, tente novamente</string>
+    <string name="automix_art_transition">Transição de capa</string>
+    <string name="automix_art_transition_subtitle">Mistura suavemente a capa entre as faixas durante o Automix.</string>
+    <string name="automix_mini_art_transition">Transição de capa no mini player</string>
+    <string name="automix_mini_art_transition_subtitle">Mostra as transições de capa no mini player durante o Automix.</string>
 </resources>

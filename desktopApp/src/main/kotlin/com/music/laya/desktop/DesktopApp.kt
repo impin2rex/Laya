@@ -3580,10 +3580,12 @@ fun LayaDesktopApp() {
     LaunchedEffect(Unit) {
         snapshotFlow {
             val id = playback.song?.videoId
-            (id != null && id in likedIds) to watching?.takeIf { it == id }
-        }.collect { (liked, video) ->
-            DesktopMiniWindow.liked.value = liked
-            DesktopMiniWindow.videoId.value = video
+            Triple((id != null && id in likedIds) to watching?.takeIf { it == id }, liveQueue.songs, liveQueue.index)
+        }.collect { (state, songs, index) ->
+            DesktopMiniWindow.liked.value = state.first
+            DesktopMiniWindow.videoId.value = state.second
+            DesktopMiniWindow.queue.value = songs
+            DesktopMiniWindow.queueIndex.value = index
         }
     }
     SideEffect {

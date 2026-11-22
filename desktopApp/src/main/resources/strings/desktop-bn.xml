@@ -96,4 +96,8 @@
     <string name="d_voice_download">ডাউনলোড (%1$s MB)</string>
     <string name="d_voice_downloading">ডাউনলোড হচ্ছে %1$s%%</string>
     <string name="d_voice_download_failed">ডাউনলোড হয়নি, আবার চেষ্টা করুন</string>
+    <string name="automix_art_transition">আর্ট ট্রানজিশন</string>
+    <string name="automix_art_transition_subtitle">Automix-এর সময় ট্র্যাকের মধ্যে কভার আর্ট মসৃণভাবে মিশ্রিত করে।</string>
+    <string name="automix_mini_art_transition">মিনি-প্লেয়ার আর্ট ট্রানজিশন</string>
+    <string name="automix_mini_art_transition_subtitle">Automix-এর সময় মিনি-প্লেয়ারে আর্টওয়ার্ক ট্রানজিশন দেখায়।</string>
 </resources>

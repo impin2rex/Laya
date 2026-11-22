@@ -96,4 +96,8 @@
     <string name="d_voice_download">ダウンロード（%1$s MB）</string>
     <string name="d_voice_downloading">ダウンロード中 %1$s%%</string>
     <string name="d_voice_download_failed">ダウンロードに失敗しました。もう一度お試しください</string>
+    <string name="automix_art_transition">アートの切り替え</string>
+    <string name="automix_art_transition_subtitle">Automix中、トラック間でカバーアートを滑らかにブレンドします。</string>
+    <string name="automix_mini_art_transition">ミニプレーヤーのアート切り替え</string>
+    <string name="automix_mini_art_transition_subtitle">Automix中、ミニプレーヤーでもアートワークの切り替えを表示します。</string>
 </resources>

@@ -1,13 +1,16 @@
 package com.music.laya.ui.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shader
@@ -16,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import com.music.laya.playback.AutoMixArtworkTuning as Tuning
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -28,9 +32,12 @@ import kotlin.random.Random
 internal interface AutoMixMaskShader {
     /** The field at [progress] over a [width] x [height] layer. May return the same, updated, instance. */
     fun shader(width: Float, height: Float, progress: Float): Shader
+
+    /** A filter the mask's paint applies on top of [shader] for [progress], for masks that bake the field. */
+    fun colorFilter(progress: Float): ColorFilter? = null
 }
 
-/** Null where runtime shaders are unavailable (Android before 13) or failed to compile. */
+/** Null where the platform cannot draw the field at all or it failed to compile. Android before 13 bakes it. */
 internal expect fun autoMixMaskShader(seedX: Float, seedY: Float): AutoMixMaskShader?
 
 // UI thread only. A driver/shader failure must not be retried on every transition.
@@ -56,8 +63,19 @@ private class BlurSteps(val density: Float) {
 
 private class IncomingMask {
     // Paints for the layer's whole life: only their shader or alpha moves per frame.
-    val paint = Paint().apply { blendMode = BlendMode.DstIn }
+    val paint = Paint().apply {
+        blendMode = BlendMode.DstIn
+        filterQuality = FilterQuality.Low // a baked field is stretched over the layer
+    }
     val fade = Paint()
+}
+
+/** [autoMixIncomingReveal] for a clip: the organic mask over the video's own drawing, without the blur. */
+@Composable
+fun Modifier.canvasOrganicReveal(reveal: CanvasOrganicReveal?): Modifier {
+    if (reveal == null) return this
+    val reduced = PlayerSettings.reduceAnimation.collectAsState()
+    return this.then(autoMixIncomingReveal({ reveal.progress() }, { reduced.value }, reveal.generation, blurEnabled = false))
 }
 
 /** Only the incoming picture is isolated by the effect, never the outgoing one under it. */
@@ -107,6 +125,7 @@ internal fun autoMixIncomingReveal(
             val shader = runCatching { field.shader(size.width, size.height, e) }
                 .onFailure { autoMixRevealFailed = true }.getOrNull() ?: return@drawWithContent
             layer.paint.shader = shader
+            layer.paint.colorFilter = field.colorFilter(e)
             drawIntoCanvas { it.drawRect(0f, 0f, size.width, size.height, layer.paint) }
         }
         .then(blurLayer)
@@ -162,3 +181,64 @@ internal val AUTOMIX_MOTTLED_MASK = """
         return half4(0.0, 0.0, 0.0, revealCoverage(xy));
     }
 """.trimIndent()
+
+/** Side of the baked field the platforms without runtime shaders stretch over the layer. */
+internal const val AUTOMIX_FIELD_SIZE = 128
+
+private fun glMod(x: Float, y: Float) = x - y * floor(x / y)
+
+private fun hashCell(x: Float, y: Float): Float {
+    var n = glMod(x * 127f + y * 197f, 251f)
+    n = glMod(n * (n + 73f) + x * 97f + y * 53f, 251f)
+    n = glMod(n * (n + 37f) + x * 31f + y * 109f, 251f)
+    return n / 251f
+}
+
+private fun valueNoise(px: Float, py: Float): Float {
+    val cx = floor(px)
+    val cy = floor(py)
+    var fx = px - cx
+    var fy = py - cy
+    fx = fx * fx * (3f - 2f * fx)
+    fy = fy * fy * (3f - 2f * fy)
+    val top = hashCell(cx, cy) + (hashCell(cx + 1f, cy) - hashCell(cx, cy)) * fx
+    val bottom = hashCell(cx, cy + 1f) + (hashCell(cx + 1f, cy + 1f) - hashCell(cx, cy + 1f)) * fx
+    return top + (bottom - top) * fy
+}
+
+/**
+ * [ORGANIC_MASK_FIELD]'s noise, normalised to 0..255 over a [size] square: the same field the
+ * runtime shader draws, baked once per generation for Android before 13, which has no
+ * RuntimeShader. [autoMixRamp] then does what the shader's threshold does, per frame.
+ */
+internal fun autoMixField(seedX: Float, seedY: Float, size: Int = AUTOMIX_FIELD_SIZE): ByteArray {
+    val out = ByteArray(size * size)
+    for (y in 0 until size) for (x in 0 until size) {
+        var px = (x + 0.5f) / size * Tuning.NOISE_SCALE + seedX
+        var py = (y + 0.5f) / size * Tuning.NOISE_SCALE + seedY
+        var noise = 0f
+        var weight = 0.5f
+        var total = 0f
+        repeat(Tuning.NOISE_OCTAVES) {
+            noise += valueNoise(px, py) * weight
+            total += weight
+            px = px * 2f + 3.9f
+            py = py * 2f + 5.1f
+            weight *= 0.5f
+        }
+        val field = ((noise / total - Tuning.NOISE_LOW) / (Tuning.NOISE_HIGH - Tuning.NOISE_LOW)).coerceIn(0f, 1f)
+        out[y * size + x] = (field * 255f + 0.5f).toInt().toByte()
+    }
+    return out
+}
+
+/**
+ * The shader's coverage `smoothstep(threshold - s, threshold + s, field)` as the linear ramp
+ * `field * scale + bias` (clamped by the pipeline): what a colour filter on the baked field can do.
+ */
+internal fun autoMixRamp(progress: Float): Pair<Float, Float> {
+    val softness = Tuning.NOISE_SOFTNESS
+    val threshold = (1f + softness) - (1f + 2f * softness) * progress.coerceIn(0f, 1f)
+    val scale = 1f / (2f * softness)
+    return scale to -(threshold - softness) * scale
+}

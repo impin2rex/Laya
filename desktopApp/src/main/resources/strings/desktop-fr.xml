@@ -96,4 +96,8 @@
     <string name="d_voice_download">Télécharger (%1$s Mo)</string>
     <string name="d_voice_downloading">Téléchargement %1$s%%</string>
     <string name="d_voice_download_failed">Échec du téléchargement, réessayez</string>
+    <string name="automix_art_transition">Transition de pochette</string>
+    <string name="automix_art_transition_subtitle">Fond en douceur la pochette entre les titres pendant Automix.</string>
+    <string name="automix_mini_art_transition">Transition de pochette du mini-lecteur</string>
+    <string name="automix_mini_art_transition_subtitle">Affiche les transitions de pochette dans le mini-lecteur pendant Automix.</string>
 </resources>

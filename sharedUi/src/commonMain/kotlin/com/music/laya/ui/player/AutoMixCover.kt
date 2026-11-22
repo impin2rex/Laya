@@ -115,10 +115,15 @@ private fun incomingArtworkUrl(state: AutoMixVisualState, queue: List<Song>): St
  * armed, once per generation per surface. The reveal only ever uses what this retained.
  */
 @Composable
-internal fun AutoMixArtworkPrefetchEffect(queue: List<Song>, gate: AutoMixArtworkGate, mini: Boolean) {
+internal fun AutoMixArtworkPrefetchEffect(
+    queue: List<Song>,
+    gate: AutoMixArtworkGate,
+    mini: Boolean,
+    miniPx: Int = ROW_ART_PX,
+) {
     val context = LocalPlatformContext.current
     val currentQueue by rememberUpdatedState(queue)
-    LaunchedEffect(context, gate, mini) {
+    LaunchedEffect(context, gate, mini, miniPx) {
         if (!gate.enabled) return@LaunchedEffect
         AutoMixVisualFeed.state
             .map { state -> state?.takeIf { it.phase == AutoMixVisualPhase.ARMED && gate.allows(it.generation) } }
@@ -129,7 +134,7 @@ internal fun AutoMixArtworkPrefetchEffect(queue: List<Song>, gate: AutoMixArtwor
                 if (done == state.generation) return@collectLatest
                 val url = incomingArtworkUrl(state, currentQueue) ?: return@collectLatest
                 try {
-                    prefetchAutoMixCover(context, url, state.generation, mini)
+                    prefetchAutoMixCover(context, url, state.generation, mini, miniPx)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -139,13 +144,19 @@ internal fun AutoMixArtworkPrefetchEffect(queue: List<Song>, gate: AutoMixArtwor
     }
 }
 
-private suspend fun prefetchAutoMixCover(context: PlatformContext, url: String, generation: Long, mini: Boolean) {
+private suspend fun prefetchAutoMixCover(
+    context: PlatformContext,
+    url: String,
+    generation: Long,
+    mini: Boolean,
+    miniPx: Int,
+) {
     val loader = SingletonImageLoader.get(context)
     fun stillArmed() = AutoMixVisualFeed.pending(generation)?.phase == AutoMixVisualPhase.ARMED
     if (mini) {
-        // The mini surfaces size their decode from layout; warm a row-sized, inexact one.
+        // The mini surfaces size their decode from layout; warm one at the surface's size, inexact.
         val result = loader.execute(
-            ImageRequest.Builder(context).data(url.artworkAt(ROW_ART_PX)).size(ROW_ART_PX)
+            ImageRequest.Builder(context).data(url.artworkAt(miniPx)).size(miniPx)
                 .scale(Scale.FILL).precision(Precision.INEXACT).build(),
         )
         if (result is SuccessResult && stillArmed()) {
@@ -371,6 +382,8 @@ fun rememberMiniAutoMixArtwork(
     song: Song?,
     queue: List<Song>,
     index: Int,
+    /** The decode size of the bar's cover; the phone's row art unless a bigger surface asks. */
+    px: Int = ROW_ART_PX,
 ): @Composable (String?, Modifier) -> Unit {
     val occurrence = remember(song?.videoId, song?.queueEntryId, queue, index) {
         song?.let { coverOccurrence(it, queue, index) }
@@ -382,7 +395,7 @@ fun rememberMiniAutoMixArtwork(
     SideEffect { cover.bind(occurrence, null, feed.value?.takeIf { gate.allows(it.generation) }) }
     LaunchedEffect(cover, gate) { feed.collect { cover.update(it, gate) } }
     AutoMixRevealClockEffect()
-    AutoMixArtworkPrefetchEffect(queue, gate, mini = true)
+    AutoMixArtworkPrefetchEffect(queue, gate, mini = true, miniPx = px)
 
     return remember(cover, occurrence, gate) {
         { model, modifier ->

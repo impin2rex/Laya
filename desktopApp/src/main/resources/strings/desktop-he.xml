@@ -96,4 +96,8 @@
     <string name="d_voice_download">הורדה (%1$s MB)</string>
     <string name="d_voice_downloading">מוריד %1$s%%</string>
     <string name="d_voice_download_failed">ההורדה נכשלה, נסו שוב</string>
+    <string name="automix_art_transition">מעבר עטיפות</string>
+    <string name="automix_art_transition_subtitle">מערבב בעדינות את עטיפות האלבום בין שירים במהלך Automix.</string>
+    <string name="automix_mini_art_transition">מעבר עטיפות במיני-נגן</string>
+    <string name="automix_mini_art_transition_subtitle">מציג מעברי עטיפות במיני-נגן במהלך Automix.</string>
 </resources>

@@ -96,4 +96,8 @@
     <string name="d_voice_download">Descargar (%1$s MB)</string>
     <string name="d_voice_downloading">Descargando %1$s%%</string>
     <string name="d_voice_download_failed">Error al descargar, inténtalo de nuevo</string>
+    <string name="automix_art_transition">Transición de carátula</string>
+    <string name="automix_art_transition_subtitle">Mezcla suavemente la carátula entre pistas durante Automix.</string>
+    <string name="automix_mini_art_transition">Transición de carátula en el minirreproductor</string>
+    <string name="automix_mini_art_transition_subtitle">Muestra las transiciones de carátula en el minirreproductor durante Automix.</string>
 </resources>
