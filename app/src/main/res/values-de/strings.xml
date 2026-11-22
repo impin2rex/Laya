@@ -1415,4 +1415,5 @@
     <string name="lossless_verify_expired_notice">%1$s-Verifizierung abgelaufen. Schalte es unter Quellen wieder ein, um verlustfrei zu hören.</string>
     <string name="lossless_verify_expired">Verifizierung abgelaufen · wieder einschalten</string>
     <string name="lossless_verified_until">Verifiziert · bis %1$s</string>
+    <string name="lyrics_share_video_silent">Der Ton des Songs konnte nicht geladen werden, daher hat dieses Video keinen Ton.</string>
 </resources>

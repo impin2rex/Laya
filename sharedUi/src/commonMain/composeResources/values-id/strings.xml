@@ -774,4 +774,5 @@
     <string name="automix_art_transition_subtitle">Memadukan sampul antar lagu dengan halus saat Automix.</string>
     <string name="automix_mini_art_transition">Transisi sampul mini player</string>
     <string name="automix_mini_art_transition_subtitle">Menampilkan transisi sampul di mini player saat Automix.</string>
+    <string name="lyrics_share_video_silent">Audio lagu tidak dapat diambil, jadi video ini tanpa suara.</string>
 </resources>

@@ -269,4 +269,18 @@
         <item quantity="one">%1$d brano rimosso</item>
         <item quantity="other">%1$d brani rimossi</item>
     </plurals>
+    <string name="lyrics_share_video_silent">Impossibile ottenere l’audio del brano, quindi questo video è senza suono.</string>
+    <string name="lyrics_share_title">Condividi il testo</string>
+    <string name="lyrics_share_description">I versi che hai scelto, impaginati su una scheda con la copertina.</string>
+    <string name="lyrics_share_story">Trasforma in storia</string>
+    <string name="lyrics_share_story_revert">Torna alla scheda</string>
+    <string name="lyrics_share_video">Video</string>
+    <string name="lyrics_share_image">Immagine</string>
+    <string name="lyrics_share_saving">Salvataggio…</string>
+    <string name="lyrics_share_show_logo">Mostra il logo di Laya</string>
+    <string name="lyrics_share_making_video">Creazione del video…</string>
+    <string name="your_lyrics_card">La tua scheda di testo</string>
+    <string name="couldnt_draw_picture">Impossibile creare l\'immagine</string>
+    <string name="saved_bang">Salvato!</string>
+    <string name="save">Salva</string>
 </resources>

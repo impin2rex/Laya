@@ -1416,4 +1416,5 @@
     <string name="lossless_verify_expired_notice">La vérification de %1$s a expiré. Réactivez-le dans Sources pour garder le sans perte.</string>
     <string name="lossless_verify_expired">Vérification expirée · réactivez-le</string>
     <string name="lossless_verified_until">Vérifié · jusqu\'au %1$s</string>
+    <string name="lyrics_share_video_silent">Impossible de récupérer l’audio du titre, cette vidéo est donc sans son.</string>
 </resources>

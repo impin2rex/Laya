@@ -780,4 +780,5 @@
     <string name="automix_art_transition_subtitle">Fond en douceur la pochette entre les titres pendant Automix.</string>
     <string name="automix_mini_art_transition">Transition de pochette du mini-lecteur</string>
     <string name="automix_mini_art_transition_subtitle">Affiche les transitions de pochette dans le mini-lecteur pendant Automix.</string>
+    <string name="lyrics_share_video_silent">Impossible de récupérer l’audio du titre, cette vidéo est donc sans son.</string>
 </resources>

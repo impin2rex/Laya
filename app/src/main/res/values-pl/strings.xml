@@ -1452,4 +1452,5 @@
     <string name="lossless_verify_expired_notice">Weryfikacja %1$s wygasła. Włącz ponownie w Źródłach, aby słuchać bezstratnie.</string>
     <string name="lossless_verify_expired">Weryfikacja wygasła · włącz ponownie</string>
     <string name="lossless_verified_until">Zweryfikowano · do %1$s</string>
+    <string name="lyrics_share_video_silent">Nie udało się pobrać dźwięku utworu, więc ten film jest bez dźwięku.</string>
 </resources>

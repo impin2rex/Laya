@@ -780,4 +780,5 @@
     <string name="automix_art_transition_subtitle">Sfuma dolcemente la copertina tra i brani durante Automix.</string>
     <string name="automix_mini_art_transition">Transizione copertina nel mini player</string>
     <string name="automix_mini_art_transition_subtitle">Mostra le transizioni delle copertine nel mini player durante Automix.</string>
+    <string name="lyrics_share_video_silent">Impossibile ottenere l’audio del brano, quindi questo video è senza suono.</string>
 </resources>

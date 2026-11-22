@@ -774,4 +774,5 @@
     <string name="automix_art_transition_subtitle">在 Automix 期间平滑融合曲目之间的封面。</string>
     <string name="automix_mini_art_transition">迷你播放器封面过渡</string>
     <string name="automix_mini_art_transition_subtitle">在 Automix 期间于迷你播放器中显示封面过渡。</string>
+    <string name="lyrics_share_video_silent">无法获取歌曲音频，因此此视频没有声音。</string>
 </resources>

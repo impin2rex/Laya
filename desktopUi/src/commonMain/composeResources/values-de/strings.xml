@@ -269,4 +269,18 @@
         <item quantity="one">%1$d Song entfernt</item>
         <item quantity="other">%1$d Songs entfernt</item>
     </plurals>
+    <string name="lyrics_share_video_silent">Der Ton des Songs konnte nicht geladen werden, daher hat dieses Video keinen Ton.</string>
+    <string name="lyrics_share_title">Songtext teilen</string>
+    <string name="lyrics_share_description">Die Zeilen, die du ausgewählt hast, auf einer Karte mit dem Cover.</string>
+    <string name="lyrics_share_story">Als Story formatieren</string>
+    <string name="lyrics_share_story_revert">Zurück zur Karte</string>
+    <string name="lyrics_share_video">Video</string>
+    <string name="lyrics_share_image">Bild</string>
+    <string name="lyrics_share_saving">Wird gespeichert…</string>
+    <string name="lyrics_share_show_logo">Laya-Logo anzeigen</string>
+    <string name="lyrics_share_making_video">Video wird erstellt…</string>
+    <string name="your_lyrics_card">Deine Textkarte</string>
+    <string name="couldnt_draw_picture">Das Bild konnte nicht erstellt werden</string>
+    <string name="saved_bang">Gespeichert!</string>
+    <string name="save">Speichern</string>
 </resources>

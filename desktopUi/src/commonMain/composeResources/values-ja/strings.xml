@@ -268,4 +268,18 @@
     <plurals name="queue_removed_count">
         <item quantity="other">%1$d曲を削除しました</item>
     </plurals>
+    <string name="lyrics_share_video_silent">曲の音声を取得できなかったため、この動画には音声がありません。</string>
+    <string name="lyrics_share_title">歌詞を共有</string>
+    <string name="lyrics_share_description">選んだ行を、ジャケットと一緒にカードにレイアウトします。</string>
+    <string name="lyrics_share_story">ストーリー用にする</string>
+    <string name="lyrics_share_story_revert">カードに戻す</string>
+    <string name="lyrics_share_video">動画</string>
+    <string name="lyrics_share_image">画像</string>
+    <string name="lyrics_share_saving">保存中…</string>
+    <string name="lyrics_share_show_logo">Layaのロゴを表示</string>
+    <string name="lyrics_share_making_video">動画を作成中…</string>
+    <string name="your_lyrics_card">歌詞カード</string>
+    <string name="couldnt_draw_picture">画像を作成できませんでした</string>
+    <string name="saved_bang">保存しました！</string>
+    <string name="save">保存</string>
 </resources>

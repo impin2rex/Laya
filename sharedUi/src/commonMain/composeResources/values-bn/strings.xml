@@ -744,4 +744,5 @@
     <string name="automix_art_transition_subtitle">Automix-এর সময় ট্র্যাকের মধ্যে কভার আর্ট মসৃণভাবে মিশ্রিত করে।</string>
     <string name="automix_mini_art_transition">মিনি-প্লেয়ার আর্ট ট্রানজিশন</string>
     <string name="automix_mini_art_transition_subtitle">Automix-এর সময় মিনি-প্লেয়ারে আর্টওয়ার্ক ট্রানজিশন দেখায়।</string>
+    <string name="lyrics_share_video_silent">গানের অডিও পাওয়া যায়নি, তাই এই ভিডিওতে শব্দ নেই।</string>
 </resources>

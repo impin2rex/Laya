@@ -789,4 +789,5 @@
     <string name="automix_art_transition_subtitle">Плавно смешивает обложки между треками во время Automix.</string>
     <string name="automix_mini_art_transition">Переход обложек в мини-плеере</string>
     <string name="automix_mini_art_transition_subtitle">Показывает переходы обложек в мини-плеере во время Automix.</string>
+    <string name="lyrics_share_video_silent">Не удалось получить звук песни, поэтому в этом видео нет звука.</string>
 </resources>

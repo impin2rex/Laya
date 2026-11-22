@@ -780,4 +780,5 @@
     <string name="automix_art_transition_subtitle">Mezcla suavemente la carátula entre pistas durante Automix.</string>
     <string name="automix_mini_art_transition">Transición de carátula en el minirreproductor</string>
     <string name="automix_mini_art_transition_subtitle">Muestra las transiciones de carátula en el minirreproductor durante Automix.</string>
+    <string name="lyrics_share_video_silent">No se pudo obtener el audio de la canción, así que este vídeo no tiene sonido.</string>
 </resources>

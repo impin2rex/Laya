@@ -1417,4 +1417,5 @@
     <string name="lossless_verify_expired_notice">A verificação do %1$s expirou. Ative de novo em Fontes para continuar sem perdas.</string>
     <string name="lossless_verify_expired">Verificação expirada · ative de novo</string>
     <string name="lossless_verified_until">Verificado · até %1$s</string>
+    <string name="lyrics_share_video_silent">Não foi possível obter o áudio da música, então este vídeo está sem som.</string>
 </resources>

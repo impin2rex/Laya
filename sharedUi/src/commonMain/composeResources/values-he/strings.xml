@@ -780,4 +780,5 @@
     <string name="automix_art_transition_subtitle">מערבב בעדינות את עטיפות האלבום בין שירים במהלך Automix.</string>
     <string name="automix_mini_art_transition">מעבר עטיפות במיני-נגן</string>
     <string name="automix_mini_art_transition_subtitle">מציג מעברי עטיפות במיני-נגן במהלך Automix.</string>
+    <string name="lyrics_share_video_silent">לא ניתן היה להשיג את האודיו של השיר, ולכן לסרטון הזה אין צליל.</string>
 </resources>

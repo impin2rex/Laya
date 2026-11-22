@@ -1183,4 +1183,5 @@
     <string name="lossless_verify_expired_notice">%1$s যাচাইয়ের মেয়াদ শেষ। লসলেস চালিয়ে যেতে সোর্সে আবার চালু করুন।</string>
     <string name="lossless_verify_expired">যাচাইয়ের মেয়াদ শেষ · আবার চালু করুন</string>
     <string name="lossless_verified_until">যাচাই করা হয়েছে · %1$s পর্যন্ত</string>
+    <string name="lyrics_share_video_silent">গানের অডিও পাওয়া যায়নি, তাই এই ভিডিওতে শব্দ নেই।</string>
 </resources>

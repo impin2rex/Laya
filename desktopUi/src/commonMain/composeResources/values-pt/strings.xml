@@ -269,4 +269,18 @@
         <item quantity="one">%1$d música removida</item>
         <item quantity="other">%1$d músicas removidas</item>
     </plurals>
+    <string name="lyrics_share_video_silent">Não foi possível obter o áudio da música, então este vídeo está sem som.</string>
+    <string name="lyrics_share_title">Partilhar a letra</string>
+    <string name="lyrics_share_description">Os versos que escolheste, compostos num cartão com a capa.</string>
+    <string name="lyrics_share_story">Converter em story</string>
+    <string name="lyrics_share_story_revert">Voltar ao cartão</string>
+    <string name="lyrics_share_video">Vídeo</string>
+    <string name="lyrics_share_image">Imagem</string>
+    <string name="lyrics_share_saving">Salvando…</string>
+    <string name="lyrics_share_show_logo">Mostrar o logo do Laya</string>
+    <string name="lyrics_share_making_video">Criando o vídeo…</string>
+    <string name="your_lyrics_card">O teu cartão de letra</string>
+    <string name="couldnt_draw_picture">Não foi possível criar a imagem</string>
+    <string name="saved_bang">Guardado!</string>
+    <string name="save">Salvar</string>
 </resources>

@@ -1372,4 +1372,5 @@
     <string name="lossless_verify_expired_notice">%1$s doğrulamasının süresi doldu. Kayıpsız dinlemeye devam etmek için Kaynaklar\'da yeniden açın.</string>
     <string name="lossless_verify_expired">Doğrulamanın süresi doldu · yeniden açın</string>
     <string name="lossless_verified_until">Doğrulandı · %1$s tarihine kadar</string>
+    <string name="lyrics_share_video_silent">Şarkının sesi alınamadı, bu yüzden bu videoda ses yok.</string>
 </resources>

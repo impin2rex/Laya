@@ -774,4 +774,5 @@
     <string name="automix_art_transition_subtitle">ผสมภาพปกระหว่างเพลงอย่างนุ่มนวลระหว่าง Automix</string>
     <string name="automix_mini_art_transition">การเปลี่ยนภาพปกในมินิเพลเยอร์</string>
     <string name="automix_mini_art_transition_subtitle">แสดงการเปลี่ยนภาพปกในมินิเพลเยอร์ระหว่าง Automix</string>
+    <string name="lyrics_share_video_silent">ไม่สามารถดึงเสียงของเพลงได้ วิดีโอนี้จึงไม่มีเสียง</string>
 </resources>

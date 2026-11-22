@@ -271,4 +271,18 @@
         <item quantity="many">Удалено %1$d треков</item>
         <item quantity="other">Удалено %1$d трека</item>
     </plurals>
+    <string name="lyrics_share_video_silent">Не удалось получить звук песни, поэтому в этом видео нет звука.</string>
+    <string name="lyrics_share_title">Поделиться текстом</string>
+    <string name="lyrics_share_description">Выбранные строки на карточке вместе с обложкой.</string>
+    <string name="lyrics_share_story">Сделать для сторис</string>
+    <string name="lyrics_share_story_revert">Вернуть карточку</string>
+    <string name="lyrics_share_video">Видео</string>
+    <string name="lyrics_share_image">Изображение</string>
+    <string name="lyrics_share_saving">Сохранение…</string>
+    <string name="lyrics_share_show_logo">Показать логотип Laya</string>
+    <string name="lyrics_share_making_video">Создаём видео…</string>
+    <string name="your_lyrics_card">Ваша карточка с текстом</string>
+    <string name="couldnt_draw_picture">Не удалось создать изображение</string>
+    <string name="saved_bang">Сохранено!</string>
+    <string name="save">Сохранить</string>
 </resources>

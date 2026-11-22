@@ -1398,4 +1398,5 @@
     <string name="lossless_verify_expired_notice">การยืนยัน %1$s หมดอายุแล้ว เปิดอีกครั้งในแหล่งเพลงเพื่อฟังแบบไม่สูญเสียคุณภาพต่อ</string>
     <string name="lossless_verify_expired">การยืนยันหมดอายุ · เปิดอีกครั้ง</string>
     <string name="lossless_verified_until">ยืนยันแล้ว · ถึง %1$s</string>
+    <string name="lyrics_share_video_silent">ไม่สามารถดึงเสียงของเพลงได้ วิดีโอนี้จึงไม่มีเสียง</string>
 </resources>

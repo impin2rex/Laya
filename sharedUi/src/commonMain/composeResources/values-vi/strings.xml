@@ -774,4 +774,5 @@
     <string name="automix_art_transition_subtitle">Hòa trộn mượt ảnh bìa giữa các bài hát khi dùng Automix.</string>
     <string name="automix_mini_art_transition">Chuyển ảnh bìa trình phát nhỏ</string>
     <string name="automix_mini_art_transition_subtitle">Hiển thị hiệu ứng chuyển ảnh bìa trong trình phát nhỏ khi dùng Automix.</string>
+    <string name="lyrics_share_video_silent">Không lấy được âm thanh của bài hát nên video này không có tiếng.</string>
 </resources>

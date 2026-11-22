@@ -1392,4 +1392,5 @@
     <string name="lossless_verify_expired_notice">%1$s 驗證已過期。請在「來源」中重新開啟以繼續無損播放。</string>
     <string name="lossless_verify_expired">驗證已過期 · 請重新開啟</string>
     <string name="lossless_verified_until">已驗證 · 有效期至 %1$s</string>
+    <string name="lyrics_share_video_silent">無法取得歌曲音訊，因此此影片沒有聲音。</string>
 </resources>

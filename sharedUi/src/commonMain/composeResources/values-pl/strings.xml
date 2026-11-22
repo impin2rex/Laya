@@ -792,4 +792,5 @@
     <string name="automix_art_transition_subtitle">Płynnie łączy okładki między utworami podczas Automix.</string>
     <string name="automix_mini_art_transition">Przejście okładki w minimodule</string>
     <string name="automix_mini_art_transition_subtitle">Pokazuje przejścia okładek w minimodule podczas Automix.</string>
+    <string name="lyrics_share_video_silent">Nie udało się pobrać dźwięku utworu, więc ten film jest bez dźwięku.</string>
 </resources>
