@@ -769,4 +769,8 @@
         <item quantity="one">%1$d şarkı kaldırıldı</item>
         <item quantity="other">%1$d şarkı kaldırıldı</item>
     </plurals>
+    <string name="automix_art_transition">Kapak geçişi</string>
+    <string name="automix_art_transition_subtitle">Automix sırasında parçalar arasında kapağı yumuşakça harmanlar.</string>
+    <string name="automix_mini_art_transition">Mini oynatıcı kapak geçişi</string>
+    <string name="automix_mini_art_transition_subtitle">Automix sırasında mini oynatıcıda kapak geçişlerini gösterir.</string>
 </resources>

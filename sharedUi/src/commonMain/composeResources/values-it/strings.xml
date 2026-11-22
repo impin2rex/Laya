@@ -769,4 +769,8 @@
         <item quantity="one">%1$d brano rimosso</item>
         <item quantity="other">%1$d brani rimossi</item>
     </plurals>
+    <string name="automix_art_transition">Transizione copertina</string>
+    <string name="automix_art_transition_subtitle">Sfuma dolcemente la copertina tra i brani durante Automix.</string>
+    <string name="automix_mini_art_transition">Transizione copertina nel mini player</string>
+    <string name="automix_mini_art_transition_subtitle">Mostra le transizioni delle copertine nel mini player durante Automix.</string>
 </resources>

@@ -763,4 +763,8 @@
     <plurals name="queue_removed_count">
         <item quantity="other">นำออก %1$d เพลงแล้ว</item>
     </plurals>
+    <string name="automix_art_transition">การเปลี่ยนภาพปก</string>
+    <string name="automix_art_transition_subtitle">ผสมภาพปกระหว่างเพลงอย่างนุ่มนวลระหว่าง Automix</string>
+    <string name="automix_mini_art_transition">การเปลี่ยนภาพปกในมินิเพลเยอร์</string>
+    <string name="automix_mini_art_transition_subtitle">แสดงการเปลี่ยนภาพปกในมินิเพลเยอร์ระหว่าง Automix</string>
 </resources>

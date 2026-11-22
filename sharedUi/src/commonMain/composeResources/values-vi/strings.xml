@@ -763,4 +763,8 @@
     <plurals name="queue_removed_count">
         <item quantity="other">Đã xóa %1$d bài hát</item>
     </plurals>
+    <string name="automix_art_transition">Chuyển ảnh bìa</string>
+    <string name="automix_art_transition_subtitle">Hòa trộn mượt ảnh bìa giữa các bài hát khi dùng Automix.</string>
+    <string name="automix_mini_art_transition">Chuyển ảnh bìa trình phát nhỏ</string>
+    <string name="automix_mini_art_transition_subtitle">Hiển thị hiệu ứng chuyển ảnh bìa trong trình phát nhỏ khi dùng Automix.</string>
 </resources>

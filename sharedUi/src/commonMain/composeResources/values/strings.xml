@@ -296,6 +296,10 @@
     <string name="automix">Automix [BETA]</string>
     <string name="automix_disabled_subtitle">Times and blends transitions automatically, without a slider. Performance may vary on slower devices.</string>
     <string name="automix_enabled_subtitle">Times and blends every transition from the tracks themselves. Turn it off if the phone gets hot or playback stutters.</string>
+    <string name="automix_art_transition">Art transition</string>
+    <string name="automix_art_transition_subtitle">Smoothly blends cover art between tracks during Automix.</string>
+    <string name="automix_mini_art_transition">Mini-player art transition</string>
+    <string name="automix_mini_art_transition_subtitle">Shows artwork transitions in the mini-player during Automix.</string>
     <string name="automix_mode_balanced">Balanced</string>
     <string name="automix_mode_balanced_subtitle">2 threads · recommended balance of speed, heat and battery</string>
     <string name="automix_mode_efficient">Efficient</string>

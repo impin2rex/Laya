@@ -769,4 +769,8 @@
         <item quantity="one">%1$d שיר הוסר</item>
         <item quantity="other">%1$d שירים הוסרו</item>
     </plurals>
+    <string name="automix_art_transition">מעבר עטיפות</string>
+    <string name="automix_art_transition_subtitle">מערבב בעדינות את עטיפות האלבום בין שירים במהלך Automix.</string>
+    <string name="automix_mini_art_transition">מעבר עטיפות במיני-נגן</string>
+    <string name="automix_mini_art_transition_subtitle">מציג מעברי עטיפות במיני-נגן במהלך Automix.</string>
 </resources>

@@ -65,6 +65,7 @@ import com.music.laya.ui.components.thumbnailBorder
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
 import com.music.laya.ui.player.PlayerDock
+import com.music.laya.ui.player.LocalMiniAutoMixArtwork
 import com.music.laya.ui.player.AndroidMusicVideo
 import com.music.laya.ui.player.MusicVideoEngine
 import androidx.compose.ui.layout.ContentScale
@@ -234,8 +235,11 @@ fun MiniPlayer(
                     .thumbnailBorder(RoundedCornerShape(ART_CORNER))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
-                AsyncImage(
-                    model = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX),
+                val miniArtModel = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX)
+                // AutoMix's artwork transition, provided by the host that knows the queue.
+                val autoMixArtwork = LocalMiniAutoMixArtwork.current
+                if (autoMixArtwork != null) autoMixArtwork(miniArtModel, Modifier.fillMaxSize()) else AsyncImage(
+                    model = miniArtModel,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),

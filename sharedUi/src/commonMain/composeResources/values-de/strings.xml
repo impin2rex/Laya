@@ -769,4 +769,8 @@
         <item quantity="one">%1$d Song entfernt</item>
         <item quantity="other">%1$d Songs entfernt</item>
     </plurals>
+    <string name="automix_art_transition">Cover-Übergang</string>
+    <string name="automix_art_transition_subtitle">Blendet das Cover bei Automix sanft zwischen Titeln über.</string>
+    <string name="automix_mini_art_transition">Cover-Übergang im Mini-Player</string>
+    <string name="automix_mini_art_transition_subtitle">Zeigt Cover-Übergänge im Mini-Player während Automix.</string>
 </resources>

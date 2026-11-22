@@ -769,4 +769,8 @@
         <item quantity="one">%1$d música removida</item>
         <item quantity="other">%1$d músicas removidas</item>
     </plurals>
+    <string name="automix_art_transition">Transição de capa</string>
+    <string name="automix_art_transition_subtitle">Mistura suavemente a capa entre as faixas durante o Automix.</string>
+    <string name="automix_mini_art_transition">Transição de capa no mini player</string>
+    <string name="automix_mini_art_transition_subtitle">Mostra as transições de capa no mini player durante o Automix.</string>
 </resources>

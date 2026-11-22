@@ -1,5 +1,6 @@
 package com.music.laya.ios
 
+import com.music.laya.playback.AutoMixVisualFeed
 import com.music.laya.playback.smart.DeckFilters
 import com.music.laya.playback.smart.PhaseLock
 import com.music.laya.playback.smart.TempoEase
@@ -72,6 +73,9 @@ object IosTransition {
         private set
     private var curInSpeed = 1f
 
+    /** The AutoMix pair the artwork follows, armed by [IosPlayer] ahead of the blend; see [AutoMixVisualFeed]. */
+    var visualGeneration: Long? = null
+
     fun setPlan(next: IosTransitionPlan?) {
         val old = plan
         plan = next
@@ -127,6 +131,8 @@ object IosTransition {
         startLogged = false
         beganAt = nowMs / 1000.0
         live = Live(p, outKey, inKey, startSec, span, wallSpanIn, outDurationSec)
+        // Only an analysed mix dissolves the artwork; a classic crossfade keeps the plain cut.
+        if (p?.source != null) AutoMixVisualFeed.start(visualGeneration, 0.0) else AutoMixVisualFeed.cancel(visualGeneration)
         val r = live!!.outRender
         println(
             "Transition: begin ${if (p?.source != null) "smart" else "classic"} style=${r.style} variant=${r.filterVariant} " +
@@ -140,6 +146,9 @@ object IosTransition {
 
     /** The blend is over (or abandoned): every tap goes back to passing its track through. */
     fun end() {
+        // Cut short after the handoff, the incoming track is the one on screen: settle on it.
+        if (handedOff) AutoMixVisualFeed.complete(visualGeneration) else AutoMixVisualFeed.cancel(visualGeneration)
+        visualGeneration = null
         live = null
         handedOff = false
         lock.stop()
@@ -176,6 +185,11 @@ object IosTransition {
         // An echo out rings past the end of the blend on the outgoing deck's own audio; that deck is kept until it has.
         val tailDone = !r.echo || elapsed / l.wallSpanIn >= r.echoAt + r.echoTailMs / (l.wallSpanIn * 1000.0)
         if (progress >= 1.0 && tailDone) verdict = verdict or DONE
+        // The artwork rides the same axis: the session (and the title) moves at the handoff.
+        val visualAt = progress * l.wallSpanIn
+        if (verdict and HANDOFF != 0) AutoMixVisualFeed.swap(visualGeneration, visualAt, l.wallSpanIn)
+        AutoMixVisualFeed.advance(visualGeneration, visualAt, l.wallSpanIn)
+        if (progress >= 1.0) AutoMixVisualFeed.complete(visualGeneration)
 
         inSpeed = Float.NaN
         // The phase error is measured whenever there are grids to measure (the planner leaves the nudge itself off, as

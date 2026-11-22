@@ -11,7 +11,9 @@ import com.music.laya.data.listentogether.PartyMember
 import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.Song
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.AudioQuality
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.data.settings.LastPlayerScreen
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.MixBlend
@@ -291,6 +293,8 @@ interface PlayerSettingsSource {
     val syncedLyrics: StateFlow<Boolean>
     val translationLanguage: StateFlow<String>
     val versionAlignmentInProgress: StateFlow<Boolean>
+    /** AutoMix's artwork transitions, both opt-in under AutoMix itself. */
+    val autoMixArtwork: StateFlow<AutoMixArtworkPreferences> get() = AppSettings.autoMixArtwork
 
     fun setLastPlayerScreen(value: LastPlayerScreen)
     fun setLyricsOffsetMs(value: Int)

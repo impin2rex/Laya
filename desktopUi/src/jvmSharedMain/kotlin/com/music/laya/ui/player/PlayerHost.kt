@@ -11,6 +11,7 @@ import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AudioQuality
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.data.settings.LastPlayerScreen
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.MixBlend
@@ -268,6 +269,8 @@ interface PlayerSettingsSource {
     val showBestPart: StateFlow<Boolean>
     val smartAnalysis: StateFlow<SmartAnalysis>
     val smartFadeEnabled: StateFlow<Boolean>
+    /** AutoMix's artwork transitions, both opt-in under AutoMix itself. */
+    val autoMixArtwork: StateFlow<AutoMixArtworkPreferences>
     /** True only while an analysed Automix transition is audibly mixing two tracks. */
     val smartMixInProgress: StateFlow<Boolean>
     /** The Automix blend in flight, for the scrubber's beat glow; null between blends. */

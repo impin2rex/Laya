@@ -279,6 +279,10 @@ internal fun LandscapeArtwork(
     artRequest: ImageRequest,
     artLoaded: Boolean,
     onArtState: (AsyncImagePainter.State) -> Unit,
+    /** The AutoMix pair while one is dissolving on this sleeve — see [AutoMixCover]. */
+    autoMixFrames: AutoMixCoverFrames? = null,
+    /** The clip's opacity: 1, or fading back to its still as an AutoMix starts. */
+    canvasAlpha: () -> Float = { 1f },
     canvas: CanvasArtwork?,
     canvasRendered: Boolean,
     isPlaying: Boolean,
@@ -327,21 +331,28 @@ internal fun LandscapeArtwork(
                     modifier = Modifier.fillMaxSize(0.36f),
                 )
             }
-            AsyncImage(
-                model = artRequest,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                onState = onArtState,
-                // Not drawn under a clip that got there first — see the
-                // portrait sleeve's note on TextureView stacking order.
-                modifier = Modifier
+            // Not drawn under a clip that got there first — see the
+            // portrait sleeve's note on TextureView stacking order.
+            AutoMixCover(
+                autoMixFrames,
+                Modifier
                     .fillMaxSize()
                     .drawWithContent { if (artLoaded || !canvasRendered) drawContent() },
-            )
+                blur = true,
+            ) { artworkModifier ->
+                AsyncImage(
+                    model = artRequest,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    onState = onArtState,
+                    modifier = artworkModifier,
+                )
+            }
             canvas?.let { clip ->
                 CanvasArtworkPlayer(
                     canvas = clip,
                     isPlaying = isPlaying,
+                    presentationAlpha = canvasAlpha,
                     pausedForTransition = pausedForTransition,
                     onRenderedChanged = onCanvasRenderedChange,
                     modifier = Modifier.fillMaxSize(),
