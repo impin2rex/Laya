@@ -744,4 +744,7 @@
     <string name="automix_art_transition_subtitle">Automix-এর সময় ট্র্যাকের মধ্যে কভার আর্ট মসৃণভাবে মিশ্রিত করে।</string>
     <string name="automix_mini_art_transition">মিনি-প্লেয়ার আর্ট ট্রানজিশন</string>
     <string name="automix_mini_art_transition_subtitle">Automix-এর সময় মিনি-প্লেয়ারে আর্টওয়ার্ক ট্রানজিশন দেখায়।</string>
+    <string name="youtube_premium_audio">YouTube Premium অডিও</string>
+    <string name="youtube_premium_audio_subtitle">আমার Premium আছে: সাধারণ 160 kbps-এর বদলে উচ্চমানের ~256 kbps Opus স্ট্রিম করুন</string>
+    <string name="youtube_premium_audio_detected">এই অ্যাকাউন্টে Premium শনাক্ত হয়েছে। উচ্চমানের ~256 kbps Opus স্ট্রিম হচ্ছে।</string>
 </resources>

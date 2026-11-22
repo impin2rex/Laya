@@ -780,4 +780,7 @@
     <string name="automix_art_transition_subtitle">Sfuma dolcemente la copertina tra i brani durante Automix.</string>
     <string name="automix_mini_art_transition">Transizione copertina nel mini player</string>
     <string name="automix_mini_art_transition_subtitle">Mostra le transizioni delle copertine nel mini player durante Automix.</string>
+    <string name="youtube_premium_audio">Audio YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">Ho Premium: riproduci l\'Opus di qualità superiore a ~256 kbps invece dei 160 kbps standard</string>
+    <string name="youtube_premium_audio_detected">Premium rilevato su questo account. Streaming dell’Opus di qualità superiore a ~256 kbps.</string>
 </resources>

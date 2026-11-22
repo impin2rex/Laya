@@ -675,4 +675,5 @@
     <string name="prefer_music_only_subtitle">音樂影片會以歌曲形式播放並顯示封面，直到你切換到影片</string>
     <string name="youtube_premium_audio">YouTube Premium 音訊</string>
     <string name="youtube_premium_audio_subtitle">我有 Premium：串流更高音質的約 256 kbps Opus，而非標準的 160 kbps</string>
+    <string name="youtube_premium_audio_detected">已在此帳號偵測到 Premium。正在串流更高音質的約 256 kbps Opus。</string>
 </resources>

@@ -774,4 +774,7 @@
     <string name="automix_art_transition_subtitle">在 Automix 期间平滑融合曲目之间的封面。</string>
     <string name="automix_mini_art_transition">迷你播放器封面过渡</string>
     <string name="automix_mini_art_transition_subtitle">在 Automix 期间于迷你播放器中显示封面过渡。</string>
+    <string name="youtube_premium_audio">YouTube Premium 音频</string>
+    <string name="youtube_premium_audio_subtitle">我有 Premium：串流更高音质的约 256 kbps Opus，而不是标准的 160 kbps</string>
+    <string name="youtube_premium_audio_detected">已在此账号检测到 Premium。正在串流更高音质的约 256 kbps Opus。</string>
 </resources>

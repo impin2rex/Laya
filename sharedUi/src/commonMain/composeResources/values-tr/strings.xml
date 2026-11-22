@@ -780,4 +780,7 @@
     <string name="automix_art_transition_subtitle">Automix sırasında parçalar arasında kapağı yumuşakça harmanlar.</string>
     <string name="automix_mini_art_transition">Mini oynatıcı kapak geçişi</string>
     <string name="automix_mini_art_transition_subtitle">Automix sırasında mini oynatıcıda kapak geçişlerini gösterir.</string>
+    <string name="youtube_premium_audio">YouTube Premium sesi</string>
+    <string name="youtube_premium_audio_subtitle">Premium\'um var: standart 160 kbps yerine daha yüksek kaliteli ~256 kbps Opus akışı</string>
+    <string name="youtube_premium_audio_detected">Bu hesapta Premium algılandı. Daha yüksek kaliteli ~256 kbps Opus yayınlanıyor.</string>
 </resources>

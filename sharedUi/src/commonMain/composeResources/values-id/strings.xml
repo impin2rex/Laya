@@ -774,4 +774,7 @@
     <string name="automix_art_transition_subtitle">Memadukan sampul antar lagu dengan halus saat Automix.</string>
     <string name="automix_mini_art_transition">Transisi sampul mini player</string>
     <string name="automix_mini_art_transition_subtitle">Menampilkan transisi sampul di mini player saat Automix.</string>
+    <string name="youtube_premium_audio">Audio YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">Saya punya Premium: putar Opus berkualitas lebih tinggi ~256 kbps, bukan 160 kbps standar</string>
+    <string name="youtube_premium_audio_detected">Premium terdeteksi di akun ini. Memutar Opus berkualitas lebih tinggi ~256 kbps.</string>
 </resources>

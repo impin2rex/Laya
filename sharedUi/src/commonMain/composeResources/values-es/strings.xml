@@ -780,4 +780,7 @@
     <string name="automix_art_transition_subtitle">Mezcla suavemente la carátula entre pistas durante Automix.</string>
     <string name="automix_mini_art_transition">Transición de carátula en el minirreproductor</string>
     <string name="automix_mini_art_transition_subtitle">Muestra las transiciones de carátula en el minirreproductor durante Automix.</string>
+    <string name="youtube_premium_audio">Audio de YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">Tengo Premium: reproducir el Opus de mayor calidad a ~256 kbps en lugar de los 160 kbps habituales</string>
+    <string name="youtube_premium_audio_detected">Premium detectado en esta cuenta. Se transmite el Opus de mayor calidad a ~256 kbps.</string>
 </resources>

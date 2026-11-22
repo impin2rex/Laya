@@ -718,4 +718,5 @@
     <string name="prefer_music_only_subtitle">Teledyski są odtwarzane jak utwory, z okładką, dopóki nie przełączysz na wideo</string>
     <string name="youtube_premium_audio">Dźwięk YouTube Premium</string>
     <string name="youtube_premium_audio_subtitle">Mam Premium: odtwarzaj Opus wyższej jakości ~256 kb/s zamiast standardowych 160 kb/s</string>
+    <string name="youtube_premium_audio_detected">Wykryto Premium na tym koncie. Odtwarzanie wyższej jakości Opus ~256 kbps.</string>
 </resources>

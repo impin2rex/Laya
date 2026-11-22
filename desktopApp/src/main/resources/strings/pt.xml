@@ -690,4 +690,5 @@
     <string name="prefer_music_only_subtitle">Os videoclipes tocam como músicas, com a capa, até você mudar para o vídeo</string>
     <string name="youtube_premium_audio">Áudio do YouTube Premium</string>
     <string name="youtube_premium_audio_subtitle">Tenho Premium: transmitir o Opus de maior qualidade a ~256 kbps em vez dos 160 kbps padrão</string>
+    <string name="youtube_premium_audio_detected">Premium detetado nesta conta. A transmitir o Opus de maior qualidade a ~256 kbps.</string>
 </resources>

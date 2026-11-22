@@ -780,4 +780,7 @@
     <string name="automix_art_transition_subtitle">Fond en douceur la pochette entre les titres pendant Automix.</string>
     <string name="automix_mini_art_transition">Transition de pochette du mini-lecteur</string>
     <string name="automix_mini_art_transition_subtitle">Affiche les transitions de pochette dans le mini-lecteur pendant Automix.</string>
+    <string name="youtube_premium_audio">Audio YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">J\'ai Premium : diffuser l\'Opus de meilleure qualité à ~256 kbps au lieu des 160 kbps standard</string>
+    <string name="youtube_premium_audio_detected">Premium détecté sur ce compte. Diffusion de l’Opus de meilleure qualité à ~256 kbps.</string>
 </resources>

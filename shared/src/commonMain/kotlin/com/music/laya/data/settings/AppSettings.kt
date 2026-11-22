@@ -309,7 +309,6 @@ object AppSettings {
      * detected; see [StreamResolver.premiumAudio][com.music.laya.data.innertube.StreamResolver.premiumAudio].
      * Ignored where the player needs AAC (iOS).
      */
-    val youtubePremiumAudio = MutableStateFlow(false)
 
     /**
      * Widens stereo output via [com.music.laya.playback.SpatialAudioProcessor],
@@ -857,6 +856,15 @@ object AppSettings {
     fun init(settings: Settings, host: AppSettingsHost) {
         prefs = Prefs(settings)
         this.host = host
+        // Premium audio is detected per account; the old opt-in toggle, stored as a boolean, stays as the override.
+        com.music.laya.data.innertube.PremiumAudio.read = { key ->
+            runCatching { settings.getStringOrNull(key) }.getOrNull()
+                ?: runCatching { settings.getBooleanOrNull(key)?.toString() }.getOrNull()
+        }
+        com.music.laya.data.innertube.PremiumAudio.write = { key, value ->
+            if (value == null) settings.remove(key) else settings.putString(key, value)
+        }
+        com.music.laya.data.innertube.PremiumAudio.load()
         readAll()
     }
 
@@ -910,7 +918,6 @@ object AppSettings {
         loudnessNormalization.value = prefs.getBoolean(KEY_LOUDNESS_NORMALIZATION, true)
         loudnessOffOnSpeaker.value = prefs.getBoolean(KEY_LOUDNESS_OFF_ON_SPEAKER, true)
         dolbyAtmos.value = prefs.getBoolean(KEY_DOLBY_ATMOS, true)
-        youtubePremiumAudio.value = prefs.getBoolean(KEY_YOUTUBE_PREMIUM_AUDIO, false)
         spatialAudio.value = prefs.getBoolean(KEY_SPATIAL_AUDIO, false)
         equalizerEnabled.value = prefs.getBoolean(KEY_EQ_ENABLED, false)
         equalizerMode.value = runCatching {
@@ -1201,13 +1208,6 @@ object AppSettings {
     fun setDolbyAtmos(value: Boolean) {
         dolbyAtmos.value = value
         prefs.edit().putBoolean(KEY_DOLBY_ATMOS, value).apply()
-    }
-
-    fun setYoutubePremiumAudio(value: Boolean) {
-        youtubePremiumAudio.value = value
-        prefs.edit().putBoolean(KEY_YOUTUBE_PREMIUM_AUDIO, value).apply()
-        // Remembered URLs were picked under the old route; the next play asks again.
-        com.music.laya.data.innertube.StreamResolver.forgetResolved()
     }
 
     fun setSpatialAudio(value: Boolean) {
@@ -2137,7 +2137,6 @@ object AppSettings {
     private const val KEY_LOUDNESS_NORMALIZATION = "loudness_normalization"
     private const val KEY_LOUDNESS_OFF_ON_SPEAKER = "loudness_off_on_speaker"
     private const val KEY_DOLBY_ATMOS = "dolby_atmos"
-    private const val KEY_YOUTUBE_PREMIUM_AUDIO = "youtube_premium_audio"
     private const val KEY_SPATIAL_AUDIO = "spatial_audio"
     private const val KEY_EQ_ENABLED = "equalizer_enabled"
     private const val KEY_EQ_MODE = "equalizer_mode"

@@ -789,4 +789,7 @@
     <string name="automix_art_transition_subtitle">Плавно смешивает обложки между треками во время Automix.</string>
     <string name="automix_mini_art_transition">Переход обложек в мини-плеере</string>
     <string name="automix_mini_art_transition_subtitle">Показывает переходы обложек в мини-плеере во время Automix.</string>
+    <string name="youtube_premium_audio">Звук YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">У меня есть Premium: воспроизводить Opus повышенного качества ~256 кбит/с вместо стандартных 160 кбит/с</string>
+    <string name="youtube_premium_audio_detected">На этом аккаунте обнаружена подписка Premium. Воспроизводится Opus повышенного качества ~256 кбит/с.</string>
 </resources>

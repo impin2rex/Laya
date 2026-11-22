@@ -50,6 +50,8 @@ interface SettingsHost {
     val hasQualityOptions: Boolean get() = hasEngineOptions
     /** false hides the Liquid Glass switch: it gates Android's own nav bar, which iOS replaces with the always-glass GlassNavBar. */
     val hasLiquidGlassOption: Boolean get() = true
+    /** true shows the YouTube Premium audio row here; Android keeps it with its account page. */
+    val hasPremiumAudioRow: Boolean get() = false
     val appIconRow: (@Composable () -> Unit)? get() = null
 
     @Composable fun versionName(): String = ""

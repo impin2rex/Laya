@@ -792,4 +792,7 @@
     <string name="automix_art_transition_subtitle">Płynnie łączy okładki między utworami podczas Automix.</string>
     <string name="automix_mini_art_transition">Przejście okładki w minimodule</string>
     <string name="automix_mini_art_transition_subtitle">Pokazuje przejścia okładek w minimodule podczas Automix.</string>
+    <string name="youtube_premium_audio">Dźwięk YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">Mam Premium: odtwarzaj Opus wyższej jakości ~256 kb/s zamiast standardowych 160 kb/s</string>
+    <string name="youtube_premium_audio_detected">Wykryto Premium na tym koncie. Odtwarzanie wyższej jakości Opus ~256 kbps.</string>
 </resources>

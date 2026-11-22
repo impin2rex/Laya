@@ -774,4 +774,7 @@
     <string name="automix_art_transition_subtitle">ผสมภาพปกระหว่างเพลงอย่างนุ่มนวลระหว่าง Automix</string>
     <string name="automix_mini_art_transition">การเปลี่ยนภาพปกในมินิเพลเยอร์</string>
     <string name="automix_mini_art_transition_subtitle">แสดงการเปลี่ยนภาพปกในมินิเพลเยอร์ระหว่าง Automix</string>
+    <string name="youtube_premium_audio">เสียง YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">ฉันมี Premium: สตรีม Opus คุณภาพสูงกว่า ~256 kbps แทน 160 kbps มาตรฐาน</string>
+    <string name="youtube_premium_audio_detected">ตรวจพบ Premium ในบัญชีนี้ กำลังสตรีม Opus คุณภาพสูงกว่าที่ ~256 kbps</string>
 </resources>
