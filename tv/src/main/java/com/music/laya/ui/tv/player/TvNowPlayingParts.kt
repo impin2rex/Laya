@@ -357,13 +357,15 @@ internal fun TvTransport(
     versionSwitching: Boolean = false,
     /** Seeks straight to a moment; with it, the Best Part button is offered when the song has one. */
     onSeek: ((Long) -> Unit)? = null,
+    /** The song's synced lyrics, for the Best Part chorus fallback when its replay curve is flat. */
+    lyrics: List<com.music.laya.data.lyrics.LyricLine>? = null,
 ) {
     val showStats by AppSettings.showNerdStats.collectAsState()
     val bestPartOn by AppSettings.showBestPart.collectAsState()
     // ponytail: kept up for the whole track rather than hidden once heard as on
     // the phone, since a button vanishing under the D-pad's focus strands it.
-    val bestPart by produceState<Long?>(null, song.videoId, bestPartOn) {
-        value = if (bestPartOn && onSeek != null) BestPart.startFor(song) else null
+    val bestPart by produceState<Long?>(null, song.videoId, bestPartOn, lyrics) {
+        value = if (bestPartOn && onSeek != null) BestPart.startFor(song, lyrics) else null
     }
     val reverbOn by AppSettings.reverbEnabled.collectAsState()
     val karaokeOn by Karaoke.enabled.collectAsState()

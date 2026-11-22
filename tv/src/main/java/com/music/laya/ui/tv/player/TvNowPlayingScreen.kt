@@ -353,6 +353,7 @@ fun TvNowPlayingScreen(
         ) {
             TvTransport(
                 song = song,
+                lyrics = lyrics,
                 onSeek = { mediaController?.seekTo(it) },
                 isPlaying = isPlaying,
                 isLoading = playerState.isLoading,
