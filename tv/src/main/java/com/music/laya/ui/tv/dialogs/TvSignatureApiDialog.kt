@@ -1,5 +1,8 @@
 package com.music.laya.ui.tv.dialogs
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
@@ -40,10 +43,11 @@ fun TvSignatureApiDialog(onDismiss: () -> Unit) {
     var status by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var busy by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     fun test(onGood: () -> Unit) {
         val normalized = AppSettings.normalizeSignatureApiUrl(input)
         if (!ArtistSignatureRepository.isValidBaseUrl(normalized)) {
-            status = "Could not reach the API at that URL" to false
+            status = context.getString(R.string.artist_signatures_test_failed) to false
             return
         }
         busy = true
@@ -51,14 +55,14 @@ fun TvSignatureApiDialog(onDismiss: () -> Unit) {
         scope.launch {
             val ok = ArtistSignatureRepository.checkHealth(normalized)
             busy = false
-            status = (if (ok) "Connected" else "Could not reach the API at that URL") to ok
+            status = (if (ok) context.getString(R.string.connected) else context.getString(R.string.artist_signatures_test_failed)) to ok
             if (ok) onGood()
         }
     }
 
     TvDialog(
-        title = "Signature API",
-        message = "The address of the artist-signature API to ask for signatures.",
+        title = stringResource(R.string.tv_signature_api),
+        message = stringResource(R.string.tv_signature_api_message),
         onDismissRequest = onDismiss,
     ) {
         TvTextField(
@@ -82,7 +86,7 @@ fun TvSignatureApiDialog(onDismiss: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         TvDialogButton(
-            text = "Save",
+            text = stringResource(R.string.save),
             enabled = input.isNotBlank() && !busy,
             onClick = {
                 test {
@@ -93,12 +97,12 @@ fun TvSignatureApiDialog(onDismiss: () -> Unit) {
             },
         )
         Spacer(modifier = Modifier.height(6.dp))
-        TvDialogButton(text = "Test", enabled = input.isNotBlank() && !busy, onClick = { test {} })
+        TvDialogButton(text = stringResource(R.string.test), enabled = input.isNotBlank() && !busy, onClick = { test {} })
         // Removing a saved server goes back to the built-in one.
         if (stored.isNotBlank()) {
             Spacer(modifier = Modifier.height(6.dp))
             TvDialogButton(
-                text = "Remove",
+                text = stringResource(R.string.remove),
                 destructive = true,
                 onClick = {
                     AppSettings.setSignatureApiUrl("")
@@ -108,6 +112,6 @@ fun TvSignatureApiDialog(onDismiss: () -> Unit) {
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
-        TvDialogButton(text = "Cancel", onClick = onDismiss)
+        TvDialogButton(text = stringResource(R.string.cancel), onClick = onDismiss)
     }
 }

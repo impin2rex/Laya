@@ -1,28 +1,30 @@
 package com.music.laya.ui.tv.personalization
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import com.music.laya.R
 import java.text.BreakIterator
 
 enum class AppThemeOption(
     val id: String,
-    val title: String,
-    val description: String,
+    @StringRes val title: Int,
+    @StringRes val description: Int,
 ) {
     DYNAMIC_ARTWORK(
         id = "dynamic_artwork",
-        title = "Artwork",
-        description = "Dark, softly tinted by the artwork of what's playing.",
+        title = R.string.tv_theme_artwork,
+        description = R.string.tv_theme_artwork_desc,
     ),
     MIDNIGHT(
         id = "midnight",
-        title = "Midnight",
-        description = "A deep navy background.",
+        title = R.string.tv_theme_midnight,
+        description = R.string.tv_theme_midnight_desc,
     ),
     PURE_BLACK(
         id = "pure_black",
-        title = "Pure Black",
-        description = "True black, for OLED screens.",
+        title = R.string.tv_theme_pure_black,
+        description = R.string.tv_theme_pure_black_desc,
     );
 
     companion object {
@@ -97,7 +99,7 @@ fun AppThemeOption.getPalette(): TvThemePalette = when (this) {
 
 sealed class NicknameValidationResult {
     data object Valid : NicknameValidationResult()
-    data class Invalid(val reason: String) : NicknameValidationResult()
+    data class Invalid(@StringRes val reason: Int, val args: List<Any> = emptyList()) : NicknameValidationResult()
 }
 
 object NicknamePolicy {
@@ -108,14 +110,14 @@ object NicknamePolicy {
     fun validate(raw: String): NicknameValidationResult {
         val trimmed = raw.trim()
         if (trimmed.isEmpty()) {
-            return NicknameValidationResult.Invalid("Nickname cannot be empty")
+            return NicknameValidationResult.Invalid(R.string.tv_nickname_empty)
         }
         if (trimmed.contains('\n') || trimmed.contains('\r') || trimmed.contains('\t')) {
-            return NicknameValidationResult.Invalid("No line breaks allowed")
+            return NicknameValidationResult.Invalid(R.string.tv_nickname_no_breaks)
         }
         val count = getGraphemeCount(trimmed)
         if (count > MAX_GRAPHEMES) {
-            return NicknameValidationResult.Invalid("Must be 24 characters or less ($count/$MAX_GRAPHEMES)")
+            return NicknameValidationResult.Invalid(R.string.tv_nickname_too_long, listOf(count, MAX_GRAPHEMES))
         }
         return NicknameValidationResult.Valid
     }

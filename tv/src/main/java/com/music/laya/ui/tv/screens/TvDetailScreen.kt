@@ -1,5 +1,8 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -228,10 +231,10 @@ private fun TvReleaseContent(
                 is UiState.Error -> item(key = "error") {
                     if (songsState.message.contains("permission", ignoreCase = true)) {
                         TvEmptyState(
-                            title = "Allow Access to Music",
-                            message = "Laya needs permission to read music on this TV and on connected USB drives.",
+                            title = stringResource(R.string.tv_allow_access_title),
+                            message = stringResource(R.string.tv_allow_access_message),
                             modifier = Modifier.height(224.dp),
-                            action = { TvButton(text = "Allow Access", onClick = onRequestPermission) },
+                            action = { TvButton(text = stringResource(R.string.tv_allow_access), onClick = onRequestPermission) },
                         )
                     } else {
                         TvErrorState(message = songsState.message, onRetry = onRetry, modifier = Modifier.height(224.dp))
@@ -240,8 +243,8 @@ private fun TvReleaseContent(
                 is UiState.Success -> if (songs.isEmpty()) {
                     item(key = "empty") {
                         TvEmptyState(
-                            title = "No Songs",
-                            message = "There's nothing to play here yet.",
+                            title = stringResource(R.string.tv_no_songs_title),
+                            message = stringResource(R.string.tv_no_songs_play_message),
                             modifier = Modifier.height(208.dp),
                         )
                     }
@@ -264,7 +267,7 @@ private fun TvReleaseContent(
             // the playlist's own — as the phone does.
             if (suggested.isNotEmpty()) {
                 item(key = "suggestedTitle") {
-                    TvShelfTitle(title = "Suggestions", modifier = Modifier.padding(top = 24.dp, bottom = 6.dp))
+                    TvShelfTitle(title = stringResource(R.string.tv_suggestions), modifier = Modifier.padding(top = 24.dp, bottom = 6.dp))
                 }
                 itemsIndexed(suggested, key = { index, song -> "s:${song.videoId}#$index" }) { index, song ->
                     TvTrackLine(
@@ -411,6 +414,7 @@ private fun TvTrackLine(
 }
 
 /** "12 songs, 45 minutes" — from the tracks' own durations. */
+@Composable
 private fun List<Song>.summary(): String? {
     if (isEmpty()) return null
     val totalSeconds = sumOf { song ->
@@ -420,11 +424,11 @@ private fun List<Song>.summary(): String? {
             ?.fold(0L) { acc, part -> acc * 60 + part }
             ?: 0L
     }
-    val count = if (size == 1) "1 song" else "$size songs"
+    val count = pluralStringResource(R.plurals.tv_song_count, size, size)
     val minutes = totalSeconds / 60
     return when {
         totalSeconds <= 0 -> count
-        minutes >= 60 -> "$count, ${minutes / 60} hr ${minutes % 60} min"
-        else -> "$count, $minutes minutes"
+        minutes >= 60 -> stringResource(R.string.tv_duration_hr_min, count, minutes / 60, minutes % 60)
+        else -> stringResource(R.string.tv_duration_min, count, minutes)
     }
 }

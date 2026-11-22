@@ -1,5 +1,8 @@
 package com.music.laya.ui.tv.dialogs
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import android.view.KeyEvent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -39,10 +42,10 @@ fun TvReverbDialog(onDismiss: () -> Unit) {
     val enabled by AppSettings.reverbEnabled.collectAsState()
     val settings by AppSettings.reverb.collectAsState()
 
-    TvDialog(title = "Reverb", width = 512.dp, onDismissRequest = onDismiss) {
+    TvDialog(title = stringResource(R.string.tv_reverb), width = 512.dp, onDismissRequest = onDismiss) {
         TvListRow(
-            title = "Reverb",
-            value = if (enabled) "On" else "Off",
+            title = stringResource(R.string.tv_reverb),
+            value = if (enabled) stringResource(R.string.tv_on) else stringResource(R.string.off),
             modifier = Modifier.tvInitialFocus(),
             onClick = { AppSettings.setReverbEnabled(!enabled) },
         )
@@ -57,8 +60,8 @@ fun TvReverbDialog(onDismiss: () -> Unit) {
                 val presets = ReverbPreset.entries
                 val current = settings.preset
                 TvStepRow(
-                    title = "Room",
-                    value = current?.label ?: "Custom",
+                    title = stringResource(R.string.tv_reverb_room),
+                    value = stringResource(current?.label ?: R.string.eq_preset_custom),
                     onStep = { direction ->
                         val at = current?.ordinal ?: if (direction > 0) -1 else 0
                         val next = presets[(at + direction).mod(presets.size)]
@@ -68,35 +71,35 @@ fun TvReverbDialog(onDismiss: () -> Unit) {
             }
             item {
                 TvStepRow(
-                    title = "Decay",
+                    title = stringResource(R.string.tv_reverb_decay),
                     value = String.format(Locale.US, "%.1f s", settings.decayMs / 1_000f),
                     onStep = { AppSettings.setReverb(settings.copy(decayMs = settings.decayMs + it * 100)) },
                 )
             }
             item {
                 TvStepRow(
-                    title = "Pre-delay",
+                    title = stringResource(R.string.tv_reverb_predelay),
                     value = "${settings.preDelayMs} ms",
                     onStep = { AppSettings.setReverb(settings.copy(preDelayMs = settings.preDelayMs + it * 5)) },
                 )
             }
             item {
                 TvStepRow(
-                    title = "Damping",
+                    title = stringResource(R.string.tv_reverb_damping),
                     value = String.format(Locale.US, "%.1f kHz", settings.dampingHz / 1_000f),
                     onStep = { AppSettings.setReverb(settings.copy(dampingHz = settings.dampingHz + it * 500)) },
                 )
             }
             item {
                 TvStepRow(
-                    title = "Mix",
+                    title = stringResource(R.string.tv_reverb_mix),
                     value = "${(settings.mix * 100).roundToInt()}%",
                     onStep = { AppSettings.setReverb(settings.copy(mix = ((settings.mix * 100).roundToInt() + it * 5) / 100f)) },
                 )
             }
             item {
                 TvStepRow(
-                    title = "Width",
+                    title = stringResource(R.string.tv_reverb_width),
                     value = "${(settings.width * 100).roundToInt()}%",
                     onStep = { AppSettings.setReverb(settings.copy(width = ((settings.width * 100).roundToInt() + it * 10) / 100f)) },
                 )
@@ -104,12 +107,12 @@ fun TvReverbDialog(onDismiss: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Left and right adjust a setting. Select steps it up.",
+            text = stringResource(R.string.tv_reverb_hint),
             style = TvType.Caption,
             color = TvGlass.TextTertiary,
         )
         Spacer(modifier = Modifier.height(14.dp))
-        TvButton(text = "Reset All", onClick = { AppSettings.setReverb(ReverbSettings.DEFAULT) })
+        TvButton(text = stringResource(R.string.tv_reset_all), onClick = { AppSettings.setReverb(ReverbSettings.DEFAULT) })
     }
 }
 
@@ -135,10 +138,11 @@ private fun TvStepRow(title: String, value: String, onStep: (Int) -> Unit) {
     )
 }
 
-private val ReverbPreset.label: String
+@get:StringRes
+private val ReverbPreset.label: Int
     get() = when (this) {
-        ReverbPreset.ROOM -> "Room"
-        ReverbPreset.HALL -> "Hall"
-        ReverbPreset.PLATE -> "Plate"
-        ReverbPreset.CATHEDRAL -> "Cathedral"
+        ReverbPreset.ROOM -> R.string.tv_reverb_room
+        ReverbPreset.HALL -> R.string.tv_reverb_hall
+        ReverbPreset.PLATE -> R.string.tv_reverb_plate
+        ReverbPreset.CATHEDRAL -> R.string.tv_reverb_cathedral
     }

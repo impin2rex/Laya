@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,8 +45,8 @@ fun TvRadioScreen(
 
     if (!signedIn) {
         TvEmptyState(
-            title = "Sign In for Radio",
-            message = "Your mixes are made from your YouTube Music listening. Sign in from Settings to see them.",
+            title = stringResource(R.string.tv_radio_sign_in_title),
+            message = stringResource(R.string.tv_radio_sign_in_message),
             modifier = modifier,
         )
     } else when (val state = mixesState) {
@@ -55,17 +57,19 @@ fun TvRadioScreen(
             modifier = modifier,
         )
         is UiState.Success -> {
-            val shelves = remember(state.data) {
+            val stationsTitle = stringResource(R.string.tv_stations)
+            val mixesTitle = stringResource(R.string.tv_your_mixes)
+            val shelves = remember(state.data, stationsTitle, mixesTitle) {
                 val sections = groupMixes(state.data)
                 listOfNotNull(
-                    sections.stations.takeIf { it.isNotEmpty() }?.let { HomeShelf(title = "Stations", items = it) },
-                    sections.yours.takeIf { it.isNotEmpty() }?.let { HomeShelf(title = "Your Mixes", items = it) },
+                    sections.stations.takeIf { it.isNotEmpty() }?.let { HomeShelf(title = stationsTitle, items = it) },
+                    sections.yours.takeIf { it.isNotEmpty() }?.let { HomeShelf(title = mixesTitle, items = it) },
                 ) + sections.moods.map { HomeShelf(title = it.name, items = it.items) }
             }
             if (shelves.isEmpty()) {
                 TvEmptyState(
-                    title = "No Mixes Yet",
-                    message = "Keep listening and YouTube Music will make some for you.",
+                    title = stringResource(R.string.tv_no_mixes_title),
+                    message = stringResource(R.string.tv_no_mixes_message),
                     modifier = modifier,
                 )
             } else {

@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -86,13 +88,13 @@ import com.music.laya.ui.tv.theme.TvThemeColors
 import kotlinx.coroutines.delay
 
 /** The tabs of the top bar. Now Playing is a tab too, but it opens the player rather than a page. */
-enum class TvDestination(val label: String) {
-    HOME("Home"),
-    EXPLORE("Explore"),
-    RADIO("Radio"),
-    LIBRARY("Library"),
-    SEARCH("Search"),
-    SETTINGS("Settings"),
+enum class TvDestination(@StringRes val label: Int) {
+    HOME(R.string.home),
+    EXPLORE(R.string.explore),
+    RADIO(R.string.radio),
+    LIBRARY(R.string.library),
+    SEARCH(R.string.search),
+    SETTINGS(R.string.settings),
 }
 
 /** A pushed album, playlist or artist page. */
@@ -579,7 +581,7 @@ private fun TvTopBar(
         // The mark only, as the phone's Home heading shows it.
         Icon(
             painter = painterResource(R.drawable.ic_logo),
-            contentDescription = "Laya",
+            contentDescription = stringResource(R.string.app_name),
             tint = TvGlass.TextPrimary,
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -612,7 +614,7 @@ private fun TvTopBar(
                     }
                 }
                 TvTabPill(
-                    label = tab.label,
+                    label = stringResource(tab.label),
                     selected = destination == tab,
                     interactionSource = interaction,
                     onClick = { onSelect(tab) },
@@ -620,21 +622,21 @@ private fun TvTopBar(
                 )
             }
             TvTabPill(
-                label = "Now Playing",
+                label = stringResource(R.string.tv_now_playing),
                 selected = false,
                 modifier = downToContent,
                 onClick = onOpenNowPlaying,
             )
             TvTabIcon(
                 icon = Icons.Rounded.Search,
-                contentDescription = "Search",
+                contentDescription = stringResource(R.string.search),
                 selected = destination == TvDestination.SEARCH,
                 onClick = { onSelect(TvDestination.SEARCH) },
                 modifier = downToContent.then(if (destination == TvDestination.SEARCH) Modifier.focusRequester(tabFocus) else Modifier),
             )
             TvTabIcon(
                 icon = Icons.Rounded.Settings,
-                contentDescription = "Settings",
+                contentDescription = stringResource(R.string.settings),
                 selected = destination == TvDestination.SETTINGS,
                 onClick = { onSelect(TvDestination.SETTINGS) },
                 modifier = downToContent.then(if (destination == TvDestination.SETTINGS) Modifier.focusRequester(tabFocus) else Modifier),
@@ -662,7 +664,7 @@ private fun TvAvatarButton(
         if (imageUrl.isNullOrBlank()) {
             Icon(
                 imageVector = Icons.Rounded.Person,
-                contentDescription = "Account",
+                contentDescription = stringResource(R.string.tv_account),
                 tint = TvGlass.TextSecondary,
                 modifier = Modifier.size(18.dp),
             )
@@ -686,7 +688,7 @@ fun TvAppMark(modifier: Modifier = Modifier, size: androidx.compose.ui.unit.Dp =
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_logo),
-            contentDescription = "Laya",
+            contentDescription = stringResource(R.string.app_name),
             tint = Color.White,
             modifier = Modifier.size(size * 0.52f),
         )
