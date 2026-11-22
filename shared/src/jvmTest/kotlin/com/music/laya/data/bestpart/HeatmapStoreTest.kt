@@ -1,5 +1,6 @@
 package com.music.laya.data.bestpart
 
+import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
@@ -15,7 +16,7 @@ class HeatmapStoreTest {
     private fun dir(): Path = Files.createTempDirectory("heat").toString().toPath()
 
     @Test
-    fun survivesARestartAndExpires() {
+    fun survivesARestartAndExpires(): Unit = runBlocking {
         val root = dir()
         var t = 1_000L
         HeatmapStore({ root }, now = { t }).put("aaaaaaaaaaa", heat)
@@ -33,7 +34,7 @@ class HeatmapStoreTest {
     }
 
     @Test
-    fun keepsTheNewestFewHundred() {
+    fun keepsTheNewestFewHundred(): Unit = runBlocking {
         val root = dir()
         var t = 0L
         val store = HeatmapStore({ root }, now = { t++ })
@@ -44,7 +45,7 @@ class HeatmapStoreTest {
     }
 
     @Test
-    fun unreadableFileIsDiscardedAndNullRootIsMemoryOnly() {
+    fun unreadableFileIsDiscardedAndNullRootIsMemoryOnly(): Unit = runBlocking {
         val root = dir()
         FileSystem.SYSTEM.createDirectories(root / "bestpart")
         FileSystem.SYSTEM.write(root / "bestpart" / "heatmaps.json") { writeUtf8("{nope") }

@@ -3,6 +3,8 @@ package com.music.laya.data.bestpart
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okio.FileSystem
 import okio.Path
 import kotlin.time.Clock
@@ -21,26 +23,25 @@ internal class HeatmapStore(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private var loaded: Path? = null
+    private val lock = Mutex()
     private val kept = HashMap<String, Stored>()
 
     /** What is known about [id]: not stored at all is null; stored without a curve is `Entry(null)`. Stale entries are returned only when [allowStale]. */
-    @Synchronized
-    fun get(id: String, allowStale: Boolean = false): Entry? {
+    suspend fun get(id: String, allowStale: Boolean = false): Entry? = lock.withLock {
         load()
-        val s = kept[id] ?: return null
+        val s = kept[id] ?: return@withLock null
         val heat = s.heatmap()
         val ttl = if (heat != null) MONTH_MS else WEEK_MS
-        return if (allowStale || now() - s.fetchedAt < ttl) Entry(heat) else null
+        if (allowStale || now() - s.fetchedAt < ttl) Entry(heat) else null
     }
 
-    @Synchronized
-    fun put(id: String, heat: Heatmap?) {
+    suspend fun put(id: String, heat: Heatmap?): Unit = lock.withLock {
         load()
         kept[id] = Stored(heat?.segmentMs ?: 0L, heat?.intensity.orEmpty(), now())
         if (kept.size > MAX_KEPT) {
             kept.entries.sortedByDescending { it.value.fetchedAt }.drop(MAX_KEPT).forEach { kept.remove(it.key) }
         }
-        val dir = root() ?: return
+        val dir = root() ?: return@withLock
         val target = dir / DIR / FILE
         val tmp = dir / DIR / "$FILE.tmp"
         runCatching {
