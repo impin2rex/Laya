@@ -33,7 +33,9 @@ object DesktopStrings {
         DesktopLanguage("pl", "Polski"),
         DesktopLanguage("pt", "Português"),
         DesktopLanguage("ru", "Русский"),
+        DesktopLanguage("th", "ไทย"),
         DesktopLanguage("tr", "Türkçe"),
+        DesktopLanguage("vi", "Tiếng Việt"),
         DesktopLanguage("zh-Hans", "简体中文"),
         DesktopLanguage("zh-Hant", "繁體中文"),
     )
