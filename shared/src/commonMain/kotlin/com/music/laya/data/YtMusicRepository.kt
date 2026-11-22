@@ -11,6 +11,7 @@ import com.music.laya.data.model.ArtistPage
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.HomeFeed
 import com.music.laya.data.model.HomeShelf
+import com.music.laya.data.model.KeyedMix
 import com.music.laya.data.model.LibraryPage
 import com.music.laya.data.model.LibraryState
 import com.music.laya.data.model.LikeStatus
@@ -260,6 +261,46 @@ object YtMusicRepository {
     suspend fun moodAndGenres(): Result<List<MoodGenreSection>> = call("moods-and-genres") {
         InnertubeParser.parseMoodAndGenres(Innertube.browse("FEmusic_moods_and_genres"))
     }
+
+    /**
+     * The signed-in "Mixed for you" cards, each beside its English title.
+     *
+     * The page says what kind of mix a card is only in its title ("Discover
+     * Mix", "Chill Mix 2"), and YouTube translates those titles. So the page is
+     * read twice when the app is in another language: once in that language,
+     * to show, and once in English, to sort by — the two matched up by the
+     * mix's playlist id, which is the same in both. In English the one request
+     * serves for both. If the English read fails, or a card is missing from
+     * it, that card's own title stands in.
+     */
+    suspend fun mixedForYouKeyed(): Result<List<KeyedMix>> = call("mixedForYouKeyed") {
+        if (Innertube.cookie == null) return@call emptyList()
+        coroutineScope {
+            val shown = async {
+                InnertubeParser.parseTwoRowItemsDeep(Innertube.browse(MIXED_FOR_YOU))
+            }
+            val english = if (Innertube.currentLanguage.startsWith("en")) {
+                null
+            } else {
+                async {
+                    try {
+                        InnertubeParser.parseTwoRowItemsDeep(Innertube.browse(MIXED_FOR_YOU, language = "en"))
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.w(TAG, "mixedForYou in English failed; sorting by shown titles: ${e.message}")
+                        null
+                    }
+                }
+            }
+            val items = shown.await()
+            val englishTitles = english?.await().orEmpty()
+                .associate { (it.browseId ?: it.title) to it.title }
+            items.map { KeyedMix(it, englishTitles[it.browseId ?: it.title] ?: it.title) }
+        }
+    }
+
+    private const val MIXED_FOR_YOU = "FEmusic_mixed_for_you"
 
     /**
      * The playlist shelves behind one mood/genre category. This result also
