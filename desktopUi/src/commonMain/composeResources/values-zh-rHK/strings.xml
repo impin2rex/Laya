@@ -251,4 +251,18 @@
     <string name="recognize_minutes_ago">%1$d 分鐘前</string>
     <string name="recognize_hours_ago">%1$d 小時前</string>
     <string name="recognize_days_ago">%1$d 天前</string>
+    <string name="add_to_queue">新增到播放佇列</string>
+    <string name="queue_selected_count">已選擇 %1$d 項</string>
+    <string name="queue_select_all">全選</string>
+    <string name="queue_select">選擇</string>
+    <string name="queue_close_selection">關閉選擇模式</string>
+    <string name="queue_add_to_playlist">播放列表</string>
+    <string name="queue_selection_remove">移除</string>
+    <string name="queue_add_all_to_playlist">全部新增到播放列表</string>
+    <string name="queue_removed_song">已移除 %1$s</string>
+    <string name="queue_undo_action">復原</string>
+    <string name="queue_cleared">已清空播放佇列</string>
+    <plurals name="queue_removed_count">
+        <item quantity="other">已移除 %1$d 首歌曲</item>
+    </plurals>
 </resources>

@@ -50,6 +50,9 @@ import com.music.laya.ui.LyricsProviderState
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.ui.player.LyricsSidePanel
 import com.music.laya.ui.player.NowPlayingScreen
+import com.music.laya.ui.player.QueueActions
+import com.music.laya.data.model.QueueEntryIdentity
+import com.music.laya.playback.QueueEdits
 import com.music.laya.ui.player.QueueSidePanel
 import com.music.laya.ui.player.PlayerBack
 import com.music.laya.ui.player.CanvasArtworkPlayer
@@ -663,6 +666,8 @@ fun LayaDesktopApp() {
     var replaySummary by remember { mutableStateOf(DesktopListeningStats.summary()) }
     var statsCountedSongs by remember { mutableStateOf<Set<String>>(emptySet()) }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    // The queue's selection on its way into the playlist dialog; [playlistTarget] stands for it there.
+    var queuePlaylistSongs by remember { mutableStateOf<List<Song>?>(null) }
     // One busy flag and one message for every playlist edit: only one of them can be in flight,
     // because each is driven by a dialog that is modal.
     var playlistBusy by remember { mutableStateOf(false) }
@@ -1518,6 +1523,7 @@ fun LayaDesktopApp() {
     fun closePlaylistDialogs() {
         overlays.playlistDialog = false
         playlistTarget = null
+        queuePlaylistSongs = null
         overlays.rename = false
         overlays.delete = false
         overlays.reorder = false
@@ -1623,23 +1629,25 @@ fun LayaDesktopApp() {
     }
 
     fun addToPlaylist(playlist: DesktopPlaylist) {
-        val song = playlistTarget ?: return
+        val added = queuePlaylistSongs ?: listOfNotNull(playlistTarget)
+        if (added.isEmpty()) return
         playlists = playlists.map { current ->
-            if (current.id == playlist.id) current.copy(songs = (current.songs + song).distinctBy(Song::videoId)) else current
+            if (current.id == playlist.id) current.copy(songs = (current.songs + added).distinctBy(Song::videoId)) else current
         }
         persistence.savePlaylists(playlists)
         playlistTarget = null
     }
 
     fun addToAccountPlaylist(playlist: UserPlaylist) {
-        val song = playlistTarget ?: return
+        val added = queuePlaylistSongs ?: listOfNotNull(playlistTarget)
+        if (added.isEmpty()) return
         playlistBusy = true
         playlistError = null
         scope.launch {
-            DesktopSearchClient.addToPlaylist(playlist.playlistId, listOf(song.videoId))
+            DesktopSearchClient.addToPlaylist(playlist.playlistId, added.map(Song::videoId).distinct())
                 .onSuccess { closePlaylistDialogs() }
                 .onFailure {
-                    DesktopTrackLog.log("playlist: could not add ${song.videoId}: ${it.message}")
+                    DesktopTrackLog.log("playlist: could not add ${added.size} track(s): ${it.message}")
                     playlistBusy = false
                     playlistError = it.message ?: "Could not add to ${playlist.title}"
                 }
@@ -3470,6 +3478,49 @@ fun LayaDesktopApp() {
         }
     }
 
+    // The queue screen's edits, as Android's service applies them: rows by identity, one Undo for the lot.
+    class QueueRemoval(val token: Long, val before: List<Song>, val removed: List<Int>)
+    var lastQueueRemoval: QueueRemoval? = null
+    var queueRemovalTokens = 0L
+
+    fun removeQueueEntries(entries: List<QueueEntryIdentity>): Long? {
+        if (DesktopListenTogether.state.value.controlsLocked) return null
+        val before = liveQueue.songs
+        val indices = QueueEdits.resolve(before, entries, QueueEdits.songKey).filter { it != liveQueue.index }
+        if (indices.isEmpty()) return null
+        val (kept, at) = QueueEdits.remove(before, liveQueue.index, indices)
+        liveQueue = liveQueue.copy(songs = kept, index = at)
+        saveQueue()
+        partySyncHolder[0]?.onLocalIntent()
+        lastQueueRemoval = QueueRemoval(++queueRemovalTokens, before, indices)
+        return queueRemovalTokens
+    }
+
+    fun undoQueueRemoval(token: Long): Boolean {
+        if (DesktopListenTogether.state.value.controlsLocked) return false
+        val removal = lastQueueRemoval?.takeIf { it.token == token } ?: return false
+        lastQueueRemoval = null
+        val (songs, at) = QueueEdits.restore(
+            removal.before, removal.removed, liveQueue.songs, liveQueue.index, QueueEdits.sameSong,
+        ) ?: return false
+        liveQueue = liveQueue.copy(songs = songs, index = at)
+        saveQueue()
+        partySyncHolder[0]?.onLocalIntent()
+        return true
+    }
+
+    fun moveQueueEntryToUser(entry: QueueEntryIdentity): Boolean {
+        if (DesktopListenTogether.state.value.controlsLocked) return false
+        val from = QueueEdits.resolve(liveQueue.songs, listOf(entry), QueueEdits.songKey).singleOrNull() ?: return false
+        val (songs, at) = QueueEdits.moveToUserQueue(
+            liveQueue.songs, liveQueue.index, from, DesktopAppUiHost.swipeToPlayNext.value,
+        ) ?: return false
+        liveQueue = liveQueue.copy(songs = songs, index = at)
+        saveQueue()
+        partySyncHolder[0]?.onLocalIntent()
+        return true
+    }
+
     // Clears what the listener queued by hand, as the phone's Clear does; the album and AutoPlay
     // stay where they are.
     fun clearQueue() {
@@ -3844,6 +3895,17 @@ fun LayaDesktopApp() {
                             onRemoveFromQueue = ::removeFromQueue,
                             onMoveInQueue = ::moveInQueue,
                             onClearQueue = ::clearQueue,
+                            queueActions = remember {
+                                QueueActions(
+                                    remove = { removeQueueEntries(it) },
+                                    undo = { undoQueueRemoval(it) },
+                                    moveToUserQueue = { moveQueueEntryToUser(it) },
+                                    addToPlaylist = { songs ->
+                                        queuePlaylistSongs = songs
+                                        playlistTarget = songs.firstOrNull()
+                                    },
+                                )
+                            },
                             onOpenMenu = { playerMenuOpen = true },
                             onOpenAlbum = { id ->
                                 overlays.nowPlaying = false

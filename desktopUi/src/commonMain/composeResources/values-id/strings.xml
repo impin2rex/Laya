@@ -251,4 +251,18 @@
     <string name="recognize_minutes_ago">%1$d mnt lalu</string>
     <string name="recognize_hours_ago">%1$d jam lalu</string>
     <string name="recognize_days_ago">%1$d hr lalu</string>
+    <string name="add_to_queue">Tambahkan ke antrean</string>
+    <string name="queue_selected_count">%1$d dipilih</string>
+    <string name="queue_select_all">Pilih semua</string>
+    <string name="queue_select">Pilih</string>
+    <string name="queue_close_selection">Tutup mode pilih</string>
+    <string name="queue_add_to_playlist">Playlist</string>
+    <string name="queue_selection_remove">Hapus</string>
+    <string name="queue_add_all_to_playlist">Tambahkan semua ke playlist</string>
+    <string name="queue_removed_song">%1$s dihapus</string>
+    <string name="queue_undo_action">Urungkan</string>
+    <string name="queue_cleared">Antrean dikosongkan</string>
+    <plurals name="queue_removed_count">
+        <item quantity="other">%1$d lagu dihapus</item>
+    </plurals>
 </resources>
