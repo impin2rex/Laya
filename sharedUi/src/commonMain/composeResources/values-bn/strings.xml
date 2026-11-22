@@ -730,4 +730,8 @@
     <string name="lossless_verify_expired_notice">%1$s যাচাইয়ের মেয়াদ শেষ। লসলেস চালিয়ে যেতে সোর্সে আবার চালু করুন।</string>
     <string name="lossless_verify_expired">যাচাইয়ের মেয়াদ শেষ · আবার চালু করুন</string>
     <string name="lossless_verified_until">যাচাই করা হয়েছে · %1$s পর্যন্ত</string>
+    <string name="automix_art_transition">আর্ট ট্রানজিশন</string>
+    <string name="automix_art_transition_subtitle">Automix-এর সময় ট্র্যাকের মধ্যে কভার আর্ট মসৃণভাবে মিশ্রিত করে।</string>
+    <string name="automix_mini_art_transition">মিনি-প্লেয়ার আর্ট ট্রানজিশন</string>
+    <string name="automix_mini_art_transition_subtitle">Automix-এর সময় মিনি-প্লেয়ারে আর্টওয়ার্ক ট্রানজিশন দেখায়।</string>
 </resources>

@@ -751,4 +751,8 @@
     <string name="lossless_verify_expired_notice">La vérification de %1$s a expiré. Réactivez-le dans Sources pour garder le sans perte.</string>
     <string name="lossless_verify_expired">Vérification expirée · réactivez-le</string>
     <string name="lossless_verified_until">Vérifié · jusqu\'au %1$s</string>
+    <string name="automix_art_transition">Transition de pochette</string>
+    <string name="automix_art_transition_subtitle">Fond en douceur la pochette entre les titres pendant Automix.</string>
+    <string name="automix_mini_art_transition">Transition de pochette du mini-lecteur</string>
+    <string name="automix_mini_art_transition_subtitle">Affiche les transitions de pochette dans le mini-lecteur pendant Automix.</string>
 </resources>

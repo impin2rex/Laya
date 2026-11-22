@@ -751,4 +751,8 @@
     <string name="lossless_verify_expired_notice">La verificación de %1$s caducó. Actívalo de nuevo en Fuentes para seguir escuchando sin pérdida.</string>
     <string name="lossless_verify_expired">Verificación caducada · vuelve a activarlo</string>
     <string name="lossless_verified_until">Verificado · hasta %1$s</string>
+    <string name="automix_art_transition">Transición de carátula</string>
+    <string name="automix_art_transition_subtitle">Mezcla suavemente la carátula entre pistas durante Automix.</string>
+    <string name="automix_mini_art_transition">Transición de carátula en el minirreproductor</string>
+    <string name="automix_mini_art_transition_subtitle">Muestra las transiciones de carátula en el minirreproductor durante Automix.</string>
 </resources>

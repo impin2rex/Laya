@@ -746,4 +746,8 @@
     <string name="lossless_verify_expired_notice">Verifikasi %1$s kedaluwarsa. Nyalakan lagi di Sumber agar tetap lossless.</string>
     <string name="lossless_verify_expired">Verifikasi kedaluwarsa · nyalakan lagi</string>
     <string name="lossless_verified_until">Terverifikasi · hingga %1$s</string>
+    <string name="automix_art_transition">Transisi sampul</string>
+    <string name="automix_art_transition_subtitle">Memadukan sampul antar lagu dengan halus saat Automix.</string>
+    <string name="automix_mini_art_transition">Transisi sampul mini player</string>
+    <string name="automix_mini_art_transition_subtitle">Menampilkan transisi sampul di mini player saat Automix.</string>
 </resources>

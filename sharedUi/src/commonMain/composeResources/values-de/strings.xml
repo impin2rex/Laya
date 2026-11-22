@@ -751,4 +751,8 @@
     <string name="lossless_verify_expired_notice">%1$s-Verifizierung abgelaufen. Schalte es unter Quellen wieder ein, um verlustfrei zu hören.</string>
     <string name="lossless_verify_expired">Verifizierung abgelaufen · wieder einschalten</string>
     <string name="lossless_verified_until">Verifiziert · bis %1$s</string>
+    <string name="automix_art_transition">Cover-Übergang</string>
+    <string name="automix_art_transition_subtitle">Blendet das Cover bei Automix sanft zwischen Titeln über.</string>
+    <string name="automix_mini_art_transition">Cover-Übergang im Mini-Player</string>
+    <string name="automix_mini_art_transition_subtitle">Zeigt Cover-Übergänge im Mini-Player während Automix.</string>
 </resources>

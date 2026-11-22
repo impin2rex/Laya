@@ -751,4 +751,8 @@
     <string name="lossless_verify_expired_notice">La verifica di %1$s è scaduta. Riattivalo in Sorgenti per continuare in lossless.</string>
     <string name="lossless_verify_expired">Verifica scaduta · riattivalo</string>
     <string name="lossless_verified_until">Verificato · fino al %1$s</string>
+    <string name="automix_art_transition">Transizione copertina</string>
+    <string name="automix_art_transition_subtitle">Sfuma dolcemente la copertina tra i brani durante Automix.</string>
+    <string name="automix_mini_art_transition">Transizione copertina nel mini player</string>
+    <string name="automix_mini_art_transition_subtitle">Mostra le transizioni delle copertine nel mini player durante Automix.</string>
 </resources>

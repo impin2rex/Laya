@@ -761,4 +761,8 @@
     <string name="lossless_verify_expired_notice">Weryfikacja %1$s wygasła. Włącz ponownie w Źródłach, aby słuchać bezstratnie.</string>
     <string name="lossless_verify_expired">Weryfikacja wygasła · włącz ponownie</string>
     <string name="lossless_verified_until">Zweryfikowano · do %1$s</string>
+    <string name="automix_art_transition">Przejście okładki</string>
+    <string name="automix_art_transition_subtitle">Płynnie łączy okładki między utworami podczas Automix.</string>
+    <string name="automix_mini_art_transition">Przejście okładki w minimodule</string>
+    <string name="automix_mini_art_transition_subtitle">Pokazuje przejścia okładek w minimodule podczas Automix.</string>
 </resources>

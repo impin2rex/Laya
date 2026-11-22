@@ -746,4 +746,8 @@
     <string name="lossless_verify_expired_notice">การยืนยัน %1$s หมดอายุแล้ว เปิดอีกครั้งในแหล่งเพลงเพื่อฟังแบบไม่สูญเสียคุณภาพต่อ</string>
     <string name="lossless_verify_expired">การยืนยันหมดอายุ · เปิดอีกครั้ง</string>
     <string name="lossless_verified_until">ยืนยันแล้ว · ถึง %1$s</string>
+    <string name="automix_art_transition">การเปลี่ยนภาพปก</string>
+    <string name="automix_art_transition_subtitle">ผสมภาพปกระหว่างเพลงอย่างนุ่มนวลระหว่าง Automix</string>
+    <string name="automix_mini_art_transition">การเปลี่ยนภาพปกในมินิเพลเยอร์</string>
+    <string name="automix_mini_art_transition_subtitle">แสดงการเปลี่ยนภาพปกในมินิเพลเยอร์ระหว่าง Automix</string>
 </resources>
