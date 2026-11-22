@@ -77,15 +77,17 @@ object BestPart {
 
     /**
      * Where [song]'s best part starts, in ms, or null when there is none to
-     * offer: a local file, or neither a bump in the curve nor a chorus in the
+     * offer: neither a bump in the curve nor a chorus in the
      * synced [lines]. A failed lookup is not remembered, so the next play of
      * the song asks again; a song with no curve falls back to its chorus.
      */
     suspend fun startFor(song: Song, lines: List<LyricLine>? = null): Long? {
         val id = song.videoId
-        if (song.localUri != null || !YOUTUBE_ID.matches(id)) return null
         val duration = song.durationText.durationMillis()
         val synced = lines.orEmpty().takeIf { l -> l.any { it.timeMs > 0L } }.orEmpty()
+        // A file on the device, or an addon's track, has no YouTube curve: its chorus, from the lyrics
+        // the player holds (a local file's embedded ones come first there), is all there is to offer.
+        if (song.localUri != null || !YOUTUBE_ID.matches(id)) return pick(null, synced, duration)
         val cached = lock.withLock {
             if (id in known) {
                 listOf(known[id])
