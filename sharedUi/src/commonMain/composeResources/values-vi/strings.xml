@@ -877,4 +877,16 @@
     <plurals name="minute_count">
         <item quantity="other">%1$d phút</item>
     </plurals>
+    <string name="download_waiting_wifi">Đang chờ Wi-Fi (xem Cài đặt, Tải xuống)</string>
+    <string name="download_failed_generic">Tải xuống thất bại</string>
+    <string name="download_no_youtube_match">Không tìm thấy bài khớp trên YouTube cho bài này</string>
+    <string name="download_no_length">Bài hát không khả dụng: không có độ dài để tải</string>
+    <string name="download_http_failed">Tải xuống thất bại (HTTP %1$d)</string>
+    <string name="download_stalled">Tải xuống bị treo ở %1$d B</string>
+    <string name="download_stopped">Tải xuống dừng ở %1$d B</string>
+    <string name="download_stopped_of">Tải xuống dừng ở %1$d B trên %2$s</string>
+    <string name="ios_speaker_name">Loa iPhone</string>
+    <plurals name="song_count_plural">
+        <item quantity="other">%1$d bài hát</item>
+    </plurals>
 </resources>

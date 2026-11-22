@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "Laya écoute via le micro lorsque vous faites une recherche vocale ou identifiez un titre qui joue à proximité.";
+"NSSpeechRecognitionUsageDescription" = "Laya transforme votre voix en recherche de titres, d’artistes, d’albums et de playlists.";
+"NSPhotoLibraryAddUsageDescription" = "Laya enregistre vos cartes Replay et paroles dans votre photothèque lorsque vous touchez Enregistrer.";
+"NSLocalNetworkUsageDescription" = "Laya détecte les Chromecast et enceintes Google Cast sur votre Wi-Fi pour que vous puissiez y lire de la musique.";

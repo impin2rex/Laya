@@ -100,7 +100,6 @@
     <string name="automix_art_transition_subtitle">Automix中、トラック間でカバーアートを滑らかにブレンドします。</string>
     <string name="automix_mini_art_transition">ミニプレーヤーのアート切り替え</string>
     <string name="automix_mini_art_transition_subtitle">Automix中、ミニプレーヤーでもアートワークの切り替えを表示します。</string>
-    <string name="d_add_n_songs">%1$d 曲を追加</string>
     <string name="d_some_tracks_not_from_youtube_music">これらの曲の一部は YouTube Music のものではないため、ここに保存されたプレイリストにのみ追加できます。</string>
     <string name="d_party_start_subtitle">友だちに表示される名前と、参加できる人数を選びます。</string>
     <string name="d_nickname">ニックネーム</string>
@@ -121,7 +120,6 @@
     <string name="d_google_sign_in_opens">Laya のウィンドウで Google のログインページを開きます</string>
     <string name="d_lastfm_password_notice">パスワードは Last.fm に一度だけ送信され、保存されることはありません。</string>
     <string name="d_lastfm_app_key_notice">API キーと共有シークレットは、last.fm/api で取得したご自身のアプリのものです。</string>
-    <string name="d_playlist_songs">プレイリスト • %1$d曲</string>
     <string name="d_module_index_found">モジュールインデックス · %1$d個のモジュール</string>
     <string name="d_party_invite_qr">パーティー招待のQRコード</string>
     <string name="d_addon_found">アドオン · %1$s</string>
@@ -145,4 +143,46 @@
     <string name="d_enter_token_instead">代わりにトークンを入力</string>
     <string name="d_discord_not_running_hint">このコンピューターで Discord が起動していない場合に使用します</string>
     <string name="d_signed_in_as_user">@%1$s としてサインイン中</string>
+    <string name="d_src_detail_addon">自分でホストしている、またはリンクを受け取った Addon サーバーです。通常の HTTP で検索とストリーミングを行い、コードのダウンロードや実行は行いません。</string>
+    <string name="d_src_detail_custom_module">独自の互換モジュールインデックスです。内蔵のものより先に試されます。</string>
+    <string name="d_src_detail_module">FLAC、ロスレス、Hi-Res などに対応する JavaScript モジュールです。</string>
+    <string name="d_src_detail_tidal">Tidal のロスレス FLAC</string>
+    <string name="d_src_detail_qobuz">Qobuz のロスレスおよび Hi-Res FLAC</string>
+    <string name="d_src_detail_jiosaavn">高音質 · 320kbps</string>
+    <string name="d_src_detail_youtube">非可逆 · 全カタログ · ラジオ</string>
+    <string name="d_tag_lossless">ロスレス</string>
+    <string name="d_tag_plugins">プラグイン</string>
+    <string name="d_tag_high_quality">高音質</string>
+    <string name="d_tag_lossy">非可逆</string>
+    <string name="d_tag_full_catalogue">全カタログ</string>
+    <string name="d_tag_radio">ラジオ</string>
+    <string name="d_q_label_low">低</string>
+    <string name="d_q_label_medium">中</string>
+    <string name="d_q_label_high">高</string>
+    <string name="d_q_detail_low">~64 kbps · ダウンロードサイズ最小</string>
+    <string name="d_q_detail_medium">利用可能な最高品質 · ~171 kbps Opus</string>
+    <string name="d_q_detail_high">JioSaavn は最大 320kbps、フォールバックは YouTube</string>
+    <string name="d_q_detail_lossless">あなたの Addon + JioSaavn、可能な場合はビット単位で完全一致</string>
+    <string name="d_sign_in_to_youtube_music">YouTube Music にサインイン</string>
+    <string name="d_sign_in_to_spotify">Spotify にサインイン</string>
+    <string name="d_addon_err_bad_address">これは Laya が開けるウェブアドレスではありません</string>
+    <string name="d_addon_err_not_json">そのアドレスは JSON を返しませんでした</string>
+    <string name="d_addon_err_json_list">その JSON は配列ですが、Laya が読み取る形式はすべてオブジェクトです</string>
+    <string name="d_addon_err_no_modules">そのモジュールインデックスにはモジュールがありません</string>
+    <string name="d_addon_err_manifest_unreadable">アドオンのマニフェストのようですが、読み取れませんでした</string>
+    <string name="d_addon_err_no_id">その JSON にはアドオン ID がないため、マニフェストではありません</string>
+    <string name="d_addon_err_needs_search">このアドオンは %1$s を宣言していますが、Laya には search が必要です</string>
+    <string name="d_addon_err_unknown_list">その JSON には「%1$s」がありますが、Laya が読み取る形式ではありません</string>
+    <string name="d_addon_err_unrecognised">認識できない JSON です。内容: %1$s</string>
+    <string name="d_cookie_unreadable">Cookie ストアを読み取れません</string>
+    <string name="d_cookie_copy_failed">Cookie ストアをコピーできませんでした: %1$s</string>
+    <string name="d_cookie_app_bound">その YouTube サインインは Windows App-Bound Encryption で保護されています。代わりにサインイン済みの Firefox プロファイルをインポートするか、Cookie ヘッダーを貼り付けてください</string>
+    <string name="d_cookie_key_unreachable">Cookie はこのセッションから利用できない鍵で暗号化されています</string>
+    <string name="d_cookie_open_failed">Cookie ストアを開けませんでした: %1$s</string>
+    <plurals name="d_playlist_songs">
+        <item quantity="other">プレイリスト • %1$d曲</item>
+    </plurals>
+    <plurals name="d_add_n_songs">
+        <item quantity="other">%1$d曲を追加</item>
+    </plurals>
 </resources>

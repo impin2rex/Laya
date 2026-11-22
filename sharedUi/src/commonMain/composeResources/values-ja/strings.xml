@@ -877,4 +877,16 @@
     <plurals name="minute_count">
         <item quantity="other">%1$d分</item>
     </plurals>
+    <string name="download_waiting_wifi">Wi-Fi を待機中（設定の「ダウンロード」を参照）</string>
+    <string name="download_failed_generic">ダウンロードに失敗しました</string>
+    <string name="download_no_youtube_match">このトラックに一致する YouTube の曲が見つかりません</string>
+    <string name="download_no_length">トラックを利用できません: 取得する長さがありません</string>
+    <string name="download_http_failed">ダウンロードに失敗しました (HTTP %1$d)</string>
+    <string name="download_stalled">ダウンロードが %1$d B で停止しました</string>
+    <string name="download_stopped">ダウンロードが %1$d B で中断されました</string>
+    <string name="download_stopped_of">ダウンロードが %2$s 中 %1$d B で中断されました</string>
+    <string name="ios_speaker_name">iPhone スピーカー</string>
+    <plurals name="song_count_plural">
+        <item quantity="other">%1$d曲</item>
+    </plurals>
 </resources>

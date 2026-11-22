@@ -884,4 +884,17 @@
         <item quantity="one">%1$d dakika</item>
         <item quantity="other">%1$d dakika</item>
     </plurals>
+    <string name="download_waiting_wifi">Wi-Fi bekleniyor (Ayarlar, İndirilenler’e bak)</string>
+    <string name="download_failed_generic">İndirme başarısız oldu</string>
+    <string name="download_no_youtube_match">Bu parça için YouTube’da eşleşme yok</string>
+    <string name="download_no_length">Parça kullanılamıyor: alınacak uzunluk yok</string>
+    <string name="download_http_failed">İndirme başarısız oldu (HTTP %1$d)</string>
+    <string name="download_stalled">İndirme %1$d B’ta takıldı</string>
+    <string name="download_stopped">İndirme %1$d B’ta durdu</string>
+    <string name="download_stopped_of">İndirme %2$s içinden %1$d B’ta durdu</string>
+    <string name="ios_speaker_name">iPhone hoparlörü</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$d şarkı</item>
+        <item quantity="other">%1$d şarkı</item>
+    </plurals>
 </resources>

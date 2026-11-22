@@ -884,4 +884,17 @@
         <item quantity="one">%1$d minuto</item>
         <item quantity="other">%1$d minutos</item>
     </plurals>
+    <string name="download_waiting_wifi">Esperando Wi-Fi (consulta Ajustes, Descargas)</string>
+    <string name="download_failed_generic">Error en la descarga</string>
+    <string name="download_no_youtube_match">Sin coincidencia en YouTube para esta canción</string>
+    <string name="download_no_length">Canción no disponible: no hay longitud que obtener</string>
+    <string name="download_http_failed">Error en la descarga (HTTP %1$d)</string>
+    <string name="download_stalled">La descarga se detuvo en %1$d B</string>
+    <string name="download_stopped">La descarga se interrumpió en %1$d B</string>
+    <string name="download_stopped_of">La descarga se interrumpió en %1$d B de %2$s</string>
+    <string name="ios_speaker_name">Altavoz del iPhone</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$d canción</item>
+        <item quantity="other">%1$d canciones</item>
+    </plurals>
 </resources>

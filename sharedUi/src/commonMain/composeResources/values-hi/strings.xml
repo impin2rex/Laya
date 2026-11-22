@@ -884,4 +884,17 @@
         <item quantity="one">%1$d मिनट</item>
         <item quantity="other">%1$d मिनट</item>
     </plurals>
+    <string name="download_waiting_wifi">Wi-Fi का इंतज़ार (सेटिंग्स, डाउनलोड देखें)</string>
+    <string name="download_failed_generic">डाउनलोड विफल रहा</string>
+    <string name="download_no_youtube_match">इस ट्रैक के लिए YouTube पर कोई मिलान नहीं मिला</string>
+    <string name="download_no_length">ट्रैक उपलब्ध नहीं: लाने के लिए कोई लंबाई नहीं</string>
+    <string name="download_http_failed">डाउनलोड विफल रहा (HTTP %1$d)</string>
+    <string name="download_stalled">डाउनलोड %1$dB पर अटक गया</string>
+    <string name="download_stopped">डाउनलोड %1$dB पर रुक गया</string>
+    <string name="download_stopped_of">डाउनलोड %2$s में से %1$dB पर रुक गया</string>
+    <string name="ios_speaker_name">iPhone स्पीकर</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$d गाना</item>
+        <item quantity="other">%1$d गाने</item>
+    </plurals>
 </resources>

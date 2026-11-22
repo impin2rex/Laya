@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "আপনি ভয়েসে সার্চ করলে বা আশেপাশে বাজতে থাকা গান শনাক্ত করলে Laya মাইক্রোফোনের মাধ্যমে শোনে।";
+"NSSpeechRecognitionUsageDescription" = "Laya আপনার কথাকে গান, শিল্পী, অ্যালবাম ও প্লেলিস্টের সার্চে রূপান্তর করে।";
+"NSPhotoLibraryAddUsageDescription" = "আপনি Save ট্যাপ করলে Laya আপনার Replay ও লিরিক্স কার্ড ফটো লাইব্রেরিতে সংরক্ষণ করে।";
+"NSLocalNetworkUsageDescription" = "আপনার Wi-Fi-তে Chromecast ও Google Cast স্পিকার খুঁজে পায় Laya, যাতে আপনি সেগুলোতে গান চালাতে পারেন।";

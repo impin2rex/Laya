@@ -878,4 +878,17 @@
         <item quantity="one">%1$d মিনিট</item>
         <item quantity="other">%1$d মিনিট</item>
     </plurals>
+    <string name="download_waiting_wifi">Wi-Fi-এর অপেক্ষায় (সেটিংস, ডাউনলোড দেখুন)</string>
+    <string name="download_failed_generic">ডাউনলোড ব্যর্থ হয়েছে</string>
+    <string name="download_no_youtube_match">এই ট্র্যাকের জন্য YouTube-এ কোনো মিল পাওয়া যায়নি</string>
+    <string name="download_no_length">ট্র্যাকটি অনুপলব্ধ: আনার মতো দৈর্ঘ্য নেই</string>
+    <string name="download_http_failed">ডাউনলোড ব্যর্থ হয়েছে (HTTP %1$d)</string>
+    <string name="download_stalled">%1$dB-এ ডাউনলোড আটকে গেছে</string>
+    <string name="download_stopped">%1$dB-এ ডাউনলোড বন্ধ হয়েছে</string>
+    <string name="download_stopped_of">%2$s-এর মধ্যে %1$dB-এ ডাউনলোড বন্ধ হয়েছে</string>
+    <string name="ios_speaker_name">iPhone স্পিকার</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$dটি গান</item>
+        <item quantity="other">%1$dটি গান</item>
+    </plurals>
 </resources>

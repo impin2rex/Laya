@@ -894,4 +894,19 @@
         <item quantity="few">%1$d минуты</item>
         <item quantity="many">%1$d минут</item>
     </plurals>
+    <string name="download_waiting_wifi">Ожидание Wi-Fi (см. «Настройки», «Загрузки»)</string>
+    <string name="download_failed_generic">Не удалось загрузить</string>
+    <string name="download_no_youtube_match">Для этого трека не найдено совпадений на YouTube</string>
+    <string name="download_no_length">Трек недоступен: нет длины для загрузки</string>
+    <string name="download_http_failed">Не удалось загрузить (HTTP %1$d)</string>
+    <string name="download_stalled">Загрузка зависла на %1$d Б</string>
+    <string name="download_stopped">Загрузка остановлена на %1$d Б</string>
+    <string name="download_stopped_of">Загрузка остановлена на %1$d Б из %2$s</string>
+    <string name="ios_speaker_name">Динамик iPhone</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$d песня</item>
+        <item quantity="few">%1$d песни</item>
+        <item quantity="many">%1$d песен</item>
+        <item quantity="other">%1$d песни</item>
+    </plurals>
 </resources>

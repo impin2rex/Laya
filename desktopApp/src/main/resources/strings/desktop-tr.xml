@@ -100,7 +100,6 @@
     <string name="automix_art_transition_subtitle">Automix sırasında parçalar arasında kapağı yumuşakça harmanlar.</string>
     <string name="automix_mini_art_transition">Mini oynatıcı kapak geçişi</string>
     <string name="automix_mini_art_transition_subtitle">Automix sırasında mini oynatıcıda kapak geçişlerini gösterir.</string>
-    <string name="d_add_n_songs">%1$d şarkı ekle</string>
     <string name="d_some_tracks_not_from_youtube_music">Bu parçaların bazıları YouTube Music’ten olmadığı için yalnızca burada tutulan bir çalma listesine eklenebilir.</string>
     <string name="d_party_start_subtitle">Arkadaşlarının seni nasıl göreceğini ve kaç kişinin katılabileceğini seç.</string>
     <string name="d_nickname">Takma ad</string>
@@ -121,7 +120,6 @@
     <string name="d_google_sign_in_opens">Google oturum açma sayfasını bir Laya penceresinde açar</string>
     <string name="d_lastfm_password_notice">Parolan Last.fm’e bir kez gönderilir ve hiç saklanmaz.</string>
     <string name="d_lastfm_app_key_notice">API anahtarı ve paylaşılan gizli anahtar senin uygulamana aittir, last.fm/api adresinden.</string>
-    <string name="d_playlist_songs">Çalma listesi • %1$d şarkı</string>
     <string name="d_module_index_found">Modül dizini · %1$d modül</string>
     <string name="d_party_invite_qr">Parti daveti QR kodu</string>
     <string name="d_addon_found">Eklenti · %1$s</string>
@@ -145,4 +143,48 @@
     <string name="d_enter_token_instead">Bunun yerine belirteç gir</string>
     <string name="d_discord_not_running_hint">Discord bu bilgisayarda çalışmıyorsa bunu kullan</string>
     <string name="d_signed_in_as_user">@%1$s olarak oturum açıldı</string>
+    <string name="d_src_detail_addon">Kendi barındırdığın veya bağlantısı sana verilen bir Addon sunucusu. Düz HTTP üzerinden aranır ve akışa alınır — hiçbir kod indirilmez veya çalıştırılmaz.</string>
+    <string name="d_src_detail_custom_module">Kendi uyumlu modül dizinin. Yerleşik olandan önce denenir.</string>
+    <string name="d_src_detail_module">FLAC, kayıpsız, Hi-Res ve daha fazlası için JavaScript modülleri.</string>
+    <string name="d_src_detail_tidal">Tidal’dan kayıpsız FLAC</string>
+    <string name="d_src_detail_qobuz">Qobuz’dan kayıpsız ve Hi-Res FLAC</string>
+    <string name="d_src_detail_jiosaavn">Yüksek kalite · 320 kbps</string>
+    <string name="d_src_detail_youtube">Kayıplı · Tam katalog · Radyo</string>
+    <string name="d_tag_lossless">Kayıpsız</string>
+    <string name="d_tag_plugins">Eklentiler</string>
+    <string name="d_tag_high_quality">Yüksek kalite</string>
+    <string name="d_tag_lossy">Kayıplı</string>
+    <string name="d_tag_full_catalogue">Tam katalog</string>
+    <string name="d_tag_radio">Radyo</string>
+    <string name="d_q_label_low">Düşük</string>
+    <string name="d_q_label_medium">Orta</string>
+    <string name="d_q_label_high">Yüksek</string>
+    <string name="d_q_detail_low">~64 kbps · en küçük indirme</string>
+    <string name="d_q_detail_medium">Mevcut en iyi · ~171 kbps Opus</string>
+    <string name="d_q_detail_high">JioSaavn en fazla 320 kbps, yedek olarak YouTube</string>
+    <string name="d_q_detail_lossless">Eklentilerin + JioSaavn, mümkün olduğunda bit düzeyinde aynı</string>
+    <string name="d_sign_in_to_youtube_music">YouTube Music’te oturum aç</string>
+    <string name="d_sign_in_to_spotify">Spotify’da oturum aç</string>
+    <string name="d_addon_err_bad_address">Bu, Laya’nın açabileceği bir web adresi değil</string>
+    <string name="d_addon_err_not_json">Bu adres JSON döndürmedi</string>
+    <string name="d_addon_err_json_list">Bu JSON bir liste, oysa Laya’nın okuduğu her biçim bir nesnedir</string>
+    <string name="d_addon_err_no_modules">Bu modül dizininde hiç modül yok</string>
+    <string name="d_addon_err_manifest_unreadable">Bir eklenti bildirimine benziyor ama okunamadı</string>
+    <string name="d_addon_err_no_id">Bu JSON’da eklenti kimliği yok, dolayısıyla bildirim değil</string>
+    <string name="d_addon_err_needs_search">Bu eklenti %1$s bildiriyor — Laya’nın search’e ihtiyacı var</string>
+    <string name="d_addon_err_unknown_list">Bu JSON “%1$s” listeliyor, bu Laya’nın okuduğu bir biçim değil</string>
+    <string name="d_addon_err_unrecognised">Tanınmayan JSON — içeriği: %1$s</string>
+    <string name="d_cookie_unreadable">çerez deposu okunamıyor</string>
+    <string name="d_cookie_copy_failed">çerez deposu kopyalanamadı: %1$s</string>
+    <string name="d_cookie_app_bound">YouTube oturumu Windows App-Bound Encryption ile korunuyor. Bunun yerine oturum açılmış bir Firefox profilini içe aktar veya Cookie üstbilgisini yapıştır</string>
+    <string name="d_cookie_key_unreachable">çerezleri, bu oturumun erişemediği bir anahtarla şifrelenmiş</string>
+    <string name="d_cookie_open_failed">çerez deposu açılamadı: %1$s</string>
+    <plurals name="d_playlist_songs">
+        <item quantity="one">Çalma listesi • %1$d şarkı</item>
+        <item quantity="other">Çalma listesi • %1$d şarkı</item>
+    </plurals>
+    <plurals name="d_add_n_songs">
+        <item quantity="one">%1$d şarkı ekle</item>
+        <item quantity="other">%1$d şarkı ekle</item>
+    </plurals>
 </resources>

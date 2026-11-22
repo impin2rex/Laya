@@ -112,6 +112,44 @@ object DesktopStrings {
     fun format(key: String, vararg arguments: Any?, fallback: String = key): String =
         runCatching { String.format(get(key, fallback), *arguments) }.getOrDefault(get(key, fallback))
 
+    /**
+     * The `<plurals>` entry [key] for [count], with [count] filled in as `%1$d` (plus any [extra]).
+     *
+     * Catalogues hold them as `key#quantity`. A language with no entry for the quantity its rule
+     * picks falls back to `other`, then to English, then to [fallbackOne]/[fallbackOther].
+     */
+    fun plural(key: String, count: Int, fallbackOne: String, fallbackOther: String, vararg extra: Any?): String {
+        val quantity = pluralQuantity(resolvedTag(), count)
+        val text = current["$key#$quantity"] ?: current["$key#other"]
+            ?: english["$key#${pluralQuantity("en", count)}"] ?: english["$key#other"]
+            ?: if (count == 1) fallbackOne else fallbackOther
+        return runCatching { String.format(text, count, *extra) }.getOrDefault(text)
+    }
+
+    /** CLDR plural category for [n], for the languages the catalogues cover. */
+    internal fun pluralQuantity(tag: String, n: Int): String {
+        val lang = tag.substringBefore('-').lowercase()
+        val m10 = n % 10
+        val m100 = n % 100
+        return when (lang) {
+            "ja", "zh", "th", "vi", "id" -> "other"
+            "fr" -> if (n == 0 || n == 1) "one" else "other"
+            "hi", "bn" -> if (n == 0 || n == 1) "one" else "other"
+            "he" -> when (n) { 1 -> "one"; 2 -> "two"; else -> "other" }
+            "ru" -> when {
+                m10 == 1 && m100 != 11 -> "one"
+                m10 in 2..4 && m100 !in 12..14 -> "few"
+                else -> "many"
+            }
+            "pl" -> when {
+                n == 1 -> "one"
+                m10 in 2..4 && m100 !in 12..14 -> "few"
+                else -> "many"
+            }
+            else -> if (n == 1) "one" else "other"
+        }
+    }
+
     private fun load(tag: String): Map<String, String> = runCatching {
         val stream = DesktopStrings::class.java.getResourceAsStream("/strings/$tag.xml")
             ?: return@runCatching emptyMap()
@@ -122,7 +160,18 @@ object DesktopStrings {
                 .parse(it)
         }
         val nodes = document.getElementsByTagName("string")
+        val plurals = document.getElementsByTagName("plurals")
         buildMap {
+            for (index in 0 until plurals.length) {
+                val node = plurals.item(index)
+                val name = node.attributes?.getNamedItem("name")?.nodeValue ?: continue
+                val items = node.childNodes
+                for (i in 0 until items.length) {
+                    val item = items.item(i)
+                    val quantity = item.attributes?.getNamedItem("quantity")?.nodeValue ?: continue
+                    put("$name#$quantity", unescape(item.textContent.orEmpty()))
+                }
+            }
             for (index in 0 until nodes.length) {
                 val node = nodes.item(index)
                 val name = node.attributes?.getNamedItem("name")?.nodeValue ?: continue

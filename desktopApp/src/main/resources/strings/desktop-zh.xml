@@ -100,7 +100,6 @@
     <string name="automix_art_transition_subtitle">在 Automix 期间平滑融合曲目之间的封面。</string>
     <string name="automix_mini_art_transition">迷你播放器封面过渡</string>
     <string name="automix_mini_art_transition_subtitle">在 Automix 期间于迷你播放器中显示封面过渡。</string>
-    <string name="d_add_n_songs">添加 %1$d 首歌曲</string>
     <string name="d_some_tracks_not_from_youtube_music">其中部分曲目并非来自 YouTube Music，因此只能加入保存在本机的播放列表。</string>
     <string name="d_party_start_subtitle">选择好友看到你的方式，以及可加入的人数。</string>
     <string name="d_nickname">昵称</string>
@@ -121,7 +120,6 @@
     <string name="d_google_sign_in_opens">在 Laya 窗口中打开 Google 登录页面</string>
     <string name="d_lastfm_password_notice">你的密码只会发送给 Last.fm 一次，且不会被保存。</string>
     <string name="d_lastfm_app_key_notice">API 密钥和共享密钥是你自己应用的，来自 last.fm/api。</string>
-    <string name="d_playlist_songs">播放列表 • %1$d 首歌曲</string>
     <string name="d_module_index_found">模块索引 · %1$d 个模块</string>
     <string name="d_party_invite_qr">派对邀请二维码</string>
     <string name="d_addon_found">插件 · %1$s</string>
@@ -145,4 +143,46 @@
     <string name="d_enter_token_instead">改为输入令牌</string>
     <string name="d_discord_not_running_hint">如果此电脑上未运行 Discord，请使用此项</string>
     <string name="d_signed_in_as_user">已以 @%1$s 身份登录</string>
+    <string name="d_src_detail_addon">你自己托管或收到链接的 Addon 服务器。通过普通 HTTP 搜索和串流，不会下载或运行任何代码。</string>
+    <string name="d_src_detail_custom_module">你自己的兼容模块索引，优先于内置索引尝试。</string>
+    <string name="d_src_detail_module">适用于 FLAC、无损、Hi-Res 等的 JavaScript 模块。</string>
+    <string name="d_src_detail_tidal">来自 Tidal 的无损 FLAC</string>
+    <string name="d_src_detail_qobuz">来自 Qobuz 的无损和 Hi-Res FLAC</string>
+    <string name="d_src_detail_jiosaavn">高品质 · 320kbps</string>
+    <string name="d_src_detail_youtube">有损 · 完整曲库 · 电台</string>
+    <string name="d_tag_lossless">无损</string>
+    <string name="d_tag_plugins">插件</string>
+    <string name="d_tag_high_quality">高品质</string>
+    <string name="d_tag_lossy">有损</string>
+    <string name="d_tag_full_catalogue">完整曲库</string>
+    <string name="d_tag_radio">电台</string>
+    <string name="d_q_label_low">低</string>
+    <string name="d_q_label_medium">中</string>
+    <string name="d_q_label_high">高</string>
+    <string name="d_q_detail_low">~64 kbps · 下载体积最小</string>
+    <string name="d_q_detail_medium">可用的最佳音质 · ~171 kbps Opus</string>
+    <string name="d_q_detail_high">JioSaavn 最高 320kbps，YouTube 作为备用</string>
+    <string name="d_q_detail_lossless">你的 Addon + JioSaavn，可用时逐位精确</string>
+    <string name="d_sign_in_to_youtube_music">登录 YouTube Music</string>
+    <string name="d_sign_in_to_spotify">登录 Spotify</string>
+    <string name="d_addon_err_bad_address">这不是 Laya 能打开的网址</string>
+    <string name="d_addon_err_not_json">该地址没有返回 JSON</string>
+    <string name="d_addon_err_json_list">该 JSON 是一个列表，而 Laya 读取的所有格式都是对象</string>
+    <string name="d_addon_err_no_modules">该模块索引中没有任何模块</string>
+    <string name="d_addon_err_manifest_unreadable">这看起来像 Addon 清单，但无法读取</string>
+    <string name="d_addon_err_no_id">该 JSON 没有 Addon id，因此不是清单</string>
+    <string name="d_addon_err_needs_search">此 Addon 声明了 %1$s，而 Laya 需要 search</string>
+    <string name="d_addon_err_unknown_list">该 JSON 列出了“%1$s”，这不是 Laya 能读取的格式</string>
+    <string name="d_addon_err_unrecognised">无法识别的 JSON，其中包含 %1$s</string>
+    <string name="d_cookie_unreadable">无法读取其 Cookie 存储</string>
+    <string name="d_cookie_copy_failed">无法复制其 Cookie 存储：%1$s</string>
+    <string name="d_cookie_app_bound">其 YouTube 登录受 Windows App-Bound Encryption 保护。请改为导入已登录的 Firefox 配置文件，或粘贴 Cookie 标头</string>
+    <string name="d_cookie_key_unreachable">其 Cookie 使用了此会话无法访问的密钥加密</string>
+    <string name="d_cookie_open_failed">无法打开其 Cookie 存储：%1$s</string>
+    <plurals name="d_playlist_songs">
+        <item quantity="other">播放列表 • %1$d 首歌曲</item>
+    </plurals>
+    <plurals name="d_add_n_songs">
+        <item quantity="other">添加 %1$d 首歌曲</item>
+    </plurals>
 </resources>

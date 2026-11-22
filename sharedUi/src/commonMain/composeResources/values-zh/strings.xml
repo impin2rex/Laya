@@ -877,4 +877,16 @@
     <plurals name="minute_count">
         <item quantity="other">%1$d 分钟</item>
     </plurals>
+    <string name="download_waiting_wifi">正在等待 Wi-Fi（参见“设置”中的“下载”）</string>
+    <string name="download_failed_generic">下载失败</string>
+    <string name="download_no_youtube_match">未找到此曲目在 YouTube 上的匹配项</string>
+    <string name="download_no_length">曲目不可用：没有可获取的长度</string>
+    <string name="download_http_failed">下载失败 (HTTP %1$d)</string>
+    <string name="download_stalled">下载在 %1$d B 处停滞</string>
+    <string name="download_stopped">下载在 %1$d B 处停止</string>
+    <string name="download_stopped_of">下载在 %1$d B / %2$s 处停止</string>
+    <string name="ios_speaker_name">iPhone 扬声器</string>
+    <plurals name="song_count_plural">
+        <item quantity="other">%1$d 首歌曲</item>
+    </plurals>
 </resources>

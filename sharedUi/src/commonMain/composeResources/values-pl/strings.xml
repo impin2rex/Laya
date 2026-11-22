@@ -898,4 +898,17 @@
         <item quantity="many">%1$d minut</item>
         <item quantity="other">%1$d minut</item>
     </plurals>
+    <string name="download_waiting_wifi">Oczekiwanie na Wi-Fi (zobacz Ustawienia, Pobrane)</string>
+    <string name="download_failed_generic">Pobieranie nie powiodło się</string>
+    <string name="download_no_youtube_match">Brak dopasowania w YouTube dla tego utworu</string>
+    <string name="download_no_length">Utwór niedostępny: brak długości do pobrania</string>
+    <string name="download_http_failed">Pobieranie nie powiodło się (HTTP %1$d)</string>
+    <string name="download_stalled">Pobieranie zawiesiło się na %1$d B</string>
+    <string name="download_stopped">Pobieranie zatrzymano na %1$d B</string>
+    <string name="download_stopped_of">Pobieranie zatrzymano na %1$d B z %2$s</string>
+    <string name="ios_speaker_name">Głośnik iPhone’a</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$d piosenka</item>
+        <item quantity="other">%1$d piosenki</item>
+    </plurals>
 </resources>

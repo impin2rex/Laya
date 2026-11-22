@@ -100,7 +100,6 @@
     <string name="automix_art_transition_subtitle">Mezcla suavemente la carátula entre pistas durante Automix.</string>
     <string name="automix_mini_art_transition">Transición de carátula en el minirreproductor</string>
     <string name="automix_mini_art_transition_subtitle">Muestra las transiciones de carátula en el minirreproductor durante Automix.</string>
-    <string name="d_add_n_songs">Añadir %1$d canciones</string>
     <string name="d_some_tracks_not_from_youtube_music">Algunas de estas canciones no son de YouTube Music, así que solo pueden ir a una playlist guardada aquí.</string>
     <string name="d_party_start_subtitle">Elige cómo te ven tus amigos y cuántos pueden unirse.</string>
     <string name="d_nickname">Apodo</string>
@@ -121,7 +120,6 @@
     <string name="d_google_sign_in_opens">Abre la página de inicio de sesión de Google en una ventana de Laya</string>
     <string name="d_lastfm_password_notice">Tu contraseña se envía a Last.fm una sola vez y nunca se guarda.</string>
     <string name="d_lastfm_app_key_notice">La clave de API y el secreto compartido son los de tu app, de last.fm/api.</string>
-    <string name="d_playlist_songs">Playlist • %1$d canciones</string>
     <string name="d_module_index_found">Índice de módulos · %1$d módulos</string>
     <string name="d_party_invite_qr">Código QR de invitación a la fiesta</string>
     <string name="d_addon_found">Complemento · %1$s</string>
@@ -145,4 +143,48 @@
     <string name="d_enter_token_instead">Introducir un token en su lugar</string>
     <string name="d_discord_not_running_hint">Úsalo si Discord no se está ejecutando en este equipo</string>
     <string name="d_signed_in_as_user">Sesión iniciada como @%1$s</string>
+    <string name="d_src_detail_addon">Un servidor de addons que alojas tú o cuyo enlace te dieron. Se busca y se transmite por HTTP simple: no se descarga ni se ejecuta código.</string>
+    <string name="d_src_detail_custom_module">Tu propio índice de módulos compatible. Se prueba antes que el integrado.</string>
+    <string name="d_src_detail_module">Módulos de JavaScript para FLAC, sin pérdida, Hi-Res y más.</string>
+    <string name="d_src_detail_tidal">FLAC sin pérdida de Tidal</string>
+    <string name="d_src_detail_qobuz">FLAC sin pérdida y Hi-Res de Qobuz</string>
+    <string name="d_src_detail_jiosaavn">Alta calidad · 320 kbps</string>
+    <string name="d_src_detail_youtube">Con pérdida · Catálogo completo · Radio</string>
+    <string name="d_tag_lossless">Sin pérdida</string>
+    <string name="d_tag_plugins">Complementos</string>
+    <string name="d_tag_high_quality">Alta calidad</string>
+    <string name="d_tag_lossy">Con pérdida</string>
+    <string name="d_tag_full_catalogue">Catálogo completo</string>
+    <string name="d_tag_radio">Radio</string>
+    <string name="d_q_label_low">Baja</string>
+    <string name="d_q_label_medium">Media</string>
+    <string name="d_q_label_high">Alta</string>
+    <string name="d_q_detail_low">~64 kbps · descarga más pequeña</string>
+    <string name="d_q_detail_medium">Mejor disponible · ~171 kbps Opus</string>
+    <string name="d_q_detail_high">JioSaavn hasta 320 kbps, YouTube como alternativa</string>
+    <string name="d_q_detail_lossless">Tus addons + JioSaavn, exacto bit a bit cuando esté disponible</string>
+    <string name="d_sign_in_to_youtube_music">Iniciar sesión en YouTube Music</string>
+    <string name="d_sign_in_to_spotify">Iniciar sesión en Spotify</string>
+    <string name="d_addon_err_bad_address">Esa no es una dirección web que Laya pueda abrir</string>
+    <string name="d_addon_err_not_json">Esa dirección no devolvió JSON</string>
+    <string name="d_addon_err_json_list">Ese JSON es una lista, y todos los formatos que lee Laya son objetos</string>
+    <string name="d_addon_err_no_modules">Ese índice de módulos no lista ningún módulo</string>
+    <string name="d_addon_err_manifest_unreadable">Parece un manifiesto de addon, pero no se pudo leer</string>
+    <string name="d_addon_err_no_id">Ese JSON no tiene id de addon, así que no es un manifiesto</string>
+    <string name="d_addon_err_needs_search">Este addon declara %1$s: Laya necesita search</string>
+    <string name="d_addon_err_unknown_list">Ese JSON lista «%1$s», que no es un formato que Laya lea</string>
+    <string name="d_addon_err_unrecognised">JSON no reconocido: contiene %1$s</string>
+    <string name="d_cookie_unreadable">no se puede leer su almacén de cookies</string>
+    <string name="d_cookie_copy_failed">no se pudo copiar su almacén de cookies: %1$s</string>
+    <string name="d_cookie_app_bound">su inicio de sesión de YouTube está protegido por Windows App-Bound Encryption. Importa un perfil de Firefox con sesión iniciada o pega el encabezado Cookie</string>
+    <string name="d_cookie_key_unreachable">sus cookies están cifradas con una clave a la que esta sesión no puede acceder</string>
+    <string name="d_cookie_open_failed">no se pudo abrir su almacén de cookies: %1$s</string>
+    <plurals name="d_playlist_songs">
+        <item quantity="one">Playlist • %1$d canción</item>
+        <item quantity="other">Playlist • %1$d canciones</item>
+    </plurals>
+    <plurals name="d_add_n_songs">
+        <item quantity="one">Añadir %1$d canción</item>
+        <item quantity="other">Añadir %1$d canciones</item>
+    </plurals>
 </resources>

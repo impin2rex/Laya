@@ -829,7 +829,7 @@ internal object DesktopSourceFormats {
             parsed.protocol.name.lowercase() !in setOf("http", "https")
         ) {
             return@withContext Result.success(
-                DesktopDetectedFormat.Unsupported("That is not a web address Laya can open"),
+                DesktopDetectedFormat.Unsupported(DesktopStrings["d_addon_err_bad_address", "That is not a web address Laya can open"]),
             )
         }
         val base = DesktopAddonClient.normalizeBase(url)
@@ -866,17 +866,17 @@ internal object DesktopSourceFormats {
 
     internal fun detect(body: String, url: String = ""): DesktopDetectedFormat {
         val root = runCatching { DesktopAddonClient.json.parseToJsonElement(body) }.getOrNull()
-            ?: return DesktopDetectedFormat.Unsupported("That address did not return JSON")
+            ?: return DesktopDetectedFormat.Unsupported(DesktopStrings["d_addon_err_not_json", "That address did not return JSON"])
         val obj = root as? JsonObject
             ?: return DesktopDetectedFormat.Unsupported(
-                "That JSON is a list, and every format Laya reads is an object",
+                DesktopStrings["d_addon_err_json_list", "That JSON is a list, and every format Laya reads is an object"],
             )
 
         // A module index first: its marker is unmistakable and belongs to no other format.
         if (obj.keys.any { it.startsWith("category:") }) {
             val modules = runCatching { DesktopModuleSource.parseIndex(body) }.getOrDefault(emptyList())
             return if (modules.isEmpty()) {
-                DesktopDetectedFormat.Unsupported("That module index listed no modules")
+                DesktopDetectedFormat.Unsupported(DesktopStrings["d_addon_err_no_modules", "That module index listed no modules"])
             } else {
                 DesktopDetectedFormat.ModuleIndex(modules.size, url)
             }
@@ -888,13 +888,13 @@ internal object DesktopSourceFormats {
             val manifest = runCatching {
                 DesktopAddonClient.json.decodeFromString<DesktopAddonManifest>(body)
             }.getOrNull() ?: return DesktopDetectedFormat.Unsupported(
-                "That looks like an addon manifest, but it could not be read",
+                DesktopStrings["d_addon_err_manifest_unreadable", "That looks like an addon manifest, but it could not be read"],
             )
             return when {
                 manifest.id.isBlank() ->
-                    DesktopDetectedFormat.Unsupported("That JSON has no addon id, so it is not a manifest")
+                    DesktopDetectedFormat.Unsupported(DesktopStrings["d_addon_err_no_id", "That JSON has no addon id, so it is not a manifest"])
                 !manifest.isPlayable -> DesktopDetectedFormat.Unsupported(
-                    "This addon declares ${manifest.resources.joinToString(", ")} — Laya needs search",
+                    DesktopStrings.format("d_addon_err_needs_search", manifest.resources.joinToString(", "), fallback = "This addon declares %1\$s — Laya needs search"),
                 )
                 else -> DesktopDetectedFormat.Addon(manifest, DesktopAddonClient.normalizeBase(url))
             }
@@ -903,11 +903,11 @@ internal object DesktopSourceFormats {
         val listKey = obj.entries.firstOrNull { it.value is JsonArray && (it.value as JsonArray).isNotEmpty() }?.key
         if (listKey != null) {
             return DesktopDetectedFormat.Unsupported(
-                "That JSON lists \"$listKey\", which is not a format Laya reads",
+                DesktopStrings.format("d_addon_err_unknown_list", listKey, fallback = "That JSON lists “%1\$s”, which is not a format Laya reads"),
             )
         }
         val keys = obj.keys.take(4).joinToString(", ").ifBlank { "nothing" }
-        return DesktopDetectedFormat.Unsupported("Unrecognised JSON — it holds $keys")
+        return DesktopDetectedFormat.Unsupported(DesktopStrings.format("d_addon_err_unrecognised", keys, fallback = "Unrecognised JSON — it holds %1\$s"))
     }
 
     /** Stand-in for an addon that works but published nothing describing itself. */
