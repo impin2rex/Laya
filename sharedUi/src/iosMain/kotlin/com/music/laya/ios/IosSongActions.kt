@@ -27,6 +27,27 @@ import com.music.laya.data.model.Song
 import com.music.laya.data.model.UserPlaylist
 import kotlinx.coroutines.launch
 import platform.UIKit.UIPasteboard
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.add_to_playlist
+import com.music.laya.sharedui.resources.add_to_playlist_failed
+import com.music.laya.sharedui.resources.added_to_named_playlist
+import com.music.laya.sharedui.resources.after_this_song
+import com.music.laya.sharedui.resources.cancel
+import com.music.laya.sharedui.resources.done
+import com.music.laya.sharedui.resources.loading
+import com.music.laya.sharedui.resources.minute_count
+import com.music.laya.sharedui.resources.no_playlists
+import com.music.laya.sharedui.resources.sleep_timer
+import com.music.laya.sharedui.resources.song_info
+import com.music.laya.sharedui.resources.song_info_album
+import com.music.laya.sharedui.resources.song_info_comments
+import com.music.laya.sharedui.resources.song_info_likes
+import com.music.laya.sharedui.resources.song_info_release_date
+import com.music.laya.sharedui.resources.song_info_views
+import com.music.laya.sharedui.resources.turn_off_timer
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 /** Android's "Copy log": the same TrackLog export (header, NerdStats, the track's resolver/source/player lines) on the pasteboard. Returns the line count. */
 internal suspend fun copyTrackLog(song: Song): Int {
@@ -47,17 +68,17 @@ private fun PickRow(label: String, onClick: () -> Unit) = ListItem(
 internal fun IosSleepTimerDialog(player: IosPlayer, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sleep timer") },
+        title = { Text(stringResource(Res.string.sleep_timer)) },
         text = {
             Column {
                 listOf(15, 30, 45, 60).forEach { m ->
-                    PickRow("$m minutes" + if (player.sleepMinutes == m) "  ✓" else "") { player.startSleep(m); onDismiss() }
+                    PickRow(pluralStringResource(Res.plurals.minute_count, m, m) + if (player.sleepMinutes == m) "  ✓" else "") { player.startSleep(m); onDismiss() }
                 }
-                PickRow("End of track" + if (player.sleepAfterTrack) "  ✓" else "") { player.startSleepAfterTrack(); onDismiss() }
-                if (player.sleepMinutes != null || player.sleepAfterTrack) PickRow("Turn off") { player.cancelSleep(); onDismiss() }
+                PickRow(stringResource(Res.string.after_this_song) + if (player.sleepAfterTrack) "  ✓" else "") { player.startSleepAfterTrack(); onDismiss() }
+                if (player.sleepMinutes != null || player.sleepAfterTrack) PickRow(stringResource(Res.string.turn_off_timer)) { player.cancelSleep(); onDismiss() }
             }
         },
-        confirmButton = { TextButton(onDismiss) { Text("Done") } },
+        confirmButton = { TextButton(onDismiss) { Text(stringResource(Res.string.done)) } },
     )
 }
 
@@ -67,18 +88,18 @@ internal fun IosSongInfoDialog(song: Song, onDismiss: () -> Unit) {
     val info by produceState<SongInfo?>(null, song) { value = SongInfoRepository.load(song) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Song info") },
+        title = { Text(stringResource(Res.string.song_info)) },
         text = {
             Column {
                 Text(song.title)
                 Text(song.artist)
-                if (info == null) Text("Loading…")
+                if (info == null) Text(stringResource(Res.string.loading))
                 else listOf(
-                    "Album" to (info?.album ?: song.albumName),
-                    "Release date" to (info?.releaseDate ?: info?.releaseYear),
-                    "Views" to info?.views?.let(::compactCount),
-                    "Likes" to info?.likes,
-                    "Comments" to info?.comments,
+                    stringResource(Res.string.song_info_album) to (info?.album ?: song.albumName),
+                    stringResource(Res.string.song_info_release_date) to (info?.releaseDate ?: info?.releaseYear),
+                    stringResource(Res.string.song_info_views) to info?.views?.let(::compactCount),
+                    stringResource(Res.string.song_info_likes) to info?.likes,
+                    stringResource(Res.string.song_info_comments) to info?.comments,
                 ).forEach { (k, v) ->
                     ListItem(
                         headlineContent = { Text(k) },
@@ -88,7 +109,7 @@ internal fun IosSongInfoDialog(song: Song, onDismiss: () -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onDismiss) { Text("Done") } },
+        confirmButton = { TextButton(onDismiss) { Text(stringResource(Res.string.done)) } },
     )
 }
 
@@ -104,24 +125,24 @@ internal fun IosPlaylistPicker(songs: List<Song>, onDismiss: () -> Unit, notify:
     val playlists by produceState<List<UserPlaylist>?>(null) { value = YtMusicRepository.userPlaylists().getOrDefault(emptyList()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to playlist") },
+        title = { Text(stringResource(Res.string.add_to_playlist)) },
         text = {
             Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
                 val list = playlists
-                if (list == null) Text("Loading…") else if (list.isEmpty()) Text("No playlists")
+                if (list == null) Text(stringResource(Res.string.loading)) else if (list.isEmpty()) Text(stringResource(Res.string.no_playlists))
                 list?.forEach { p ->
                     PickRow(p.title) {
                         onDismiss()
                         scope.launch {
                             YtMusicRepository.addToPlaylist(p.playlistId, songs.map { it.videoId }.distinct())
-                                .onSuccess { notify("Added to ${p.title}") }
-                                .onFailure { notify("Couldn't add to ${p.title}") }
+                                .onSuccess { notify(getString(Res.string.added_to_named_playlist, p.title)) }
+                                .onFailure { notify(getString(Res.string.add_to_playlist_failed, p.title)) }
                         }
                     }
                 }
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onDismiss) { Text(stringResource(Res.string.cancel)) } },
     )
 }

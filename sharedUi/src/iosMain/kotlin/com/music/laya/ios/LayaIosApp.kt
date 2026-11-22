@@ -209,6 +209,11 @@ import com.music.laya.sharedui.resources.history_empty
 import com.music.laya.sharedui.resources.library_empty
 import com.music.laya.ui.screens.HistoryScreen
 import org.jetbrains.compose.resources.getString
+import com.music.laya.sharedui.resources.artist_label
+import com.music.laya.sharedui.resources.couldnt_find
+import com.music.laya.sharedui.resources.downloaded_songs
+import com.music.laya.sharedui.resources.listen_now
+import com.music.laya.sharedui.resources.something_went_wrong
 
 private fun ShelfItem.toSong() = videoId?.let {
     Song(it, title, InnertubeParser.artistFromSubtitle(subtitle), thumbnailUrl)
@@ -220,6 +225,7 @@ private fun List<ShelfItem>.songs() = mapNotNull { it.toSong() }
 @Composable
 fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val scope = rememberCoroutineScope()
+    val artistLabel = stringResource(Res.string.artist_label)
     // The process singleton: a widget intent may have built it, queue restored, before any UI existed.
     val player = remember { IosPlayer.shared(engine) }
     var tab by remember { mutableIntStateOf(0) }
@@ -356,7 +362,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 }
                 if (page.isEmpty) UiState.Error(getString(Res.string.library_empty)) else UiState.Success(page.copy(likedContinuation = null))
             },
-            onFailure = { UiState.Error(it.message ?: "Error") },
+            onFailure = { UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
         )
     }
     val sessionVersion by IosAuth.sessionVersion.collectAsState()
@@ -387,7 +393,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         scope.launch {
             val songs = YtMusicRepository.history().fold(
                 { if (it.isEmpty()) UiState.Error(getString(Res.string.history_empty)) else UiState.Success(it) },
-                { UiState.Error(it.message ?: "Error") },
+                { UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
             )
             stack = stack.map { if (it === loading) IosPage.History(songs) else it }
         }
@@ -677,7 +683,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         results = UiState.Loading
         results = YtMusicRepository.searchPage(query, filter, anonymous).fold(
             { searchContinuation = it.continuation; UiState.Success(it.rows) },
-            { UiState.Error(it.message ?: "Error") },
+            { UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
         )
     }
     fun onQueryChange(value: String) {
@@ -1013,7 +1019,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                             onSectionItemClick = { item ->
                                                 item.browseId?.let { openDetail(it, item.title, item.subtitle, item.thumbnailUrl, BrowseType.ALBUM) }
                                             },
-                                            onArtistClick = { id, name -> openDetail(id, name, "Artist", null, BrowseType.ARTIST) },
+                                            onArtistClick = { id, name -> openDetail(id, name, artistLabel, null, BrowseType.ARTIST) },
                                             onAddSuggested = {}, // needs sign-in
                                             contentPadding = noPadding,
                                             activeShelf = activeShelf,
@@ -1039,7 +1045,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         // Android starts a station off the tapped track; AutoPlay carries on as the radio here.
                                         onPlaySong = { player.play(listOf(it), 0) },
                                         onOpenArtist = { id, name ->
-                                            if (id != null) openDetail(id, name, "Artist", null, BrowseType.ARTIST)
+                                            if (id != null) openDetail(id, name, artistLabel, null, BrowseType.ARTIST)
                                             else scope.launch {
                                                 YtMusicRepository.search(name, SearchFilter.ARTISTS).getOrNull()
                                                     ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
@@ -1151,7 +1157,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 onRefresh = { scope.launch { loadHome() } },
                                 pullState = homePull,
                                 contentPadding = noPadding,
-                                title = "Listen now",
+                                title = stringResource(Res.string.listen_now),
                                 signedIn = signedIn,
                                 onSignIn = { showLogin = true },
                                 currentSong = song,
@@ -1216,7 +1222,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     LibraryLink(
                                         item = ShelfItem(
                                             title = stringResource(Res.string.downloads),
-                                            subtitle = "Downloaded songs",
+                                            subtitle = stringResource(Res.string.downloaded_songs),
                                             thumbnailUrl = null,
                                             videoId = null,
                                             browseId = DOWNLOADS_BROWSE_ID,
@@ -1435,7 +1441,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             onAddToQueue = { player.addToQueue(m) },
                             // Pushed over whatever is under the player, which closes so the page is seen.
                             onOpenAlbum = { sheetMotion.close(); openDetail(it, m.albumName ?: m.title, m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
-                            onOpenArtist = { sheetMotion.close(); openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
+                            onOpenArtist = { sheetMotion.close(); openDetail(it, m.artist, artistLabel, null, BrowseType.ARTIST) },
                             liked = if (signedIn) isLiked(m.videoId) else null,
                             onToggleLike = { toggleLike(m.videoId) },
                             disliked = if (signedIn) isDisliked(m.videoId) else null,
@@ -1581,11 +1587,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         onOpenArtist = { id, name ->
                                             sheetMotion.close()
                                             val known = id ?: song.artistId?.takeIf { name == song.artist }
-                                            if (known != null) openDetail(known, name, "Artist", null, BrowseType.ARTIST)
+                                            if (known != null) openDetail(known, name, artistLabel, null, BrowseType.ARTIST)
                                             else scope.launch {
                                                 YtMusicRepository.findArtistPageId(name).getOrNull()
-                                                    ?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
-                                                    ?: IosPlayerHost.showMessage("Couldn't find $name")
+                                                    ?.let { openDetail(it, name, artistLabel, null, BrowseType.ARTIST) }
+                                                    ?: IosPlayerHost.showMessage(Res.string.couldnt_find, name)
                                             }
                                         },
                                         onOpenPlaybackSource = {},

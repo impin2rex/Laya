@@ -24,9 +24,13 @@ import com.music.laya.ui.player.SystemVolume
 import com.music.laya.ui.screens.SettingsHost
 import dev.chrisbanes.haze.HazeState
 import platform.Foundation.NSBundle
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 
 /** Everything not overridden is hidden on iOS; Phase 5/6 fill in accounts, Listen Together, downloads. */
 internal object IosSettingsHost : SettingsHost {
@@ -135,6 +139,11 @@ internal object IosPlayerHost : PlayerHost {
     /** The newest notice, shown by [LayaIosApp] as a snackbar. */
     val messages = MutableStateFlow<String?>(null)
     override fun showMessage(message: String) { messages.value = message }
+
+    /** [showMessage] for a catalogue string, resolved off the caller's thread of control. */
+    fun showMessage(res: StringResource, vararg args: Any) {
+        MainScope().launch { messages.value = getString(res, *args) }
+    }
 
     @Composable
     override fun AudioPipelineDialog(hazeState: HazeState, isPlaying: Boolean, onDismiss: () -> Unit) = IosAudioPipeline(hazeState, onDismiss)

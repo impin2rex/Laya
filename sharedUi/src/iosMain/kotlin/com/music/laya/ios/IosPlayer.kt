@@ -78,6 +78,11 @@ import kotlinx.coroutines.withContext
 import platform.Foundation.NSDate
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.cant_cast_track
+import com.music.laya.sharedui.resources.couldnt_play_song
+import com.music.laya.sharedui.resources.no_better_copy
+import com.music.laya.sharedui.resources.switch_to_youtube_failed
 
 /** Android's rule: googlevideo in bounded ranges (it throttles one long read), any other host in one open request. */
 private fun chunkBytesFor(url: String) = PlayerClient.rangeBytesFor(url)
@@ -878,7 +883,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) return@onFailure
                 IosOriginalVersion.unpin(s.videoId)
-                IosPlayerHost.showMessage("Couldn't switch ${s.title} to YouTube")
+                IosPlayerHost.showMessage(Res.string.switch_to_youtube_failed, s.title)
             }
         }
     }
@@ -902,7 +907,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                 if (song?.videoId != s.videoId) return@launch
                 if (durationMs - position.positionMs < UPGRADE_MIN_REMAINING_MS) return@launch
                 if (better == null || !SourceResolver.sameRecordingAs(better.durationSec, durationMs.takeIf { it > 0 }?.let { (it / 1000).toInt() })) {
-                    IosPlayerHost.showMessage("No better copy of ${s.title}")
+                    IosPlayerHost.showMessage(Res.string.no_better_copy, s.title)
                     return@launch
                 }
                 val o = withContext(ioDispatcher) { fromSource(better) }
@@ -942,7 +947,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                     println("IosPlayer: ${it.message ?: it}")
                     if (it is StreamResolver.PermanentlyUnplayableException) {
                         isLoading = false
-                        IosPlayerHost.showMessage("Can't play ${song.title}")
+                        IosPlayerHost.showMessage(Res.string.couldnt_play_song, song.title)
                     } else recover(song, it.message ?: "resolve failed", 0)
                 }
                 .onSuccess { if (fromMs > 0) engine.seekTo(fromMs); announce(); preResolveNext(); topUpAutoplay() }
@@ -1007,7 +1012,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         startJob = scope.launch {
             val item = castItem(s, patient = false)
             if (item == null || !IosCast.active || song?.videoId != s.videoId) {
-                if (item == null) { IosPlayerHost.showMessage("This track can't be cast"); castLoading = null; isLoading = false }
+                if (item == null) { IosPlayerHost.showMessage(Res.string.cant_cast_track); castLoading = null; isLoading = false }
                 return@launch
             }
             native.load(item, at, play)
@@ -1042,7 +1047,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     internal fun castStatus(mediaId: String?, positionMs: Long, durationMs: Long, state: Int) {
         val loading = castLoading
         if (loading != null) {
-            if (state == 5) { castLoading = null; isLoading = false; IosPlayerHost.showMessage("This track can't be cast"); return }
+            if (state == 5) { castLoading = null; isLoading = false; IosPlayerHost.showMessage(Res.string.cant_cast_track); return }
             if (mediaId != loading || state !in 1..2) return
             castLoading = null
             castReconcile()
@@ -1226,7 +1231,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             isLoading = false
             isPlaying = false
             pendingMs = at // Play tries again from here
-            IosPlayerHost.showMessage("Couldn't play ${failed.title}")
+            IosPlayerHost.showMessage(Res.string.couldnt_play_song, failed.title)
             return
         }
         TrackLog.w("Laya", "playback broke ($reason); retry $recoverCount at ${at} ms", about = failed.videoId)
