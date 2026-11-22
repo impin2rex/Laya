@@ -203,6 +203,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import com.music.laya.data.innertube.PremiumAudio
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -1532,6 +1533,9 @@ fun LayaDesktopApp() {
         partySyncHolder[0]?.onLocalIntent()
     }
 
+    /** What the playlist dialog is adding: the queue's selection, or the one track. */
+    fun playlistSongs(): List<Song> = queuePlaylistSongs ?: listOfNotNull(playlistTarget)
+
     fun closePlaylistDialogs() {
         overlays.playlistDialog = false
         playlistTarget = null
@@ -1547,11 +1551,11 @@ fun LayaDesktopApp() {
     fun createPlaylist(title: String, privacy: PlaylistPrivacy) {
         val name = title.trim()
         if (name.isBlank()) return
-        val seed = playlistTarget
+        val seeds = playlistSongs()
         // A track from another source cannot go in an account playlist, so the playlist made to
         // hold it is one kept here.
-        if (!DesktopYouTubeAuth.isSignedIn || (seed != null && !DesktopSearchClient.isVideoId(seed.videoId))) {
-            playlists = playlists + DesktopPlaylist(title = name, songs = listOfNotNull(seed))
+        if (!DesktopYouTubeAuth.isSignedIn || seeds.any { !DesktopSearchClient.isVideoId(it.videoId) }) {
+            playlists = playlists + DesktopPlaylist(title = name, songs = seeds.distinctBy(Song::videoId))
             persistence.savePlaylists(playlists)
             closePlaylistDialogs()
             return
@@ -1559,7 +1563,7 @@ fun LayaDesktopApp() {
         playlistBusy = true
         playlistError = null
         scope.launch {
-            DesktopSearchClient.createPlaylist(name, privacy, listOfNotNull(seed?.videoId))
+            DesktopSearchClient.createPlaylist(name, privacy, seeds.map(Song::videoId).distinct())
                 .onSuccess { playlistId ->
                     closePlaylistDialogs()
                     editPlaylistShelf { items ->
@@ -1568,8 +1572,12 @@ fun LayaDesktopApp() {
                             // Only what this request itself establishes: an unseeded playlist gets
                             // a card of just its name rather than a guess at what the feed will
                             // call it.
-                            subtitle = if (seed != null) "1 song" else "",
-                            thumbnailUrl = seed?.thumbnailUrl,
+                            subtitle = when (val count = seeds.distinctBy(Song::videoId).size) {
+                                0 -> ""
+                                1 -> "1 song"
+                                else -> "$count songs"
+                            },
+                            thumbnailUrl = seeds.firstOrNull()?.thumbnailUrl,
                             videoId = null,
                             browseId = "VL$playlistId",
                         )
@@ -1641,17 +1649,18 @@ fun LayaDesktopApp() {
     }
 
     fun addToPlaylist(playlist: DesktopPlaylist) {
-        val added = queuePlaylistSongs ?: listOfNotNull(playlistTarget)
+        val added = playlistSongs()
         if (added.isEmpty()) return
         playlists = playlists.map { current ->
             if (current.id == playlist.id) current.copy(songs = (current.songs + added).distinctBy(Song::videoId)) else current
         }
         persistence.savePlaylists(playlists)
-        playlistTarget = null
+        // The queue's selection too, or the next single add would carry it along.
+        closePlaylistDialogs()
     }
 
     fun addToAccountPlaylist(playlist: UserPlaylist) {
-        val added = queuePlaylistSongs ?: listOfNotNull(playlistTarget)
+        val added = playlistSongs()
         if (added.isEmpty()) return
         playlistBusy = true
         playlistError = null
@@ -4172,12 +4181,11 @@ fun LayaDesktopApp() {
                     }
                     if (overlays.playlistDialog || playlistTarget != null) {
                         DesktopPlaylistDialog(
-                            song = playlistTarget,
+                            songs = playlistSongs(),
                             accountPlaylists = accountPlaylists,
                             localPlaylists = playlists,
                             signedIn = youtubeSignedIn,
-                            canUseAccount = playlistTarget
-                                ?.let { DesktopSearchClient.isVideoId(it.videoId) } ?: true,
+                            canUseAccount = playlistSongs().all { DesktopSearchClient.isVideoId(it.videoId) },
                             busy = playlistBusy,
                             error = playlistError,
                             onPickAccount = ::addToAccountPlaylist,
@@ -7255,18 +7263,24 @@ private fun DesktopSettingsScreen(
                         )
                     }
                     }
-                    var premiumAudio by remember { mutableStateOf(DesktopStreamClient.premiumAudio) }
+                    val premiumOverride by PremiumAudio.override.collectAsState()
+                    val premiumDetected by PremiumAudio.detected.collectAsState()
+                    LaunchedEffect(Unit) { PremiumAudio.ensureChecked() }
                     SettingsToggle(
                         DesktopStrings["youtube_premium_audio", "YouTube Premium audio"],
-                        DesktopStrings[
-                            "youtube_premium_audio_subtitle",
-                            "I have Premium: stream the higher-quality ~256 kbps Opus instead of the standard 160 kbps",
-                        ],
-                        premiumAudio,
-                    ) {
-                        premiumAudio = it
-                        DesktopStreamClient.premiumAudio = it
-                    }
+                        if (premiumDetected == true && premiumOverride != false) {
+                            DesktopStrings[
+                                "youtube_premium_audio_detected",
+                                "Premium detected on this account. Streaming the higher-quality ~256 kbps Opus.",
+                            ]
+                        } else {
+                            DesktopStrings[
+                                "youtube_premium_audio_subtitle",
+                                "I have Premium: stream the higher-quality ~256 kbps Opus instead of the standard 160 kbps",
+                            ]
+                        },
+                        premiumOverride ?: (premiumDetected == true),
+                    ) { PremiumAudio.setOverride(it) }
                 }
             }
             if (section == DesktopSettingsSection.LISTEN_TOGETHER) item {

@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Fond en douceur la pochette entre les titres pendant Automix.</string>
     <string name="automix_mini_art_transition">Transition de pochette du mini-lecteur</string>
     <string name="automix_mini_art_transition_subtitle">Affiche les transitions de pochette dans le mini-lecteur pendant Automix.</string>
+    <string name="d_add_n_songs">Ajouter %1$d titres</string>
+    <string name="d_some_tracks_not_from_youtube_music">Certains de ces titres ne viennent pas de YouTube Music, ils ne peuvent donc aller que dans une playlist conservée ici.</string>
 </resources>

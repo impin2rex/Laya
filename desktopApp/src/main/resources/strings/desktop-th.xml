@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="d_add_n_songs">เพิ่ม %1$d เพลง</string>
+    <string name="d_some_tracks_not_from_youtube_music">เพลงบางเพลงเหล่านี้ไม่ได้มาจาก YouTube Music จึงเพิ่มได้เฉพาะในเพลย์ลิสต์ที่เก็บไว้ที่นี่</string>
+</resources>

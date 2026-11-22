@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Automix-এর সময় ট্র্যাকের মধ্যে কভার আর্ট মসৃণভাবে মিশ্রিত করে।</string>
     <string name="automix_mini_art_transition">মিনি-প্লেয়ার আর্ট ট্রানজিশন</string>
     <string name="automix_mini_art_transition_subtitle">Automix-এর সময় মিনি-প্লেয়ারে আর্টওয়ার্ক ট্রানজিশন দেখায়।</string>
+    <string name="d_add_n_songs">%1$dটি গান যোগ করুন</string>
+    <string name="d_some_tracks_not_from_youtube_music">এই ট্র্যাকগুলোর কিছু YouTube Music থেকে নয়, তাই সেগুলো শুধু এখানে রাখা প্লেলিস্টে যেতে পারে।</string>
 </resources>

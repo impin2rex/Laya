@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Плавно смешивает обложки между треками во время Automix.</string>
     <string name="automix_mini_art_transition">Переход обложек в мини-плеере</string>
     <string name="automix_mini_art_transition_subtitle">Показывает переходы обложек в мини-плеере во время Automix.</string>
+    <string name="d_add_n_songs">Добавить песни: %1$d</string>
+    <string name="d_some_tracks_not_from_youtube_music">Некоторые из этих треков не из YouTube Music, поэтому их можно добавить только в плейлист, хранящийся здесь.</string>
 </resources>

@@ -884,4 +884,5 @@
     <string name="reorder_playlist">क्रम बदलें</string>
     <string name="d_reorder_subtitle">पंक्तियों को मनचाहे क्रम में खींचें, फिर सेव करें।</string>
     <string name="translate">अनुवाद करें</string>
+    <string name="youtube_premium_audio_detected">इस खाते में Premium मिला। ज़्यादा गुणवत्ता वाला ~256 kbps Opus स्ट्रीम हो रहा है।</string>
 </resources>

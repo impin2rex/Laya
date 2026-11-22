@@ -42,21 +42,23 @@ object StreamResolver {
     var maxKbps: () -> Int = { Int.MAX_VALUE }
 
     /**
-     * Whether the listener says their account has YouTube Premium and wants
-     * its ~256kbps Opus (itag 774) — see [InnerTubeXResolver.ask]. Asked rather
-     * than detected: nothing InnerTubeX exposes confirms the entitlement, and
-     * claiming it without Premium only costs the faster anonymous route.
+     * Whether to ask for YouTube Premium's ~256kbps Opus (itag 774) — see [InnerTubeXResolver.ask]. By default
+     * [PremiumAudio]: the account's detected Premium, unless the listener overrode it. A wrong yes only
+     * costs the faster anonymous route.
      */
     @Volatile
-    var premiumAudio: () -> Boolean = { false }
+    var premiumAudio: () -> Boolean = { PremiumAudio.enabled() }
 
     /**
      * Whether ask number [attempt] takes Premium's route: only the first, and only
      * while signed in — a signed-out ask has no entitlement to send. Every later
      * ask is the ordinary one, so a Premium miss falls back to the usual best.
      */
-    internal fun premiumFor(attempt: Int): Boolean =
-        attempt == 0 && premiumAudio() && !Innertube.cookie.isNullOrBlank()
+    internal fun premiumFor(attempt: Int): Boolean {
+        if (attempt != 0 || Innertube.cookie.isNullOrBlank()) return false
+        PremiumAudio.ensureChecked()
+        return premiumAudio()
+    }
 
     /**
      * Drops the remembered stream URLs, so the next play of a track resolves
@@ -177,9 +179,13 @@ object StreamResolver {
      */
     fun onSessionChanged() {
         InnerTubeXResolver.onSessionChanged()
+        PremiumAudio.onSessionChanged()
         unplayable.clear()
         UploadedTracks.clear()
     }
+
+    /** Itag 774 runs ~256kbps; the ordinary Opus (251) tops out near 160. */
+    private const val PREMIUM_MIN_KBPS = 200
 
     private const val UNPLAYABLE_TTL_MS = 10 * 60 * 1000L
 
@@ -247,7 +253,11 @@ object StreamResolver {
         val resolveStart = MonotonicClock.nowMs()
         val stream = try {
             timed("$videoId InnerTubeX") {
-                innerTubeXStreamAllowingUploads(videoId, requireM4a = StreamPlatform.playbackRequiresM4a)
+                innerTubeXStreamAllowingUploads(
+                    videoId,
+                    requireM4a = StreamPlatform.playbackRequiresM4a,
+                    premiumRemux = StreamPlatform.playbackRequiresM4a,
+                )
             }
                 ?: run {
                     TrackLog.w(TAG, "InnerTubeX found no usable stream for $videoId; falling back to extraction")
@@ -317,14 +327,17 @@ object StreamResolver {
         uploaded: Boolean = false,
         escalateToUpload: Boolean = true,
         playRefusedUpload: Boolean = false,
+        premiumRemux: Boolean = false,
     ): Stream? {
         val skip = mutableSetOf<String>()
         repeat(INNERTUBEX_ATTEMPTS) { attempt ->
             // When Premium's ask finds nothing, throws, or its URL fails the probe (a 403 on
             // 774, an account that isn't Premium after all), the next ask is the ordinary one.
             val premium = premiumFor(attempt)
+            // AAC-only players (iOS) still take Premium's Opus: they remux it themselves, and only for 774.
+            val askM4a = requireM4a && !(premium && premiumRemux)
             val found = try {
-                InnerTubeXResolver.extract(videoId, maxKbps, skip, requireM4a, uploaded, premium)
+                InnerTubeXResolver.extract(videoId, maxKbps, skip, askM4a, uploaded, premium)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -332,8 +345,14 @@ object StreamResolver {
                 if (premium) return@repeat
                 return null
             } ?: if (premium) return@repeat else return null
+            if (askM4a != requireM4a && found.kbps < PREMIUM_MIN_KBPS) {
+                // No 774 for this track: a plain 251 would not be worth the remux, so ask for AAC.
+                skip += found.profileId
+                return@repeat
+            }
             val verdict = timed("$videoId InnerTubeX ${found.profileId} probe") { probe(found.url) }
             if (verdict == Probe.OK) {
+                if (premium && found.kbps >= PREMIUM_MIN_KBPS) PremiumAudio.confirm()
                 TrackLog.d(TAG, "resolved $videoId via InnerTubeX ${found.profileId} @ ${found.kbps}kbps")
                 return Stream(found.url, found.kbps, found.mimeType, found.loudnessDb)
             }
@@ -390,15 +409,16 @@ object StreamResolver {
         videoId: String,
         maxKbps: Int = maxKbps(),
         requireM4a: Boolean = false,
+        premiumRemux: Boolean = false,
     ): Stream? {
         val known = UploadedTracks.contains(videoId)
         if (known) {
-            innerTubeXStream(videoId, maxKbps, requireM4a, uploaded = true, playRefusedUpload = true)
+            innerTubeXStream(videoId, maxKbps, requireM4a, uploaded = true, playRefusedUpload = true, premiumRemux = premiumRemux)
                 ?.let { return it }
             TrackLog.w(TAG, "$videoId is marked as an upload but did not resolve as one; trying an ordinary ask")
-            return innerTubeXStream(videoId, maxKbps, requireM4a, uploaded = false, escalateToUpload = false)
+            return innerTubeXStream(videoId, maxKbps, requireM4a, uploaded = false, escalateToUpload = false, premiumRemux = premiumRemux)
         }
-        return innerTubeXStream(videoId, maxKbps, requireM4a)
+        return innerTubeXStream(videoId, maxKbps, requireM4a, premiumRemux = premiumRemux)
     }
 
     /** The headers a media fetch for [url] must carry to match whoever minted it. */

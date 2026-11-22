@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Automix के दौरान ट्रैक के बीच कवर आर्ट को सहज रूप से मिलाता है।</string>
     <string name="automix_mini_art_transition">मिनी-प्लेयर आर्ट ट्रांज़िशन</string>
     <string name="automix_mini_art_transition_subtitle">Automix के दौरान मिनी-प्लेयर में आर्टवर्क ट्रांज़िशन दिखाता है।</string>
+    <string name="d_add_n_songs">%1$d गाने जोड़ें</string>
+    <string name="d_some_tracks_not_from_youtube_music">इनमें से कुछ ट्रैक YouTube Music के नहीं हैं, इसलिए वे सिर्फ़ यहाँ रखी प्लेलिस्ट में जा सकते हैं।</string>
 </resources>

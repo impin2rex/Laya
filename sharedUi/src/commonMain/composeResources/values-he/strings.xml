@@ -828,4 +828,7 @@
     <string name="switch_to_video">מעבר לוידאו</string>
     <string name="audio_short">אודיו</string>
     <string name="lyrics_share_video_silent">לא ניתן היה להשיג את האודיו של השיר, ולכן לסרטון הזה אין צליל.</string>
+    <string name="youtube_premium_audio">אודיו של YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">יש לי Premium: הזרמת Opus באיכות גבוהה יותר של ~256 kbps במקום 160 kbps הרגילים</string>
+    <string name="youtube_premium_audio_detected">זוהה Premium בחשבון הזה. מושמע Opus באיכות גבוהה יותר, ~256 kbps.</string>
 </resources>

@@ -828,4 +828,7 @@
     <string name="switch_to_video">Passer à la vidéo</string>
     <string name="audio_short">Audio</string>
     <string name="lyrics_share_video_silent">Impossible de récupérer l’audio du titre, cette vidéo est donc sans son.</string>
+    <string name="youtube_premium_audio">Audio YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">J\'ai Premium : diffuser l\'Opus de meilleure qualité à ~256 kbps au lieu des 160 kbps standard</string>
+    <string name="youtube_premium_audio_detected">Premium détecté sur ce compte. Diffusion de l’Opus de meilleure qualité à ~256 kbps.</string>
 </resources>

@@ -885,4 +885,5 @@
     <string name="reorder_playlist">עריכת סדר</string>
     <string name="d_reorder_subtitle">גררו את השורות לסדר הרצוי ואז שמרו.</string>
     <string name="translate">תרגום</string>
+    <string name="youtube_premium_audio_detected">זוהה Premium בחשבון הזה. מושמע Opus באיכות גבוהה יותר, ~256 kbps.</string>
 </resources>

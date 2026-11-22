@@ -828,4 +828,7 @@
     <string name="switch_to_video">Zu Video wechseln</string>
     <string name="audio_short">Audio</string>
     <string name="lyrics_share_video_silent">Der Ton des Songs konnte nicht geladen werden, daher hat dieses Video keinen Ton.</string>
+    <string name="youtube_premium_audio">YouTube Premium-Audio</string>
+    <string name="youtube_premium_audio_subtitle">Ich habe Premium: das hochwertigere Opus mit ~256 kbps statt der üblichen 160 kbps streamen</string>
+    <string name="youtube_premium_audio_detected">Premium für dieses Konto erkannt. Es wird das hochwertigere Opus mit ~256 kbps gestreamt.</string>
 </resources>

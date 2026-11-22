@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">在 Automix 期间平滑融合曲目之间的封面。</string>
     <string name="automix_mini_art_transition">迷你播放器封面过渡</string>
     <string name="automix_mini_art_transition_subtitle">在 Automix 期间于迷你播放器中显示封面过渡。</string>
+    <string name="d_add_n_songs">添加 %1$d 首歌曲</string>
+    <string name="d_some_tracks_not_from_youtube_music">其中部分曲目并非来自 YouTube Music，因此只能加入保存在本机的播放列表。</string>
 </resources>

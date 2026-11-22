@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Automix中、トラック間でカバーアートを滑らかにブレンドします。</string>
     <string name="automix_mini_art_transition">ミニプレーヤーのアート切り替え</string>
     <string name="automix_mini_art_transition_subtitle">Automix中、ミニプレーヤーでもアートワークの切り替えを表示します。</string>
+    <string name="d_add_n_songs">%1$d 曲を追加</string>
+    <string name="d_some_tracks_not_from_youtube_music">これらの曲の一部は YouTube Music のものではないため、ここに保存されたプレイリストにのみ追加できます。</string>
 </resources>

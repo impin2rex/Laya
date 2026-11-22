@@ -885,4 +885,5 @@
     <string name="reorder_playlist">Editar ordem</string>
     <string name="d_reorder_subtitle">Arraste as linhas para a ordem desejada e depois salve.</string>
     <string name="translate">Traduzir</string>
+    <string name="youtube_premium_audio_detected">Premium detetado nesta conta. A transmitir o Opus de maior qualidade a ~256 kbps.</string>
 </resources>

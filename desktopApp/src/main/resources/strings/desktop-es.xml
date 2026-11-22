@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Mezcla suavemente la carátula entre pistas durante Automix.</string>
     <string name="automix_mini_art_transition">Transición de carátula en el minirreproductor</string>
     <string name="automix_mini_art_transition_subtitle">Muestra las transiciones de carátula en el minirreproductor durante Automix.</string>
+    <string name="d_add_n_songs">Añadir %1$d canciones</string>
+    <string name="d_some_tracks_not_from_youtube_music">Algunas de estas canciones no son de YouTube Music, así que solo pueden ir a una playlist guardada aquí.</string>
 </resources>

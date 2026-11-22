@@ -87,6 +87,7 @@
     <string name="account_integrations">賬號與整合</string>
     <string name="youtube_premium_audio">YouTube Premium 音訊</string>
     <string name="youtube_premium_audio_subtitle">我有 Premium：串流更高音質的約 256 kbps Opus，而非標準的 160 kbps</string>
+    <string name="youtube_premium_audio_detected">已在此帳號偵測到 Premium。正在串流更高音質的約 256 kbps Opus。</string>
     <string name="account_scrobbling">賬號與Scrobbling</string>
     <string name="rich_presence">Rich Presence</string>
     <string name="scrobbling">Scrobbling</string>

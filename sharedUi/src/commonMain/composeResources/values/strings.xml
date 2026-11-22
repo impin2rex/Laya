@@ -830,4 +830,7 @@
         <item quantity="other">Removed %1$d songs</item>
     </plurals>
     <string name="lyrics_share_video_silent">Couldn’t get the song’s audio, so this video has no sound.</string>
+    <string name="youtube_premium_audio">YouTube Premium audio</string>
+    <string name="youtube_premium_audio_subtitle">I have Premium: stream the higher-quality ~256 kbps Opus instead of the standard 160 kbps</string>
+    <string name="youtube_premium_audio_detected">Premium detected on this account. Streaming the higher-quality ~256 kbps Opus.</string>
 </resources>

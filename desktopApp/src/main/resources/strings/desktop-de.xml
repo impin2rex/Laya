@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Blendet das Cover bei Automix sanft zwischen Titeln über.</string>
     <string name="automix_mini_art_transition">Cover-Übergang im Mini-Player</string>
     <string name="automix_mini_art_transition_subtitle">Zeigt Cover-Übergänge im Mini-Player während Automix.</string>
+    <string name="d_add_n_songs">%1$d Songs hinzufügen</string>
+    <string name="d_some_tracks_not_from_youtube_music">Einige dieser Titel stammen nicht von YouTube Music und können daher nur in eine hier gespeicherte Playlist.</string>
 </resources>

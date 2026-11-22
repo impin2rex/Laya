@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Memadukan sampul antar lagu dengan halus saat Automix.</string>
     <string name="automix_mini_art_transition">Transisi sampul mini player</string>
     <string name="automix_mini_art_transition_subtitle">Menampilkan transisi sampul di mini player saat Automix.</string>
+    <string name="d_add_n_songs">Tambahkan %1$d lagu</string>
+    <string name="d_some_tracks_not_from_youtube_music">Beberapa lagu ini bukan dari YouTube Music, jadi hanya bisa masuk ke playlist yang disimpan di sini.</string>
 </resources>

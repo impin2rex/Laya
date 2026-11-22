@@ -908,4 +908,5 @@
     <string name="reorder_playlist">Изменить порядок</string>
     <string name="d_reorder_subtitle">Перетащите строки в нужном порядке, затем сохраните.</string>
     <string name="translate">Перевести</string>
+    <string name="youtube_premium_audio_detected">На этом аккаунте обнаружена подписка Premium. Воспроизводится Opus повышенного качества ~256 кбит/с.</string>
 </resources>

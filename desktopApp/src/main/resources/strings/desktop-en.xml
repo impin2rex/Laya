@@ -102,4 +102,6 @@
     <string name="automix_art_transition_subtitle">Smoothly blends cover art between tracks during Automix.</string>
     <string name="automix_mini_art_transition">Mini-player art transition</string>
     <string name="automix_mini_art_transition_subtitle">Shows artwork transitions in the mini-player during Automix.</string>
+    <string name="d_add_n_songs">Add %1$d songs</string>
+    <string name="d_some_tracks_not_from_youtube_music">Some of these tracks are not from YouTube Music, so they can only go in a playlist kept here.</string>
 </resources>

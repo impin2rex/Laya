@@ -822,4 +822,7 @@
     <string name="switch_to_video">切换到视频</string>
     <string name="audio_short">音频</string>
     <string name="lyrics_share_video_silent">无法获取歌曲音频，因此此视频没有声音。</string>
+    <string name="youtube_premium_audio">YouTube Premium 音频</string>
+    <string name="youtube_premium_audio_subtitle">我有 Premium：串流更高音质的约 256 kbps Opus，而不是标准的 160 kbps</string>
+    <string name="youtube_premium_audio_detected">已在此账号检测到 Premium。正在串流更高音质的约 256 kbps Opus。</string>
 </resources>

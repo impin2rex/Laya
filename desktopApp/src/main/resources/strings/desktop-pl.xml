@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Płynnie łączy okładki między utworami podczas Automix.</string>
     <string name="automix_mini_art_transition">Przejście okładki w minimodule</string>
     <string name="automix_mini_art_transition_subtitle">Pokazuje przejścia okładek w minimodule podczas Automix.</string>
+    <string name="d_add_n_songs">Dodaj %1$d utworów</string>
+    <string name="d_some_tracks_not_from_youtube_music">Część tych utworów nie pochodzi z YouTube Music, więc można je dodać tylko do playlisty zapisanej tutaj.</string>
 </resources>

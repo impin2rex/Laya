@@ -840,4 +840,7 @@
     <string name="switch_to_video">Przełącz na wideo</string>
     <string name="audio_short">Audio</string>
     <string name="lyrics_share_video_silent">Nie udało się pobrać dźwięku utworu, więc ten film jest bez dźwięku.</string>
+    <string name="youtube_premium_audio">Dźwięk YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">Mam Premium: odtwarzaj Opus wyższej jakości ~256 kb/s zamiast standardowych 160 kb/s</string>
+    <string name="youtube_premium_audio_detected">Wykryto Premium na tym koncie. Odtwarzanie wyższej jakości Opus ~256 kbps.</string>
 </resources>

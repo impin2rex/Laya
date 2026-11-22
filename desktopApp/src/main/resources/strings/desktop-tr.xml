@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Automix sırasında parçalar arasında kapağı yumuşakça harmanlar.</string>
     <string name="automix_mini_art_transition">Mini oynatıcı kapak geçişi</string>
     <string name="automix_mini_art_transition_subtitle">Automix sırasında mini oynatıcıda kapak geçişlerini gösterir.</string>
+    <string name="d_add_n_songs">%1$d şarkı ekle</string>
+    <string name="d_some_tracks_not_from_youtube_music">Bu parçaların bazıları YouTube Music’ten olmadığı için yalnızca burada tutulan bir çalma listesine eklenebilir.</string>
 </resources>

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.music.laya.R
 import com.music.laya.data.model.Account
+import com.music.laya.data.innertube.PremiumAudio
 import com.music.laya.data.settings.AppSettings
 import kotlin.math.roundToInt
 
@@ -68,7 +69,10 @@ fun AccountAndScrobblingScreen(
     val discordUsername by AppSettings.discordUsername.collectAsStateWithLifecycle()
     val discordRpcEnabled by AppSettings.discordRpcEnabled.collectAsStateWithLifecycle()
     val spotifyConnected by AppSettings.spotifySpdcToken.collectAsStateWithLifecycle()
-    val youtubePremiumAudio by AppSettings.youtubePremiumAudio.collectAsStateWithLifecycle()
+    val premiumOverride by PremiumAudio.override.collectAsStateWithLifecycle()
+    val premiumDetected by PremiumAudio.detected.collectAsStateWithLifecycle()
+    val youtubePremiumAudio = premiumOverride ?: (premiumDetected == true)
+    androidx.compose.runtime.LaunchedEffect(signedIn) { if (signedIn) PremiumAudio.ensureChecked() }
 
     Column(
         modifier = modifier
@@ -110,18 +114,24 @@ fun AccountAndScrobblingScreen(
                 SettingsRow(
                     icon = Icons.Rounded.GraphicEq,
                     title = stringResource(R.string.youtube_premium_audio),
-                    subtitle = stringResource(R.string.youtube_premium_audio_subtitle),
+                    subtitle = stringResource(
+                        if (premiumDetected == true && premiumOverride != false) {
+                            R.string.youtube_premium_audio_detected
+                        } else {
+                            R.string.youtube_premium_audio_subtitle
+                        },
+                    ),
                     trailing = {
                         Switch(
                             checked = youtubePremiumAudio,
-                            onCheckedChange = AppSettings::setYoutubePremiumAudio,
+                            onCheckedChange = PremiumAudio::setOverride,
                             colors = SwitchDefaults.colors(
                                 checkedTrackColor = MaterialTheme.colorScheme.primary,
                                 checkedBorderColor = MaterialTheme.colorScheme.primary,
                             ),
                         )
                     },
-                    onClick = { AppSettings.setYoutubePremiumAudio(!youtubePremiumAudio) },
+                    onClick = { PremiumAudio.setOverride(!youtubePremiumAudio) },
                 )
                 FullWidthDivider()
                 DestructiveRow(label = stringResource(R.string.sign_out), onClick = onSignOut)

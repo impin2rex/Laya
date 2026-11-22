@@ -100,4 +100,6 @@
     <string name="automix_art_transition_subtitle">Mistura suavemente a capa entre as faixas durante o Automix.</string>
     <string name="automix_mini_art_transition">Transição de capa no mini player</string>
     <string name="automix_mini_art_transition_subtitle">Mostra as transições de capa no mini player durante o Automix.</string>
+    <string name="d_add_n_songs">Adicionar %1$d músicas</string>
+    <string name="d_some_tracks_not_from_youtube_music">Algumas destas faixas não são do YouTube Music, por isso só podem ir para uma playlist guardada aqui.</string>
 </resources>
