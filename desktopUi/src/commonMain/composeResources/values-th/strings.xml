@@ -296,4 +296,5 @@
     <string name="switch_to_video">สลับเป็นวิดีโอ</string>
     <string name="audio_short">เสียง</string>
     <string name="lyrics_share_making_video">กำลังสร้างวิดีโอ…</string>
+    <string name="top_result">ผลลัพธ์ยอดนิยม</string>
 </resources>

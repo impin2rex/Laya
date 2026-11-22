@@ -296,4 +296,5 @@
     <string name="switch_to_video">切換到影片</string>
     <string name="audio_short">音訊</string>
     <string name="lyrics_share_making_video">正在製作影片…</string>
+    <string name="top_result">最佳結果</string>
 </resources>

@@ -291,4 +291,5 @@
     <plurals name="queue_removed_count"><item quantity="one">%1$d টি গান সরানো হয়েছে</item>
         <item quantity="other">%1$d টি গান সরানো হয়েছে</item></plurals>
     <string name="lyrics_share_making_video">ভিডিও তৈরি হচ্ছে…</string>
+    <string name="top_result">সেরা ফলাফল</string>
 </resources>

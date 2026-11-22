@@ -299,4 +299,5 @@
     <string name="switch_to_video">Переключиться на видео</string>
     <string name="audio_short">Аудио</string>
     <string name="lyrics_share_making_video">Создаём видео…</string>
+    <string name="top_result">Лучший результат</string>
 </resources>

@@ -296,4 +296,5 @@
     <string name="switch_to_video">動画に切り替え</string>
     <string name="audio_short">オーディオ</string>
     <string name="lyrics_share_making_video">動画を作成中…</string>
+    <string name="top_result">トップ結果</string>
 </resources>
