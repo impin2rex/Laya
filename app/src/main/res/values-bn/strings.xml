@@ -1186,4 +1186,5 @@
     <string name="best_part_description">সেরা অংশে যান</string>
     <string name="show_best_part">সেরা অংশ বোতাম</string>
     <string name="show_best_part_subtitle">আর্টওয়ার্কের একটি বোতাম, যা গানের সবচেয়ে বেশি রিপ্লে হওয়া অংশে নিয়ে যায়</string>
+    <string name="lyrics_share_video_silent">গানের অডিও পাওয়া যায়নি, তাই এই ভিডিওতে শব্দ নেই।</string>
 </resources>

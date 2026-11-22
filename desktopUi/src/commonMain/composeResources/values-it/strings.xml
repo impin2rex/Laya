@@ -270,6 +270,7 @@
         <item quantity="other">%1$d brani rimossi</item>
     </plurals>
     <string name="save">Salva</string>
+    <string name="lyrics_share_video_silent">Impossibile ottenere l’audio del brano, quindi questo video è senza suono.</string>
     <string name="lyrics_share_title">Condividi il testo</string>
     <string name="lyrics_share_description">I versi che hai scelto, impaginati su una scheda con la copertina.</string>
     <string name="lyrics_share_story">Trasforma in storia</string>
@@ -295,4 +296,5 @@
     <string name="switch_to_audio">Passa ad Audio</string>
     <string name="switch_to_video">Passa a Video</string>
     <string name="audio_short">Audio</string>
+    <string name="lyrics_share_making_video">Creazione del video…</string>
 </resources>

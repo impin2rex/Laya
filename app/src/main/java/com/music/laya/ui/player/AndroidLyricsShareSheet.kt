@@ -140,6 +140,7 @@ internal fun AndroidLyricsShareSheet(
 
     // One export per look, reused by Save and Share alike.
     var exporting by remember(request) { mutableStateOf(false) }
+    var silent by remember(request) { mutableStateOf(false) }
     var exported by remember(request) { mutableStateOf<Pair<Any, File>?>(null) }
     suspend fun videoFile(): File? {
         val look = listOf(clip, story, showLogo)
@@ -149,7 +150,8 @@ internal fun AndroidLyricsShareSheet(
             // The export lays its own background — the clip, or the backdrop —
             // so the card it is handed is always the bare one.
             val overlay = lyricsCardPainter(context, request, story, showLogo, transparent = true)
-            exportLyricsVideo(context, request, clip, overlay)?.also { exported = look to it }
+            silent = false
+            exportLyricsVideo(context, request, clip, overlay, onSilent = { silent = true })?.also { exported = look to it }
         } finally {
             exporting = false
         }
@@ -279,6 +281,15 @@ internal fun AndroidLyricsShareSheet(
                 )
                 // The row is the toggle; the switch only shows its state.
                 Switch(checked = showLogo, onCheckedChange = null)
+            }
+
+            if (isVideo && silent && !exporting) {
+                Text(
+                    text = stringResource(R.string.lyrics_share_video_silent),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
             }
 
             if (failed) {

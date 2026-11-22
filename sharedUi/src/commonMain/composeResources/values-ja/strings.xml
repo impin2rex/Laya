@@ -821,4 +821,5 @@
     <string name="switch_to_audio">オーディオに切り替え</string>
     <string name="switch_to_video">動画に切り替え</string>
     <string name="audio_short">オーディオ</string>
+    <string name="lyrics_share_video_silent">曲の音声を取得できなかったため、この動画には音声がありません。</string>
 </resources>

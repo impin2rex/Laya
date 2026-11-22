@@ -827,4 +827,5 @@
     <string name="switch_to_audio">ऑडियो पर स्विच करें</string>
     <string name="switch_to_video">वीडियो पर स्विच करें</string>
     <string name="audio_short">ऑडियो</string>
+    <string name="lyrics_share_video_silent">गाने का ऑडियो नहीं मिल सका, इसलिए इस वीडियो में आवाज़ नहीं है।</string>
 </resources>

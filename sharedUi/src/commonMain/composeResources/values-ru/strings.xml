@@ -836,4 +836,5 @@
     <string name="switch_to_audio">Переключиться на аудио</string>
     <string name="switch_to_video">Переключиться на видео</string>
     <string name="audio_short">Аудио</string>
+    <string name="lyrics_share_video_silent">Не удалось получить звук песни, поэтому в этом видео нет звука.</string>
 </resources>

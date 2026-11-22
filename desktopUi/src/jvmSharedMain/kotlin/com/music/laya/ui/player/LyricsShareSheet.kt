@@ -123,6 +123,7 @@ fun LyricsShareSheetContent(
 
     // One export per look, reused by Save and Share alike.
     var exporting by remember(request) { mutableStateOf(false) }
+    var silent by remember(request) { mutableStateOf(false) }
     var exported by remember(request) { mutableStateOf<Pair<Any, String>?>(null) }
     suspend fun videoFile(): String? {
         val laid = frames ?: return null
@@ -132,7 +133,7 @@ fun LyricsShareSheetContent(
         exported?.takeIf { it.first == look }?.let { return it.second }
         exporting = true
         return try {
-            encodeLyricsVideo(encoder, request, laid, clock)?.also { exported = look to it }
+            encodeLyricsVideo(encoder, request, laid, clock)?.also { exported = look to it; silent = encoder.lastEncodeSilent() }
         } finally {
             exporting = false
         }
@@ -222,6 +223,22 @@ fun LyricsShareSheetContent(
             if (failed) {
                 Text(
                     text = stringResource(Res.string.couldnt_draw_picture),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            if (isVideo && exporting) {
+                Text(
+                    text = stringResource(Res.string.lyrics_share_making_video),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            } else if (isVideo && silent) {
+                Text(
+                    text = stringResource(Res.string.lyrics_share_video_silent),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,

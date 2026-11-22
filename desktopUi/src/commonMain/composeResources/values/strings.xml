@@ -295,4 +295,6 @@
         <item quantity="one">Removed %1$d song</item>
         <item quantity="other">Removed %1$d songs</item>
     </plurals>
+    <string name="lyrics_share_video_silent">Couldn’t get the song’s audio, so this video has no sound.</string>
+    <string name="lyrics_share_making_video">Making the video…</string>
 </resources>

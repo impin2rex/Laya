@@ -269,6 +269,7 @@
         <item quantity="other">Đã xóa %1$d bài hát</item>
     </plurals>
     <string name="save">Lưu</string>
+    <string name="lyrics_share_video_silent">Không lấy được âm thanh của bài hát nên video này không có tiếng.</string>
     <string name="lyrics_share_title">Chia sẻ lời bài hát</string>
     <string name="lyrics_share_description">Những dòng bạn chọn, được bố trí trên một thẻ cùng ảnh bìa.</string>
     <string name="lyrics_share_story">Chuyển thành story</string>
@@ -294,4 +295,5 @@
     <string name="switch_to_audio">Chuyển sang âm thanh</string>
     <string name="switch_to_video">Chuyển sang video</string>
     <string name="audio_short">Âm thanh</string>
+    <string name="lyrics_share_making_video">Đang tạo video…</string>
 </resources>

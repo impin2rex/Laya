@@ -1418,4 +1418,5 @@
     <string name="best_part_description">Zur besten Stelle springen</string>
     <string name="show_best_part">Schaltfläche „Beste Stelle“</string>
     <string name="show_best_part_subtitle">Eine Schaltfläche auf dem Cover, die zu der Stelle des Songs springt, die am häufigsten wiederholt wird</string>
+    <string name="lyrics_share_video_silent">Der Ton des Songs konnte nicht geladen werden, daher hat dieses Video keinen Ton.</string>
 </resources>

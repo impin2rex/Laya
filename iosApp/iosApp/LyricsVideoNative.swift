@@ -15,6 +15,9 @@ final class LyricsVideoNativeImpl: NSObject, LyricsVideoNative {
     private var height = 0
     private var fps: Int32 = 30
     private var frames: Int64 = 0
+    private var hadAudio = false
+
+    func lastFinishHadAudio() -> Bool { hadAudio }
 
     private var silentURL: URL { URL(fileURLWithPath: outPath + ".video.mp4") }
     private var audioURL: URL { URL(fileURLWithPath: outPath + ".audio.m4a") }
@@ -79,6 +82,7 @@ final class LyricsVideoNativeImpl: NSObject, LyricsVideoNative {
 
     func finish(audioUrl: String?, headers: [String: String], mimeType: String, contentLength: Int64,
                 chunkBytes: Int64, segmentsMs: [KotlinLong]) -> Bool {
+        hadAudio = false
         guard let writer, let input else { return false }
         input.markAsFinished()
         let done = DispatchSemaphore(value: 0)
@@ -96,6 +100,7 @@ final class LyricsVideoNativeImpl: NSObject, LyricsVideoNative {
         }
         if let audioUrl, let source = URL(string: audioUrl), writeAudio(source, headers, mimeType, contentLength, chunkBytes, segments),
            mux(audio: audioURL, into: out) {
+            hadAudio = true
             cleanUp()
             return true
         }

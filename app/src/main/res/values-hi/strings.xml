@@ -1418,4 +1418,5 @@
     <string name="best_part_description">सबसे अच्छे हिस्से पर जाएँ</string>
     <string name="show_best_part">सबसे अच्छा हिस्सा बटन</string>
     <string name="show_best_part_subtitle">आर्टवर्क पर एक बटन जो गाने के उस हिस्से पर ले जाता है जिसे लोग सबसे ज़्यादा दोबारा सुनते हैं</string>
+    <string name="lyrics_share_video_silent">गाने का ऑडियो नहीं मिल सका, इसलिए इस वीडियो में आवाज़ नहीं है।</string>
 </resources>

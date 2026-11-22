@@ -270,6 +270,7 @@
         <item quantity="other">%1$d गाने हटाए गए</item>
     </plurals>
     <string name="save">सेव करें</string>
+    <string name="lyrics_share_video_silent">गाने का ऑडियो नहीं मिल सका, इसलिए इस वीडियो में आवाज़ नहीं है।</string>
     <string name="lyrics_share_title">गाने के शब्द साझा करें</string>
     <string name="lyrics_share_description">आपकी चुनी हुई पंक्तियाँ, कवर के साथ एक कार्ड पर।</string>
     <string name="lyrics_share_story">स्टोरी बनाएँ</string>
@@ -295,4 +296,5 @@
     <string name="switch_to_audio">ऑडियो पर स्विच करें</string>
     <string name="switch_to_video">वीडियो पर स्विच करें</string>
     <string name="audio_short">ऑडियो</string>
+    <string name="lyrics_share_making_video">वीडियो बनाया जा रहा है…</string>
 </resources>

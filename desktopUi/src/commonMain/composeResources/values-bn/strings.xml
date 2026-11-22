@@ -234,6 +234,7 @@
     <string name="recognize_hours_ago">%1$d ঘণ্টা আগে</string>
     <string name="recognize_days_ago">%1$d দিন আগে</string>
     <string name="save">সেভ করুন</string>
+    <string name="lyrics_share_video_silent">গানের অডিও পাওয়া যায়নি, তাই এই ভিডিওতে শব্দ নেই।</string>
     <string name="lyrics_share_title">লিরিক্স শেয়ার করুন</string>
     <string name="lyrics_share_description">আপনার বাছাই করা লাইনগুলো, কভারসহ একটা কার্ডে সাজানো।</string>
     <string name="lyrics_share_story">স্টোরি বানান</string>
@@ -289,4 +290,5 @@
     <string name="queue_cleared">কিউ খালি করা হয়েছে</string>
     <plurals name="queue_removed_count"><item quantity="one">%1$d টি গান সরানো হয়েছে</item>
         <item quantity="other">%1$d টি গান সরানো হয়েছে</item></plurals>
+    <string name="lyrics_share_making_video">ভিডিও তৈরি হচ্ছে…</string>
 </resources>

@@ -827,4 +827,5 @@
     <string name="switch_to_audio">Mudar para áudio</string>
     <string name="switch_to_video">Mudar para vídeo</string>
     <string name="audio_short">Áudio</string>
+    <string name="lyrics_share_video_silent">Não foi possível obter o áudio da música, então este vídeo está sem som.</string>
 </resources>

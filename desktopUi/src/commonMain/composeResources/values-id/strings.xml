@@ -269,6 +269,7 @@
         <item quantity="other">%1$d lagu dihapus</item>
     </plurals>
     <string name="save">Simpan</string>
+    <string name="lyrics_share_video_silent">Audio lagu tidak dapat diambil, jadi video ini tanpa suara.</string>
     <string name="lyrics_share_title">Bagikan lirik</string>
     <string name="lyrics_share_description">Baris yang kamu pilih, ditata pada kartu bersama sampul.</string>
     <string name="lyrics_share_story">Jadikan story</string>
@@ -294,4 +295,5 @@
     <string name="switch_to_audio">Beralih ke Audio</string>
     <string name="switch_to_video">Beralih ke Video</string>
     <string name="audio_short">Audio</string>
+    <string name="lyrics_share_making_video">Membuat video…</string>
 </resources>

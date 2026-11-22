@@ -272,6 +272,7 @@
         <item quantity="other">Usunięto %1$d utworu</item>
     </plurals>
     <string name="save">Zapisz</string>
+    <string name="lyrics_share_video_silent">Nie udało się pobrać dźwięku utworu, więc ten film jest bez dźwięku.</string>
     <string name="lyrics_share_title">Udostępnij tekst</string>
     <string name="lyrics_share_description">Wybrane wersy, ułożone na karcie z okładką.</string>
     <string name="lyrics_share_story">Zmień na relację</string>
@@ -297,4 +298,5 @@
     <string name="switch_to_audio">Przełącz na audio</string>
     <string name="switch_to_video">Przełącz na wideo</string>
     <string name="audio_short">Audio</string>
+    <string name="lyrics_share_making_video">Tworzenie wideo…</string>
 </resources>

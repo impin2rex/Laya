@@ -827,4 +827,5 @@
     <string name="switch_to_audio">Sese geç</string>
     <string name="switch_to_video">Videoya geç</string>
     <string name="audio_short">Ses</string>
+    <string name="lyrics_share_video_silent">Şarkının sesi alınamadı, bu yüzden bu videoda ses yok.</string>
 </resources>

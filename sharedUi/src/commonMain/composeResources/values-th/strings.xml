@@ -821,4 +821,5 @@
     <string name="switch_to_audio">สลับเป็นเสียง</string>
     <string name="switch_to_video">สลับเป็นวิดีโอ</string>
     <string name="audio_short">เสียง</string>
+    <string name="lyrics_share_video_silent">ไม่สามารถดึงเสียงของเพลงได้ วิดีโอนี้จึงไม่มีเสียง</string>
 </resources>

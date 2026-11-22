@@ -270,6 +270,7 @@
         <item quantity="other">%1$d titres retirés</item>
     </plurals>
     <string name="save">Enregistrer</string>
+    <string name="lyrics_share_video_silent">Impossible de récupérer l’audio du titre, cette vidéo est donc sans son.</string>
     <string name="lyrics_share_title">Partager les paroles</string>
     <string name="lyrics_share_description">Les lignes que vous avez choisies, mises en page sur une carte avec la pochette.</string>
     <string name="lyrics_share_story">Convertir en story</string>
@@ -295,4 +296,5 @@
     <string name="switch_to_audio">Passer à l’audio</string>
     <string name="switch_to_video">Passer à la vidéo</string>
     <string name="audio_short">Audio</string>
+    <string name="lyrics_share_making_video">Création de la vidéo…</string>
 </resources>

@@ -839,4 +839,5 @@
     <string name="switch_to_audio">Przełącz na audio</string>
     <string name="switch_to_video">Przełącz na wideo</string>
     <string name="audio_short">Audio</string>
+    <string name="lyrics_share_video_silent">Nie udało się pobrać dźwięku utworu, więc ten film jest bez dźwięku.</string>
 </resources>

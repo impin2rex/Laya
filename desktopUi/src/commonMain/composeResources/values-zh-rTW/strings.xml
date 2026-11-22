@@ -269,6 +269,7 @@
         <item quantity="other">已移除 %1$d 首歌曲</item>
     </plurals>
     <string name="save">儲存</string>
+    <string name="lyrics_share_video_silent">無法取得歌曲音訊，因此此影片沒有聲音。</string>
     <string name="lyrics_share_title">分享歌詞</string>
     <string name="lyrics_share_description">你選中的幾行，連同封面排在一張卡片上。</string>
     <string name="lyrics_share_story">轉為快拍尺寸</string>
@@ -294,4 +295,5 @@
     <string name="switch_to_audio">切換到音訊</string>
     <string name="switch_to_video">切換到影片</string>
     <string name="audio_short">音訊</string>
+    <string name="lyrics_share_making_video">正在製作影片…</string>
 </resources>

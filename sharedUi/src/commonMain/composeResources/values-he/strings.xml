@@ -827,4 +827,5 @@
     <string name="switch_to_audio">מעבר לאודיו</string>
     <string name="switch_to_video">מעבר לוידאו</string>
     <string name="audio_short">אודיו</string>
+    <string name="lyrics_share_video_silent">לא ניתן היה להשיג את האודיו של השיר, ולכן לסרטון הזה אין צליל.</string>
 </resources>

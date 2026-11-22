@@ -1395,4 +1395,5 @@
     <string name="best_part_description">跳到精華片段</string>
     <string name="show_best_part">精華片段按鈕</string>
     <string name="show_best_part_subtitle">封面上的按鈕，可跳到歌曲中大家最多人重播的部分</string>
+    <string name="lyrics_share_video_silent">無法取得歌曲音訊，因此此影片沒有聲音。</string>
 </resources>

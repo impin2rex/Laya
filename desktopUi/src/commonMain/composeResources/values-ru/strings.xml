@@ -272,6 +272,7 @@
         <item quantity="other">Удалено %1$d трека</item>
     </plurals>
     <string name="save">Сохранить</string>
+    <string name="lyrics_share_video_silent">Не удалось получить звук песни, поэтому в этом видео нет звука.</string>
     <string name="lyrics_share_title">Поделиться текстом</string>
     <string name="lyrics_share_description">Выбранные строки на карточке вместе с обложкой.</string>
     <string name="lyrics_share_story">Сделать для сторис</string>
@@ -297,4 +298,5 @@
     <string name="switch_to_audio">Переключиться на аудио</string>
     <string name="switch_to_video">Переключиться на видео</string>
     <string name="audio_short">Аудио</string>
+    <string name="lyrics_share_making_video">Создаём видео…</string>
 </resources>

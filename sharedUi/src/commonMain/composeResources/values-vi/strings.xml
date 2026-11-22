@@ -821,4 +821,5 @@
     <string name="switch_to_audio">Chuyển sang âm thanh</string>
     <string name="switch_to_video">Chuyển sang video</string>
     <string name="audio_short">Âm thanh</string>
+    <string name="lyrics_share_video_silent">Không lấy được âm thanh của bài hát nên video này không có tiếng.</string>
 </resources>

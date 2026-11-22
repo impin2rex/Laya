@@ -1395,4 +1395,5 @@
     <string name="best_part_description">Lompat ke bagian terbaik</string>
     <string name="show_best_part">Tombol Bagian Terbaik</string>
     <string name="show_best_part_subtitle">Tombol di sampul yang melompat ke bagian lagu yang paling sering diputar ulang</string>
+    <string name="lyrics_share_video_silent">Audio lagu tidak dapat diambil, jadi video ini tanpa suara.</string>
 </resources>

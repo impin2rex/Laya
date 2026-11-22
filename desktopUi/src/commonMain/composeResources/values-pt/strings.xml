@@ -270,6 +270,7 @@
         <item quantity="other">%1$d músicas removidas</item>
     </plurals>
     <string name="save">Salvar</string>
+    <string name="lyrics_share_video_silent">Não foi possível obter o áudio da música, então este vídeo está sem som.</string>
     <string name="lyrics_share_title">Partilhar a letra</string>
     <string name="lyrics_share_description">Os versos que escolheste, compostos num cartão com a capa.</string>
     <string name="lyrics_share_story">Converter em story</string>
@@ -295,4 +296,5 @@
     <string name="switch_to_audio">Mudar para áudio</string>
     <string name="switch_to_video">Mudar para vídeo</string>
     <string name="audio_short">Áudio</string>
+    <string name="lyrics_share_making_video">Criando o vídeo…</string>
 </resources>

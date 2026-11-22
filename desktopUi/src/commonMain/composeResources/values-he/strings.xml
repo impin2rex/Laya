@@ -270,6 +270,7 @@
         <item quantity="other">%1$d שירים הוסרו</item>
     </plurals>
     <string name="save">שמירה</string>
+    <string name="lyrics_share_video_silent">לא ניתן היה להשיג את האודיו של השיר, ולכן לסרטון הזה אין צליל.</string>
     <string name="lyrics_share_title">שיתוף המילים</string>
     <string name="lyrics_share_description">השורות שבחרת, על כרטיס עם העטיפה.</string>
     <string name="lyrics_share_story">המר לסטורי</string>
@@ -295,4 +296,5 @@
     <string name="switch_to_audio">מעבר לאודיו</string>
     <string name="switch_to_video">מעבר לוידאו</string>
     <string name="audio_short">אודיו</string>
+    <string name="lyrics_share_making_video">יוצר את הסרטון…</string>
 </resources>

@@ -821,4 +821,5 @@
     <string name="switch_to_audio">Beralih ke Audio</string>
     <string name="switch_to_video">Beralih ke Video</string>
     <string name="audio_short">Audio</string>
+    <string name="lyrics_share_video_silent">Audio lagu tidak dapat diambil, jadi video ini tanpa suara.</string>
 </resources>
