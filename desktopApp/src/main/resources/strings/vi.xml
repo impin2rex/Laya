@@ -863,4 +863,5 @@
     <string name="listen_together_using_builtin">Đang dùng máy chủ tích hợp</string>
     <string name="listen_together_create_footer">Bạn sẽ nhận được mã gồm sáu ký tự. Ai có mã đều có thể tham gia, tối đa năm thiết bị, kể cả thiết bị của bạn.</string>
     <string name="translate">Dịch</string>
+    <string name="lossless_verify_failed">Xác minh thất bại</string>
 </resources>

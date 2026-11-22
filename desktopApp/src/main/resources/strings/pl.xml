@@ -916,4 +916,5 @@
     <string name="d_reorder_subtitle">Przeciągnij wiersze w żądanej kolejności, a następnie zapisz.</string>
     <string name="translate">Tłumacz</string>
     <string name="youtube_premium_audio_detected">Wykryto Premium na tym koncie. Odtwarzanie wyższej jakości Opus ~256 kbps.</string>
+    <string name="lossless_verify_failed">Weryfikacja nie powiodła się</string>
 </resources>

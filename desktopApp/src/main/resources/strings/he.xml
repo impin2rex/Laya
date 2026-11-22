@@ -886,4 +886,5 @@
     <string name="d_reorder_subtitle">גררו את השורות לסדר הרצוי ואז שמרו.</string>
     <string name="translate">תרגום</string>
     <string name="youtube_premium_audio_detected">זוהה Premium בחשבון הזה. מושמע Opus באיכות גבוהה יותר, ~256 kbps.</string>
+    <string name="lossless_verify_failed">האימות נכשל</string>
 </resources>

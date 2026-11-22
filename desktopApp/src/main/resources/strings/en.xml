@@ -885,4 +885,5 @@
     <string name="app_icon_default">Default</string>
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">Music videos play as songs, with their cover art, until you switch to the video</string>
+    <string name="lossless_verify_failed">Verification failed</string>
 </resources>

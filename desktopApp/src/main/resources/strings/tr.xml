@@ -885,4 +885,5 @@
     <string name="d_reorder_subtitle">Satırları istediğiniz sıraya sürükleyin, sonra kaydedin.</string>
     <string name="translate">Çevir</string>
     <string name="youtube_premium_audio_detected">Bu hesapta Premium algılandı. Daha yüksek kaliteli ~256 kbps Opus yayınlanıyor.</string>
+    <string name="lossless_verify_failed">Doğrulama başarısız</string>
 </resources>

@@ -866,4 +866,5 @@
     <string name="d_reorder_subtitle">行をドラッグして好きな順に並べ、保存してください。</string>
     <string name="translate">翻訳</string>
     <string name="youtube_premium_audio_detected">このアカウントで Premium を検出しました。高音質の約 256 kbps Opus をストリーミングします。</string>
+    <string name="lossless_verify_failed">確認に失敗しました</string>
 </resources>

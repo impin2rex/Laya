@@ -885,4 +885,5 @@
     <string name="d_reorder_subtitle">Ziehe die Zeilen in die gewünschte Reihenfolge und speichere dann.</string>
     <string name="translate">Übersetzen</string>
     <string name="youtube_premium_audio_detected">Premium für dieses Konto erkannt. Es wird das hochwertigere Opus mit ~256 kbps gestreamt.</string>
+    <string name="lossless_verify_failed">Verifizierung fehlgeschlagen</string>
 </resources>

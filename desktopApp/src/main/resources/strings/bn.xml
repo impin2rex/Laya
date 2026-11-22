@@ -880,4 +880,5 @@
         <item>গানের কথা জোড়া লাগছে</item>
         <item>প্রায় কথাগুলো পেয়ে গেছি</item></string-array>
     <string name="youtube_premium_audio_detected">এই অ্যাকাউন্টে Premium শনাক্ত হয়েছে। উচ্চমানের ~256 kbps Opus স্ট্রিম হচ্ছে।</string>
+    <string name="lossless_verify_failed">যাচাই ব্যর্থ হয়েছে</string>
 </resources>

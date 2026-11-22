@@ -866,4 +866,5 @@
     <string name="d_reorder_subtitle">ลากแถวตามลำดับที่ต้องการ แล้วบันทึก</string>
     <string name="translate">แปล</string>
     <string name="youtube_premium_audio_detected">ตรวจพบ Premium ในบัญชีนี้ กำลังสตรีม Opus คุณภาพสูงกว่าที่ ~256 kbps</string>
+    <string name="lossless_verify_failed">การยืนยันล้มเหลว</string>
 </resources>

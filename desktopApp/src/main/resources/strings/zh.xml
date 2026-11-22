@@ -866,4 +866,5 @@
     <string name="d_reorder_subtitle">将各行拖动到想要的顺序，然后保存。</string>
     <string name="translate">翻译</string>
     <string name="youtube_premium_audio_detected">已在此账号检测到 Premium。正在串流更高音质的约 256 kbps Opus。</string>
+    <string name="lossless_verify_failed">验证失败</string>
 </resources>

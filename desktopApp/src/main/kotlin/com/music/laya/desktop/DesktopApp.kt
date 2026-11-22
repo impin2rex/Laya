@@ -6589,6 +6589,19 @@ private fun DesktopSettingsScreen(
     // control, as on the phones: on always verifies afresh, off drops the session.
     var verifying by remember { mutableStateOf<Pair<DesktopSourceConfig, kotlinx.coroutines.Job>?>(null) }
     var verifyError by remember { mutableStateOf<String?>(null) }
+    // A missing class or native library throws with its own binary name as the
+    // message (`com/sun/net/httpserver/HttpServer`, say) — readable to nobody.
+    // ponytail: a plain deny-list of the throw types a missing JDK/native
+    // piece raises, not a classifier; widen it if another one ever surfaces.
+    fun Throwable.userFailureMessage(): String {
+        val msg = message
+        val looksLikeAClassName = this is NoClassDefFoundError ||
+            this is ClassNotFoundException ||
+            this is UnsatisfiedLinkError ||
+            msg.isNullOrBlank() ||
+            (msg.contains('/') && msg.none { it == ' ' })
+        return if (looksLikeAClassName) DesktopStrings["lossless_verify_failed", "Verification failed"] else msg!!
+    }
     fun verifyLossless(config: DesktopSourceConfig) {
         val kind = config.kind
         verifying?.second?.cancel()
@@ -6600,7 +6613,7 @@ private fun DesktopSettingsScreen(
                 .onFailure {
                     if (it !is kotlinx.coroutines.CancellationException) {
                         DesktopTrackLog.log("${kind.label}: verification failed: ${it.message}")
-                        verifyError = it.message ?: DesktopStrings["lossless_verify_failed", "Verification failed"]
+                        verifyError = it.userFailureMessage()
                     }
                 }
         }

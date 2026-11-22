@@ -885,4 +885,5 @@
     <string name="d_reorder_subtitle">Arrastra las filas al orden que quieras y guarda.</string>
     <string name="translate">Traducir</string>
     <string name="youtube_premium_audio_detected">Premium detectado en esta cuenta. Se transmite el Opus de mayor calidad a ~256 kbps.</string>
+    <string name="lossless_verify_failed">Error de verificación</string>
 </resources>

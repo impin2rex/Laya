@@ -866,4 +866,5 @@
     <string name="d_reorder_subtitle">Seret baris ke urutan yang Anda inginkan, lalu simpan.</string>
     <string name="translate">Terjemahkan</string>
     <string name="youtube_premium_audio_detected">Premium terdeteksi di akun ini. Memutar Opus berkualitas lebih tinggi ~256 kbps.</string>
+    <string name="lossless_verify_failed">Verifikasi gagal</string>
 </resources>
