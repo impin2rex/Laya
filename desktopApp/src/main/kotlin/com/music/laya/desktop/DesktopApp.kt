@@ -7107,6 +7107,18 @@ private fun DesktopSettingsScreen(
                         )
                     }
                     }
+                    var premiumAudio by remember { mutableStateOf(DesktopStreamClient.premiumAudio) }
+                    SettingsToggle(
+                        DesktopStrings["youtube_premium_audio", "YouTube Premium audio"],
+                        DesktopStrings[
+                            "youtube_premium_audio_subtitle",
+                            "I have Premium: stream the higher-quality ~256 kbps Opus instead of the standard 160 kbps",
+                        ],
+                        premiumAudio,
+                    ) {
+                        premiumAudio = it
+                        DesktopStreamClient.premiumAudio = it
+                    }
                 }
             }
             if (section == DesktopSettingsSection.LISTEN_TOGETHER) item {

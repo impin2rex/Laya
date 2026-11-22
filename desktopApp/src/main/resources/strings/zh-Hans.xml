@@ -671,4 +671,6 @@
     <string name="app_icon_default">默认</string>
     <string name="prefer_music_only">优先播放纯音乐版本</string>
     <string name="prefer_music_only_subtitle">音乐视频将以歌曲形式播放并显示封面，直到你切换到视频</string>
+    <string name="youtube_premium_audio">YouTube Premium 音频</string>
+    <string name="youtube_premium_audio_subtitle">我有 Premium：串流更高音质的约 256 kbps Opus，而不是标准的 160 kbps</string>
 </resources>

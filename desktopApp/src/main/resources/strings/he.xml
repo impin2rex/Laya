@@ -688,4 +688,6 @@
     <string name="app_icon_default">ברירת מחדל</string>
     <string name="prefer_music_only">העדפת גרסת מוזיקה בלבד</string>
     <string name="prefer_music_only_subtitle">קליפים מתנגנים כשירים, עם עטיפת האלבום, עד שתעברו לווידאו</string>
+    <string name="youtube_premium_audio">אודיו של YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">יש לי Premium: הזרמת Opus באיכות גבוהה יותר של ~256 kbps במקום 160 kbps הרגילים</string>
 </resources>

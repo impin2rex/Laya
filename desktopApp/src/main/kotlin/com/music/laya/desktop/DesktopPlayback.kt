@@ -221,6 +221,22 @@ internal object DesktopStreamClient {
      */
     internal val ceiling = ThreadLocal<Int>()
 
+    /**
+     * YouTube Premium audio (Android's `youtube_premium_audio`), read by
+     * [StreamResolver.premiumAudio]: ask for Premium's ~256kbps Opus (itag 774),
+     * which FFmpeg decodes like the usual 251.
+     */
+    var premiumAudio: Boolean
+        get() = persistence.boolean(KEY_PREMIUM_AUDIO, false)
+        set(value) {
+            persistence.saveBoolean(KEY_PREMIUM_AUDIO, value)
+            // Remembered URLs were picked under the old route; the next play asks again.
+            StreamResolver.forgetResolved()
+        }
+
+    private val persistence = DesktopPersistence()
+    private const val KEY_PREMIUM_AUDIO = "youtube_premium_audio"
+
     /** `mime=audio/webm` off a googlevideo URL: the container, which is what FFmpeg is told. */
     private fun mimeOf(url: String): String? =
         runCatching { java.net.URI(url).rawQuery }.getOrNull()

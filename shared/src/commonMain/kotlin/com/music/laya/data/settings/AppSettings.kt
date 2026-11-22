@@ -299,6 +299,15 @@ object AppSettings {
     val dolbyAtmos = MutableStateFlow(true)
 
     /**
+     * The listener's word that their YouTube account has Premium: YouTube
+     * playback then asks the signed-in route for Premium's ~256kbps Opus
+     * (itag 774) before the usual 251. Off by default and asked rather than
+     * detected; see [StreamResolver.premiumAudio][com.music.laya.data.innertube.StreamResolver.premiumAudio].
+     * Ignored where the player needs AAC (iOS).
+     */
+    val youtubePremiumAudio = MutableStateFlow(false)
+
+    /**
      * Widens stereo output via [com.music.laya.playback.SpatialAudioProcessor],
      * a stereo widening + cross-feed effect running inside ExoPlayer's own
      * pipeline. Not true object-based spatial audio — YouTube only ever hands
@@ -884,6 +893,7 @@ object AppSettings {
         loudnessNormalization.value = prefs.getBoolean(KEY_LOUDNESS_NORMALIZATION, true)
         loudnessOffOnSpeaker.value = prefs.getBoolean(KEY_LOUDNESS_OFF_ON_SPEAKER, true)
         dolbyAtmos.value = prefs.getBoolean(KEY_DOLBY_ATMOS, true)
+        youtubePremiumAudio.value = prefs.getBoolean(KEY_YOUTUBE_PREMIUM_AUDIO, false)
         spatialAudio.value = prefs.getBoolean(KEY_SPATIAL_AUDIO, false)
         equalizerEnabled.value = prefs.getBoolean(KEY_EQ_ENABLED, false)
         equalizerMode.value = runCatching {
@@ -1162,6 +1172,13 @@ object AppSettings {
     fun setDolbyAtmos(value: Boolean) {
         dolbyAtmos.value = value
         prefs.edit().putBoolean(KEY_DOLBY_ATMOS, value).apply()
+    }
+
+    fun setYoutubePremiumAudio(value: Boolean) {
+        youtubePremiumAudio.value = value
+        prefs.edit().putBoolean(KEY_YOUTUBE_PREMIUM_AUDIO, value).apply()
+        // Remembered URLs were picked under the old route; the next play asks again.
+        com.music.laya.data.innertube.StreamResolver.forgetResolved()
     }
 
     fun setSpatialAudio(value: Boolean) {
@@ -2079,6 +2096,7 @@ object AppSettings {
     private const val KEY_LOUDNESS_NORMALIZATION = "loudness_normalization"
     private const val KEY_LOUDNESS_OFF_ON_SPEAKER = "loudness_off_on_speaker"
     private const val KEY_DOLBY_ATMOS = "dolby_atmos"
+    private const val KEY_YOUTUBE_PREMIUM_AUDIO = "youtube_premium_audio"
     private const val KEY_SPATIAL_AUDIO = "spatial_audio"
     private const val KEY_EQ_ENABLED = "equalizer_enabled"
     private const val KEY_EQ_MODE = "equalizer_mode"
