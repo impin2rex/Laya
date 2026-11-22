@@ -96,4 +96,8 @@
     <string name="d_voice_download">İndir (%1$s MB)</string>
     <string name="d_voice_downloading">İndiriliyor %%%1$s</string>
     <string name="d_voice_download_failed">İndirilemedi, tekrar deneyin</string>
+    <string name="automix_art_transition">Kapak geçişi</string>
+    <string name="automix_art_transition_subtitle">Automix sırasında parçalar arasında kapağı yumuşakça harmanlar.</string>
+    <string name="automix_mini_art_transition">Mini oynatıcı kapak geçişi</string>
+    <string name="automix_mini_art_transition_subtitle">Automix sırasında mini oynatıcıda kapak geçişlerini gösterir.</string>
 </resources>

@@ -96,4 +96,8 @@
     <string name="d_voice_download">Scarica (%1$s MB)</string>
     <string name="d_voice_downloading">Download %1$s%%</string>
     <string name="d_voice_download_failed">Download non riuscito, riprova</string>
+    <string name="automix_art_transition">Transizione copertina</string>
+    <string name="automix_art_transition_subtitle">Sfuma dolcemente la copertina tra i brani durante Automix.</string>
+    <string name="automix_mini_art_transition">Transizione copertina nel mini player</string>
+    <string name="automix_mini_art_transition_subtitle">Mostra le transizioni delle copertine nel mini player durante Automix.</string>
 </resources>

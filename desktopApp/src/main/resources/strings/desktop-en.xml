@@ -98,4 +98,8 @@
     <string name="d_voice_download">Download (%1$s MB)</string>
     <string name="d_voice_downloading">Downloading %1$s%%</string>
     <string name="d_voice_download_failed">Download failed, try again</string>
+    <string name="automix_art_transition">Art transition</string>
+    <string name="automix_art_transition_subtitle">Smoothly blends cover art between tracks during Automix.</string>
+    <string name="automix_mini_art_transition">Mini-player art transition</string>
+    <string name="automix_mini_art_transition_subtitle">Shows artwork transitions in the mini-player during Automix.</string>
 </resources>

@@ -96,4 +96,8 @@
     <string name="d_voice_download">डाउनलोड करें (%1$s MB)</string>
     <string name="d_voice_downloading">डाउनलोड हो रहा है %1$s%%</string>
     <string name="d_voice_download_failed">डाउनलोड नहीं हुआ, फिर कोशिश करें</string>
+    <string name="automix_art_transition">आर्ट ट्रांज़िशन</string>
+    <string name="automix_art_transition_subtitle">Automix के दौरान ट्रैक के बीच कवर आर्ट को सहज रूप से मिलाता है।</string>
+    <string name="automix_mini_art_transition">मिनी-प्लेयर आर्ट ट्रांज़िशन</string>
+    <string name="automix_mini_art_transition_subtitle">Automix के दौरान मिनी-प्लेयर में आर्टवर्क ट्रांज़िशन दिखाता है।</string>
 </resources>

@@ -96,4 +96,8 @@
     <string name="d_voice_download">Herunterladen (%1$s MB)</string>
     <string name="d_voice_downloading">Wird geladen %1$s%%</string>
     <string name="d_voice_download_failed">Download fehlgeschlagen, erneut versuchen</string>
+    <string name="automix_art_transition">Cover-Übergang</string>
+    <string name="automix_art_transition_subtitle">Blendet das Cover bei Automix sanft zwischen Titeln über.</string>
+    <string name="automix_mini_art_transition">Cover-Übergang im Mini-Player</string>
+    <string name="automix_mini_art_transition_subtitle">Zeigt Cover-Übergänge im Mini-Player während Automix.</string>
 </resources>

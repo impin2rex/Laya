@@ -96,4 +96,8 @@
     <string name="d_voice_download">Pobierz (%1$s MB)</string>
     <string name="d_voice_downloading">Pobieranie %1$s%%</string>
     <string name="d_voice_download_failed">Pobieranie nie powiodło się, spróbuj ponownie</string>
+    <string name="automix_art_transition">Przejście okładki</string>
+    <string name="automix_art_transition_subtitle">Płynnie łączy okładki między utworami podczas Automix.</string>
+    <string name="automix_mini_art_transition">Przejście okładki w minimodule</string>
+    <string name="automix_mini_art_transition_subtitle">Pokazuje przejścia okładek w minimodule podczas Automix.</string>
 </resources>

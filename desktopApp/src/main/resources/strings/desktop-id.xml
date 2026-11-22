@@ -96,4 +96,8 @@
     <string name="d_voice_download">Unduh (%1$s MB)</string>
     <string name="d_voice_downloading">Mengunduh %1$s%%</string>
     <string name="d_voice_download_failed">Gagal mengunduh, coba lagi</string>
+    <string name="automix_art_transition">Transisi sampul</string>
+    <string name="automix_art_transition_subtitle">Memadukan sampul antar lagu dengan halus saat Automix.</string>
+    <string name="automix_mini_art_transition">Transisi sampul mini player</string>
+    <string name="automix_mini_art_transition_subtitle">Menampilkan transisi sampul di mini player saat Automix.</string>
 </resources>
