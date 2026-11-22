@@ -473,6 +473,13 @@
     <string name="lyrics_share_description">Os versos que escolheste, compostos num cartão com a capa.</string>
     <string name="lyrics_share_story">Converter em story</string>
     <string name="lyrics_share_story_revert">Voltar ao cartão</string>
+    <string name="lyrics_share_video">Vídeo</string>
+    <string name="lyrics_share_image">Imagem</string>
+    <string name="lyrics_share_saving">Salvando…</string>
+    <string name="lyrics_share_gradient">Gradiente</string>
+    <string name="lyrics_share_canvas">Tela</string>
+    <string name="lyrics_share_show_logo">Mostrar o logo do Laya</string>
+    <string name="lyrics_share_making_video">Criando o vídeo…</string>
     <string name="listening_shape">Seu padrão de escuta</string>
     <string name="member_since">Membro desde</string>
     <string name="member_since_value">Membro desde %1$s</string>
