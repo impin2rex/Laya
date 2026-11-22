@@ -408,7 +408,14 @@ internal object DesktopSourceRegistry {
         if (pending != null) {
             DesktopTrackLog.log("'${song.title}' started on YouTube while the other sources keep looking")
         }
-        DesktopLiveResolution(youtubeStream, pending)
+        // Whichever of [higher] answers first here is the fastest, not the best — JioSaavn's lossy
+        // 320 routinely beats a lossless Tidal/Qobuz call that still has a license to negotiate. As
+        // in the race above, winning is not the same as being the best copy: chase a better one
+        // behind it instead of settling for the first.
+        val chased = pending?.let { raw ->
+            scope.async { raw.await()?.let { betterThan(it, higher, song, quality)?.await() ?: it } }
+        }
+        DesktopLiveResolution(youtubeStream, chased)
     }
 
     /**
