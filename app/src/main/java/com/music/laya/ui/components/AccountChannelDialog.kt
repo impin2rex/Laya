@@ -28,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -112,7 +114,7 @@ fun AccountChannelDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Listen as",
+                    text = stringResource(R.string.listen_as),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.W600,
@@ -166,12 +168,12 @@ fun AccountChannelDialog(
             // and picking there means the session is read from a page already
             // showing the chosen channel rather than assembled from ids.
             AlertAction(
-                label = "Choose in YouTube Music",
+                label = stringResource(R.string.choose_in_youtube_music),
                 emphasised = channels.isEmpty(),
                 onClick = onChooseInYouTube,
             )
             AlertRule()
-            AlertAction(label = "Close", emphasised = false, onClick = onDismiss)
+            AlertAction(label = stringResource(R.string.close), emphasised = false, onClick = onDismiss)
         }
     }
 }

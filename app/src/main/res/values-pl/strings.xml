@@ -1457,4 +1457,5 @@
     <string name="show_best_part">Przycisk najlepszego fragmentu</string>
     <string name="show_best_part_subtitle">Przycisk na okładce, który przeskakuje do fragmentu utworu odtwarzanego najczęściej</string>
     <string name="lyrics_share_video_silent">Nie udało się pobrać dźwięku utworu, więc ten film jest bez dźwięku.</string>
+    <string name="choose_in_youtube_music">Wybierz w YouTube Music</string>
 </resources>

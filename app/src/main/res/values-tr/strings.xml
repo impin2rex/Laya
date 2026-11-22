@@ -1377,4 +1377,5 @@
     <string name="show_best_part">En iyi bölüm düğmesi</string>
     <string name="show_best_part_subtitle">Kapak görselinde, şarkının en çok tekrar dinlenen bölümüne atlayan bir düğme</string>
     <string name="lyrics_share_video_silent">Şarkının sesi alınamadı, bu yüzden bu videoda ses yok.</string>
+    <string name="choose_in_youtube_music">YouTube Music’te seç</string>
 </resources>

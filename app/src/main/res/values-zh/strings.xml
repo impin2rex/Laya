@@ -1397,4 +1397,5 @@
     <string name="show_best_part">精彩片段按钮</string>
     <string name="show_best_part_subtitle">封面上的按钮，可跳转到歌曲中大家重播最多的部分</string>
     <string name="lyrics_share_video_silent">无法获取歌曲音频，因此此视频没有声音。</string>
+    <string name="choose_in_youtube_music">在 YouTube Music 中选择</string>
 </resources>

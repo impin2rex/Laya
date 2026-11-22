@@ -1392,4 +1392,5 @@
     <string name="show_best_part">Botón de la mejor parte</string>
     <string name="show_best_part_subtitle">Un botón sobre la portada que salta a la parte de la canción que más se repite</string>
     <string name="lyrics_share_video_silent">No se pudo obtener el audio de la canción, así que este vídeo no tiene sonido.</string>
+    <string name="choose_in_youtube_music">Elegir en YouTube Music</string>
 </resources>
