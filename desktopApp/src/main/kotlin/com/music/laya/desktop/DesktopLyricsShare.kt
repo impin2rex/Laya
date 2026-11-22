@@ -3,6 +3,7 @@ package com.music.laya.desktop
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toAwtImage
 import com.music.laya.data.model.Song
+import com.music.laya.playback.youtubeSeedFor
 import com.music.laya.ui.share.ImageSharer
 import com.music.laya.ui.share.VideoSharer
 import kotlinx.coroutines.CancellationException
@@ -45,8 +46,8 @@ internal object DesktopImageSharer : ImageSharer {
  * `ffmpeg` program next to its libraries): the frames piped in raw, H.264 out through OpenH264,
  * the song's audio cut from the stream the player has open and encoded to AAC.
  *
- * The audio is only there when the song shared is the one loaded in the player — the share is
- * made from the now-playing screen, so that is the normal case. Otherwise the video is silent.
+ * The audio comes from the stream the player has open for the song, or else one resolved here the
+ * way the player resolves it. The video is silent only when that fails too ([lastEncodeSilent]).
  */
 internal object DesktopVideoSharer : VideoSharer {
     override suspend fun encode(
@@ -62,9 +63,15 @@ internal object DesktopVideoSharer : VideoSharer {
         val out = File(work, "lyrics.mp4").apply { delete() }
         val pcm = File(work, "lyrics-audio.f32")
         val log = File(work, "lyrics-ffmpeg.log")
-        val rate = runCatching { decodeAudio(song, segments, pcm) }
-            .onFailure { DesktopTrackLog.log("lyrics share: no audio (${it.message})") }
-            .getOrNull()
+        val rate = try {
+            decodeAudio(song, segments, pcm)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DesktopTrackLog.log("lyrics share: no audio (${e.message})")
+            null
+        }
+        silent = rate == null
         val program = runCatching { org.bytedeco.javacpp.Loader.load(org.bytedeco.ffmpeg.ffmpeg::class.java) }
             .onFailure { DesktopTrackLog.log("lyrics share: ffmpeg unavailable: ${it.message}") }
             .getOrNull() ?: return@withContext null
@@ -116,12 +123,26 @@ internal object DesktopVideoSharer : VideoSharer {
     @Volatile
     private var lastSaved: File? = null
 
+    @Volatile
+    private var silent = false
+
+    override fun lastEncodeSilent() = silent
+
+    /** A song the player has not opened this run: its YouTube stream, resolved as the player would. Null when that fails. */
+    private suspend fun resolveStream(song: Song): DesktopStream? {
+        val id = youtubeSeedFor(song) ?: return null
+        return DesktopStreamClient.resolve(song.copy(videoId = id)).onFailure {
+            if (it is CancellationException) throw it
+            DesktopTrackLog.log("lyrics share: could not resolve audio for $id (${it.message})")
+        }.getOrNull()
+    }
+
     /**
      * [segments] of the playing [song], back to back, as interleaved float stereo in [into];
      * the sample rate, or null when the song is not the one the player has open.
      */
-    private fun decodeAudio(song: Song, segments: List<Pair<Long, Long>>, into: File): Int? {
-        val stream = DesktopPlaybackEngine.active?.streamOf(song.videoId) ?: return null
+    private suspend fun decodeAudio(song: Song, segments: List<Pair<Long, Long>>, into: File): Int? {
+        val stream = DesktopPlaybackEngine.active?.streamOf(song.videoId) ?: resolveStream(song) ?: return null
         val pcm = DesktopKaraokeStream.open(stream) ?: return null
         try {
             val rate = pcm.sampleRate

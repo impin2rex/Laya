@@ -71,7 +71,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  * track the lines are sung over is cut from the song's YouTube Opus — see
  * [shareOpusFor] — and [painter] is asked for the card with each line lit as
  * the vocal reaches it; the cover loops underneath for as long as that takes.
- * If no Opus can be had the same video is made silent, and unsynced lyrics
+ * If no Opus can be had (the cache reads it from the network when it isn't held) the same video
+ * is made silent and [onSilent] says so, and unsynced lyrics
  * get the card as it is, held for [MIN_LENGTH_MS].
  *
  * Returns the file in the share folder, or null when nothing could be exported.
@@ -83,6 +84,8 @@ internal suspend fun exportLyricsVideo(
     clip: CanvasArtwork?,
     /** The card without its backdrop, drawn at any moment of the song. */
     painter: LyricsCardPainter,
+    /** Called when a song-backed video had to be made without the song (no Opus, or it would not cut). */
+    onSilent: () -> Unit = {},
 ): File? {
     val folder = File(context.cacheDir, SHARE_FOLDER).apply { mkdirs() }
     val out = File(folder, VIDEO_FILE_NAME)
@@ -149,6 +152,7 @@ internal suspend fun exportLyricsVideo(
     }
 
     if (opus != null && attempt(withAudio = true)) return out
+    if (timeline != null) onSilent()
     return if (attempt(withAudio = false)) out else null
 }
 

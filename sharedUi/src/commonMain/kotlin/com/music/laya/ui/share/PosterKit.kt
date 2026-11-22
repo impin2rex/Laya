@@ -78,6 +78,9 @@ interface VideoSharer {
         frame: suspend (index: Int, argb: IntArray) -> Unit,
     ): String?
 
+    /** Whether the last [encode] had to leave the song out (its audio could not be fetched), for a notice. */
+    fun lastEncodeSilent(): Boolean = false
+
     /** Opens the system share sheet on the video at [path]. */
     suspend fun share(path: String): Boolean
 

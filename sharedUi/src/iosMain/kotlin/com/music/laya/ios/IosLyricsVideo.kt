@@ -1,6 +1,9 @@
 package com.music.laya.ios
 
+import com.music.laya.data.innertube.PlayerClient
+import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.Song
+import com.music.laya.playback.youtubeSeedFor
 import com.music.laya.ui.share.VideoSharer
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.CPointer
@@ -49,6 +52,9 @@ interface LyricsVideoNative {
         segmentsMs: List<Long>,
     ): Boolean
 
+    /** Whether the last [finish] muxed audio in, false when it fell back to the silent video. */
+    fun lastFinishHadAudio(): Boolean
+
     /** Drops a half-written video. */
     fun cancel()
 }
@@ -67,12 +73,36 @@ internal class IosShareStream(
 )
 
 /**
+ * The song's AAC (m4a, which AVFoundation reads) resolved the way a download resolves it, for a
+ * share of a song the player has not opened this run. Null when the network or the resolver fails.
+ */
+private suspend fun resolveShareStream(song: Song): IosShareStream? = try {
+    val id = youtubeSeedFor(song)
+    if (id == null) {
+        null
+    } else {
+        val stream = StreamResolver.resolveForDownload(id, Int.MAX_VALUE, requireM4a = true)
+        val length = Regex("[?&]clen=(\\d+)").find(stream.url)?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+        IosShareStream(stream.url, StreamResolver.mediaHeadersFor(stream.url), "audio/mp4", length, PlayerClient.rangeBytesFor(stream.url))
+    }
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    println("IosVideoSharer: no audio stream for ${song.videoId}: ${e.message}")
+    null
+}
+
+/**
  * The share video on iOS: the common frames through [LyricsVideoNative], the song from the stream
- * the player opened it with — so a song that was never played this run (nothing to cut from)
- * comes out silent rather than starting a second resolve here.
+ * the player opened it with, or else one resolved here ([resolveShareStream]). Silent only when
+ * that fails too, which [lastEncodeSilent] then reports.
  */
 @OptIn(ExperimentalForeignApi::class)
 internal object IosVideoSharer : VideoSharer {
+    private var silent = false
+
+    override fun lastEncodeSilent() = silent
+
     override suspend fun encode(
         song: Song,
         width: Int,
@@ -100,7 +130,7 @@ internal object IosVideoSharer : VideoSharer {
             native.cancel()
             throw e
         }
-        val source = IosPlayer.shareStream(song.videoId)
+        val source = IosPlayer.shareStream(song.videoId) ?: resolveShareStream(song)
         val written = native.finish(
             audioUrl = source?.url,
             headers = source?.headers.orEmpty(),
@@ -109,6 +139,8 @@ internal object IosVideoSharer : VideoSharer {
             chunkBytes = source?.chunkBytes ?: 0L,
             segmentsMs = segments.flatMap { listOf(it.first, it.second) },
         )
+        // Silent also when the stream was found but would not decode, which only Swift knows.
+        silent = written && !native.lastFinishHadAudio()
         if (written) path else null
     }
 
