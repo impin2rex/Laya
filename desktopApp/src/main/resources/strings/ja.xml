@@ -669,4 +669,6 @@
     <string name="app_icon_default">デフォルト</string>
     <string name="prefer_music_only">音楽のみのバージョンを優先</string>
     <string name="prefer_music_only_subtitle">ミュージックビデオは、動画に切り替えるまでジャケット付きの曲として再生されます</string>
+    <string name="youtube_premium_audio">YouTube Premium オーディオ</string>
+    <string name="youtube_premium_audio_subtitle">Premium に加入済み：標準の 160 kbps ではなく、高音質の約 256 kbps Opus で再生します</string>
 </resources>

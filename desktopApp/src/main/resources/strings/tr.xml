@@ -735,4 +735,6 @@
     <string name="app_icon_default">Varsayılan</string>
     <string name="prefer_music_only">Yalnızca müzik sürümünü tercih et</string>
     <string name="prefer_music_only_subtitle">Müzik videoları, siz videoya geçene kadar kapak görseliyle şarkı olarak çalınır</string>
+    <string name="youtube_premium_audio">YouTube Premium sesi</string>
+    <string name="youtube_premium_audio_subtitle">Premium\'um var: standart 160 kbps yerine daha yüksek kaliteli ~256 kbps Opus akışı</string>
 </resources>

@@ -752,4 +752,6 @@
     <string name="app_icon_default">Predefinita</string>
     <string name="prefer_music_only">Preferisci la versione solo musica</string>
     <string name="prefer_music_only_subtitle">I video musicali vengono riprodotti come brani, con la copertina, finché non passi al video</string>
+    <string name="youtube_premium_audio">Audio YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">Ho Premium: riproduci l\'Opus di qualità superiore a ~256 kbps invece dei 160 kbps standard</string>
 </resources>

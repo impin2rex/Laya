@@ -687,4 +687,6 @@
     <string name="app_icon_default">Par défaut</string>
     <string name="prefer_music_only">Préférer la version audio seule</string>
     <string name="prefer_music_only_subtitle">Les clips sont lus comme des titres, avec leur pochette, jusqu’à ce que vous passiez à la vidéo</string>
+    <string name="youtube_premium_audio">Audio YouTube Premium</string>
+    <string name="youtube_premium_audio_subtitle">J\'ai Premium : diffuser l\'Opus de meilleure qualité à ~256 kbps au lieu des 160 kbps standard</string>
 </resources>
