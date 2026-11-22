@@ -7,7 +7,9 @@
 
 # Laya
 
-### Aesthetic YouTube Music Client
+### Lossless Music Streaming & Download App — Hi-Res FLAC, Word-Synced Lyrics, Every Device
+
+**Laya** is a free, open-source, ad-free **lossless music streaming and download app** and **YouTube Music client**. It streams and downloads **Hi-Res lossless audio (FLAC / ALAC, 24-bit)** from YouTube Music, Tidal and Qobuz, plays your Spotify playlists, shows **word-synced lyrics**, and runs on **Android, iPhone, Windows, macOS, Linux, Android TV and Wear OS** from a single Kotlin Multiplatform codebase.
 
 <br/>
 
@@ -17,7 +19,7 @@
 
 <br/>
 
-[**Download**](#download) · [**iPhone**](#install-on-iphone-with-sidestore) · [**Features**](#features) · [**Disclaimer**](#disclaimer)
+[**Screenshots**](#screenshots) · [**Features**](#features) · [**Download**](#download) · [**iPhone**](#install-on-iphone-with-sidestore) · [**FAQ**](#faq) · [**Disclaimer**](#disclaimer)
 
 <br/>
 
@@ -31,7 +33,26 @@
 
 <div align="center">
 
-<img src="Banner.png" alt="Laya banner" width="100%" />
+<img src="Banner.png" alt="Laya — free open-source lossless music streaming and download app" width="100%" />
+
+<h1><a id="screenshots"></a>Screenshots</h1>
+
+<table>
+  <tr>
+    <td width="33%" align="center" valign="top">
+      <img src="assets/screenshots/now-playing-lyrics.jpg" alt="Laya now playing screen with Apple-style word-synced lyrics and Hi-Res Lossless playback badge" width="260" />
+      <br/><sub><b>Now playing</b> — word-synced lyrics, Hi-Res Lossless badge, artwork-driven theming</sub>
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="assets/screenshots/artist-page.jpg" alt="Laya artist page showing animated artist canvas, top songs and recent singles" width="260" />
+      <br/><sub><b>Artist page</b> — animated canvas, top songs, latest releases</sub>
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="assets/screenshots/explore-moods.jpg" alt="Laya explore screen with mood and moment playlists and frosted glass mini player" width="260" />
+      <br/><sub><b>Explore</b> — moods &amp; moments, frosted-glass mini player</sub>
+    </td>
+  </tr>
+</table>
 
 <h1><a id="features"></a>Features</h1>
 
@@ -137,6 +158,41 @@ The iOS build is an unsigned `.ipa`, so it has to be signed with your own Apple 
 
 <div align="center">
 
+<h1><a id="faq"></a>Frequently Asked Questions</h1>
+
+</div>
+
+**What is Laya?**
+Laya is a free, open-source, ad-free music player and YouTube Music client that streams and downloads lossless audio. It is built with Kotlin Multiplatform and Compose Multiplatform, and ships for Android, iPhone, Windows, macOS, Linux, Android TV and Wear OS from one codebase.
+
+**Does Laya support lossless and Hi-Res audio?**
+Yes. Laya plays Hi-Res lossless FLAC and ALAC from built-in Tidal and Qobuz support (a one-time verification on the Sources screen) and from pluggable module sources, with YouTube Music as the fallback stream. The now-playing screen reports the live codec, bit depth and sample rate.
+
+**Can I download music for offline listening?**
+Yes. Tracks download with embedded metadata and artwork for offline playback, alongside a local music library that indexes files already on the device.
+
+**Is Laya free, and does it have ads?**
+Laya is free software under the GPLv3, with no ads, no trackers and no subscription. Source code and releases are on GitHub.
+
+**How do I install Laya on an iPhone?**
+The iOS build is an unsigned `.ipa` that you sign with your own Apple ID using SideStore. See [Install on iPhone with SideStore](#install-on-iphone-with-sidestore).
+
+**Do I need a Google, Spotify or Tidal account?**
+No account is required to search and play. Signing in with Google personalizes recommendations, Spotify brings over your playlists and Liked Songs, and Tidal or Qobuz verification unlocks their lossless streams.
+
+**Does Laya show synced lyrics?**
+Yes — word and syllable-level synced lyrics with an Apple Music–style animation, pulled from LRCLIB, Musixmatch, Genius, lrc.red and several other providers, with translation and romanization.
+
+**Which devices does Laya run on?**
+Android phones and tablets, iPhone and iPad (iPhone compatibility mode), Windows, macOS (Apple Silicon and Intel), Linux, Android TV and Wear OS watches.
+
+**Is Laya affiliated with YouTube Music or Spotify?**
+No. Laya is an independent third-party client and is not affiliated with, endorsed by or connected to Google, YouTube, Spotify, Tidal, Qobuz or Deezer.
+
+---
+
+<div align="center">
+
 <h1><a id="disclaimer"></a>Disclaimer & Legal Notice</h1>
 
 Laya is an independent, community-driven third-party audio player and client. It is **not** associated with Google LLC, YouTube Music, Deezer, Telegram, or any of their parent companies.
@@ -158,4 +214,14 @@ This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. 
 
 Laya is a modified version of [BitChord](https://github.com/kushagrasinghx/BitChord), also licensed under GPLv3.
 
+</div>
+
+---
+
+<div align="center">
+<sub>
+
+**Topics:** lossless music player · hi-res audio · FLAC streaming · ALAC · music downloader · offline music · YouTube Music client · Spotify playlist player · Tidal · Qobuz · synced lyrics · karaoke vocal remover · open source music app · ad-free music streaming · Android · iOS · Windows · macOS · Linux · Android TV · Wear OS · Kotlin Multiplatform · Compose Multiplatform
+
+</sub>
 </div>
