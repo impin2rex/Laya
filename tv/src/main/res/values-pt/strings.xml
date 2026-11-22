@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Temporizador de sono</string>
     <string name="tv_sleep_timer_message">Parar a música depois de</string>
     <string name="tv_sound">Som</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Verificação de som</string>
     <string name="tv_sources_on">%1$d ativas</string>
     <string name="tv_spatial_audio">Áudio espacial</string>
     <string name="tv_start_listening">Começar a ouvir</string>

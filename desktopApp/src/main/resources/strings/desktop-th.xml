@@ -4,10 +4,10 @@
     <string name="d_some_tracks_not_from_youtube_music">เพลงบางเพลงเหล่านี้ไม่ได้มาจาก YouTube Music จึงเพิ่มได้เฉพาะในเพลย์ลิสต์ที่เก็บไว้ที่นี่</string>
     <string name="d_account">บัญชี</string>
     <string name="d_autoplay_wont_suggest_a_song_already_played_or_suggested">AutoPlay จะไม่แนะนำเพลงที่เล่นหรือแนะนำไปแล้วในเซสชันนี้</string>
-    <string name="d_blur_unfocused_lyrics">Blur unfocused lyrics</string>
+    <string name="d_blur_unfocused_lyrics">เบลอเนื้อเพลงที่ไม่ได้โฟกัส</string>
     <string name="d_dont_repeat_songs_in_current_session">ไม่เล่นเพลงซ้ำในเซสชันปัจจุบัน</string>
-    <string name="d_keeps_the_spotlight_on_the_current_line">Keeps the spotlight on the current line</string>
-    <string name="d_output_precision">Output precision</string>
+    <string name="d_keeps_the_spotlight_on_the_current_line">ให้สปอตไลต์อยู่ที่บรรทัดปัจจุบัน</string>
+    <string name="d_output_precision">ความแม่นยำเอาต์พุต</string>
     <string name="d_recents">Recents</string>
     <string name="d_sources_are_tried_in_this_order">แหล่งข้อมูลจะถูกลองตามลำดับนี้ ลากเพื่อจัดลำดับใหม่ แหล่งข้อมูลแรกที่มีเนื้อเพลงจะถูกใช้ เว้นแต่ตั้งค่าให้เนื้อเพลงแบบพยางค์มาก่อน</string>
     <string name="d_what_follows_the_verb_on_the_profile">ข้อความที่ตามหลังคำกริยาบนโปรไฟล์ เว้นว่างไว้เพื่อใช้ %1$s</string>

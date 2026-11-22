@@ -4,9 +4,9 @@
     <string name="analysis_too_long">छोड़ा गया: बहुत लंबा</string>
     <string name="analysis_in_progress">विश्लेषण हो रहा है…</string>
     <string name="analysis_refining">विश्लेषित, सुधार हो रहा है…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">ऑडियो आउटपुट</string>
+    <string name="audio_output_playing">यहाँ चल रहा है</string>
+    <string name="audio_pipeline">ऑडियो पाइपलाइन</string>
     <string name="automix_analysis_status">ऑटोमिक्स · यह गाना: %1$s · अगला: %2$s</string>
     <string name="automix_not_supported_video">वीडियो गानों पर Automix समर्थित नहीं है</string>
     <string name="automix_stopped_in_party">Automix: साथ में सुनें के दौरान बंद</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Chromecast और Google Cast स्पीकर</string>
     <string name="channel_count">%1$d ch</string>
     <string name="choose_lyrics_provider">लिरिक्स प्रदाता चुनें</string>
     <string name="clear">साफ़ करें</string>
     <string name="close_lyrics">लिरिक्स बंद करें</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">डेटा सेवर</string>
+    <string name="decrease_lyrics_offset">लिरिक्स ऑफ़सेट घटाएँ</string>
     <string name="downgraded_from">↓ %1$s से</string>
     <string name="drag_to_reorder">क्रम बदलने के लिए खींचें</string>
     <string name="failed">विफल</string>
     <string name="hi_res_lossless">हाई-रेस लॉसलेस</string>
     <string name="high_quality">हाई क्वालिटी</string>
     <string name="high_quality_upgrading">हाई क्वालिटी, अपग्रेड हो रहा है</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">लिरिक्स ऑफ़सेट बढ़ाएँ</string>
     <string name="instrumental">इंस्ट्रूमेंटल</string>
     <string name="like">पसंद</string>
     <string name="listen_together">साथ में सुनें</string>
@@ -80,8 +80,8 @@
         <item>शब्द लगभग मिल गए</item>
     </string-array>
     <string name="lyrics_not_available">लिरिक्स उपलब्ध नहीं हैं</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">लिरिक्स ऑफ़सेट</string>
+    <string name="lyrics_offset_description">पॉज़िटिव मान लिरिक्स को देर से दिखाते हैं</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">मौजूदा प्रदाता</string>
     <string name="lyrics_provider_fetching">लिरिक्स लाए जा रहे हैं…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">कार्ड भर चुका है</string>
     <string name="lyrics_translated_to">%1$s में अनुवादित</string>
     <string name="lyrics_translation_unavailable">अनुवाद अभी उपलब्ध नहीं है</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">मध्यम क्वालिटी</string>
     <string name="mono">मोनो</string>
     <string name="more">और</string>
     <string name="next_from">अगला यहाँ से: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">रोकें</string>
     <string name="play">चलाएं</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">%1$s से चल रहा है</string>
     <string name="playing_radio">%1$s रेडियो चल रहा है</string>
     <string name="queue">कतार</string>
     <string name="remove_from_liked">पसंदीदा संगीत से हटाएं</string>
@@ -132,11 +132,11 @@
     <string name="waiting">प्रतीक्षा में</string>
     <string name="widget_next">अगला</string>
     <string name="widget_previous">पिछला</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">तार वाले हेडफ़ोन</string>
+    <string name="usb_audio">USB ऑडियो</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">यह फ़ोन</string>
     <string name="albums">एल्बम</string>
     <string name="artists">कलाकार</string>
     <string name="card_plays_format">%1$s बार सुना गया</string>

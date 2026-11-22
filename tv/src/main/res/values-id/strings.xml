@@ -162,7 +162,7 @@
     <string name="tv_refresh_auto">Otomatis (Disarankan)</string>
     <string name="tv_refresh_auto_desc">Mengizinkan TV dan sistem Android mengatur refresh rate layar secara dinamis.</string>
     <string name="tv_refresh_now">Sekarang %1$d × %2$d pada %3$s</string>
-    <string name="tv_refresh_rate">Refresh Rate</string>
+    <string name="tv_refresh_rate">Kecepatan Refresh</string>
     <string name="tv_reload_library">Muat Ulang Perpustakaan</string>
     <string name="tv_remove_account_from_tv">Hapus akun ini dari TV</string>
     <string name="tv_repeat_all">Ulangi Semua</string>
@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Timer Tidur</string>
     <string name="tv_sleep_timer_message">Hentikan musik setelah</string>
     <string name="tv_sound">Suara</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Pemeriksaan suara</string>
     <string name="tv_sources_on">%1$d Aktif</string>
     <string name="tv_spatial_audio">Audio Spasial</string>
     <string name="tv_start_listening">Mulai Mendengarkan</string>

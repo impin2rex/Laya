@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Sleep-Timer</string>
     <string name="tv_sleep_timer_message">Musikwiedergabe beenden nach</string>
     <string name="tv_sound">Sound</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Soundcheck</string>
     <string name="tv_sources_on">%1$d an</string>
     <string name="tv_spatial_audio">Räumliches Audio</string>
     <string name="tv_start_listening">Jetzt hören</string>

@@ -181,7 +181,7 @@
     <string name="tv_reverb_off">Riverbero disattivato</string>
     <string name="tv_reverb_on">Riverbero attivato</string>
     <string name="tv_reverb_plate">Piastra</string>
-    <string name="tv_reverb_predelay">Pre-delay</string>
+    <string name="tv_reverb_predelay">Pre-ritardo</string>
     <string name="tv_reverb_room">Stanza</string>
     <string name="tv_reverb_width">Ampiezza</string>
     <string name="tv_romanize_lyrics">Romanizza testo</string>
@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Timer di spegnimento</string>
     <string name="tv_sleep_timer_message">Interrompi la musica dopo</string>
     <string name="tv_sound">Audio</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Controllo del suono</string>
     <string name="tv_sources_on">%1$d attive</string>
     <string name="tv_spatial_audio">Audio spaziale</string>
     <string name="tv_start_listening">Inizia ad ascoltare</string>

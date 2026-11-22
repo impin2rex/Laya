@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">ตัวจับเวลาปิดเพลง</string>
     <string name="tv_sleep_timer_message">หยุดเล่นเพลงหลังจาก</string>
     <string name="tv_sound">เสียง</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">การตรวจสอบเสียง</string>
     <string name="tv_sources_on">เปิด %1$d</string>
     <string name="tv_spatial_audio">เสียงรอบทิศทาง</string>
     <string name="tv_start_listening">เริ่มฟัง</string>

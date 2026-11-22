@@ -4,9 +4,9 @@
     <string name="analysis_too_long">atlandı: çok uzun</string>
     <string name="analysis_in_progress">analiz ediliyor…</string>
     <string name="analysis_refining">analiz edildi, iyileştiriliyor…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">Ses çıkışı</string>
+    <string name="audio_output_playing">Burada çalıyor</string>
+    <string name="audio_pipeline">Ses işlem hattı</string>
     <string name="automix_analysis_status">Automix · bu şarkı: %1$s · sonraki: %2$s</string>
     <string name="automix_not_supported_video">Automix video şarkılarında desteklenmiyor</string>
     <string name="automix_stopped_in_party">Automix: Birlikte dinle sırasında durduruldu</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Chromecast ve Google Cast hoparlörleri</string>
     <string name="channel_count">%1$d kanal</string>
     <string name="choose_lyrics_provider">Söz sağlayıcısını seç</string>
     <string name="clear">Temizle</string>
     <string name="close_lyrics">Sözleri kapat</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">Veri Tasarrufu</string>
+    <string name="decrease_lyrics_offset">Şarkı sözü ofsetini azalt</string>
     <string name="downgraded_from">↓ %1$s kaynağından</string>
     <string name="drag_to_reorder">Yeniden sıralamak için sürükleyin</string>
     <string name="failed">Başarısız</string>
     <string name="hi_res_lossless">Hi-Res Kayıpsız</string>
     <string name="high_quality">Yüksek kalite</string>
     <string name="high_quality_upgrading">Yüksek kalite, yükseltiliyor</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">Şarkı sözü ofsetini artır</string>
     <string name="instrumental">Enstrümantal</string>
     <string name="like">Beğen</string>
     <string name="listen_together">Birlikte dinle</string>
@@ -80,8 +80,8 @@
         <item>Kelimeler neredeyse bulundu</item>
     </string-array>
     <string name="lyrics_not_available">Sözler mevcut değil</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">Şarkı sözü ofseti</string>
+    <string name="lyrics_offset_description">Pozitif değerler şarkı sözlerini daha geç gösterir</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">Geçerli sağlayıcı</string>
     <string name="lyrics_provider_fetching">Sözler getiriliyor…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">Kart dolu</string>
     <string name="lyrics_translated_to">%1$s diline çevrildi</string>
     <string name="lyrics_translation_unavailable">Çeviri şu anda kullanılamıyor</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">Orta kalite</string>
     <string name="mono">Mono</string>
     <string name="more">Daha fazla</string>
     <string name="next_from">Sıradaki: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">Duraklat</string>
     <string name="play">Çal</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">%1$s kaynağından çalıyor</string>
     <string name="playing_radio">%1$s Radyosu çalıyor</string>
     <string name="queue">Sıra</string>
     <string name="remove_from_liked">Beğenilen Müzikten kaldır</string>
@@ -132,11 +132,11 @@
     <string name="waiting">bekliyor</string>
     <string name="widget_next">Sonraki</string>
     <string name="widget_previous">Önceki</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">Kablolu kulaklık</string>
+    <string name="usb_audio">USB ses</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">Bu telefon</string>
     <string name="albums">Albümler</string>
     <string name="artists">Sanatçılar</string>
     <string name="card_plays_format">%1$s oynatma</string>

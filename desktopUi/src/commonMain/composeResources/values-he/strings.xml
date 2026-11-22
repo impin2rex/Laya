@@ -4,9 +4,9 @@
     <string name="analysis_too_long">דולג: ארוך מדי</string>
     <string name="analysis_in_progress">מנתח…</string>
     <string name="analysis_refining">נותח, משפר…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">פלט שמע</string>
+    <string name="audio_output_playing">מתנגן כאן</string>
+    <string name="audio_pipeline">צינור שמע</string>
     <string name="automix_analysis_status">Automix · השיר הזה: %1$s · הבא: %2$s</string>
     <string name="automix_not_supported_video">Automix אינו נתמך בקטעי וידאו</string>
     <string name="automix_stopped_in_party">Automix: הופסק בהאזנה ביחד</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">רמקולי Chromecast ו-Google Cast</string>
     <string name="channel_count">%1$d ערוצים</string>
     <string name="choose_lyrics_provider">בחירת ספק מילים</string>
     <string name="clear">ניקוי</string>
     <string name="close_lyrics">סגור מילים</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">חיסכון בנתונים</string>
+    <string name="decrease_lyrics_offset">הפחתת היסט המילים</string>
     <string name="downgraded_from">↓ מ-%1$s</string>
     <string name="drag_to_reorder">גרור כדי לשנות סדר</string>
     <string name="failed">נכשל</string>
     <string name="hi_res_lossless">ללא אובדן נתונים ברזולוציה גבוהה</string>
     <string name="high_quality">איכות גבוהה</string>
     <string name="high_quality_upgrading">איכות גבוהה, משדרג</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">הגדלת היסט המילים</string>
     <string name="instrumental">אינסטרומנטלי</string>
     <string name="like">לייק</string>
     <string name="listen_together">להאזין ביחד</string>
@@ -80,8 +80,8 @@
         <item>כמעט מצאתי את המילים</item>
     </string-array>
     <string name="lyrics_not_available">מילים לא זמינות</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">היסט מילים</string>
+    <string name="lyrics_offset_description">ערכים חיוביים מציגים את המילים מאוחר יותר</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">הספק הנוכחי</string>
     <string name="lyrics_provider_fetching">מביא מילים…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">הכרטיס מלא</string>
     <string name="lyrics_translated_to">תורגם ל%1$s</string>
     <string name="lyrics_translation_unavailable">התרגום אינו זמין כרגע</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">איכות בינונית</string>
     <string name="mono">מונו</string>
     <string name="more">עוד</string>
     <string name="next_from">הבא מתוך: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">השהה</string>
     <string name="play">הפעלה</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">מתנגן מ-%1$s</string>
     <string name="playing_radio">מנגן רדיו %1$s</string>
     <string name="queue">תור ההשמעה</string>
     <string name="remove_from_liked">הסר ממוזיקה שאהבתי</string>
@@ -132,11 +132,11 @@
     <string name="waiting">ממתין</string>
     <string name="widget_next">הבא</string>
     <string name="widget_previous">הקודם</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">אוזניות חוטיות</string>
+    <string name="usb_audio">שמע USB</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">הטלפון הזה</string>
     <string name="albums">אלבומים</string>
     <string name="artists">אמנים</string>
     <string name="card_plays_format">%1$s השמעות</string>

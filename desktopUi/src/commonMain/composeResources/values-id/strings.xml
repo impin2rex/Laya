@@ -4,9 +4,9 @@
     <string name="analysis_too_long">dilewati: terlalu panjang</string>
     <string name="analysis_in_progress">menganalisis…</string>
     <string name="analysis_refining">dianalisis, menyempurnakan…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">Keluaran audio</string>
+    <string name="audio_output_playing">Diputar di sini</string>
+    <string name="audio_pipeline">Jalur audio</string>
     <string name="automix_analysis_status">Automix · lagu ini: %1$s · berikutnya: %2$s</string>
     <string name="automix_not_supported_video">Automix tidak didukung pada lagu video</string>
     <string name="automix_stopped_in_party">Automix: dihentikan saat Dengar bersama</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Speaker Chromecast dan Google Cast</string>
     <string name="channel_count">%1$d kanal</string>
     <string name="choose_lyrics_provider">Pilih penyedia lirik</string>
     <string name="clear">Hapus</string>
     <string name="close_lyrics">Tutup lirik</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">Penghemat data</string>
+    <string name="decrease_lyrics_offset">Kurangi offset lirik</string>
     <string name="downgraded_from">↓ dari %1$s</string>
     <string name="drag_to_reorder">Seret untuk mengatur ulang urutan</string>
     <string name="failed">Gagal</string>
     <string name="hi_res_lossless">Hi-Res Lossless</string>
     <string name="high_quality">Kualitas tinggi</string>
     <string name="high_quality_upgrading">Kualitas tinggi, meningkatkan</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">Tambah offset lirik</string>
     <string name="instrumental">Instrumental</string>
     <string name="like">Suka</string>
     <string name="listen_together">Dengar bersama</string>
@@ -80,8 +80,8 @@
         <item>Hampir menemukan kata-katanya</item>
     </string-array>
     <string name="lyrics_not_available">Lirik tidak tersedia</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">Offset lirik</string>
+    <string name="lyrics_offset_description">Nilai positif menampilkan lirik lebih lambat</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">Penyedia saat ini</string>
     <string name="lyrics_provider_fetching">Mengambil lirik…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">Kartu sudah penuh</string>
     <string name="lyrics_translated_to">Diterjemahkan ke %1$s</string>
     <string name="lyrics_translation_unavailable">Terjemahan tidak tersedia saat ini</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">Kualitas sedang</string>
     <string name="mono">Mono</string>
     <string name="more">Lainnya</string>
     <string name="next_from">Berikutnya dari: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">Jeda</string>
     <string name="play">Putar</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">Diputar dari %1$s</string>
     <string name="playing_radio">Memutar Radio %1$s</string>
     <string name="queue">Antrean</string>
     <string name="remove_from_liked">Hapus dari Musik yang Disukai</string>
@@ -132,11 +132,11 @@
     <string name="waiting">menunggu</string>
     <string name="widget_next">Berikutnya</string>
     <string name="widget_previous">Sebelumnya</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">Headphone berkabel</string>
+    <string name="usb_audio">Audio USB</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">Ponsel ini</string>
     <string name="albums">Album</string>
     <string name="artists">Artis</string>
     <string name="card_plays_format">%1$s diputar</string>

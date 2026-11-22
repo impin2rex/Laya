@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Uyku Zamanlayıcısı</string>
     <string name="tv_sleep_timer_message">Müziği şu süre sonra durdur</string>
     <string name="tv_sound">Ses</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Ses Kontrolü</string>
     <string name="tv_sources_on">%1$d Açık</string>
     <string name="tv_spatial_audio">Uzamsal Ses</string>
     <string name="tv_start_listening">Dinlemeye Başla</string>

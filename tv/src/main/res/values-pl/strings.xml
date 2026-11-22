@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Wyłącznik czasowy</string>
     <string name="tv_sleep_timer_message">Zatrzymaj muzykę po</string>
     <string name="tv_sound">Dźwięk</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Kontrola dźwięku</string>
     <string name="tv_sources_on">Włączone: %1$d</string>
     <string name="tv_spatial_audio">Dźwięk przestrzenny</string>
     <string name="tv_start_listening">Zacznij słuchać</string>

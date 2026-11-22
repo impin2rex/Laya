@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Minuteur de veille</string>
     <string name="tv_sleep_timer_message">Arrêter la musique après</string>
     <string name="tv_sound">Son</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Vérification du son</string>
     <string name="tv_sources_on">%1$d actives</string>
     <string name="tv_spatial_audio">Audio spatial</string>
     <string name="tv_start_listening">Commencer à écouter</string>

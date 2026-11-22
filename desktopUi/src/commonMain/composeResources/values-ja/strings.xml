@@ -4,9 +4,9 @@
     <string name="analysis_too_long">スキップ: 長すぎます</string>
     <string name="analysis_in_progress">分析中…</string>
     <string name="analysis_refining">分析済み、調整中…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">オーディオ出力</string>
+    <string name="audio_output_playing">ここで再生中</string>
+    <string name="audio_pipeline">オーディオパイプライン</string>
     <string name="automix_analysis_status">オートミックス · この曲：%1$s · 次：%2$s</string>
     <string name="automix_not_supported_video">動画の曲では Automix はサポートされていません</string>
     <string name="automix_stopped_in_party">Automix: 一緒に聴く中は停止</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Chromecast と Google Cast スピーカー</string>
     <string name="channel_count">%1$dch</string>
     <string name="choose_lyrics_provider">歌詞の提供元を選択</string>
     <string name="clear">消去</string>
     <string name="close_lyrics">歌詞を閉じる</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">データセーバー</string>
+    <string name="decrease_lyrics_offset">歌詞オフセットを減らす</string>
     <string name="downgraded_from">↓ %1$sから</string>
     <string name="drag_to_reorder">ドラッグして並べ替え</string>
     <string name="failed">失敗しました</string>
     <string name="hi_res_lossless">ハイレゾロスレス</string>
     <string name="high_quality">高音質</string>
     <string name="high_quality_upgrading">高音質、アップグレード中</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">歌詞オフセットを増やす</string>
     <string name="instrumental">インストゥルメンタル</string>
     <string name="like">高評価</string>
     <string name="listen_together">一緒に聴く</string>
@@ -80,8 +80,8 @@
         <item>もう少しで言葉が見つかりそう</item>
     </string-array>
     <string name="lyrics_not_available">歌詞は利用できません</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">歌詞オフセット</string>
+    <string name="lyrics_offset_description">正の値にすると歌詞が遅れて表示されます</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">現在の提供元</string>
     <string name="lyrics_provider_fetching">歌詞を取得中…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">カードがいっぱいです</string>
     <string name="lyrics_translated_to">%1$sに翻訳済み</string>
     <string name="lyrics_translation_unavailable">現在、翻訳を利用できません</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">中音質</string>
     <string name="mono">モノラル</string>
     <string name="more">その他</string>
     <string name="next_from">次の再生元: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">一時停止</string>
     <string name="play">再生</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">%1$s から再生中</string>
     <string name="playing_radio">%1$s ラジオを再生中</string>
     <string name="queue">再生キュー</string>
     <string name="remove_from_liked">高く評価した音楽から削除</string>
@@ -132,11 +132,11 @@
     <string name="waiting">待機中</string>
     <string name="widget_next">次へ</string>
     <string name="widget_previous">前へ</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">有線ヘッドフォン</string>
+    <string name="usb_audio">USB オーディオ</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">このスマートフォン</string>
     <string name="albums">アルバム</string>
     <string name="artists">アーティスト</string>
     <string name="card_plays_format">%1$s 回再生</string>

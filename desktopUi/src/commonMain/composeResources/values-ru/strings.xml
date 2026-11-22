@@ -4,9 +4,9 @@
     <string name="analysis_too_long">пропущено: слишком длинный</string>
     <string name="analysis_in_progress">анализируется…</string>
     <string name="analysis_refining">анализ завершён, уточняется…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">Аудиовыход</string>
+    <string name="audio_output_playing">Воспроизводится здесь</string>
+    <string name="audio_pipeline">Аудиоконвейер</string>
     <string name="automix_analysis_status">Автомикс · эта песня: %1$s · следующая: %2$s</string>
     <string name="automix_not_supported_video">Automix не поддерживается для видео-треков</string>
     <string name="automix_stopped_in_party">Automix: остановлен в режиме «Слушать вместе»</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Колонки Chromecast и Google Cast</string>
     <string name="channel_count">%1$d кан.</string>
     <string name="choose_lyrics_provider">Выбрать источник текстов</string>
     <string name="clear">Очистить</string>
     <string name="close_lyrics">Закрыть текст песни</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">Экономия трафика</string>
+    <string name="decrease_lyrics_offset">Уменьшить смещение текста</string>
     <string name="downgraded_from">↓ с %1$s</string>
     <string name="drag_to_reorder">Перетащите, чтобы изменить порядок</string>
     <string name="failed">Ошибка</string>
     <string name="hi_res_lossless">Hi-Res Lossless</string>
     <string name="high_quality">Высокое качество</string>
     <string name="high_quality_upgrading">Высокое качество, улучшение</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">Увеличить смещение текста</string>
     <string name="instrumental">Инструментал</string>
     <string name="like">Нравится</string>
     <string name="listen_together">Слушать вместе</string>
@@ -80,8 +80,8 @@
         <item>Слова почти найдены</item>
     </string-array>
     <string name="lyrics_not_available">Текст недоступен</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">Смещение текста</string>
+    <string name="lyrics_offset_description">Положительные значения показывают текст позже</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">Текущий источник</string>
     <string name="lyrics_provider_fetching">Загрузка текста…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">Карточка заполнена</string>
     <string name="lyrics_translated_to">Переведено на %1$s</string>
     <string name="lyrics_translation_unavailable">Перевод сейчас недоступен</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">Среднее качество</string>
     <string name="mono">Моно</string>
     <string name="more">Ещё</string>
     <string name="next_from">Далее из: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">Пауза</string>
     <string name="play">Играть</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">Воспроизведение из «%1$s»</string>
     <string name="playing_radio">Воспроизведение радио %1$s</string>
     <string name="queue">Очередь</string>
     <string name="remove_from_liked">Удалить из понравившейся музыки</string>
@@ -132,11 +132,11 @@
     <string name="waiting">ожидание</string>
     <string name="widget_next">Далее</string>
     <string name="widget_previous">Назад</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">Проводные наушники</string>
+    <string name="usb_audio">USB-аудио</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">Этот телефон</string>
     <string name="albums">Альбомы</string>
     <string name="artists">Исполнители</string>
     <string name="card_plays_format">%1$s прослушиваний</string>

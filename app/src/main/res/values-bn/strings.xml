@@ -1008,7 +1008,7 @@
     <string name="pipeline_loudness">লাউডনেস</string>
     <string name="pipeline_loudness_gain">গেইন</string>
     <string name="pipeline_loudness_measured">মাপা হয়েছে</string>
-    <string name="pipeline_bit_exact">Bit-exact</string>
+    <string name="pipeline_bit_exact">বিট-এক্স্যাক্ট</string>
     <string name="loudness_measuring">মাপা হচ্ছে…</string>
     <string name="loudness_gain_db">%1$s dB</string>
     <string name="loudness_lufs">%1$s LUFS</string>

@@ -4,9 +4,9 @@
     <string name="analysis_too_long">pominięto: za długi</string>
     <string name="analysis_in_progress">analizowanie…</string>
     <string name="analysis_refining">przeanalizowano, ulepszanie…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">Wyjście audio</string>
+    <string name="audio_output_playing">Odtwarzane tutaj</string>
+    <string name="audio_pipeline">Tor audio</string>
     <string name="automix_analysis_status">Automix · ten utwór: %1$s · następny: %2$s</string>
     <string name="automix_not_supported_video">Automix nie jest obsługiwany dla utworów wideo</string>
     <string name="automix_stopped_in_party">Automix: zatrzymany podczas wspólnego słuchania</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Głośniki Chromecast i Google Cast</string>
     <string name="channel_count">%1$d kan</string>
     <string name="choose_lyrics_provider">Wybierz źródło tekstów</string>
     <string name="clear">Wyczyść</string>
     <string name="close_lyrics">Zamknij teksty</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">Oszczędzanie danych</string>
+    <string name="decrease_lyrics_offset">Zmniejsz przesunięcie tekstu</string>
     <string name="downgraded_from">↓ z %1$s</string>
     <string name="drag_to_reorder">Przeciągnij, aby zmienić kolejność</string>
     <string name="failed">Błąd</string>
     <string name="hi_res_lossless">Hi-Res Lossless</string>
     <string name="high_quality">Wysoka jakość</string>
     <string name="high_quality_upgrading">Wysoka jakość, uaktualnianie</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">Zwiększ przesunięcie tekstu</string>
     <string name="instrumental">Instrumentalny</string>
     <string name="like">Lubię</string>
     <string name="listen_together">Słuchajcie razem</string>
@@ -80,8 +80,8 @@
         <item>Prawie znaleziono słowa</item>
     </string-array>
     <string name="lyrics_not_available">Tekst niedostępny</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">Przesunięcie tekstu</string>
+    <string name="lyrics_offset_description">Wartości dodatnie pokazują tekst później</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">Aktualne źródło</string>
     <string name="lyrics_provider_fetching">Pobieranie tekstu…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">Karta jest pełna</string>
     <string name="lyrics_translated_to">Przetłumaczono na %1$s</string>
     <string name="lyrics_translation_unavailable">Tłumaczenie jest teraz niedostępne</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">Średnia jakość</string>
     <string name="mono">Mono</string>
     <string name="more">Więcej</string>
     <string name="next_from">Następne z: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">Wstrzymaj</string>
     <string name="play">Odtwórz</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">Odtwarzanie z: %1$s</string>
     <string name="playing_radio">Odtwarzanie radia %1$s</string>
     <string name="queue">Kolejka</string>
     <string name="remove_from_liked">Usuń z Polubionych Utworów</string>
@@ -132,11 +132,11 @@
     <string name="waiting">oczekiwanie</string>
     <string name="widget_next">Dalej</string>
     <string name="widget_previous">Poprzedni</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">Słuchawki przewodowe</string>
+    <string name="usb_audio">Dźwięk USB</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">Ten telefon</string>
     <string name="albums">Albumy</string>
     <string name="artists">Artyści</string>
     <string name="card_plays_format">%1$s odtworzeń</string>
@@ -218,7 +218,7 @@
     <string name="reverb_preset_custom">Własne</string>
     <string name="reverb_decay">Wybrzmiewanie</string>
     <string name="reverb_decay_help">Jak długo ogon pogłosu cichnie o 60 dB: jak duże wydaje się pomieszczenie.</string>
-    <string name="reverb_pre_delay">Pre-delay</string>
+    <string name="reverb_pre_delay">Opóźnienie wstępne</string>
     <string name="reverb_pre_delay_help">Cisza przed początkiem pogłosu. Dłuższa przerwa zachowuje czystość dźwięku bezpośredniego i odsuwa ściany.</string>
     <string name="reverb_damping">Tłumienie</string>
     <string name="reverb_damping_help">Od kiedy ogon traci wysokie tony. Niżej brzmi ciemniej, jak miękkie powierzchnie pochłaniające soprany.</string>

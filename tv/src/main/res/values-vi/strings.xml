@@ -181,7 +181,7 @@
     <string name="tv_reverb_off">Tắt Reverb</string>
     <string name="tv_reverb_on">Bật Reverb</string>
     <string name="tv_reverb_plate">Plate</string>
-    <string name="tv_reverb_predelay">Pre-delay</string>
+    <string name="tv_reverb_predelay">Độ trễ trước</string>
     <string name="tv_reverb_room">Phòng</string>
     <string name="tv_reverb_width">Độ rộng</string>
     <string name="tv_romanize_lyrics">La-tinh hóa lời bài hát</string>
@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Hẹn giờ tắt</string>
     <string name="tv_sleep_timer_message">Dừng phát nhạc sau</string>
     <string name="tv_sound">Âm thanh</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Kiểm tra âm thanh</string>
     <string name="tv_sources_on">%1$d bật</string>
     <string name="tv_spatial_audio">Âm thanh không gian</string>
     <string name="tv_start_listening">Bắt đầu nghe</string>

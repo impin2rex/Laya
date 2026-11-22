@@ -181,7 +181,7 @@
     <string name="tv_reverb_off">Reverb desactivada</string>
     <string name="tv_reverb_on">Reverb activada</string>
     <string name="tv_reverb_plate">Placa</string>
-    <string name="tv_reverb_predelay">Pre-delay</string>
+    <string name="tv_reverb_predelay">Pre-retardo</string>
     <string name="tv_reverb_room">Sala</string>
     <string name="tv_reverb_width">Amplitud</string>
     <string name="tv_romanize_lyrics">Romanizar letra</string>
@@ -216,7 +216,7 @@
     <string name="tv_sleep_timer">Temporizador</string>
     <string name="tv_sleep_timer_message">Detener la música después de</string>
     <string name="tv_sound">Sonido</string>
-    <string name="tv_sound_check">Sound Check</string>
+    <string name="tv_sound_check">Comprobación de sonido</string>
     <string name="tv_sources_on">%1$d activas</string>
     <string name="tv_spatial_audio">Audio espacial</string>
     <string name="tv_start_listening">Empezar a escuchar</string>

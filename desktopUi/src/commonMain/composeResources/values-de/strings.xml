@@ -4,9 +4,9 @@
     <string name="analysis_too_long">übersprungen: zu lang</string>
     <string name="analysis_in_progress">wird analysiert…</string>
     <string name="analysis_refining">analysiert, wird verfeinert…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">Audioausgabe</string>
+    <string name="audio_output_playing">Wird hier abgespielt</string>
+    <string name="audio_pipeline">Audio-Pipeline</string>
     <string name="automix_analysis_status">Automix · dieser Song: %1$s · nächster: %2$s</string>
     <string name="automix_not_supported_video">Automix wird bei Video-Titeln nicht unterstützt</string>
     <string name="automix_stopped_in_party">Automix: bei „Gemeinsam hören“ gestoppt</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Chromecast- und Google-Cast-Lautsprecher</string>
     <string name="channel_count">%1$d Kan.</string>
     <string name="choose_lyrics_provider">Songtext-Anbieter wählen</string>
     <string name="clear">Löschen</string>
     <string name="close_lyrics">Songtexte schließen</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">Datensparmodus</string>
+    <string name="decrease_lyrics_offset">Songtext-Versatz verringern</string>
     <string name="downgraded_from">↓ von %1$s</string>
     <string name="drag_to_reorder">Ziehen, um die Reihenfolge zu ändern</string>
     <string name="failed">Fehlgeschlagen</string>
     <string name="hi_res_lossless">Hi-Res Lossless</string>
     <string name="high_quality">Hohe Qualität</string>
     <string name="high_quality_upgrading">Hohe Qualität, wird hochgestuft</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">Songtext-Versatz erhöhen</string>
     <string name="instrumental">Instrumental</string>
     <string name="like">Gefällt mir</string>
     <string name="listen_together">Gemeinsam hören</string>
@@ -80,8 +80,8 @@
         <item>Fast gefunden</item>
     </string-array>
     <string name="lyrics_not_available">Songtexte nicht verfügbar</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">Songtext-Versatz</string>
+    <string name="lyrics_offset_description">Positive Werte zeigen den Songtext später an</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">Aktueller Anbieter</string>
     <string name="lyrics_provider_fetching">Songtext wird geladen…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">Karte ist voll</string>
     <string name="lyrics_translated_to">Ins %1$s übersetzt</string>
     <string name="lyrics_translation_unavailable">Die Übersetzung ist derzeit nicht verfügbar</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">Mittlere Qualität</string>
     <string name="mono">Mono</string>
     <string name="more">Mehr</string>
     <string name="next_from">Als Nächstes aus: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">Pause</string>
     <string name="play">Wiedergabe</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">Wiedergabe von %1$s</string>
     <string name="playing_radio">Spiele %1$s Radio</string>
     <string name="queue">Warteschlange</string>
     <string name="remove_from_liked">Aus „Gefällt mir“-Musik entfernen</string>
@@ -132,11 +132,11 @@
     <string name="waiting">wartet</string>
     <string name="widget_next">Weiter</string>
     <string name="widget_previous">Zurück</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">Kabelgebundene Kopfhörer</string>
+    <string name="usb_audio">USB-Audio</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">Dieses Smartphone</string>
     <string name="albums">Alben</string>
     <string name="artists">Künstler</string>
     <string name="card_plays_format">%1$s Wiedergaben</string>

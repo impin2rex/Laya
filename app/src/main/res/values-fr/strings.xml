@@ -897,7 +897,7 @@
     <string name="pipeline_loudness">Intensité</string>
     <string name="pipeline_loudness_gain">Gain</string>
     <string name="pipeline_loudness_measured">Mesurée</string>
-    <string name="pipeline_bit_exact">Bit-exact</string>
+    <string name="pipeline_bit_exact">Exact au bit près</string>
     <string name="loudness_measuring">Mesure…</string>
     <string name="loudness_gain_db">%1$s dB</string>
     <string name="loudness_lufs">%1$s LUFS</string>

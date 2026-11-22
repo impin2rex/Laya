@@ -4,9 +4,9 @@
     <string name="analysis_too_long">已略過：過長</string>
     <string name="analysis_in_progress">正在分析…</string>
     <string name="analysis_refining">已分析，正在最佳化…</string>
-    <string name="audio_output">Audio output</string>
-    <string name="audio_output_playing">Playing here</string>
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_output">音頻輸出</string>
+    <string name="audio_output_playing">正在這裡播放</string>
+    <string name="audio_pipeline">音頻處理鏈</string>
     <string name="automix_analysis_status">自動混音 · 當前歌曲：%1$s · 下一首：%2$s</string>
     <string name="automix_not_supported_video">影片類歌曲不支援 Automix</string>
     <string name="automix_stopped_in_party">Automix：一起聽期間已停止</string>
@@ -20,20 +20,20 @@
     <string name="cast">Cast</string>
     <string name="cast_casting">Casting</string>
     <string name="cast_connecting">Connecting…</string>
-    <string name="cast_row_subtitle">Chromecast and Google Cast speakers</string>
+    <string name="cast_row_subtitle">Chromecast 和 Google Cast 喇叭</string>
     <string name="channel_count">%1$d 聲道</string>
     <string name="choose_lyrics_provider">選擇歌詞來源</string>
     <string name="clear">清除</string>
     <string name="close_lyrics">關閉歌詞</string>
-    <string name="data_saver">Data-Saver</string>
-    <string name="decrease_lyrics_offset">Decrease lyrics offset</string>
+    <string name="data_saver">流量節省模式</string>
+    <string name="decrease_lyrics_offset">減少歌詞偏移</string>
     <string name="downgraded_from">↓ 來自 %1$s</string>
     <string name="drag_to_reorder">拖動以重新排序</string>
     <string name="failed">失敗</string>
     <string name="hi_res_lossless">Hi-Res 無損</string>
     <string name="high_quality">高品質</string>
     <string name="high_quality_upgrading">高品質，升級中</string>
-    <string name="increase_lyrics_offset">Increase lyrics offset</string>
+    <string name="increase_lyrics_offset">增加歌詞偏移</string>
     <string name="instrumental">純音樂</string>
     <string name="like">喜歡</string>
     <string name="listen_together">一起聽</string>
@@ -80,8 +80,8 @@
         <item>就快找到歌詞了</item>
     </string-array>
     <string name="lyrics_not_available">暫無歌詞</string>
-    <string name="lyrics_offset">Lyrics offset</string>
-    <string name="lyrics_offset_description">Positive values show lyrics later</string>
+    <string name="lyrics_offset">歌詞偏移</string>
+    <string name="lyrics_offset_description">正值會讓歌詞較晚顯示</string>
     <string name="lyrics_offset_reset">Reset</string>
     <string name="lyrics_provider_current">當前來源</string>
     <string name="lyrics_provider_fetching">正在獲取歌詞…</string>
@@ -94,7 +94,7 @@
     <string name="lyrics_share_pick_limit">卡片已滿</string>
     <string name="lyrics_translated_to">已翻譯為%1$s</string>
     <string name="lyrics_translation_unavailable">翻譯目前不可用</string>
-    <string name="medium_quality">Medium Quality</string>
+    <string name="medium_quality">中等音質</string>
     <string name="mono">單聲道</string>
     <string name="more">更多</string>
     <string name="next_from">接下來來自：%1$s</string>
@@ -106,7 +106,7 @@
     <string name="pause">暫停</string>
     <string name="play">播放</string>
     <string name="played_by">Played by %1$s</string>
-    <string name="playing_from">Playing from %1$s</string>
+    <string name="playing_from">正在播放：%1$s</string>
     <string name="playing_radio">正在播放 %1$s 電臺</string>
     <string name="queue">播放佇列</string>
     <string name="remove_from_liked">從喜歡的音樂中移除</string>
@@ -132,11 +132,11 @@
     <string name="waiting">等待中</string>
     <string name="widget_next">下一首</string>
     <string name="widget_previous">上一首</string>
-    <string name="wired_headphones">Wired headphones</string>
-    <string name="usb_audio">USB audio</string>
+    <string name="wired_headphones">有線耳機</string>
+    <string name="usb_audio">USB 音頻</string>
     <string name="hdmi_output">HDMI</string>
     <string name="personal_phone">%1$s’s Phone</string>
-    <string name="this_phone">This phone</string>
+    <string name="this_phone">這部手機</string>
     <string name="albums">專輯</string>
     <string name="artists">藝人</string>
     <string name="card_plays_format">%1$s 次播放</string>
