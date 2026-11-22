@@ -236,7 +236,8 @@ private fun WindowScope.TallMiniPlayer(playback: DesktopPlaybackState) {
                     )
                 },
         ) {
-            DesktopArtwork(song?.thumbnailUrl, Modifier.fillMaxSize().blur(28.dp), px = ART_PX)
+            // The cover slot, so the frost dissolves between songs on the cover's own reveal clock.
+            cover(song?.thumbnailUrl.artworkAt(ART_PX), Modifier.fillMaxSize().blur(28.dp))
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)))
         }
         Column(
@@ -294,7 +295,7 @@ private fun WindowScope.CompactMiniPlayer(playback: DesktopPlaybackState) {
     val cover = rememberMiniCover(song, ROW_ART_PX)
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)).background(Color(0xFF2A2A2D))) {
         // Glass from the cover itself, since the window has no system material of its own.
-        DesktopArtwork(song?.thumbnailUrl, Modifier.fillMaxSize().blur(40.dp), px = ROW_ART_PX)
+        cover(song?.thumbnailUrl.artworkAt(ROW_ART_PX), Modifier.fillMaxSize().blur(40.dp))
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.42f)))
         Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
             WindowDraggableArea {
