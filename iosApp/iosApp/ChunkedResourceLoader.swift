@@ -84,6 +84,8 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             self.invalidated = true
             self.tasks.values.forEach { $0.cancel() }
             self.tasks.removeAll()
+            self.remuxTask?.cancel()
+            self.remuxWaiters.removeAll()
             self.session.invalidateAndCancel()
             self.releaseStreaming()
         }
@@ -95,6 +97,8 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     ) -> Bool {
         let key = ObjectIdentifier(loadingRequest)
         cancelled.remove(key)
+
+        if isWebmOpus { remuxWaiters.append(loadingRequest); serveRemuxed(); return true }
 
         if let info = loadingRequest.contentInformationRequest {
             info.contentType = uti(for: mimeType)
@@ -127,6 +131,7 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     ) {
         let key = ObjectIdentifier(loadingRequest)
         cancelled.insert(key)
+        remuxWaiters.removeAll { $0 === loadingRequest }
         tasks.removeValue(forKey: key)?.cancel()
         if let s = serves.removeValue(forKey: key), let t = s.token { entry?.cancelWait(t) }
     }
@@ -223,6 +228,104 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         }
         tasks[key] = task
         task.resume()
+    }
+
+    // MARK: - WebM Opus (YouTube Premium, itag 774)
+
+    /// AVFoundation cannot read WebM, so the whole file is fetched, its Opus packets are rewritten into a CAF
+    /// (OpusRemux) and AVPlayer is served that. Playback starts once the file is down (a few MB, seconds
+    /// on a good connection); a WebM has no packet index to start before that, and CAF needs one up front.
+    private var isWebmOpus: Bool { mimeType.lowercased().hasPrefix("audio/webm") }
+    private var remuxWaiters: [AVAssetResourceLoadingRequest] = []
+    private var remuxTask: URLSessionDataTask?
+    private var remuxStarted = false
+    private var caf: Data?
+    private var remuxError: Error?
+
+    private func serveRemuxed() {
+        if let caf {
+            for lr in remuxWaiters { answer(lr, from: caf) }
+            remuxWaiters.removeAll()
+        } else if let remuxError {
+            for lr in remuxWaiters { lr.finishLoading(with: remuxError) }
+            remuxWaiters.removeAll()
+        } else if !remuxStarted {
+            remuxStarted = true
+            downloadWebm(into: Data(), attempt: 0)
+        }
+    }
+
+    private func answer(_ lr: AVAssetResourceLoadingRequest, from caf: Data) {
+        guard !lr.isCancelled else { return }
+        if let info = lr.contentInformationRequest {
+            info.contentType = "com.apple.coreaudio-format"
+            info.isByteRangeAccessSupported = true
+            info.contentLength = Int64(caf.count)
+        }
+        if let data = lr.dataRequest {
+            let start = Int(min(Int64(caf.count), data.requestedOffset))
+            let end = data.requestsAllDataToEndOfResource ? caf.count : min(caf.count, start + data.requestedLength)
+            data.respond(with: caf.subdata(in: start ..< end))
+            if end >= caf.count { deliveredEnd = true }
+        }
+        lr.finishLoading()
+    }
+
+    /// Appends the next range of the stream to [have] until the file is whole.
+    private func downloadWebm(into have: Data, attempt: Int) {
+        if invalidated { return }
+        let start = Int64(have.count)
+        var request = URLRequest(url: source)
+        request.setValue("bytes=\(start)-\(start + chunkBytes - 1)", forHTTPHeaderField: "Range")
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
+        let task = session.dataTask(with: request) { [weak self] data, response, error in
+            guard let self else { return }
+            self.queue.async {
+                if self.invalidated || (error as NSError?)?.code == NSURLErrorCancelled { return }
+                let http = response as? HTTPURLResponse
+                let status = http?.statusCode ?? 0
+                guard error == nil, (200...299).contains(status), let data else {
+                    if status == 416, !have.isEmpty { return self.finishRemux(have) } // asked past the end
+                    if error != nil || status == 429 || status >= 500 || status == 0, attempt < Self.retryDelays.count {
+                        self.queue.asyncAfter(deadline: .now() + Self.retryDelays[attempt]) {
+                            self.downloadWebm(into: have, attempt: attempt + 1)
+                        }
+                        return
+                    }
+                    if [403, 404, 410].contains(status), !self.reportedHTTPError {
+                        self.reportedHTTPError = true
+                        self.onHTTPError?(status)
+                    }
+                    return self.failRemux(NSError(domain: "BitChord", code: status,
+                                                  userInfo: [NSLocalizedDescriptionKey: "HTTP \(status)"]))
+                }
+                var all = have
+                all.append(data)
+                let total = Self.totalLength(http) ?? (status == 200 ? Int64(all.count) : nil)
+                if data.isEmpty || total.map({ Int64(all.count) >= $0 }) ?? false {
+                    self.finishRemux(all)
+                } else {
+                    self.downloadWebm(into: all, attempt: 0)
+                }
+            }
+        }
+        remuxTask = task
+        task.resume()
+    }
+
+    private func finishRemux(_ webm: Data) {
+        guard let converted = OpusRemux.cafFromWebm(webm) else {
+            return failRemux(NSError(domain: "BitChord", code: -1,
+                                     userInfo: [NSLocalizedDescriptionKey: "Premium audio is not a readable WebM Opus stream"]))
+        }
+        caf = converted
+        knownLength = Int64(converted.count)
+        serveRemuxed()
+    }
+
+    private func failRemux(_ error: Error) {
+        remuxError = error
+        serveRemuxed()
     }
 
     // MARK: - Streaming (any host but googlevideo)
