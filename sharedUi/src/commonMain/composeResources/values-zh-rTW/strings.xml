@@ -642,6 +642,13 @@
     <string name="lyrics_share_description">你選中的幾行，連同封面排在一張卡片上。</string>
     <string name="lyrics_share_story">轉為快拍尺寸</string>
     <string name="lyrics_share_story_revert">恢復為卡片</string>
+    <string name="lyrics_share_video">影片</string>
+    <string name="lyrics_share_image">圖片</string>
+    <string name="lyrics_share_saving">儲存中…</string>
+    <string name="lyrics_share_gradient">漸層</string>
+    <string name="lyrics_share_canvas">畫布</string>
+    <string name="lyrics_share_show_logo">顯示 Laya 標誌</string>
+    <string name="lyrics_share_making_video">正在製作影片…</string>
     <string name="lyrics_share_title">分享歌詞</string>
     <string name="member_since_value">加入時間：%1$s</string>
     <string name="midday">中午</string>

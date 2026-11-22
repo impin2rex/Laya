@@ -647,6 +647,13 @@
     <string name="lyrics_share_description">השורות שבחרת, על כרטיס עם העטיפה.</string>
     <string name="lyrics_share_story">המר לסטורי</string>
     <string name="lyrics_share_story_revert">חזרה לכרטיס</string>
+    <string name="lyrics_share_video">וידאו</string>
+    <string name="lyrics_share_image">תמונה</string>
+    <string name="lyrics_share_saving">שומר…</string>
+    <string name="lyrics_share_gradient">מעבר צבעים</string>
+    <string name="lyrics_share_canvas">קנבס</string>
+    <string name="lyrics_share_show_logo">הצג את הלוגו של Laya</string>
+    <string name="lyrics_share_making_video">יוצר את הסרטון…</string>
     <string name="lyrics_share_title">שיתוף המילים</string>
     <string name="member_since_value">חבר מאז %1$s</string>
     <string name="midday">אמצע היום</string>

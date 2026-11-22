@@ -13,6 +13,7 @@ struct iOSApp: App {
     init() {
         IosKaraoke.shared.native = KaraokeNativeImpl()
         IosAutomix.shared.native = AutomixNativeImpl()
+        IosLyricsVideo.shared.native = LyricsVideoNativeImpl()
         _ = iOSApp.castNative // statics are lazy
         // Home-screen widgets: what they draw, and where their buttons' intents land. The engine goes along
         // so a widget tap that background-launched the app can play with no UI (iOS refuses to bring one up).

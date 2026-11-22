@@ -626,6 +626,13 @@
     <string name="lyrics_share_description">আপনার বাছাই করা লাইনগুলো, কভারসহ একটা কার্ডে সাজানো।</string>
     <string name="lyrics_share_story">স্টোরি বানান</string>
     <string name="lyrics_share_story_revert">কার্ডে ফিরে যান</string>
+    <string name="lyrics_share_video">ভিডিও</string>
+    <string name="lyrics_share_image">ছবি</string>
+    <string name="lyrics_share_saving">সংরক্ষণ হচ্ছে…</string>
+    <string name="lyrics_share_gradient">গ্রেডিয়েন্ট</string>
+    <string name="lyrics_share_canvas">ক্যানভাস</string>
+    <string name="lyrics_share_show_logo">Laya লোগো দেখান</string>
+    <string name="lyrics_share_making_video">ভিডিও তৈরি হচ্ছে…</string>
     <string name="lyrics_share_title">লিরিক্স শেয়ার করুন</string>
     <string name="member_since_value">%1$s থেকে সদস্য</string>
     <string name="midday">দুপুর</string>
