@@ -31,7 +31,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
  */
 internal object DesktopWebSignIn {
 
-    enum class Service(val title: String, val startUrl: String, val cookieUrl: String) {
+    enum class Service(private val titleEn: String, val startUrl: String, val cookieUrl: String) {
         YOUTUBE_MUSIC(
             "Sign in to YouTube Music",
             "https://accounts.google.com/ServiceLogin?ltmpl=music&service=youtube&passive=true" +
@@ -43,8 +43,11 @@ internal object DesktopWebSignIn {
             "https://accounts.spotify.com/login?continue=https%3A%2F%2Fopen.spotify.com%2F",
             "https://open.spotify.com/",
         ),
-    }
+        ;
 
+        val title: String
+            get() = DesktopStrings[if (this == SPOTIFY) "d_sign_in_to_spotify" else "d_sign_in_to_youtube_music", titleEn]
+    }
     /** Whether a sign-in window can be shown at all: it needs the JavaFX toolkit. */
     val available: Boolean get() = DesktopPoTokenWebView.available
 

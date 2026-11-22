@@ -96,12 +96,12 @@ internal object DesktopBrowserCookies {
 
     /** Reads [profile]'s YouTube cookies as a `Cookie` header value. */
     fun read(profile: Profile): Result {
-        if (!Files.isReadable(profile.database)) return Result.Unavailable("its cookie store cannot be read")
+        if (!Files.isReadable(profile.database)) return Result.Unavailable(DesktopStrings["d_cookie_unreadable", "its cookie store cannot be read"])
         val copy = runCatching {
             Files.createTempFile("laya-cookies", ".sqlite").also {
                 Files.copy(profile.database, it, StandardCopyOption.REPLACE_EXISTING)
             }
-        }.getOrElse { return Result.Unavailable("its cookie store could not be copied: ${it.message}") }
+        }.getOrElse { return Result.Unavailable(DesktopStrings.format("d_cookie_copy_failed", it.message, fallback = "its cookie store could not be copied: %1\$s")) }
 
         try {
             val jar = when (profile.family) {
@@ -171,11 +171,14 @@ internal object DesktopBrowserCookies {
             val jar = cookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
             when {
                 !hasSigningSecret(jar) && appBoundSigningCookie -> Result.Unavailable(
-                    "its YouTube sign-in is protected by Windows App-Bound Encryption. " +
-                        "Import a signed-in Firefox profile or paste the Cookie header instead",
+                    DesktopStrings[
+                        "d_cookie_app_bound",
+                        "its YouTube sign-in is protected by Windows App-Bound Encryption. " +
+                            "Import a signed-in Firefox profile or paste the Cookie header instead",
+                    ],
                 )
                 cookies.isEmpty() && undecipherable > 0 -> Result.Unavailable(
-                    "its cookies are encrypted with a key this session cannot reach",
+                    DesktopStrings["d_cookie_key_unreachable", "its cookies are encrypted with a key this session cannot reach"],
                 )
                 else -> Result.Session(jar)
             }
@@ -264,7 +267,7 @@ internal object DesktopBrowserCookies {
 
     private fun query(database: Path, block: (java.sql.Connection) -> Result): Result = runCatching {
         DriverManager.getConnection("jdbc:sqlite:${database.toAbsolutePath()}").use(block)
-    }.getOrElse { Result.Unavailable("its cookie store could not be opened: ${it.message}") }
+    }.getOrElse { Result.Unavailable(DesktopStrings.format("d_cookie_open_failed", it.message, fallback = "its cookie store could not be opened: %1\$s")) }
 
     /** Whether a jar can actually sign a request. */
     fun hasSigningSecret(cookie: String): Boolean = cookie.split(';').any { entry ->

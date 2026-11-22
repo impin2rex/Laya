@@ -1599,7 +1599,7 @@ fun LayaDesktopApp() {
             DesktopCollection(
                 browseId = playlist.id,
                 title = playlist.title,
-                subtitle = DesktopStrings.format("d_playlist_songs", playlist.songs.size, fallback = "Playlist • %1\$d songs"),
+                subtitle = DesktopStrings.plural("d_playlist_songs", playlist.songs.size, "Playlist • %1\$d song", "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 type = BrowseType.PLAYLIST,
                 songs = playlist.songs,
@@ -2748,7 +2748,7 @@ fun LayaDesktopApp() {
         playlists.map { playlist ->
             ShelfItem(
                 title = playlist.title,
-                subtitle = DesktopStrings.format("d_playlist_songs", playlist.songs.size, fallback = "Playlist • %1\$d songs"),
+                subtitle = DesktopStrings.plural("d_playlist_songs", playlist.songs.size, "Playlist • %1\$d song", "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 videoId = null,
                 browseId = LOCAL_PLAYLIST_PREFIX + playlist.id,

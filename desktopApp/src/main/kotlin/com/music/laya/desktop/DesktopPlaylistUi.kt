@@ -108,7 +108,7 @@ internal fun DesktopPlaylistDialog(
 
         DialogHeading(
             if (songs.size > 1) {
-                DesktopStrings.format("d_add_n_songs", songs.size, fallback = "Add %1\$d songs")
+                DesktopStrings.plural("d_add_n_songs", songs.size, "Add %1\$d song", "Add %1\$d songs")
             } else {
                 DesktopStrings["add_to_playlist", "Add to playlist"]
             },

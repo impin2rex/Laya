@@ -100,7 +100,6 @@
     <string name="automix_art_transition_subtitle">Memadukan sampul antar lagu dengan halus saat Automix.</string>
     <string name="automix_mini_art_transition">Transisi sampul mini player</string>
     <string name="automix_mini_art_transition_subtitle">Menampilkan transisi sampul di mini player saat Automix.</string>
-    <string name="d_add_n_songs">Tambahkan %1$d lagu</string>
     <string name="d_some_tracks_not_from_youtube_music">Beberapa lagu ini bukan dari YouTube Music, jadi hanya bisa masuk ke playlist yang disimpan di sini.</string>
     <string name="d_party_start_subtitle">Pilih bagaimana teman melihatmu dan berapa banyak yang bisa bergabung.</string>
     <string name="d_nickname">Nama panggilan</string>
@@ -121,7 +120,6 @@
     <string name="d_google_sign_in_opens">Membuka halaman masuk Google di jendela Laya</string>
     <string name="d_lastfm_password_notice">Kata sandimu dikirim ke Last.fm sekali dan tidak pernah disimpan.</string>
     <string name="d_lastfm_app_key_notice">Kunci API dan shared secret adalah milik aplikasimu, dari last.fm/api.</string>
-    <string name="d_playlist_songs">Playlist • %1$d lagu</string>
     <string name="d_module_index_found">Indeks modul · %1$d modul</string>
     <string name="d_party_invite_qr">Kode QR undangan pesta</string>
     <string name="d_addon_found">Addon · %1$s</string>
@@ -145,4 +143,46 @@
     <string name="d_enter_token_instead">Masukkan token sebagai gantinya</string>
     <string name="d_discord_not_running_hint">Gunakan ini jika Discord tidak berjalan di komputer ini</string>
     <string name="d_signed_in_as_user">Masuk sebagai @%1$s</string>
+    <string name="d_src_detail_addon">Server Addon yang kamu host sendiri atau yang tautannya diberikan kepadamu. Dicari dan di-streaming lewat HTTP biasa — tidak ada kode yang diunduh atau dijalankan.</string>
+    <string name="d_src_detail_custom_module">Indeks modul kompatibel milikmu sendiri. Dicoba sebelum yang bawaan.</string>
+    <string name="d_src_detail_module">Modul JavaScript untuk FLAC, lossless, Hi-Res, dan lainnya.</string>
+    <string name="d_src_detail_tidal">FLAC lossless dari Tidal</string>
+    <string name="d_src_detail_qobuz">FLAC lossless dan Hi-Res dari Qobuz</string>
+    <string name="d_src_detail_jiosaavn">Kualitas tinggi · 320kbps</string>
+    <string name="d_src_detail_youtube">Lossy · Katalog lengkap · Radio</string>
+    <string name="d_tag_lossless">Lossless</string>
+    <string name="d_tag_plugins">Plugin</string>
+    <string name="d_tag_high_quality">Kualitas tinggi</string>
+    <string name="d_tag_lossy">Lossy</string>
+    <string name="d_tag_full_catalogue">Katalog lengkap</string>
+    <string name="d_tag_radio">Radio</string>
+    <string name="d_q_label_low">Rendah</string>
+    <string name="d_q_label_medium">Sedang</string>
+    <string name="d_q_label_high">Tinggi</string>
+    <string name="d_q_detail_low">~64 kbps · unduhan terkecil</string>
+    <string name="d_q_detail_medium">Terbaik yang tersedia · Opus ~171 kbps</string>
+    <string name="d_q_detail_high">JioSaavn hingga 320kbps, cadangan YouTube</string>
+    <string name="d_q_detail_lossless">Addon-mu + JioSaavn, bit-exact jika tersedia</string>
+    <string name="d_sign_in_to_youtube_music">Masuk ke YouTube Music</string>
+    <string name="d_sign_in_to_spotify">Masuk ke Spotify</string>
+    <string name="d_addon_err_bad_address">Itu bukan alamat web yang dapat dibuka Laya</string>
+    <string name="d_addon_err_not_json">Alamat itu tidak mengembalikan JSON</string>
+    <string name="d_addon_err_json_list">JSON itu berupa daftar, sedangkan setiap format yang dibaca Laya adalah objek</string>
+    <string name="d_addon_err_no_modules">Indeks modul itu tidak mencantumkan modul apa pun</string>
+    <string name="d_addon_err_manifest_unreadable">Ini tampak seperti manifes Addon, tetapi tidak dapat dibaca</string>
+    <string name="d_addon_err_no_id">JSON itu tidak memiliki id Addon, jadi bukan manifes</string>
+    <string name="d_addon_err_needs_search">Addon ini mendeklarasikan %1$s — Laya membutuhkan search</string>
+    <string name="d_addon_err_unknown_list">JSON itu mencantumkan “%1$s”, yang bukan format yang dibaca Laya</string>
+    <string name="d_addon_err_unrecognised">JSON tidak dikenali — isinya %1$s</string>
+    <string name="d_cookie_unreadable">penyimpanan cookie-nya tidak dapat dibaca</string>
+    <string name="d_cookie_copy_failed">penyimpanan cookie-nya tidak dapat disalin: %1$s</string>
+    <string name="d_cookie_app_bound">login YouTube-nya dilindungi Windows App-Bound Encryption. Impor profil Firefox yang sudah masuk atau tempel header Cookie</string>
+    <string name="d_cookie_key_unreachable">cookie-nya dienkripsi dengan kunci yang tidak dapat dijangkau sesi ini</string>
+    <string name="d_cookie_open_failed">penyimpanan cookie-nya tidak dapat dibuka: %1$s</string>
+    <plurals name="d_playlist_songs">
+        <item quantity="other">Playlist • %1$d lagu</item>
+    </plurals>
+    <plurals name="d_add_n_songs">
+        <item quantity="other">Tambahkan %1$d lagu</item>
+    </plurals>
 </resources>

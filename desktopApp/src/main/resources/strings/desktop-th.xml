@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="d_add_n_songs">เพิ่ม %1$d เพลง</string>
     <string name="d_some_tracks_not_from_youtube_music">เพลงบางเพลงเหล่านี้ไม่ได้มาจาก YouTube Music จึงเพิ่มได้เฉพาะในเพลย์ลิสต์ที่เก็บไว้ที่นี่</string>
     <string name="d_account">บัญชี</string>
     <string name="d_autoplay_wont_suggest_a_song_already_played_or_suggested">AutoPlay จะไม่แนะนำเพลงที่เล่นหรือแนะนำไปแล้วในเซสชันนี้</string>
@@ -121,7 +120,6 @@
     <string name="d_google_sign_in_opens">เปิดหน้าลงชื่อเข้าใช้ของ Google ในหน้าต่าง Laya</string>
     <string name="d_lastfm_password_notice">รหัสผ่านของคุณจะถูกส่งไปยัง Last.fm เพียงครั้งเดียวและไม่เคยถูกจัดเก็บ</string>
     <string name="d_lastfm_app_key_notice">คีย์ API และ shared secret เป็นของแอปของคุณ จาก last.fm/api</string>
-    <string name="d_playlist_songs">เพลย์ลิสต์ • %1$d เพลง</string>
     <string name="d_module_index_found">ดัชนีโมดูล · %1$d โมดูล</string>
     <string name="d_party_invite_qr">คิวอาร์โค้ดคำเชิญเข้าปาร์ตี้</string>
     <string name="d_addon_found">Addon · %1$s</string>
@@ -145,4 +143,46 @@
     <string name="d_enter_token_instead">ใส่โทเค็นแทน</string>
     <string name="d_discord_not_running_hint">ใช้เมื่อ Discord ไม่ได้ทำงานอยู่บนคอมพิวเตอร์เครื่องนี้</string>
     <string name="d_signed_in_as_user">ลงชื่อเข้าใช้เป็น @%1$s</string>
+    <string name="d_src_detail_addon">เซิร์ฟเวอร์ Addon ที่คุณโฮสต์เองหรือได้รับลิงก์มา ค้นหาและสตรีมผ่าน HTTP ธรรมดา — ไม่มีการดาวน์โหลดหรือรันโค้ด</string>
+    <string name="d_src_detail_custom_module">ดัชนีโมดูลที่เข้ากันได้ของคุณเอง จะถูกลองก่อนตัวที่มาพร้อมแอป</string>
+    <string name="d_src_detail_module">โมดูล JavaScript สำหรับ FLAC, lossless, Hi-Res และอื่น ๆ</string>
+    <string name="d_src_detail_tidal">FLAC แบบ lossless จาก Tidal</string>
+    <string name="d_src_detail_qobuz">FLAC แบบ lossless และ Hi-Res จาก Qobuz</string>
+    <string name="d_src_detail_jiosaavn">คุณภาพสูง · 320kbps</string>
+    <string name="d_src_detail_youtube">Lossy · แค็ตตาล็อกเต็ม · วิทยุ</string>
+    <string name="d_tag_lossless">Lossless</string>
+    <string name="d_tag_plugins">ปลั๊กอิน</string>
+    <string name="d_tag_high_quality">คุณภาพสูง</string>
+    <string name="d_tag_lossy">Lossy</string>
+    <string name="d_tag_full_catalogue">แค็ตตาล็อกเต็ม</string>
+    <string name="d_tag_radio">วิทยุ</string>
+    <string name="d_q_label_low">ต่ำ</string>
+    <string name="d_q_label_medium">ปานกลาง</string>
+    <string name="d_q_label_high">สูง</string>
+    <string name="d_q_detail_low">~64 kbps · ดาวน์โหลดเล็กที่สุด</string>
+    <string name="d_q_detail_medium">ดีที่สุดที่มี · Opus ~171 kbps</string>
+    <string name="d_q_detail_high">JioSaavn สูงสุด 320kbps สำรองด้วย YouTube</string>
+    <string name="d_q_detail_lossless">Addon ของคุณ + JioSaavn ตรงทุกบิตเมื่อมี</string>
+    <string name="d_sign_in_to_youtube_music">ลงชื่อเข้าใช้ YouTube Music</string>
+    <string name="d_sign_in_to_spotify">ลงชื่อเข้าใช้ Spotify</string>
+    <string name="d_addon_err_bad_address">นี่ไม่ใช่ที่อยู่เว็บที่ Laya เปิดได้</string>
+    <string name="d_addon_err_not_json">ที่อยู่นั้นไม่ได้ส่งคืน JSON</string>
+    <string name="d_addon_err_json_list">JSON นั้นเป็นรายการ แต่ทุกรูปแบบที่ Laya อ่านเป็นออบเจ็กต์</string>
+    <string name="d_addon_err_no_modules">ดัชนีโมดูลนั้นไม่มีโมดูลใดเลย</string>
+    <string name="d_addon_err_manifest_unreadable">ดูเหมือนไฟล์ manifest ของ Addon แต่อ่านไม่ได้</string>
+    <string name="d_addon_err_no_id">JSON นั้นไม่มี id ของ Addon จึงไม่ใช่ manifest</string>
+    <string name="d_addon_err_needs_search">Addon นี้ประกาศ %1$s — Laya ต้องใช้ search</string>
+    <string name="d_addon_err_unknown_list">JSON นั้นมี “%1$s” ซึ่งไม่ใช่รูปแบบที่ Laya อ่าน</string>
+    <string name="d_addon_err_unrecognised">ไม่รู้จัก JSON นี้ — มี %1$s</string>
+    <string name="d_cookie_unreadable">อ่านที่เก็บคุกกี้ไม่ได้</string>
+    <string name="d_cookie_copy_failed">คัดลอกที่เก็บคุกกี้ไม่ได้: %1$s</string>
+    <string name="d_cookie_app_bound">การลงชื่อเข้าใช้ YouTube ถูกป้องกันด้วย Windows App-Bound Encryption ให้นำเข้าโปรไฟล์ Firefox ที่ลงชื่อเข้าใช้แล้วหรือวางส่วนหัว Cookie แทน</string>
+    <string name="d_cookie_key_unreachable">คุกกี้ถูกเข้ารหัสด้วยคีย์ที่เซสชันนี้เข้าถึงไม่ได้</string>
+    <string name="d_cookie_open_failed">เปิดที่เก็บคุกกี้ไม่ได้: %1$s</string>
+    <plurals name="d_playlist_songs">
+        <item quantity="other">เพลย์ลิสต์ • %1$d เพลง</item>
+    </plurals>
+    <plurals name="d_add_n_songs">
+        <item quantity="other">เพิ่ม %1$d เพลง</item>
+    </plurals>
 </resources>
