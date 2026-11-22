@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -56,14 +58,14 @@ internal fun TvActionRow(
     ) {
         TvCircleAction(
             icon = LayaIcons.Shuffle,
-            contentDescription = "Shuffle",
+            contentDescription = stringResource(R.string.shuffle),
             size = 43.dp,
             enabled = canPlay,
             onClick = onShuffle,
         )
         TvCircleAction(
             icon = LayaIcons.Play,
-            contentDescription = "Play",
+            contentDescription = stringResource(R.string.play),
             size = 58.dp,
             iconScale = 0.5f,
             resting = playColor ?: TvGlass.AppleRed,
@@ -74,7 +76,7 @@ internal fun TvActionRow(
         if (subscribed != null) {
             TvCircleAction(
                 icon = if (subscribed) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                contentDescription = if (subscribed) "Unsubscribe" else "Subscribe",
+                contentDescription = if (subscribed) stringResource(R.string.unsubscribe) else stringResource(R.string.subscribe),
                 size = 43.dp,
                 onClick = onToggleSubscription,
             )

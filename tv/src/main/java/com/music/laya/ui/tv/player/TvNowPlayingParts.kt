@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.player
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import android.view.KeyEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -371,7 +373,7 @@ internal fun TvTransport(
     val context = LocalContext.current
     LaunchedEffect(karaokeMono) {
         if (karaokeMono) {
-            Toast.makeText(context, "This track is mono, so its vocals cannot be removed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.tv_mono_toast), Toast.LENGTH_SHORT).show()
         }
     }
     Column(
@@ -401,14 +403,14 @@ internal fun TvTransport(
             Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
                 TvTransportButton(
                     icon = if (isLiked) LayaIcons.HeartFilled else LayaIcons.Heart,
-                    contentDescription = if (isLiked) "Unlove" else "Love",
+                    contentDescription = if (isLiked) stringResource(R.string.tv_unlove) else stringResource(R.string.tv_love),
                     onClick = onToggleLike,
                 )
                 // Audio or video: lit while the video plays, and showing what a press gives.
                 if (onToggleVideo != null) {
                     TvTransportButton(
                         icon = if (playingVideo) LayaIcons.MusicNote else Icons.Rounded.Videocam,
-                        contentDescription = if (playingVideo) "Switch to Audio" else "Switch to Video",
+                        contentDescription = if (playingVideo) stringResource(R.string.tv_switch_to_audio) else stringResource(R.string.tv_switch_to_video),
                         active = playingVideo,
                         enabled = !versionSwitching,
                         onClick = onToggleVideo,
@@ -417,7 +419,7 @@ internal fun TvTransport(
                 if (onOpenVideoQuality != null) {
                     TvTransportButton(
                         icon = Icons.Rounded.Hd,
-                        contentDescription = "Video quality",
+                        contentDescription = stringResource(R.string.tv_video_quality),
                         onClick = onOpenVideoQuality,
                     )
                     // VLC's aspect button: best fit, fit screen, fill — remembered for every video.
@@ -430,13 +432,13 @@ internal fun TvTransport(
                 bestPart?.let { start ->
                     TvTransportButton(
                         icon = Icons.Rounded.AutoAwesome,
-                        contentDescription = androidx.compose.ui.res.stringResource(com.music.laya.R.string.best_part_description),
+                        contentDescription = stringResource(R.string.tv_skip_to_best_part),
                         onClick = { onSeek?.invoke(start) },
                     )
                 }
                 TvTransportButton(
                     icon = LayaIcons.LyricsQuote,
-                    contentDescription = "Lyrics",
+                    contentDescription = stringResource(R.string.tv_lyrics),
                     active = lyricsOn,
                     enabled = lyricsAvailable,
                     onClick = onToggleLyrics,
@@ -446,28 +448,28 @@ internal fun TvTransport(
                 if (lyricsOn) {
                     TvTransportButton(
                         icon = Icons.Rounded.Language,
-                        contentDescription = if (lyricVersions.showingRomanization) "Show original lyrics" else "Romanize lyrics",
+                        contentDescription = if (lyricVersions.showingRomanization) stringResource(R.string.tv_show_original_lyrics) else stringResource(R.string.tv_romanize_lyrics),
                         active = lyricVersions.showingRomanization || lyricVersions.romanizing,
                         enabled = !lyricVersions.romanizationPointless,
                         onClick = lyricVersions.toggleRomanization,
                     )
                     TvTransportButton(
                         icon = Icons.Rounded.Translate,
-                        contentDescription = if (lyricVersions.showingTranslation) "Show original lyrics" else "Translate lyrics",
+                        contentDescription = if (lyricVersions.showingTranslation) stringResource(R.string.tv_show_original_lyrics) else stringResource(R.string.tv_translate_lyrics),
                         active = lyricVersions.showingTranslation || lyricVersions.translating,
                         enabled = !lyricVersions.translationPointless,
                         onClick = lyricVersions.toggleTranslation,
                     )
                     TvTransportButton(
                         icon = LayaIcons.KaraokeMic,
-                        contentDescription = if (karaokeOn) "Restore vocals" else "Sing along",
+                        contentDescription = if (karaokeOn) stringResource(R.string.tv_restore_vocals) else stringResource(R.string.tv_sing_along),
                         active = karaokeOn && !karaokeMono,
                         onClick = { Karaoke.setEnabled(!karaokeOn) },
                     )
                 }
                 TvTransportButton(
                     icon = LayaIcons.Queue,
-                    contentDescription = "Up Next",
+                    contentDescription = stringResource(R.string.tv_up_next),
                     active = upNextOpen,
                     onClick = onToggleUpNext,
                 )
@@ -475,13 +477,13 @@ internal fun TvTransport(
                 // the room itself is tuned there.
                 TvTransportButton(
                     icon = Icons.Rounded.Waves,
-                    contentDescription = if (reverbOn) "Reverb On" else "Reverb Off",
+                    contentDescription = if (reverbOn) stringResource(R.string.tv_reverb_on) else stringResource(R.string.tv_reverb_off),
                     active = reverbOn,
                     onClick = { AppSettings.setReverbEnabled(!reverbOn) },
                 )
                 TvTransportButton(
                     icon = Icons.Rounded.MoreHoriz,
-                    contentDescription = "More",
+                    contentDescription = stringResource(R.string.more),
                     onClick = onMore,
                 )
             }
@@ -696,9 +698,9 @@ private fun TvQualityLine(showStats: Boolean, modifier: Modifier = Modifier) {
     val snapshot by NerdStats.current.collectAsState()
     val stats = snapshot ?: return
     val label = when {
-        stats.isDolbyAtmos -> "Dolby Atmos"
-        stats.isHiRes -> "Hi-Res Lossless"
-        stats.isLossless -> "Lossless"
+        stats.isDolbyAtmos -> stringResource(R.string.dolby_atmos)
+        stats.isHiRes -> stringResource(R.string.tv_hires_lossless)
+        stats.isLossless -> stringResource(R.string.lossless)
         else -> null
     }
     val detail = if (showStats) streamDetail(stats) else null
@@ -791,7 +793,7 @@ internal fun TvUpNext(
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Up Next",
+                text = stringResource(R.string.tv_up_next),
                 style = TvType.Headline,
                 color = TvGlass.TextPrimary,
                 modifier = Modifier.weight(1f),
@@ -799,7 +801,7 @@ internal fun TvUpNext(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TvTransportButton(
                     icon = LayaIcons.Shuffle,
-                    contentDescription = "Shuffle",
+                    contentDescription = stringResource(R.string.shuffle),
                     active = shuffle,
                     size = 32.dp,
                     onClick = onToggleShuffle,
@@ -807,9 +809,9 @@ internal fun TvUpNext(
                 TvTransportButton(
                     icon = if (repeatMode == Player.REPEAT_MODE_ONE) null else LayaIcons.Repeat,
                     contentDescription = when (repeatMode) {
-                        Player.REPEAT_MODE_ONE -> "Repeat One"
-                        Player.REPEAT_MODE_ALL -> "Repeat All"
-                        else -> "Repeat Off"
+                        Player.REPEAT_MODE_ONE -> stringResource(R.string.tv_repeat_one)
+                        Player.REPEAT_MODE_ALL -> stringResource(R.string.tv_repeat_all)
+                        else -> stringResource(R.string.tv_repeat_off)
                     },
                     active = repeatMode != Player.REPEAT_MODE_OFF,
                     badge = if (repeatMode == Player.REPEAT_MODE_ONE) "1" else null,
@@ -818,7 +820,7 @@ internal fun TvUpNext(
                 )
                 TvTransportButton(
                     icon = LayaIcons.Infinity,
-                    contentDescription = "Autoplay",
+                    contentDescription = stringResource(R.string.tv_autoplay),
                     active = autoplay,
                     size = 32.dp,
                     onClick = onToggleAutoplay,
@@ -827,7 +829,7 @@ internal fun TvUpNext(
         }
         if (upcoming.isEmpty()) {
             Text(
-                text = if (autoplay) "Similar music will play when this song ends." else "Nothing is queued after this song.",
+                text = if (autoplay) stringResource(R.string.tv_autoplay_on) else stringResource(R.string.tv_autoplay_off),
                 style = TvType.Callout,
                 color = TvGlass.TextSecondary,
                 modifier = Modifier
@@ -928,16 +930,16 @@ internal fun TvNothingPlaying(onBrowse: () -> Unit, modifier: Modifier = Modifie
             modifier = Modifier.size(58.dp),
         )
         Spacer(modifier = Modifier.height(19.dp))
-        Text(text = "Not Playing", style = TvType.Title, color = TvGlass.TextPrimary)
+        Text(text = stringResource(R.string.tv_not_playing_title), style = TvType.Title, color = TvGlass.TextPrimary)
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "Choose something from Home, Explore or your Library.",
+            text = stringResource(R.string.tv_not_playing_message),
             style = TvType.Callout,
             color = TvGlass.TextSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = 384.dp),
         )
         Spacer(modifier = Modifier.height(21.dp))
-        TvButton(text = "Browse Music", onClick = onBrowse, modifier = Modifier.width(208.dp).tvInitialFocus())
+        TvButton(text = stringResource(R.string.tv_browse_music), onClick = onBrowse, modifier = Modifier.width(208.dp).tvInitialFocus())
     }
 }

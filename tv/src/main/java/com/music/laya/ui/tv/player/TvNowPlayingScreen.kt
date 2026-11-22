@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.player
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.layout.padding
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
@@ -449,19 +451,21 @@ private fun TvVideoQualityDialog(onDismiss: () -> Unit) {
     val quality by engine.quality.collectAsState()
     // What is on screen when it is lower than the pick: this TV couldn't play the pick.
     val playing = quality.activeHeight
+    val fullHd = stringResource(R.string.tv_full_hd)
+    val hd = stringResource(R.string.tv_hd)
     fun label(height: Int) = when {
         height >= 2160 -> "4K"
         height >= 1440 -> "2K"
-        height >= 1080 -> "Full HD"
-        height >= 720 -> "HD"
+        height >= 1080 -> fullHd
+        height >= 720 -> hd
         else -> "${height}p"
     }
-    com.music.laya.ui.tv.components.TvDialog(title = "Video Quality", onDismissRequest = onDismiss) {
+    com.music.laya.ui.tv.components.TvDialog(title = stringResource(R.string.tv_video_quality_title), onDismissRequest = onDismiss) {
         androidx.compose.foundation.layout.Column(
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(5.dp),
         ) {
             com.music.laya.ui.tv.components.TvListRow(
-                title = "Auto",
+                title = stringResource(R.string.tv_auto),
                 value = if (quality.held == null) playing?.let(::label) else null,
                 trailingIcon = if (quality.held == null) androidx.compose.material.icons.Icons.Rounded.Check else null,
                 modifier = Modifier.tvInitialFocus(),
@@ -477,8 +481,8 @@ private fun TvVideoQualityDialog(onDismiss: () -> Unit) {
                 com.music.laya.ui.tv.components.TvListRow(
                     title = label(height),
                     value = when {
-                        failed -> "Can't play on this TV"
-                        picked && playing != null && playing < height -> "${playing}p playing"
+                        failed -> stringResource(R.string.tv_cant_play_on_tv)
+                        picked && playing != null && playing < height -> stringResource(R.string.tv_playing_height, playing)
                         else -> "${height}p"
                     },
                     trailingIcon = if (picked) androidx.compose.material.icons.Icons.Rounded.Check else null,

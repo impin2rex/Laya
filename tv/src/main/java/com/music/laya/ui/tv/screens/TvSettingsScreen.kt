@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,7 +60,6 @@ import com.music.laya.ui.tv.theme.TvType
 // Discord Rich Presence is hidden on TV for now; TvDiscordDialog is kept for when it returns.
 private enum class SettingsSheet { Theme, RefreshRate, Equalizer, Reverb, Scrobbling, LyricsSources, SignatureApi, Update, About }
 
-private const val DefaultBlurb = "Playback, sound and display preferences for Laya on this TV."
 
 /**
  * Settings, as tvOS lays it out: the app on the left with a plain description of
@@ -91,7 +93,6 @@ fun TvSettingsScreen(
     val lyricsCanvas by TvSettings.tvLyricsCanvasEnabled.collectAsState()
     val nerdStats by AppSettings.showNerdStats.collectAsState()
     val bestPart by AppSettings.showBestPart.collectAsState()
-    val bestPartBlurb = androidx.compose.ui.res.stringResource(com.music.laya.R.string.show_best_part_subtitle)
     val signatureEnabled by AppSettings.signatureApiEnabled.collectAsState()
     // Only the saved address is ever shown; the built-in one stays out of the UI.
     val signatureUrl by AppSettings.customSignatureApiUrl.collectAsState()
@@ -104,7 +105,9 @@ fun TvSettingsScreen(
     val systemFont by AppSettings.systemFont.collectAsState()
     val reduceTransparency by AppSettings.reduceDynamicBlur.collectAsState()
 
-    var blurb by remember { mutableStateOf(DefaultBlurb) }
+    val context = LocalContext.current
+    val defaultBlurb = stringResource(R.string.tv_blurb_default)
+    var blurb by remember { mutableStateOf(defaultBlurb) }
     var sheet by remember { mutableStateOf<SettingsSheet?>(null) }
     val update by AppUpdateChecker.available.collectAsState()
 
@@ -145,30 +148,30 @@ fun TvSettingsScreen(
             contentPadding = PaddingValues(end = TvDimensions.SafeMarginHorizontal, bottom = 38.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
-            item { TvListHeader("Account") }
+            item { TvListHeader(stringResource(R.string.tv_account)) }
             item {
                 TvListRow(
-                    title = "YouTube Music",
-                    value = if (signedIn) account?.name ?: "Signed In" else "Sign In",
-                    onFocused = { blurb = "Your library, playlists and recommendations come from this account." },
+                    title = stringResource(R.string.tv_youtube_music),
+                    value = if (signedIn) account?.name ?: stringResource(R.string.tv_signed_in) else stringResource(R.string.tv_sign_in),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_account) },
                     onClick = onOpenAccount,
                 )
             }
 
-            item { TvListHeader("Playback") }
+            item { TvListHeader(stringResource(R.string.playback)) }
             item {
                 TvListRow(
-                    title = "Automix",
+                    title = stringResource(R.string.tv_automix),
                     value = onOff(automix),
-                    onFocused = { blurb = "Blends one song into the next, matched to their tempo." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_automix) },
                     onClick = { AppSettings.setSmartFadeEnabled(!automix) },
                 )
             }
             item {
                 TvListRow(
-                    title = "Crossfade",
-                    value = if (crossfade > 0) "$crossfade s" else "Off",
-                    onFocused = { blurb = "Fades each song out as the next one fades in. Select to change the length." },
+                    title = stringResource(R.string.crossfade),
+                    value = if (crossfade > 0) stringResource(R.string.tv_seconds_short, crossfade) else stringResource(R.string.off),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_crossfade) },
                     onClick = {
                         AppSettings.setCrossfadeSeconds(
                             when (crossfade) {
@@ -183,9 +186,9 @@ fun TvSettingsScreen(
             }
             item {
                 TvListRow(
-                    title = "Autoplay",
+                    title = stringResource(R.string.tv_autoplay),
                     value = onOff(autoplay),
-                    onFocused = { blurb = "When the queue ends, keeps playing music similar to what you were listening to." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_autoplay) },
                     onClick = { AppSettings.setAutoplay(!autoplay) },
                 )
             }
@@ -200,35 +203,35 @@ fun TvSettingsScreen(
             }
             item {
                 TvListRow(
-                    title = "Skip Silence",
+                    title = stringResource(R.string.tv_skip_silence),
                     value = onOff(skipSilence),
-                    onFocused = { blurb = "Skips over silent stretches at the start and end of songs." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_skip_silence) },
                     onClick = { AppSettings.setSkipSilence(!skipSilence) },
                 )
             }
 
-            item { TvListHeader("Sound") }
+            item { TvListHeader(stringResource(R.string.tv_sound)) }
             item {
                 TvListRow(
-                    title = "Equalizer",
+                    title = stringResource(R.string.equalizer),
                     value = onOff(eqEnabled),
-                    onFocused = { blurb = "Shape the sound with presets or seven bands of your own." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_equalizer) },
                     onClick = { sheet = SettingsSheet.Equalizer },
                 )
             }
             item {
                 TvListRow(
-                    title = "Reverb",
+                    title = stringResource(R.string.tv_reverb),
                     value = onOff(reverbEnabled),
-                    onFocused = { blurb = "Places the music in a room, hall, plate or cathedral, with its decay, distance and tone yours to set." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_reverb) },
                     onClick = { sheet = SettingsSheet.Reverb },
                 )
             }
             item {
                 TvListRow(
-                    title = "Spatial Audio",
+                    title = stringResource(R.string.tv_spatial_audio),
                     value = onOff(spatial),
-                    onFocused = { blurb = "Widens stereo music using the TV's audio virtualizer, where it has one." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_spatial) },
                     onClick = {
                         TvSettings.setSpatialAudioEnabled(!spatial)
                         TvSpatialAudioEngine.setEnabled(!spatial)
@@ -237,107 +240,107 @@ fun TvSettingsScreen(
             }
             item {
                 TvListRow(
-                    title = "Sound Check",
+                    title = stringResource(R.string.tv_sound_check),
                     value = onOff(loudness),
-                    onFocused = { blurb = "Plays every song at the same perceived loudness." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_sound_check) },
                     onClick = { AppSettings.setLoudnessNormalization(!loudness) },
                 )
             }
             item {
                 TvListRow(
-                    title = "USB DAC",
+                    title = stringResource(R.string.tv_usb_dac),
                     value = onOff(usbDac),
-                    onFocused = { blurb = "Sends audio straight to a connected USB DAC, unchanged, when one is attached." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_usb_dac) },
                     onClick = { AppSettings.setPreferUsbDac(!usbDac) },
                 )
             }
 
-            item { TvListHeader("Now Playing") }
+            item { TvListHeader(stringResource(R.string.tv_now_playing)) }
             item {
                 TvListRow(
-                    title = "Synced Lyrics",
+                    title = stringResource(R.string.tv_synced_lyrics),
                     value = onOff(syncedLyrics),
-                    onFocused = { blurb = "Lyrics that follow along with the song, line by line." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_synced_lyrics) },
                     onClick = { AppSettings.setSyncedLyrics(!syncedLyrics) },
                 )
             }
             item {
                 TvListRow(
-                    title = "Lyrics Sources",
-                    value = "${lyricsSources.size} On",
-                    onFocused = { blurb = "Choose which lyric databases to ask, and in what order." },
+                    title = stringResource(R.string.tv_lyrics_sources),
+                    value = stringResource(R.string.tv_sources_on, lyricsSources.size),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_lyrics_sources) },
                     onClick = { sheet = SettingsSheet.LyricsSources },
                 )
             }
             item {
                 TvListRow(
-                    title = "Motion Artwork",
+                    title = stringResource(R.string.tv_motion_artwork),
                     value = onOff(canvas),
-                    onFocused = { blurb = "Plays a song's looping video artwork behind the player, when it has one." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_motion_artwork) },
                     onClick = { AppSettings.setAnimatedCanvas(!canvas) },
                 )
             }
             item {
                 TvListRow(
-                    title = "Motion Artwork in Lyrics",
+                    title = stringResource(R.string.tv_motion_artwork_lyrics),
                     value = onOff(lyricsCanvas),
-                    onFocused = { blurb = "Keeps the video artwork playing behind full-screen lyrics." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_motion_artwork_lyrics) },
                     onClick = { TvSettings.setTvLyricsCanvasEnabled(!lyricsCanvas) },
                 )
             }
             item {
                 TvListRow(
-                    title = "Artist Signatures",
+                    title = stringResource(R.string.tv_artist_signatures),
                     value = onOff(signatureEnabled),
-                    onFocused = { blurb = "Shows a handwritten signature on an artist's page when Apple Music has no title logo." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_artist_signatures) },
                     onClick = { AppSettings.setSignatureApiEnabled(!signatureEnabled) },
                 )
             }
             if (signatureEnabled) {
                 item {
                     TvListRow(
-                        title = "Signature API",
+                        title = stringResource(R.string.tv_signature_api),
                         value = signatureUrl.removePrefix("https://").removePrefix("http://").ifBlank {
-                            if (AppSettings.defaultSignatureApiUrl.isNotBlank()) "Built-in" else "Not Set"
+                            if (AppSettings.defaultSignatureApiUrl.isNotBlank()) stringResource(R.string.tv_built_in) else stringResource(R.string.tv_not_set)
                         },
-                        subtitle = signatureServerOnline?.let { if (it) "Online" else "Can’t be reached right now" },
+                        subtitle = signatureServerOnline?.let { if (it) stringResource(R.string.artist_signatures_online) else stringResource(R.string.listen_together_server_offline) },
                         subtitleColor = signatureServerOnline?.let { if (it) Color(0xFF34C759) else Color(0xFFFF453A) },
-                        onFocused = { blurb = "The address of the artist-signature API to ask. Select to change it." },
+                        onFocused = { blurb = context.getString(R.string.tv_blurb_signature_api) },
                         onClick = { sheet = SettingsSheet.SignatureApi },
                     )
                 }
             }
             item {
                 TvListRow(
-                    title = androidx.compose.ui.res.stringResource(com.music.laya.R.string.show_best_part),
+                    title = stringResource(R.string.tv_best_part_button),
                     value = onOff(bestPart),
-                    onFocused = { blurb = bestPartBlurb },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_best_part) },
                     onClick = { AppSettings.setShowBestPart(!bestPart) },
                 )
             }
             item {
                 TvListRow(
-                    title = "Stats for Nerds",
+                    title = stringResource(R.string.tv_stats_for_nerds),
                     value = onOff(nerdStats),
-                    onFocused = { blurb = "Shows the codec, bitrate and sample rate of what's playing." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_stats) },
                     onClick = { AppSettings.setShowNerdStats(!nerdStats) },
                 )
             }
 
-            item { TvListHeader("Display") }
+            item { TvListHeader(stringResource(R.string.tv_display)) }
             item {
                 TvListRow(
-                    title = "Appearance",
-                    value = AppThemeOption.fromId(themeId).title,
-                    onFocused = { blurb = "The background behind Laya's pages." },
+                    title = stringResource(R.string.appearance),
+                    value = stringResource(AppThemeOption.fromId(themeId).title),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_appearance) },
                     onClick = { sheet = SettingsSheet.Theme },
                 )
             }
             item {
                 TvListRow(
-                    title = "Interface Size",
+                    title = stringResource(R.string.tv_interface_size),
                     value = "${(uiScale * 100).toInt()}%",
-                    onFocused = { blurb = "Makes everything larger or smaller. Select to step through sizes." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_interface_size) },
                     onClick = {
                         val steps = listOf(0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.3f)
                         val next = steps.firstOrNull { it > uiScale + 0.01f } ?: steps.first()
@@ -347,69 +350,69 @@ fun TvSettingsScreen(
             }
             item {
                 TvListRow(
-                    title = "Refresh Rate",
-                    value = refreshRate.label.substringBefore(" ("),
-                    onFocused = { blurb = "How often the screen redraws while you browse." },
+                    title = stringResource(R.string.tv_refresh_rate),
+                    value = stringResource(refreshRate.label).substringBefore(" ("),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_refresh_rate) },
                     onClick = { sheet = SettingsSheet.RefreshRate },
                 )
             }
             item {
                 TvListRow(
-                    title = "System Font",
+                    title = stringResource(R.string.tv_system_font),
                     value = onOff(systemFont),
-                    onFocused = { blurb = "Shows text in your TV's font instead of SF Pro." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_system_font) },
                     onClick = { AppSettings.setSystemFont(!systemFont) },
                 )
             }
             item {
                 TvListRow(
-                    title = "Reduce Motion",
+                    title = stringResource(R.string.tv_reduce_motion),
                     value = onOff(reduceMotion),
-                    onFocused = { blurb = "Calms the moving background and other decorative animation." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_reduce_motion) },
                     onClick = { AppSettings.setReduceAnimation(!reduceMotion) },
                 )
             }
             item {
                 TvListRow(
-                    title = "Reduce Transparency",
+                    title = stringResource(R.string.tv_reduce_transparency),
                     value = onOff(reduceTransparency),
-                    onFocused = { blurb = "Replaces blurred backgrounds with solid ones. Helps on slower TVs." },
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_reduce_transparency) },
                     onClick = { AppSettings.setReduceDynamicBlur(!reduceTransparency) },
                 )
             }
 
-            item { TvListHeader("Connections") }
+            item { TvListHeader(stringResource(R.string.tv_connections)) }
             item {
                 TvListRow(
-                    title = "Scrobbling",
-                    onFocused = { blurb = "Last.fm and ListenBrainz." },
+                    title = stringResource(R.string.scrobbling),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_scrobbling) },
                     onClick = { sheet = SettingsSheet.Scrobbling },
                 )
             }
 
-            item { TvListHeader("General") }
+            item { TvListHeader(stringResource(R.string.tv_general)) }
             if (update != null) {
                 item {
                     TvListRow(
-                        title = "Software Update",
-                        value = "${update?.version.orEmpty()} Available",
-                        onFocused = { blurb = "Download and install the new version of Laya for TV." },
+                        title = stringResource(R.string.software_update),
+                        value = stringResource(R.string.tv_update_available_value, update?.version.orEmpty()),
+                        onFocused = { blurb = context.getString(R.string.tv_blurb_update) },
                         onClick = { sheet = SettingsSheet.Update },
                     )
                 }
             }
             item {
                 TvListRow(
-                    title = "Set Up Again",
-                    onFocused = { blurb = "Go through the first-time setup again." },
+                    title = stringResource(R.string.tv_set_up_again),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_set_up_again) },
                     onClick = onRunSetupAgain,
                 )
             }
             item {
                 TvListRow(
-                    title = "About",
+                    title = stringResource(R.string.tv_about),
                     value = BuildConfig.VERSION_NAME,
-                    onFocused = { blurb = DefaultBlurb },
+                    onFocused = { blurb = defaultBlurb },
                     onClick = { sheet = SettingsSheet.About },
                 )
             }
@@ -430,4 +433,5 @@ fun TvSettingsScreen(
     }
 }
 
-private fun onOff(value: Boolean) = if (value) "On" else "Off"
+@Composable
+private fun onOff(value: Boolean) = if (value) stringResource(R.string.tv_on) else stringResource(R.string.off)

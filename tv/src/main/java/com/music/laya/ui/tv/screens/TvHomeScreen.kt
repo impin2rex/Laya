@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,8 +68,8 @@ fun TvHomeScreen(
         is UiState.Success -> {
             if (state.data.isEmpty()) {
                 TvEmptyState(
-                    title = "Nothing Here Yet",
-                    message = "Sign in from Settings, or check your connection, to see your recommendations.",
+                    title = stringResource(R.string.tv_nothing_here_title),
+                    message = stringResource(R.string.tv_nothing_here_signin_message),
                     modifier = modifier,
                 )
             } else {
