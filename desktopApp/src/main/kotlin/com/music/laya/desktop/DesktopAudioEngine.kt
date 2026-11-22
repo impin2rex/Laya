@@ -86,6 +86,10 @@ class DesktopPlaybackEngine(
     }
 
     init {
+        active = this
+    }
+
+    init {
         // Windows' endpoint watcher bumps the same signal from the OS's own push; Linux asks the
         // kernel on a poll — see [DesktopLinuxAudioWatcher]. A device change reconfigures a
         // playing line only when the line was opened on a per-device mixer that is no longer
@@ -2060,12 +2064,20 @@ class DesktopPlaybackEngine(
     }
 
     /** What the device actually accepted, for the settings screen to report. */
+    /** The stream [videoId] is on right now, for the lyrics share video to cut the song from. */
+    internal fun streamOf(videoId: String): DesktopStream? = current?.takeIf { it.song.videoId == videoId }?.stream
+
     fun outputSummary(): String = if (!sink.isOpen) "Not started" else with(sink.format) {
         val depth = if (isFloat) "32-bit float" else "${bytesPerSample * 8}-bit"
         "$depth · ${sampleRate / 1000.0} kHz · ${if (channels == 2) "stereo" else "$channels ch"}"
     }
 
     companion object {
+        /** The window's engine, for the lyrics share; there is only ever the one. */
+        @Volatile
+        internal var active: DesktopPlaybackEngine? = null
+            private set
+
         /** How many times a lossy substitute is asked to be beaten before the question is closed. */
         private const val LOSSLESS_FOLLOW_UPS = 2
 

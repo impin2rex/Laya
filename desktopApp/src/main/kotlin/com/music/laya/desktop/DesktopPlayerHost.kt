@@ -21,6 +21,7 @@ import com.music.laya.ui.player.AudioOutputKind
 import com.music.laya.ui.player.CanvasVideoSpec
 import com.music.laya.ui.player.MusicVideoQualityUi
 import com.music.laya.ui.player.LyricsRomanizationResult
+import com.music.laya.ui.player.LyricsShareRequest
 import com.music.laya.ui.player.LyricsTranslationResult
 import com.music.laya.ui.player.MAX_LYRICS_OFFSET_MS
 import com.music.laya.ui.player.MIN_LYRICS_OFFSET_MS
@@ -195,6 +196,19 @@ internal object DesktopPlayerHost : PlayerHost {
     @Composable
     override fun AudioPipelineDialog(hazeState: HazeState, isPlaying: Boolean, onDismiss: () -> Unit) {
         pipelineDialog?.invoke(onDismiss)
+    }
+
+    override val lyricsShareAvailable: Boolean get() = true
+
+    /** The shared card and video, written out through [DesktopImageSharer] and [DesktopVideoSharer]. */
+    @Composable
+    override fun LyricsShareSheet(hazeState: HazeState, request: LyricsShareRequest, onDismiss: () -> Unit) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.music.laya.ui.share.LocalImageSharer provides DesktopImageSharer,
+            com.music.laya.ui.share.LocalVideoSharer provides DesktopVideoSharer,
+        ) {
+            com.music.laya.ui.player.LyricsShareSheetContent(hazeState, request, onDismiss)
+        }
     }
 }
 
