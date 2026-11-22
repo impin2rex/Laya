@@ -220,6 +220,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     func seekTo(positionMs: Int64) { onMain { self.seekOnMain(positionMs: positionMs) } }
 
     private func seekOnMain(positionMs: Int64) {
+        if let item = player.currentItem, let loader = loaders[ObjectIdentifier(item)],
+           let head = loader.headOnlyState, positionMs >= head.ms - 2000 {
+            return deferSeekToWhole(loader, at: positionMs)
+        }
         cancelSwap()
         cancelFade()
         guard let item = player.currentItem, item.status == .readyToPlay else {
@@ -515,7 +519,62 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                 self.fail(item, message: "Stream refused (HTTP \(status))", httpStatus: Int32(status))
             }
         }
+        // A Premium WebM starts on a head of its first seconds; once the whole file is in, this plays that instead.
+        loader.onUpgrade = { [weak self, weak item, weak loader] in
+            DispatchQueue.main.async {
+                guard let self, let item, let loader else { return }
+                self.upgradeHead(item, loader)
+            }
+        }
         loaders[ObjectIdentifier(item)] = loader
+    }
+
+    /// Replaces the playing head-only Premium item with the whole file once it is downloaded: gaplessly through the
+    /// source-swap deck when the track is simply playing, or, for a seek that landed past the head, by opening it at
+    /// the target. Retried every moment something else (a seek, a blend) is in the way, until the item has changed.
+    private func upgradeHead(_ item: AVPlayerItem, _ loader: ChunkedResourceLoader) {
+        guard item === currentItem, player.currentItem === item, loader.headOnlyState?.ready == true else { return }
+        if let ms = loader.deferredSeekMs {
+            loader.deferredSeekMs = nil
+            if let whole = loader.reopenedWhole() { return reopenWhole(item, whole, at: ms, resume: loader.deferredResume) }
+        } else if fade == nil, !parked, swapItem == nil, seekingToMs == nil, item.status == .readyToPlay,
+                  let whole = loader.reopenedWhole() {
+            let asset = AVURLAsset(url: whole.proxyURL)
+            asset.resourceLoader.setDelegate(whole, queue: whole.queue)
+            let next = AVPlayerItem(asset: asset)
+            next.preferredForwardBufferDuration = item.preferredForwardBufferDuration
+            prepare(next)
+            adopt(whole, for: next)
+            print("AudioEngine: Premium head -> whole file")
+            beginSwap(with: next)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.upgradeHead(item, loader) }
+    }
+
+    /// The seek asked for is past the head: pause and wait for the whole file, and make the seek then (see upgradeHead).
+    private func deferSeekToWhole(_ loader: ChunkedResourceLoader, at ms: Int64) {
+        loader.deferredResume = loader.deferredSeekMs == nil ? player.timeControlStatus != .paused : loader.deferredResume
+        loader.deferredSeekMs = ms
+        seekingToMs = ms
+        player.pause()
+        reportProgress()
+        if loader.headOnlyState?.ready == true, let item = currentItem { upgradeHead(item, loader) }
+    }
+
+    private func reopenWhole(_ item: AVPlayerItem, _ whole: ChunkedResourceLoader, at ms: Int64, resume: Bool) {
+        let asset = AVURLAsset(url: whole.proxyURL)
+        asset.resourceLoader.setDelegate(whole, queue: whole.queue)
+        let new = AVPlayerItem(asset: asset)
+        new.preferredForwardBufferDuration = item.preferredForwardBufferDuration
+        prepare(new)
+        adopt(whole, for: new)
+        reopening = new
+        resumeAfterSeek = resume
+        player.pause()
+        player.insert(new, after: item)
+        player.advanceToNextItem() // currentItemChanged hands it the seek
+        pendingSeekMs = ms
+        seekingToMs = ms
     }
 
     /// The playing item can't go on. AVQueuePlayer would quietly move to the queued next track
@@ -769,6 +828,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         guard fade == nil, !parked, let old = currentItem, player.currentItem === old, old.status == .readyToPlay,
               let item = makeItem(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes)
         else { return print("AudioEngine: source swap skipped") }
+        beginSwap(with: item)
+    }
+
+    /// Loads [item] on the idle deck and lines it up with the playing one (see swapCurrent).
+    private func beginSwap(with item: AVPlayerItem) {
+        cancelSwap()
         clearNextOnMain() // Kotlin queues it again once the swap is in
         swapItem = item
         swapGen += 1
