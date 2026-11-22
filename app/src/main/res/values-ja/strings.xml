@@ -1292,6 +1292,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">未設定 — APIのURLを設定するにはタップしてください</string>
     <string name="artist_signatures_test_failed">そのURLでAPIに到達できませんでした</string>
+    <string name="artist_signatures_builtin">内蔵サーバー</string>
+    <string name="artist_signatures_online">オンライン</string>
     <string name="search_source_addons">アドオン</string>
     <string name="search_addons_none">有効なアドオンがありません。設定 → ソースで追加してください。</string>
     <string name="app_icon">アプリアイコン</string>

@@ -1359,6 +1359,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">尚未配置 — 点按以设置 API 地址</string>
     <string name="artist_signatures_test_failed">无法连接到该地址的 API</string>
+    <string name="artist_signatures_builtin">内置服务器</string>
+    <string name="artist_signatures_online">在线</string>
     <string name="signed_by">%1$s 的签名</string>
     <string name="user_agent">用户代理</string>
     <string name="no_audio_version">未找到此视频的音频版本</string>

@@ -1329,4 +1329,6 @@
     <string name="lossless_verify_expired_notice">%1$s 驗證已過期。請在「來源」中重新開啟以繼續無損播放。</string>
     <string name="lossless_verify_expired">驗證已過期 · 請重新開啟</string>
     <string name="lossless_verified_until">已驗證 · 有效期至 %1$s</string>
+    <string name="artist_signatures_builtin">內置伺服器</string>
+    <string name="artist_signatures_online">在線</string>
 </resources>

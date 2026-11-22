@@ -1286,6 +1286,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">Sin configurar — toca para establecer la URL de la API</string>
     <string name="artist_signatures_test_failed">No se pudo contactar con la API en esa URL</string>
+    <string name="artist_signatures_builtin">Servidor integrado</string>
+    <string name="artist_signatures_online">En línea</string>
     <string name="search_source_addons">Addons</string>
     <string name="search_addons_none">No hay addons activados. Añade uno en Ajustes → Fuentes.</string>
     <string name="app_icon">Icono de la app</string>

@@ -1314,6 +1314,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">कॉन्फ़िगर नहीं है — API URL सेट करने के लिए टैप करें</string>
     <string name="artist_signatures_test_failed">उस URL पर API तक नहीं पहुंचा जा सका</string>
+    <string name="artist_signatures_builtin">बिल्ट-इन सर्वर</string>
+    <string name="artist_signatures_online">ऑनलाइन</string>
     <string name="search_source_addons">ऐडऑन</string>
     <string name="search_addons_none">कोई ऐडऑन चालू नहीं है। सेटिंग → स्रोत में जाकर एक जोड़ें।</string>
     <string name="app_icon">ऐप आइकन</string>

@@ -1316,6 +1316,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">לא מוגדר — הקש כדי להגדיר את כתובת ה-API</string>
     <string name="artist_signatures_test_failed">לא ניתן היה להתחבר ל-API בכתובת זו</string>
+    <string name="artist_signatures_builtin">שרת מובנה</string>
+    <string name="artist_signatures_online">מקוון</string>
     <string name="search_source_addons">תוספים</string>
     <string name="search_addons_none">אין תוספים מופעלים. אפשר להוסיף אחד בהגדרות ← מקורות.</string>
     <string name="app_icon">סמל האפליקציה</string>

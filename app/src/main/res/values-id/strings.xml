@@ -1291,6 +1291,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">Belum dikonfigurasi — ketuk untuk mengatur URL API</string>
     <string name="artist_signatures_test_failed">Tidak dapat menjangkau API di URL tersebut</string>
+    <string name="artist_signatures_builtin">Server bawaan</string>
+    <string name="artist_signatures_online">Online</string>
     <string name="search_source_addons">Addon</string>
     <string name="search_addons_none">Tidak ada addon yang aktif. Tambahkan satu di Pengaturan → Sumber.</string>
     <string name="app_icon">Ikon aplikasi</string>

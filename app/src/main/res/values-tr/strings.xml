@@ -1280,6 +1280,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">Yapılandırılmadı — API URL\'sini ayarlamak için dokunun</string>
     <string name="artist_signatures_test_failed">Bu URL\'de API\'ye ulaşılamadı</string>
+    <string name="artist_signatures_builtin">Yerleşik sunucu</string>
+    <string name="artist_signatures_online">Çevrimiçi</string>
     <string name="search_source_addons">Eklentiler</string>
     <string name="search_addons_none">Etkin eklenti yok. Ayarlar → Kaynaklar bölümünden bir tane ekleyin.</string>
     <string name="app_icon">Uygulama simgesi</string>

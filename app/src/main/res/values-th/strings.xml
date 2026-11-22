@@ -1297,6 +1297,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">ยังไม่ได้กำหนดค่า — แตะเพื่อตั้งค่า URL API</string>
     <string name="artist_signatures_test_failed">ไม่สามารถเข้าถึง API ที่ URL นี้ได้</string>
+    <string name="artist_signatures_builtin">เซิร์ฟเวอร์ในตัว</string>
+    <string name="artist_signatures_online">ออนไลน์</string>
     <string name="search_source_addons">แอดออน</string>
     <string name="search_addons_none">ยังไม่ได้เปิดใช้แอดออน เพิ่มได้ที่ การตั้งค่า → แหล่งที่มา</string>
     <string name="app_icon">ไอคอนแอป</string>
