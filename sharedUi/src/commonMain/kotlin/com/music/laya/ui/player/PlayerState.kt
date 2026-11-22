@@ -28,6 +28,7 @@ import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.artworkAt
 import com.music.laya.data.model.artworkFallback
+import com.music.laya.playback.AutoMixVisualFeed
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
@@ -152,8 +153,20 @@ internal class PlayerArtwork(val url: String?, private val context: PlatformCont
             .build()
     }
 
+    /** The cover's decoded pixels as last drawn, and the AutoMix generation that was mixing then. */
+    private var decodedCover: DecodedAutoMixCover? = null
+    private var decodedDuringMix: Long? = null
+
+    /** The sleeve as it was before [generation] began mixing — the outgoing side of its dissolve. */
+    fun decodedCoverBefore(generation: Long): DecodedAutoMixCover? =
+        decodedCover?.takeIf { decodedDuringMix != generation }
+
     /** Fed from each painter drawing [request]. */
     fun onState(state: AsyncImagePainter.State) {
+        if (state is AsyncImagePainter.State.Success) {
+            decodedCover = state.result.decodedAutoMixCover(state.painter)
+            decodedDuringMix = AutoMixVisualFeed.state.value?.takeIf { it.mixActive }?.generation
+        }
         loaded = state is AsyncImagePainter.State.Success
         // Only the failure is latched, and only upwards: the retry that clears
         // it is [failed]'s own effect, and clearing it from a Loading state here

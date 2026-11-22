@@ -89,6 +89,8 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import com.music.laya.ui.player.LocalMiniAutoMixArtwork
+import com.music.laya.ui.player.rememberMiniAutoMixArtwork
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -3972,6 +3974,9 @@ private fun LayaApp(
                     }
                 }
 
+                // AutoMix's artwork transition in whichever mini player is up; owned
+                // here, once, where the queue is known.
+                val miniAutoMixArtwork = rememberMiniAutoMixArtwork(player.song, player.queue, player.queueIndex)
                 if (glassActive) Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -3984,6 +3989,7 @@ private fun LayaApp(
                     // component they are stacked to imitate: the now playing
                     // controls dock into the tab bar rather than riding above it,
                     // and the pair folds together on scroll. See [GlassNavBar].
+                    CompositionLocalProvider(LocalMiniAutoMixArtwork provides miniAutoMixArtwork) {
                     GlassNavBar(
                         tabs = tabs,
                         selectedIndex = selectedTab,
@@ -4008,6 +4014,7 @@ private fun LayaApp(
                         pull = playerSheetMotion.takeIf { !reducePlayerMotion },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    }
                 } else Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -4024,6 +4031,7 @@ private fun LayaApp(
                 ) {
                     QueueActionNoticeHost(queueNotice)
                     player.song?.let { song ->
+                        CompositionLocalProvider(LocalMiniAutoMixArtwork provides miniAutoMixArtwork) {
                         MiniPlayer(
                             song = song,
                             isPlaying = player.isPlaying,
@@ -4045,6 +4053,7 @@ private fun LayaApp(
                             pull = playerSheetMotion.takeIf { !reducePlayerMotion },
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        }
                         Spacer(Modifier.height(8.dp))
                     }
                     FloatingBottomBar(

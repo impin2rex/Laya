@@ -68,6 +68,7 @@ import com.music.laya.ui.components.floatingtabbar.FloatingTabBarScrollConnectio
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
 import com.music.laya.ui.player.PlayerDock
+import com.music.laya.ui.player.LocalMiniAutoMixArtwork
 import com.music.laya.ui.player.rememberRemoteArtworkUrl
 
 /**
@@ -376,8 +377,11 @@ private fun GlassNowPlaying(
                     .clip(RoundedCornerShape(artCorner))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
-                AsyncImage(
-                    model = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX),
+                val miniArtModel = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX)
+                // AutoMix's artwork transition, where the host provides it.
+                val autoMixArtwork = LocalMiniAutoMixArtwork.current
+                if (autoMixArtwork != null) autoMixArtwork(miniArtModel, Modifier.matchParentSize()) else AsyncImage(
+                    model = miniArtModel,
                     contentDescription = null,
                     // A music video's frame is 16:9: cropped to the square, as every other cover is.
                     contentScale = ContentScale.Crop,

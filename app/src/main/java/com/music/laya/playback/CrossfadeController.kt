@@ -15,6 +15,7 @@ import com.music.laya.data.settings.MixBlend
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TrackAnalysisState
 import com.music.laya.data.settings.TransitionWindow
+import com.music.laya.data.model.queueEntryIdentityAt
 import com.music.laya.playback.smart.AimedFilters
 import com.music.laya.playback.smart.BeatPhase
 import com.music.laya.playback.smart.CrossfadeMode
@@ -254,6 +255,33 @@ class CrossfadeController(
      * traded places.
      */
     private var handedOff = false
+
+    // ---- AutoMix artwork ------------------------------------------------------
+    // The pair the player's artwork dissolves across, published on the same
+    // audio axis the faders run on — see [AutoMixVisualFeed].
+    private var visualGeneration: Long? = null
+    /** The last fade tick's blend position and length, in seconds, for a handoff between ticks. */
+    private var visualSeconds = 0.0
+    private var visualEndSeconds = 0.0
+
+    fun cancelAutoMixVisual() = AutoMixVisualFeed.cancel(visualGeneration)
+
+    private fun armAutoMixVisual(outIndex: Int, nextIndex: Int, items: List<MediaItem>) {
+        fun trackAt(index: Int): AutoMixVisualTrack? {
+            val identity = queueEntryIdentityAt(items, index, MediaItem::mediaId) { it.queueEntryId } ?: return null
+            return AutoMixVisualTrack(identity, index, items[index].mediaMetadata.artworkUri?.toString())
+        }
+        val from = trackAt(outIndex) ?: return
+        val to = trackAt(nextIndex) ?: return
+        visualSeconds = 0.0
+        visualEndSeconds = 0.0
+        visualGeneration = AutoMixVisualFeed.arm(from, to)
+    }
+
+    private fun clearAutoMixVisual() {
+        cancelAutoMixVisual()
+        visualGeneration = null
+    }
 
     /**
      * How many items the queue held when the standby was loaded with a copy of
@@ -536,6 +564,8 @@ class CrossfadeController(
                 // harmless and shouldn't cost the listener the blend.
                 Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED -> bail()
                 Player.MEDIA_ITEM_TRANSITION_REASON_SEEK -> bail()
+                // The outgoing track ran out before the handoff: no pair left to dissolve.
+                Player.MEDIA_ITEM_TRANSITION_REASON_AUTO -> if (!handedOff) cancelAutoMixVisual()
             }
         }
 
@@ -547,6 +577,11 @@ class CrossfadeController(
         // either way the hold must not leave the listener paused at the end of
         // a song.
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            // A pause parks the audio, but the artwork would sit half-dissolved; it settles instead.
+            // The end-of-item hold below can hand off late, which is still the mix.
+            if (!playWhenReady && reason != Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
+                cancelAutoMixVisual()
+            }
             if (playWhenReady || reason != Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) return
             val held = heldAtEnd ?: return
             if (held !== listeningTo) return
@@ -599,6 +634,7 @@ class CrossfadeController(
     }
 
     fun release() {
+        clearAutoMixVisual()
         tickerJob?.cancel()
         tickerJob = null
         endEase(clickless = false)
@@ -630,6 +666,7 @@ class CrossfadeController(
      * player this class has finished with.
      */
     fun onSkipRequested() {
+        cancelAutoMixVisual()
         if (phase != Phase.IDLE) bail()
     }
 
@@ -1161,6 +1198,7 @@ class CrossfadeController(
         into.prepare()
 
         phase = Phase.ARMING
+        if (smart) armAutoMixVisual(outgoingItemIndex, nextIndex, items)
         return true
     }
 
@@ -1347,6 +1385,7 @@ class CrossfadeController(
         // would run straight over the marker for the transition now under way.
         AppSettings.smartTransitionWindow.value = null
         phase = Phase.FADING
+        AutoMixVisualFeed.start(visualGeneration, audioSeconds = 0.0)
     }
 
     /**
@@ -1372,6 +1411,8 @@ class CrossfadeController(
         listenTo(into)
         handedOff = true
         onHandoff(out, into)
+        // On the blend's own axis: the session's title moves here, the artwork follows it.
+        if (visualEndSeconds > 0.0) AutoMixVisualFeed.swap(visualGeneration, visualSeconds, visualEndSeconds)
 
         // The outgoing player holds the whole queue too, and a standard
         // crossfade runs right up to its track's natural end — at which point
@@ -1493,9 +1534,13 @@ class CrossfadeController(
         // from under it: until the handoff its queue still runs on past the
         // track, and reaching the end would start the next item — the very
         // song fading in — a second time on the player that is leaving.
+        visualEndSeconds = wallSpan / 1000.0
+        visualSeconds = progress * visualEndSeconds
         if (!handedOff && (progress >= render.handoffAt || (outRemaining != null && outRemaining <= HANDOFF_GUARD_MS))) {
             handOff(out, player)
         }
+        AutoMixVisualFeed.advance(visualGeneration, visualSeconds, visualEndSeconds)
+        if (progress >= 1f) AutoMixVisualFeed.complete(visualGeneration)
         publishBlend(out, player)
         render.rideFilters(incomingAt, outgoingAt)
 
@@ -1678,6 +1723,7 @@ class CrossfadeController(
      * away gracefully.
      */
     private fun bail() {
+        cancelAutoMixVisual()
         if (phase == Phase.IDLE || phase == Phase.BAILING) return
         Log.d(TAG, "bail from $phase")
         AppSettings.smartMixInProgress.value = false
@@ -1703,6 +1749,7 @@ class CrossfadeController(
     private fun leavingOnBail(): ExoPlayer? = if (handedOff) outgoing else incoming
 
     private fun finish() {
+        clearAutoMixVisual()
         val wasTransitioning = phase != Phase.IDLE
         if (phase != Phase.IDLE) {
             Log.d(TAG, "finish from $phase")

@@ -119,6 +119,8 @@ import com.music.laya.data.model.UiState
 import com.music.laya.ui.LyricsProviderState
 import com.music.laya.ui.components.BottomTab
 import com.music.laya.ui.components.GlassNavBar
+import com.music.laya.ui.player.LocalMiniAutoMixArtwork
+import com.music.laya.ui.player.rememberMiniAutoMixArtwork
 import com.music.laya.ui.components.LocalAppBackdrop
 import com.music.laya.ui.components.LocalLiquidGlassEnabled
 import com.music.laya.ui.components.backdrop.backdrops.layerBackdrop
@@ -1342,6 +1344,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             }
                         }
                     }
+                    // AutoMix's artwork transition in the docked mini player, owned here where the queue is known.
+                    val miniAutoMixArtwork = rememberMiniAutoMixArtwork(song, player.queue, player.index)
+                    CompositionLocalProvider(LocalMiniAutoMixArtwork provides miniAutoMixArtwork) {
                     GlassNavBar(
                         tabs = tabs,
                         selectedIndex = tab,
@@ -1360,6 +1365,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             barHeight = with(density) { it.height.toDp() }
                         },
                     )
+                    }
 
                     AnimatedVisibility(
                         visible = !onboardingComplete,

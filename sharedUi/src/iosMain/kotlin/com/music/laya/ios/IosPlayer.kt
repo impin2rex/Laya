@@ -18,6 +18,8 @@ import com.music.laya.data.innertube.PlayerClient
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
+import com.music.laya.data.model.entryIdentityAt
+import com.music.laya.playback.AutoMixVisualFeed
 import com.music.laya.data.model.artworkAt
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.SmartAnalysis
@@ -119,6 +121,8 @@ private const val UPGRADE_MIN_REMAINING_MS = 20_000L
 
 /** Android's DEFAULT_SMART_FALLBACK_SECONDS: the fade a pair gets before it is analysed, when the slider says Off. */
 private const val DEFAULT_SMART_FALLBACK_SECONDS = 6.0
+/** How far ahead of an Automix blend its artwork pair is armed, for the incoming cover's decode. */
+private const val AUTOMIX_VISUAL_ARM_LEAD_SEC = 8.0
 
 /** Tracks kept queued on the receiver after the playing one (Android CastPlayback.AHEAD), so it moves on alone with the phone asleep. */
 private const val CAST_AHEAD = 3
@@ -284,6 +288,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun noTransition() {
+        if (IosTransition.live == null) cancelAutoMixVisual()
         AppSettings.smartTransitionWindow.value = null
         IosTransition.setPlan(null)
         engine.setTransition(-1, 0, 0, 1f, 1f)
@@ -353,6 +358,28 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             (plan.transitionStart * 1000).toLong(), plan.fadeMs, (plan.incomingCueTime * 1000).toLong(),
             plan.incomingPlaybackRate.toFloat(), plan.outgoingPlaybackRate.toFloat(),
         )
+        armAutoMixVisual(autoNext(), plan.transitionStart, positionMs)
+    }
+
+    /**
+     * Arms the artwork's AutoMix pair a few seconds ahead of the blend, so the incoming cover can be decoded before
+     * the reveal (Android arms it with the standby player). Never while a blend runs: after its handoff this is the
+     * next pair being planned, and the one on screen is still dissolving.
+     */
+    private fun armAutoMixVisual(nextIndex: Int, startSec: Double, positionMs: Long) {
+        if (IosTransition.live != null) return
+        val armed = AutoMixVisualFeed.pending(IosTransition.visualGeneration)
+        if (armed != null) {
+            if (armed.outgoing.identity == queue.entryIdentityAt(index) && armed.incoming.identity == queue.entryIdentityAt(nextIndex)) return
+            cancelAutoMixVisual()
+        }
+        if (positionMs / 1000.0 < startSec - AUTOMIX_VISUAL_ARM_LEAD_SEC) return
+        IosTransition.visualGeneration = AutoMixVisualFeed.arm(queue, index, nextIndex)
+    }
+
+    private fun cancelAutoMixVisual() {
+        AutoMixVisualFeed.cancel(IosTransition.visualGeneration)
+        IosTransition.visualGeneration = null
     }
 
     /** A host that holds the controls takes them from every listener: the call does nothing. */
@@ -393,7 +420,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun setPlaying(play: Boolean) {
         if (party.handleLockedPlayPause(play)) return
         val at = pendingMs
-        if (!play) pauseOut() else if (at != null) start(index, at) else resumeOut()
+        if (!play) { cancelAutoMixVisual(); pauseOut() } else if (at != null) start(index, at) else resumeOut()
         party.onLocalIntent()
     }
 
@@ -402,6 +429,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun seekTo(ms: Long) = intent { rawSeek(ms) }
 
     private fun rawSeek(ms: Long) {
+        cancelAutoMixVisual()
         if (pendingMs != null) { pendingMs = ms; position.seeks++; position.report(ms); return }
         if (IosCast.active) { castSeekAt = NSDate().timeIntervalSinceReferenceDate; IosCast.native?.seekTo(ms) } else
         engine.seekTo(ms)
@@ -829,6 +857,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun start(i: Int, fromMs: Long = 0) {
+        cancelAutoMixVisual()
         // A track starting: what the last one's versions were playing is no longer wanted.
         versionOpened.clear()
         val song = queue.getOrNull(i) ?: return

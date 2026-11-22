@@ -625,6 +625,28 @@ fun SettingsScreen(
                     onClick = { AppSettings.setSmartFadeEnabled(!smartFade) },
                 )
             }
+            // AutoMix's artwork transitions, nested under it and only while it is on.
+            if (smartFade) {
+                val artTransitionTitle = stringResource(Res.string.automix_art_transition)
+                val miniArtTransitionTitle = stringResource(Res.string.automix_mini_art_transition)
+                val autoMixArtwork by AppSettings.autoMixArtwork.collectAsStateWithLifecycle()
+                row(artTransitionTitle, "automix", "artwork", "cover", divided = false, available = automixOption) {
+                    SettingsSubRow(
+                        title = artTransitionTitle,
+                        subtitle = stringResource(Res.string.automix_art_transition_subtitle),
+                        checked = autoMixArtwork.artTransition,
+                        onCheckedChange = AppSettings::setAutoMixArtTransition,
+                    )
+                }
+                row(miniArtTransitionTitle, "automix", "artwork", "mini player", divided = false, available = automixOption) {
+                    SettingsSubRow(
+                        title = miniArtTransitionTitle,
+                        subtitle = stringResource(Res.string.automix_mini_art_transition_subtitle),
+                        checked = autoMixArtwork.miniPlayerTransition,
+                        onCheckedChange = AppSettings::setAutoMixMiniPlayerTransition,
+                    )
+                }
+            }
             val automixPerformanceTitle = stringResource(Res.string.automix_performance)
             row(automixPerformanceTitle, "cpu", "battery", available = automixOption) {
                 SettingsRow(

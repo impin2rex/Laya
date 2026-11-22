@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import coil3.PlatformContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,9 +45,11 @@ import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import com.music.laya.data.model.CARD_ART_PX
+import com.music.laya.data.model.PLAYER_ART_PX
 import com.music.laya.data.model.artworkAt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -103,21 +109,44 @@ fun rememberFullArtworkBlurImage(
 
     LaunchedEffect(imageUrl, artPx, prepare) {
         if (!prepare || imageUrl == null || image != null) return@LaunchedEffect
-        val request = ImageRequest.Builder(context)
-            // Same URL as the player's 1200px sleeve, so this is a small decode
-            // from Coil's shared fetch/disk result rather than another download.
-            .data(imageUrl.artworkAt(artPx))
-            .size(FULL_BLUR_SOURCE_PX)
-            .forPixelAccess()
-            .build()
-        val result = SingletonImageLoader.get(context).execute(request)
-        val bitmap = (result as? SuccessResult)?.image?.toImageBitmap() ?: return@LaunchedEffect
-        val blurred = withContext(Dispatchers.Default) { bitmap.boxBlurred(FULL_BLUR_PASSES) }
-        val ready = blurred
-        fullBlurCache[imageUrl] = ready
-        image = ready
+        image = loadFullArtworkBlur(context, imageUrl, artPx) ?: return@LaunchedEffect
     }
     return image
+}
+
+private suspend fun loadFullArtworkBlur(context: PlatformContext, imageUrl: String, artPx: Int): ImageBitmap? {
+    val request = ImageRequest.Builder(context)
+        // Same URL as the player's 1200px sleeve, so this is a small decode
+        // from Coil's shared fetch/disk result rather than another download.
+        .data(imageUrl.artworkAt(artPx))
+        .size(FULL_BLUR_SOURCE_PX)
+        .forPixelAccess()
+        .build()
+    val result = SingletonImageLoader.get(context).execute(request)
+    val bitmap = (result as? SuccessResult)?.image?.toImageBitmap() ?: return null
+    val ready = withContext(Dispatchers.Default) { bitmap.boxBlurred(FULL_BLUR_PASSES) }
+    fullBlurCache[imageUrl] = ready
+    return ready
+}
+
+/**
+ * Warms the mesh and the full-cover blur for [imageUrl], so an AutoMix reveal's backdrop has the
+ * incoming track's colours the moment the session swaps to it. Call on Main, like the effects
+ * that own these URL-keyed caches.
+ */
+internal suspend fun prefetchArtworkAmbient(context: PlatformContext, imageUrl: String) {
+    if (meshCache[imageUrl] == null) {
+        val request = ImageRequest.Builder(context)
+            .data(imageUrl.artworkAt(PLAYER_ART_PX))
+            .size(MESH_PX)
+            .forPixelAccess()
+            .build()
+        val bitmap = (SingletonImageLoader.get(context).execute(request) as? SuccessResult)?.image?.toImageBitmap()
+        if (bitmap != null) {
+            withContext(Dispatchers.Default) { meshOf(bitmap, imageUrl.hashCode()) }?.let { meshCache[imageUrl] = it }
+        }
+    }
+    if (fullBlurCache[imageUrl] == null) loadFullArtworkBlur(context, imageUrl, PLAYER_ART_PX)
 }
 
 /**
@@ -141,20 +170,36 @@ fun rememberFullArtworkBlurImage(
 fun FullArtworkBlurBackdrop(
     image: ImageBitmap?,
     modifier: Modifier = Modifier,
+    /**
+     * An AutoMix reveal's share of the incoming cover — see [rememberAutoMixAmbientEase]. While
+     * set, a new cover lands over the last one on that clock rather than replacing it.
+     */
+    autoMixEase: (() -> Float)? = null,
 ) {
     val imageAlpha by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (image != null) 1f else 0f,
         animationSpec = tween(320, easing = FastOutSlowInEasing),
         label = "preparedBackdropImage",
     )
+    val mix = rememberUpdatedState(autoMixEase)
+    // The cover last on screen, held under the incoming one through a reveal.
+    val lastShown = remember { arrayOfNulls<ImageBitmap>(1) }
+    val under = remember(image) { lastShown[0].takeIf { autoMixEase != null && it !== image } }
+    SideEffect { if (image != null) lastShown[0] = image }
     Box(modifier = modifier.fillMaxSize().background(FallbackBackdrop)) {
+        under?.let { bitmap ->
+            val painter = remember(bitmap) { BitmapPainter(bitmap) }
+            Image(painter = painter, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
         image?.let { bitmap ->
             val painter = remember(bitmap) { BitmapPainter(bitmap) }
             Image(
                 painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = imageAlpha },
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    alpha = if (under != null) mix.value?.invoke() ?: 1f else imageAlpha
+                },
             )
         }
 
@@ -317,8 +362,15 @@ fun ArtworkMeshBackdrop(
      * several times a second.
      */
     blurRadius: Dp = 32.dp,
+    /**
+     * An AutoMix reveal's share of the incoming cover — see [rememberAutoMixAmbientEase]. While
+     * set, a new mesh lands on that clock instead of its own [MESH_FADE_MS] fade.
+     */
+    autoMixEase: (() -> Float)? = null,
 ) {
     val reduceAnimation by PlayerSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val mix = rememberUpdatedState(autoMixEase)
+    var driven by remember { mutableStateOf(false) }
     val reduceDynamicBlur by PlayerSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     // RenderEffect only; below API 31 `blur` is a no-op. It is not missed here —
     // the CPU-side interpolation is what carries the smoothness.
@@ -333,6 +385,7 @@ fun ArtworkMeshBackdrop(
     val fade = remember { Animatable(0f) }
 
     LaunchedEffect(mesh) {
+        driven = false
         val next = mesh ?: return@LaunchedEffect
         // A change arriving mid-fade. Whatever was fading in has been on screen
         // for a while and is what the new one should fade *from*; leaving it in
@@ -350,8 +403,15 @@ fun ArtworkMeshBackdrop(
             return@LaunchedEffect
         }
         incoming = next
-        fade.snapTo(0f)
-        fade.animateTo(1f, tween(MESH_FADE_MS, easing = FastOutSlowInEasing))
+        if (mix.value != null) {
+            // Follows the cover's reveal to the end, however long the window runs.
+            driven = true
+            snapshotFlow { mix.value?.invoke() ?: 1f }.first { it >= 1f }
+        } else {
+            fade.snapTo(0f)
+            fade.animateTo(1f, tween(MESH_FADE_MS, easing = FastOutSlowInEasing))
+        }
+        driven = false
         shown = next
         incoming = null
     }
@@ -375,7 +435,7 @@ fun ArtworkMeshBackdrop(
         shown?.let { drawMesh(it, seamY, alpha = 1f) }
         // Read here rather than in composition: an Animatable read inside a
         // draw lambda invalidates the drawing and leaves composition out of it.
-        incoming?.let { drawMesh(it, seamY, alpha = fade.value) }
+        incoming?.let { drawMesh(it, seamY, alpha = if (driven) mix.value?.invoke() ?: 1f else fade.value) }
 
         // Enough of a scrim to keep white text off a bright sleeve, and no
         // more. The old backdrop needed a heavier one because it lightened
