@@ -1014,7 +1014,7 @@
 
     <string name="auto_quick_picks">クイックピック</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">最近</string>
 
     <string name="auto_liked">高く評価した曲</string>
 
@@ -1026,7 +1026,7 @@
 
     <string name="auto_empty_recents_subtitle">再生した曲がここに表示されます</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">候補はありません</string>
 
     <string name="auto_empty_quick_picks_subtitle">接続を確認して、もう一度お試しください</string>
 
@@ -1058,33 +1058,33 @@
 
     <string name="equalizer_footer">システムに渡される前に、Laya 内で音を整えます。</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">ダイナミック</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">手動</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">トーン</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">チルト</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">コンター</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">ブロード</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">フォーカス</string>
 
     <string name="equalizer_broad_footer">左にドラッグすると温かい音、右にドラッグすると明るい音になります。下にドラッグすると中域が控えめに、上にドラッグすると前に出ます。「ワイド」はスペクトラムの広い範囲を一度に動かします。</string>
 
     <string name="equalizer_focused_footer">左にドラッグすると温かい音、右にドラッグすると明るい音になります。下にドラッグすると中域が控えめに、上にドラッグすると前に出ます。「フォーカス」はより狭い範囲に作用するため、周囲への影響が少なくなります。</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">プリセット</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">バンド</string>
 
     <string name="equalizer_bands_footer">バンドを動かすとプリセットから外れ、カーブは自分用の設定になります。</string>
 
     <string name="equalizer_reset">すべてのバンドをリセット</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">バランス</string>
 
     <string name="equalizer_balance_left">L</string>
 
@@ -1101,15 +1101,15 @@
 
     <string name="system_equalizer_footer">Laya の処理後に、オーディオセッション全体に適用されます。両方を使うと、両方が適用されます。</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">フラット</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">アコースティック</string>
 
     <string name="eq_preset_bass_boost">低音ブースト</string>
 
     <string name="eq_preset_bass_cut">低音カット</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">ボーカル</string>
 
     <string name="eq_preset_treble_boost">高音ブースト</string>
 
@@ -1119,15 +1119,15 @@
 
     <string name="eq_preset_spoken_word">スポークンワード</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">エレクトロニック</string>
 
-    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_rock">ロック</string>
 
     <string name="eq_preset_hip_hop">ヒップホップ</string>
 
-    <string name="eq_preset_jazz">Jazz</string>
+    <string name="eq_preset_jazz">ジャズ</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">クラシック</string>
 
     <string name="eq_preset_small_speakers">小型スピーカー</string>
 
@@ -1154,8 +1154,8 @@
     <string name="cast_dialog_subtitle">Chromecast または Google Cast スピーカーで再生</string>
     <string name="cast_searching">デバイスを探しています…</string>
     <string name="cast_searching_hint">スマートフォンとレシーバーを同じ Wi-Fi ネットワークに接続してください。</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">接続中…</string>
+    <string name="cast_device_connected">キャスト中</string>
     <string name="cast_stop">キャストを停止</string>
     <string name="cast_track_unsupported">このトラックはキャストできません</string>
     <string name="cast_connect_failed">レシーバーに接続できませんでした</string>
@@ -1163,43 +1163,43 @@
 
     <string name="pipeline_track_info">トラック情報</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">デコーダー</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">リサンプラー</string>
 
     <string name="pipeline_dsp">DSP</string>
 
     <string name="pipeline_output_device">出力デバイス</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">ソース</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">フォーマット</string>
 
     <string name="pipeline_bit_depth">ビット深度</string>
 
     <string name="pipeline_sample_rate">サンプルレート</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">ビットレート</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">チャンネル</string>
 
     <string name="pipeline_decoder_name">デコーダー名</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">入出力レート</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">タイプ</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">カットオフ</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">品質</string>
 
     <string name="pipeline_pcm_format">PCM フォーマット</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">EQプリセット</string>
 
     <string name="pipeline_stereo_expand">ステレオ拡張</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">バッファー</string>
 
     <string name="pipeline_output_api">出力 API</string>
 

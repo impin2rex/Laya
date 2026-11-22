@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d-Bit</string>
     <string name="cancel">Abbrechen</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Übertragung</string>
+    <string name="cast_connecting">Verbindung wird hergestellt…</string>
     <string name="cast_row_subtitle">Chromecast- und Google-Cast-Lautsprecher</string>
     <string name="channel_count">%1$d Kan.</string>
     <string name="choose_lyrics_provider">Songtext-Anbieter wählen</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Songtexte nicht verfügbar</string>
     <string name="lyrics_offset">Songtext-Versatz</string>
     <string name="lyrics_offset_description">Positive Werte zeigen den Songtext später an</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Zurücksetzen</string>
     <string name="lyrics_provider_current">Aktueller Anbieter</string>
     <string name="lyrics_provider_fetching">Songtext wird geladen…</string>
     <string name="lyrics_provider_found">Songtext gefunden · Zum Verwenden tippen</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Songtext</string>
     <string name="pause">Pause</string>
     <string name="play">Wiedergabe</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Gespielt von %1$s</string>
     <string name="playing_from">Wiedergabe von %1$s</string>
     <string name="playing_radio">Spiele %1$s Radio</string>
     <string name="queue">Warteschlange</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Kabelgebundene Kopfhörer</string>
     <string name="usb_audio">USB-Audio</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Handy von %1$s</string>
     <string name="this_phone">Dieses Smartphone</string>
     <string name="albums">Alben</string>
     <string name="artists">Künstler</string>

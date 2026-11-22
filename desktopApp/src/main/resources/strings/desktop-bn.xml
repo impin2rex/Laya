@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">প্লেলিস্ট • %1$dটি গান</string>
     <string name="d_module_index_found">মডিউল সূচি · %1$dটি মডিউল</string>
     <string name="d_party_invite_qr">পার্টির আমন্ত্রণের QR কোড</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">অ্যাড-অন · %1$s</string>
     <string name="d_google_sign_in_finish">সাইন-ইন উইন্ডোতে সম্পন্ন করুন, তারপর “এই প্রোফাইল ব্যবহার করুন” বেছে নিন</string>
     <string name="d_party_size">পার্টির সাইজ</string>
     <string name="d_party_code">পার্টি কোড</string>

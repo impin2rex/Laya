@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Paroles non disponibles</string>
     <string name="lyrics_offset">Décalage des paroles</string>
     <string name="lyrics_offset_description">Les valeurs positives affichent les paroles plus tard</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Réinitialiser</string>
     <string name="lyrics_provider_current">Source actuelle</string>
     <string name="lyrics_provider_fetching">Récupération des paroles…</string>
     <string name="lyrics_provider_found">Paroles trouvées · Touche pour les utiliser</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Paroles</string>
     <string name="pause">Pause</string>
     <string name="play">Lecture</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Lu par %1$s</string>
     <string name="playing_from">Lecture depuis %1$s</string>
     <string name="playing_radio">Lecture de la radio %1$s</string>
     <string name="queue">File d\'attente</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Casque filaire</string>
     <string name="usb_audio">Audio USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Téléphone de %1$s</string>
     <string name="this_phone">Ce téléphone</string>
     <string name="albums">Albums</string>
     <string name="artists">Artistes</string>

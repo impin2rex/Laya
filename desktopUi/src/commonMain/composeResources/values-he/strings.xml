@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d-ביט</string>
     <string name="cancel">ביטול</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">שידור</string>
+    <string name="cast_connecting">מתחבר…</string>
     <string name="cast_row_subtitle">רמקולי Chromecast ו-Google Cast</string>
     <string name="channel_count">%1$d ערוצים</string>
     <string name="choose_lyrics_provider">בחירת ספק מילים</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">מילים לא זמינות</string>
     <string name="lyrics_offset">היסט מילים</string>
     <string name="lyrics_offset_description">ערכים חיוביים מציגים את המילים מאוחר יותר</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">איפוס</string>
     <string name="lyrics_provider_current">הספק הנוכחי</string>
     <string name="lyrics_provider_fetching">מביא מילים…</string>
     <string name="lyrics_provider_found">נמצאו מילים · הקישו לשימוש</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">מילות שיר</string>
     <string name="pause">השהה</string>
     <string name="play">הפעלה</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">מושמע על ידי %1$s</string>
     <string name="playing_from">מתנגן מ-%1$s</string>
     <string name="playing_radio">מנגן רדיו %1$s</string>
     <string name="queue">תור ההשמעה</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">אוזניות חוטיות</string>
     <string name="usb_audio">שמע USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">הטלפון של %1$s</string>
     <string name="this_phone">הטלפון הזה</string>
     <string name="albums">אלבומים</string>
     <string name="artists">אמנים</string>

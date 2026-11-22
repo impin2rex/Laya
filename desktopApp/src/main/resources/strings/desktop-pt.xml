@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">Playlist • %1$d músicas</string>
     <string name="d_module_index_found">Índice de módulos · %1$d módulos</string>
     <string name="d_party_invite_qr">Código QR de convite para a festa</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">Complemento · %1$s</string>
     <string name="d_google_sign_in_finish">Conclua na janela de login e escolha “Usar este perfil”</string>
     <string name="d_party_size">Tamanho da festa</string>
     <string name="d_party_code">Código da festa</string>

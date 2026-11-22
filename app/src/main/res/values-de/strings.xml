@@ -423,7 +423,7 @@
     <string name="pause_countdown">%1$s bis die Wiedergabe pausiert</string>
     <string name="play_to_preview">Spiele etwas ab, um die Vorschau zu füllen.</string>
     <string name="playlist_name">Playlist-Name</string>
-    <string name="presence">Presence</string>
+    <string name="presence">Präsenz</string>
     <string name="preview">Vorschau</string>
     <string name="prioritize_syllable_lyrics">Silben-Songtexte priorisieren</string>
     <string name="prioritize_syllable_lyrics_subtitle">Sucht über einen zeilensynchronen Treffer hinaus nach wortgenauen Songtexten weiter</string>
@@ -777,7 +777,7 @@
     <string name="listen_together_status_custom_online">Mit eigenem Server verbunden · %1$d ms</string>
     <string name="listen_together_status_custom_fallback">Eigener Server nicht erreichbar · Standard-Fallback aktiv (%1$d ms)</string>
     <string name="listen_together_status_all_offline">Eigener Server und Standardserver sind beide offline</string>
-    <string name="listen_together_top_bar_fallback">Fallback · %1$s</string>
+    <string name="listen_together_top_bar_fallback">Ersatz · %1$s</string>
 
     <string name="vietnamese">Vietnamesisch</string>
 
@@ -1034,7 +1034,7 @@
 
     <string name="auto_quick_picks">Schnellauswahl</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">Zuletzt</string>
 
     <string name="auto_liked">Gelikte Songs</string>
 
@@ -1046,7 +1046,7 @@
 
     <string name="auto_empty_recents_subtitle">Songs, die du abspielst, erscheinen hier</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">Keine Vorschläge</string>
 
     <string name="auto_empty_quick_picks_subtitle">Prüfe deine Verbindung und versuche es erneut</string>
 
@@ -1078,27 +1078,27 @@
 
     <string name="equalizer_footer">Formt den Klang in Laya, bevor er das System erreicht.</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">Dynamisch</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">Manuell</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">Klang</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">Neigung</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">Kontur</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">Breit</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">Fokussiert</string>
 
     <string name="equalizer_broad_footer">Nach links ziehen für einen wärmeren, nach rechts für einen helleren Klang; nach unten senkt die Mitten ab, nach oben holt sie nach vorn. „Breit“ bewegt große Bereiche des Spektrums auf einmal.</string>
 
     <string name="equalizer_focused_footer">Nach links ziehen für einen wärmeren, nach rechts für einen helleren Klang; nach unten senkt die Mitten ab, nach oben holt sie nach vorn. „Fokussiert“ wirkt auf schmalere Bereiche und verändert daher weniger um die Stelle herum.</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">Voreinstellung</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">Bänder</string>
 
     <string name="equalizer_bands_footer">Wenn du ein Band verschiebst, wird das Preset verlassen und die Kurve gehört dir.</string>
 
@@ -1121,15 +1121,15 @@
 
     <string name="system_equalizer_footer">Läuft nach dem von Laya, auf die gesamte Audiositzung. Wenn du beide nutzt, gelten beide.</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">Linear</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">Akustik</string>
 
     <string name="eq_preset_bass_boost">Bassverstärkung</string>
 
     <string name="eq_preset_bass_cut">Bassabsenkung</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">Gesang</string>
 
     <string name="eq_preset_treble_boost">Höhenverstärkung</string>
 
@@ -1139,7 +1139,7 @@
 
     <string name="eq_preset_spoken_word">Gesprochenes Wort</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">Elektronisch</string>
 
     <string name="eq_preset_rock">Rock</string>
 
@@ -1147,7 +1147,7 @@
 
     <string name="eq_preset_jazz">Jazz</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">Klassik</string>
 
     <string name="eq_preset_small_speakers">Kleine Lautsprecher</string>
 
@@ -1174,8 +1174,8 @@
     <string name="cast_dialog_subtitle">Auf einem Chromecast oder Google-Cast-Lautsprecher wiedergeben</string>
     <string name="cast_searching">Suche nach Geräten…</string>
     <string name="cast_searching_hint">Smartphone und Empfänger müssen im selben WLAN sein.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">Verbindung wird hergestellt…</string>
+    <string name="cast_device_connected">Übertragung</string>
     <string name="cast_stop">Streamen beenden</string>
     <string name="cast_track_unsupported">Dieser Titel kann nicht gestreamt werden</string>
     <string name="cast_connect_failed">Verbindung zum Empfänger fehlgeschlagen</string>
@@ -1191,7 +1191,7 @@
 
     <string name="pipeline_output_device">Ausgabegerät</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">Quelle</string>
 
     <string name="pipeline_format">Format</string>
 
@@ -1201,25 +1201,25 @@
 
     <string name="pipeline_bitrate">Bitrate</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">Kanäle</string>
 
     <string name="pipeline_decoder_name">Decoder-Name</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">E/A-Rate</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">Typ</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">Grenzfrequenz</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">Qualität</string>
 
     <string name="pipeline_pcm_format">PCM-Format</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">EQ-Voreinstellung</string>
 
     <string name="pipeline_stereo_expand">Stereo-Erweiterung</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">Puffer</string>
 
     <string name="pipeline_output_api">Ausgabe-API</string>
 
@@ -1317,7 +1317,7 @@
     <string name="artist_signatures_test_failed">Die API war unter dieser URL nicht erreichbar</string>
     <string name="artist_signatures_builtin">Integrierter Server</string>
     <string name="artist_signatures_online">Online</string>
-    <string name="search_source_addons">Addons</string>
+    <string name="search_source_addons">Add-ons</string>
     <string name="search_addons_none">Es sind keine Addons aktiviert. Füge eines unter Einstellungen → Quellen hinzu.</string>
     <string name="app_icon">App-Symbol</string>
     <string name="app_icon_default">Standard</string>

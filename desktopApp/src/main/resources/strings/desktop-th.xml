@@ -8,7 +8,7 @@
     <string name="d_dont_repeat_songs_in_current_session">ไม่เล่นเพลงซ้ำในเซสชันปัจจุบัน</string>
     <string name="d_keeps_the_spotlight_on_the_current_line">ให้สปอตไลต์อยู่ที่บรรทัดปัจจุบัน</string>
     <string name="d_output_precision">ความแม่นยำเอาต์พุต</string>
-    <string name="d_recents">Recents</string>
+    <string name="d_recents">ล่าสุด</string>
     <string name="d_sources_are_tried_in_this_order">แหล่งข้อมูลจะถูกลองตามลำดับนี้ ลากเพื่อจัดลำดับใหม่ แหล่งข้อมูลแรกที่มีเนื้อเพลงจะถูกใช้ เว้นแต่ตั้งค่าให้เนื้อเพลงแบบพยางค์มาก่อน</string>
     <string name="d_what_follows_the_verb_on_the_profile">ข้อความที่ตามหลังคำกริยาบนโปรไฟล์ เว้นว่างไว้เพื่อใช้ %1$s</string>
     <string name="d_off">ปิด</string>
@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">เพลย์ลิสต์ • %1$d เพลง</string>
     <string name="d_module_index_found">ดัชนีโมดูล · %1$d โมดูล</string>
     <string name="d_party_invite_qr">คิวอาร์โค้ดคำเชิญเข้าปาร์ตี้</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">ส่วนเสริม · %1$s</string>
     <string name="d_google_sign_in_finish">ดำเนินการให้เสร็จในหน้าต่างลงชื่อเข้าใช้ แล้วเลือก “ใช้โปรไฟล์นี้”</string>
     <string name="d_party_size">ขนาดปาร์ตี้</string>
     <string name="d_party_code">รหัสปาร์ตี้</string>

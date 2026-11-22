@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">פלייליסט • %1$d שירים</string>
     <string name="d_module_index_found">אינדקס מודולים · %1$d מודולים</string>
     <string name="d_party_invite_qr">קוד QR להזמנה למסיבה</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">תוסף · %1$s</string>
     <string name="d_google_sign_in_finish">סיימו בחלון ההתחברות ואז בחרו “השתמש בפרופיל זה”</string>
     <string name="d_party_size">גודל המסיבה</string>
     <string name="d_party_code">קוד המסיבה</string>

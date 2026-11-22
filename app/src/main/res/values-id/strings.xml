@@ -65,7 +65,7 @@
     <string name="recent_searches">Pencarian terbaru</string>
     <string name="clear">Hapus</string>
     <string name="search_hint">Artis, Lagu, Lirik, dan Lainnya</string>
-    <string name="recent_search_edit">Edit “%1$s”</string>
+    <string name="recent_search_edit">Ubah “%1$s”</string>
     <string name="recent_search_remove">Hapus “%1$s” dari pencarian terbaru</string>
     <string name="storage_required_save">Akses penyimpanan diperlukan untuk menyimpan lagu</string>
     <string name="storage_required_read">Izin penyimpanan diperlukan untuk membaca file audio lokal</string>
@@ -183,7 +183,7 @@
     <string name="turkish">Turki</string>
     <string name="thai">Thai</string>
     <string name="show_all">Lihat semua</string>
-    <string name="grid_view">Grid</string>
+    <string name="grid_view">Kisi</string>
     <string name="list_view">Daftar</string>
     <string name="switch_to_grid_view">Beralih ke tampilan grid</string>
     <string name="switch_to_list_view">Beralih ke tampilan daftar</string>
@@ -409,7 +409,7 @@
     <string name="pause_countdown">%1$s hingga pemutaran dijeda</string>
     <string name="play_to_preview">Putar sesuatu untuk mengisi pratinjau.</string>
     <string name="playlist_name">Nama playlist</string>
-    <string name="presence">Presence</string>
+    <string name="presence">Kehadiran</string>
     <string name="preview">Pratinjau</string>
     <string name="prioritize_syllable_lyrics">Prioritaskan lirik per suku kata</string>
     <string name="prioritize_syllable_lyrics_subtitle">Terus mencari melebihi kecocokan tersinkron per baris untuk mendapatkan lirik kata demi kata</string>
@@ -873,7 +873,7 @@
     <string name="loudness_target_subtitle">Lebih pelan cocok untuk headphone; lebih keras cocok untuk mobil atau speaker ponsel</string>
     <string name="loudness_target_value">%1$s LUFS</string>
     <string name="pipeline_loudness">Kenyaringan</string>
-    <string name="pipeline_loudness_gain">Gain</string>
+    <string name="pipeline_loudness_gain">Penguatan</string>
     <string name="pipeline_loudness_measured">Terukur</string>
     <string name="pipeline_bit_exact">Akurat per bit</string>
     <string name="loudness_measuring">Mengukur…</string>
@@ -1013,7 +1013,7 @@
 
     <string name="auto_quick_picks">Pilihan cepat</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">Terbaru</string>
 
     <string name="auto_liked">Lagu yang disukai</string>
 
@@ -1025,7 +1025,7 @@
 
     <string name="auto_empty_recents_subtitle">Lagu yang Anda putar akan muncul di sini</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">Tidak ada saran</string>
 
     <string name="auto_empty_quick_picks_subtitle">Periksa koneksi Anda lalu coba lagi</string>
 
@@ -1057,19 +1057,19 @@
 
     <string name="equalizer_footer">Membentuk suara di dalam Laya sebelum sampai ke sistem.</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">Dinamis</string>
 
     <string name="equalizer_manual">Manual</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">Nada</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">Kemiringan</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">Kontur</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">Luas</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">Terfokus</string>
 
     <string name="equalizer_broad_footer">Geser ke kiri untuk suara lebih hangat dan ke kanan untuk lebih cerah; ke bawah meredam nada tengah, ke atas memunculkannya. “Lebar” menggeser rentang spektrum yang luas sekaligus.</string>
 
@@ -1077,13 +1077,13 @@
 
     <string name="equalizer_preset">Preset</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">Pita</string>
 
     <string name="equalizer_bands_footer">Menggeser satu pita akan meninggalkan preset dan kurva menjadi milik Anda.</string>
 
     <string name="equalizer_reset">Reset semua pita</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">Balans</string>
 
     <string name="equalizer_balance_left">L</string>
 
@@ -1100,15 +1100,15 @@
 
     <string name="system_equalizer_footer">Berjalan setelah milik Laya, pada seluruh sesi audio. Jika keduanya dipakai, keduanya berlaku.</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">Datar</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">Akustik</string>
 
     <string name="eq_preset_bass_boost">Penguat bass</string>
 
     <string name="eq_preset_bass_cut">Pemotong bass</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">Vokal</string>
 
     <string name="eq_preset_treble_boost">Penguat treble</string>
 
@@ -1118,7 +1118,7 @@
 
     <string name="eq_preset_spoken_word">Suara bicara</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">Elektronik</string>
 
     <string name="eq_preset_rock">Rock</string>
 
@@ -1126,7 +1126,7 @@
 
     <string name="eq_preset_jazz">Jazz</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">Klasik</string>
 
     <string name="eq_preset_small_speakers">Speaker kecil</string>
 
@@ -1153,8 +1153,8 @@
     <string name="cast_dialog_subtitle">Putar di speaker Chromecast atau Google Cast</string>
     <string name="cast_searching">Mencari perangkat…</string>
     <string name="cast_searching_hint">Ponsel Anda dan penerima harus berada di jaringan Wi-Fi yang sama.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">Menyambungkan…</string>
+    <string name="cast_device_connected">Mentransmisikan</string>
     <string name="cast_stop">Hentikan transmisi</string>
     <string name="cast_track_unsupported">Lagu ini tidak dapat ditransmisikan</string>
     <string name="cast_connect_failed">Tidak dapat terhubung ke penerima</string>
@@ -1162,7 +1162,7 @@
 
     <string name="pipeline_track_info">Info trek</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">Dekoder</string>
 
     <string name="pipeline_resampler">Resampler</string>
 
@@ -1170,7 +1170,7 @@
 
     <string name="pipeline_output_device">Perangkat keluaran</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">Sumber</string>
 
     <string name="pipeline_format">Format</string>
 
@@ -1180,25 +1180,25 @@
 
     <string name="pipeline_bitrate">Bitrate</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">Kanal</string>
 
     <string name="pipeline_decoder_name">Nama dekoder</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">Laju I/O</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">Jenis</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">Frekuensi potong</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">Kualitas</string>
 
     <string name="pipeline_pcm_format">Format PCM</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">Preset EQ</string>
 
     <string name="pipeline_stereo_expand">Perluasan stereo</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">Buffer</string>
 
     <string name="pipeline_output_api">API keluaran</string>
 

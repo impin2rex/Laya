@@ -10,7 +10,7 @@
     <string name="automix_analysis_status">Automix · bu şarkı: %1$s · sonraki: %2$s</string>
     <string name="automix_not_supported_video">Automix video şarkılarında desteklenmiyor</string>
     <string name="automix_stopped_in_party">Automix: Birlikte dinle sırasında durduruldu</string>
-    <string name="autoplay">AutoPlay</string>
+    <string name="autoplay">Otomatik oynat</string>
     <string name="autoplay_empty_description">Benzer müzikler çalmaya devam edecek</string>
     <string name="autoplay_off">AutoPlay kapalı</string>
     <string name="autoplay_on">AutoPlay açık</string>
@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d bit</string>
     <string name="cancel">İptal</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Yayınlanıyor</string>
+    <string name="cast_connecting">Bağlanıyor…</string>
     <string name="cast_row_subtitle">Chromecast ve Google Cast hoparlörleri</string>
     <string name="channel_count">%1$d kanal</string>
     <string name="choose_lyrics_provider">Söz sağlayıcısını seç</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Sözler mevcut değil</string>
     <string name="lyrics_offset">Şarkı sözü ofseti</string>
     <string name="lyrics_offset_description">Pozitif değerler şarkı sözlerini daha geç gösterir</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Sıfırla</string>
     <string name="lyrics_provider_current">Geçerli sağlayıcı</string>
     <string name="lyrics_provider_fetching">Sözler getiriliyor…</string>
     <string name="lyrics_provider_found">Sözler bulundu · Kullanmak için dokun</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Şarkı Sözleri</string>
     <string name="pause">Duraklat</string>
     <string name="play">Çal</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Oynatan: %1$s</string>
     <string name="playing_from">%1$s kaynağından çalıyor</string>
     <string name="playing_radio">%1$s Radyosu çalıyor</string>
     <string name="queue">Sıra</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Kablolu kulaklık</string>
     <string name="usb_audio">USB ses</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">%1$s adlı kişinin telefonu</string>
     <string name="this_phone">Bu telefon</string>
     <string name="albums">Albümler</string>
     <string name="artists">Sanatçılar</string>

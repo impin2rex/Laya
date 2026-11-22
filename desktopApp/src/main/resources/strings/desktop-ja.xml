@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">プレイリスト • %1$d曲</string>
     <string name="d_module_index_found">モジュールインデックス · %1$d個のモジュール</string>
     <string name="d_party_invite_qr">パーティー招待のQRコード</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">アドオン · %1$s</string>
     <string name="d_google_sign_in_finish">サインインのウィンドウで完了し、「このプロフィールを使用」を選択します</string>
     <string name="d_party_size">パーティーの人数</string>
     <string name="d_party_code">パーティーコード</string>

@@ -813,7 +813,7 @@
 
     <string name="auto_quick_picks">เลือกด่วน</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">ล่าสุด</string>
 
     <string name="auto_liked">เพลงที่ถูกใจ</string>
 
@@ -825,7 +825,7 @@
 
     <string name="auto_empty_recents_subtitle">เพลงที่คุณเล่นจะแสดงที่นี่</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">ไม่มีคำแนะนำ</string>
 
     <string name="auto_empty_quick_picks_subtitle">ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง</string>
 
@@ -845,9 +845,9 @@
 
     <string name="auto_unavailable_subtitle">เปิดโฟลเดอร์อีกครั้งแล้วลองใหม่</string>
 
-    <string name="subscribe">Subscribe</string>
+    <string name="subscribe">ติดตาม</string>
 
-    <string name="unsubscribe">Unsubscribe</string>
+    <string name="unsubscribe">เลิกติดตาม</string>
 
     <string name="settings_search_hint">ค้นหาการตั้งค่า</string>
 
@@ -875,33 +875,33 @@
 
     <string name="equalizer_footer">ปรับแต่งเสียงภายใน Laya ก่อนส่งไปยังระบบ</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">ไดนามิก</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">กำหนดเอง</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">โทนเสียง</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">เอียง</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">เส้นโค้ง</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">กว้าง</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">โฟกัส</string>
 
     <string name="equalizer_broad_footer">ลากไปทางซ้ายเพื่อให้เสียงอุ่นขึ้น ลากไปทางขวาเพื่อให้สว่างขึ้น ลากลงเพื่อลดเสียงกลาง ลากขึ้นเพื่อดันเสียงกลางให้เด่น “กว้าง” จะปรับย่านความถี่กว้างพร้อมกัน</string>
 
     <string name="equalizer_focused_footer">ลากไปทางซ้ายเพื่อให้เสียงอุ่นขึ้น ลากไปทางขวาเพื่อให้สว่างขึ้น ลากลงเพื่อลดเสียงกลาง ลากขึ้นเพื่อดันเสียงกลางให้เด่น “เน้นจุด” จะปรับย่านที่แคบกว่า จึงกระทบย่านรอบข้างน้อยลง</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">พรีเซ็ต</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">แบนด์</string>
 
     <string name="equalizer_bands_footer">เมื่อเลื่อนแถบความถี่ ค่าที่ตั้งไว้ล่วงหน้าจะถูกยกเลิก และเส้นโค้งจะกลายเป็นของคุณเอง</string>
 
     <string name="equalizer_reset">รีเซ็ตทุกแถบความถี่</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">บาลานซ์</string>
 
     <string name="equalizer_balance_left">L</string>
 
@@ -918,15 +918,15 @@
 
     <string name="system_equalizer_footer">ทำงานหลังจากของ Laya กับเซสชันเสียงทั้งหมด หากใช้ทั้งสองอย่าง จะมีผลทั้งคู่</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">แฟลต</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">อะคูสติก</string>
 
     <string name="eq_preset_bass_boost">เพิ่มเสียงเบส</string>
 
     <string name="eq_preset_bass_cut">ลดเสียงเบส</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">เสียงร้อง</string>
 
     <string name="eq_preset_treble_boost">เพิ่มเสียงแหลม</string>
 
@@ -936,15 +936,15 @@
 
     <string name="eq_preset_spoken_word">เสียงพูด</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">อิเล็กทรอนิกส์</string>
 
-    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_rock">ร็อก</string>
 
     <string name="eq_preset_hip_hop">ฮิปฮอป</string>
 
-    <string name="eq_preset_jazz">Jazz</string>
+    <string name="eq_preset_jazz">แจ๊ส</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">คลาสสิก</string>
 
     <string name="eq_preset_small_speakers">ลำโพงขนาดเล็ก</string>
 
@@ -979,8 +979,8 @@
     <string name="cast_dialog_subtitle">เล่นบนลำโพง Chromecast หรือ Google Cast</string>
     <string name="cast_searching">กำลังค้นหาอุปกรณ์…</string>
     <string name="cast_searching_hint">โทรศัพท์และเครื่องรับต้องอยู่ในเครือข่าย Wi-Fi เดียวกัน</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">กำลังเชื่อมต่อ…</string>
+    <string name="cast_device_connected">กำลังแคสต์</string>
     <string name="cast_stop">หยุดแคสต์</string>
     <string name="cast_track_unsupported">แคสต์เพลงนี้ไม่ได้</string>
     <string name="cast_connect_failed">เชื่อมต่อกับเครื่องรับไม่ได้</string>
@@ -988,43 +988,43 @@
 
     <string name="pipeline_track_info">ข้อมูลเพลง</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">ตัวถอดรหัส</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">ตัวสุ่มตัวอย่างใหม่</string>
 
     <string name="pipeline_dsp">DSP</string>
 
     <string name="pipeline_output_device">อุปกรณ์เอาต์พุต</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">แหล่งที่มา</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">รูปแบบ</string>
 
     <string name="pipeline_bit_depth">บิตเดปธ์</string>
 
     <string name="pipeline_sample_rate">อัตราสุ่มตัวอย่าง</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">บิตเรต</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">ช่องสัญญาณ</string>
 
     <string name="pipeline_decoder_name">ชื่อตัวถอดรหัส</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">อัตรา I/O</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">ประเภท</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">ความถี่ตัด</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">คุณภาพ</string>
 
     <string name="pipeline_pcm_format">รูปแบบ PCM</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">พรีเซ็ต EQ</string>
 
     <string name="pipeline_stereo_expand">ขยายสเตอริโอ</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">บัฟเฟอร์</string>
 
     <string name="pipeline_output_api">API เอาต์พุต</string>
 
@@ -1061,7 +1061,7 @@
 
     <string name="sort_default">ลำดับเริ่มต้น</string>
 
-    <string name="sort_library">Sort</string>
+    <string name="sort_library">เรียงลำดับ</string>
 
     <string name="sort_songs">เรียงเพลง</string>
 
@@ -1075,7 +1075,7 @@
 
 
 
-    <string name="vietnamese">Vietnamese</string>
+    <string name="vietnamese">ภาษาเวียดนาม</string>
 
 
     <string name="miscellaneous_footer">เมื่อเปิดใช้ การปิดแอปจากหน้าจอแอปล่าสุดจะหยุดเล่นเพลงด้วย</string>
@@ -1133,7 +1133,7 @@
     <string name="shelf_mixed_for_you">มิกซ์สำหรับคุณ</string>
 
 
-    <string name="shelf_similar_to">Similar to %1$s</string>
+    <string name="shelf_similar_to">คล้ายกับ %1$s</string>
 
 
     <string name="shelf_forgotten_favorites">เพลงโปรดที่ลืมไป</string>
@@ -1145,7 +1145,7 @@
     <string name="shelf_from_your_library">จากคลังของคุณ</string>
 
 
-    <string name="shelf_charts">Charts</string>
+    <string name="shelf_charts">ชาร์ต</string>
 
 
     <string name="shelf_new_releases">ออกใหม่</string>
@@ -1163,31 +1163,31 @@
     <string name="shelf_feel_good">อารมณ์ดี</string>
 
 
-    <string name="shelf_commute">Commute</string>
+    <string name="shelf_commute">เดินทาง</string>
 
 
-    <string name="shelf_workout">Workout</string>
+    <string name="shelf_workout">ออกกำลังกาย</string>
 
 
-    <string name="shelf_focus">Focus</string>
+    <string name="shelf_focus">โฟกัส</string>
 
 
-    <string name="shelf_relax">Relax</string>
+    <string name="shelf_relax">ผ่อนคลาย</string>
 
 
-    <string name="shelf_sleep">Sleep</string>
+    <string name="shelf_sleep">นอนหลับ</string>
 
 
-    <string name="shelf_party">Party</string>
+    <string name="shelf_party">ปาร์ตี้</string>
 
 
-    <string name="shelf_romance">Romance</string>
+    <string name="shelf_romance">โรแมนติก</string>
 
 
     <string name="shelf_sad">Sad</string>
 
 
-    <string name="shelf_100_on_repeat">100% on repeat</string>
+    <string name="shelf_100_on_repeat">เล่นซ้ำ 100%</string>
 
 
     <string name="shelf_new_albums_singles">อัลบั้ม &amp; ซิงเกิลใหม่</string>
@@ -1203,19 +1203,19 @@
     <string name="shelf_top_tunes_right_now">เพลงดังตอนนี้</string>
 
 
-    <string name="shelf_concerts">Concerts</string>
+    <string name="shelf_concerts">คอนเสิร์ต</string>
 
 
     <string name="shelf_shorts">Shorts</string>
 
 
-    <string name="shelf_single">Single</string>
+    <string name="shelf_single">ซิงเกิล</string>
 
 
-    <string name="shelf_chart">Chart</string>
+    <string name="shelf_chart">ชาร์ต</string>
 
 
-    <string name="shelf_song_item">Song</string>
+    <string name="shelf_song_item">เพลง</string>
 
 
     <string name="shelf_from_the_community">จากชุมชน</string>
@@ -1224,23 +1224,23 @@
     <string name="shelf_youtube_charts">ชาร์ต YouTube</string>
 
 
-    <string name="shelf_trending">Trending</string>
+    <string name="shelf_trending">มาแรง</string>
 
 
-    <string name="shelf_recents">Recents</string>
+    <string name="shelf_recents">ล่าสุด</string>
 
 
-    <string name="subscriptions">Subscriptions</string>
+    <string name="subscriptions">การติดตาม</string>
 
 
 
-    <string name="card_views_format">%1$s views</string>
+    <string name="card_views_format">%1$s ครั้งที่ดู</string>
 
 
-    <string name="card_plays_format">%1$s plays</string>
+    <string name="card_plays_format">%1$s ครั้งที่เล่น</string>
 
 
-    <string name="card_songs_format">%1$s songs</string>
+    <string name="card_songs_format">%1$s เพลง</string>
 
 
     <string name="source_needs_lossless_output">ต้องใช้เอาต์พุตแบบ lossless · ใช้อุปกรณ์ที่รองรับ lossless</string>

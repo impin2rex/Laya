@@ -144,7 +144,7 @@
     <string name="tv_playlist_name">Playlist-Name</string>
     <string name="tv_prefer_word_synced">Wortgenaue bevorzugen</string>
     <string name="tv_prefer_word_synced_sub">Auf wortweise Songtexte warten, bevor zeilenweise verwendet werden.</string>
-    <string name="tv_presets">Presets</string>
+    <string name="tv_presets">Voreinstellungen</string>
     <string name="tv_press_back_hint">Zurück drücken für „Fertig“ oder „Abbrechen“</string>
     <string name="tv_profile_lock_off">Profilsperre ist aus</string>
     <string name="tv_profile_lock_on">Profilsperre ist an</string>
@@ -215,7 +215,7 @@
     <string name="tv_skip_to_best_part">Zur besten Stelle springen</string>
     <string name="tv_sleep_timer">Sleep-Timer</string>
     <string name="tv_sleep_timer_message">Musikwiedergabe beenden nach</string>
-    <string name="tv_sound">Sound</string>
+    <string name="tv_sound">Klang</string>
     <string name="tv_sound_check">Soundcheck</string>
     <string name="tv_sources_on">%1$d an</string>
     <string name="tv_spatial_audio">Räumliches Audio</string>

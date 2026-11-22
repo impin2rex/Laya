@@ -969,7 +969,7 @@
 
     <string name="shelf_sad">उदास</string>
 
-    <string name="shelf_shorts">Shorts</string>
+    <string name="shelf_shorts">शॉर्ट्स</string>
 
     <string name="shelf_similar_to">%1$s के समान</string>
 
@@ -1034,7 +1034,7 @@
 
     <string name="auto_quick_picks">क्विक पिक्स</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">हाल के</string>
 
     <string name="auto_liked">पसंदीदा गाने</string>
 
@@ -1046,7 +1046,7 @@
 
     <string name="auto_empty_recents_subtitle">आप जो गाने चलाएँगे वे यहाँ दिखेंगे</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">कोई सुझाव नहीं</string>
 
     <string name="auto_empty_quick_picks_subtitle">अपना कनेक्शन जाँचें और फिर कोशिश करें</string>
 
@@ -1078,33 +1078,33 @@
 
     <string name="equalizer_footer">सिस्टम तक पहुँचने से पहले Laya के अंदर ही आवाज़ को आकार देता है।</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">डायनामिक</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">मैनुअल</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">टोन</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">झुकाव</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">कंटूर</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">चौड़ा</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">केंद्रित</string>
 
     <string name="equalizer_broad_footer">गर्म आवाज़ के लिए बाईं ओर और ज़्यादा चमकदार आवाज़ के लिए दाईं ओर खींचें; नीचे खींचने पर बीच की आवाज़ दबती है, ऊपर खींचने पर उभरती है। “चौड़ा” एक साथ स्पेक्ट्रम के बड़े हिस्से बदलता है।</string>
 
     <string name="equalizer_focused_footer">गर्म आवाज़ के लिए बाईं ओर और ज़्यादा चमकदार आवाज़ के लिए दाईं ओर खींचें; नीचे खींचने पर बीच की आवाज़ दबती है, ऊपर खींचने पर उभरती है। “फ़ोकस्ड” छोटे हिस्सों पर काम करता है, इसलिए आसपास की आवाज़ कम बदलती है।</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">प्रीसेट</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">बैंड</string>
 
     <string name="equalizer_bands_footer">किसी बैंड को हिलाने पर प्रीसेट हट जाता है और कर्व आपका अपना बन जाता है।</string>
 
     <string name="equalizer_reset">सभी बैंड रीसेट करें</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">बैलेंस</string>
 
     <string name="equalizer_balance_left">L</string>
 
@@ -1121,15 +1121,15 @@
 
     <string name="system_equalizer_footer">Laya के बाद पूरे ऑडियो सेशन पर चलता है। दोनों इस्तेमाल करने पर दोनों लागू होते हैं।</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">फ़्लैट</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">एकॉस्टिक</string>
 
     <string name="eq_preset_bass_boost">बास बूस्ट</string>
 
     <string name="eq_preset_bass_cut">बास कट</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">वोकल</string>
 
     <string name="eq_preset_treble_boost">ट्रेबल बूस्ट</string>
 
@@ -1139,15 +1139,15 @@
 
     <string name="eq_preset_spoken_word">स्पोकन वर्ड</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">इलेक्ट्रॉनिक</string>
 
-    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_rock">रॉक</string>
 
     <string name="eq_preset_hip_hop">हिप-हॉप</string>
 
-    <string name="eq_preset_jazz">Jazz</string>
+    <string name="eq_preset_jazz">जैज़</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">शास्त्रीय</string>
 
     <string name="eq_preset_small_speakers">छोटे स्पीकर</string>
 
@@ -1174,8 +1174,8 @@
     <string name="cast_dialog_subtitle">Chromecast या Google Cast स्पीकर पर चलाएँ</string>
     <string name="cast_searching">डिवाइस खोजे जा रहे हैं…</string>
     <string name="cast_searching_hint">आपका फ़ोन और रिसीवर एक ही Wi-Fi नेटवर्क पर होने चाहिए।</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">कनेक्ट हो रहा है…</string>
+    <string name="cast_device_connected">कास्ट हो रहा है</string>
     <string name="cast_stop">कास्टिंग बंद करें</string>
     <string name="cast_track_unsupported">यह ट्रैक कास्ट नहीं किया जा सकता</string>
     <string name="cast_connect_failed">रिसीवर से कनेक्ट नहीं हो सका</string>
@@ -1183,43 +1183,43 @@
 
     <string name="pipeline_track_info">ट्रैक की जानकारी</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">डिकोडर</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">रीसैम्पलर</string>
 
     <string name="pipeline_dsp">DSP</string>
 
     <string name="pipeline_output_device">आउटपुट डिवाइस</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">स्रोत</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">फ़ॉर्मैट</string>
 
     <string name="pipeline_bit_depth">बिट डेप्थ</string>
 
     <string name="pipeline_sample_rate">सैंपल रेट</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">बिटरेट</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">चैनल</string>
 
     <string name="pipeline_decoder_name">डिकोडर का नाम</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">I/O दर</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">प्रकार</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">कटऑफ़</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">गुणवत्ता</string>
 
     <string name="pipeline_pcm_format">PCM फ़ॉर्मैट</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">EQ प्रीसेट</string>
 
     <string name="pipeline_stereo_expand">स्टीरियो एक्सपैंड</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">बफ़र</string>
 
     <string name="pipeline_output_api">आउटपुट API</string>
 

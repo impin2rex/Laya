@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">Playlist • %1$d titres</string>
     <string name="d_module_index_found">Index de modules · %1$d modules</string>
     <string name="d_party_invite_qr">Code QR d’invitation à la session</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">Module · %1$s</string>
     <string name="d_google_sign_in_finish">Terminez dans la fenêtre de connexion, puis choisissez « Utiliser ce profil »</string>
     <string name="d_party_size">Taille de la session</string>
     <string name="d_party_code">Code de session</string>

@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">Çalma listesi • %1$d şarkı</string>
     <string name="d_module_index_found">Modül dizini · %1$d modül</string>
     <string name="d_party_invite_qr">Parti daveti QR kodu</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">Eklenti · %1$s</string>
     <string name="d_google_sign_in_finish">Oturum açma penceresinde işlemi bitir, ardından “Bu profili kullan” seçeneğini seç</string>
     <string name="d_party_size">Parti boyutu</string>
     <string name="d_party_code">Parti kodu</string>

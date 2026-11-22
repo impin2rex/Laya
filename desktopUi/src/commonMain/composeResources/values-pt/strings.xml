@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d-bit</string>
     <string name="cancel">Cancelar</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Transmitindo</string>
+    <string name="cast_connecting">Conectando…</string>
     <string name="cast_row_subtitle">Alto-falantes Chromecast e Google Cast</string>
     <string name="channel_count">%1$d canais</string>
     <string name="choose_lyrics_provider">Escolher provedor de letras</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Letras não disponíveis</string>
     <string name="lyrics_offset">Deslocamento da letra</string>
     <string name="lyrics_offset_description">Valores positivos mostram a letra mais tarde</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Redefinir</string>
     <string name="lyrics_provider_current">Provedor atual</string>
     <string name="lyrics_provider_fetching">Buscando letra…</string>
     <string name="lyrics_provider_found">Letra encontrada · Toque para usar</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Letra</string>
     <string name="pause">Pausar</string>
     <string name="play">Tocar</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Tocado por %1$s</string>
     <string name="playing_from">Tocando de %1$s</string>
     <string name="playing_radio">Tocando rádio %1$s</string>
     <string name="queue">Fila</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Fones de ouvido com fio</string>
     <string name="usb_audio">Áudio USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Telefone de %1$s</string>
     <string name="this_phone">Este celular</string>
     <string name="albums">Álbuns</string>
     <string name="artists">Artistas</string>

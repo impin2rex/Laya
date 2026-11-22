@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">Плейлист • %1$d песен</string>
     <string name="d_module_index_found">Индекс модулей · модулей: %1$d</string>
     <string name="d_party_invite_qr">QR-код приглашения на вечеринку</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">Дополнение · %1$s</string>
     <string name="d_google_sign_in_finish">Завершите вход в открывшемся окне, затем выберите «Использовать этот профиль»</string>
     <string name="d_party_size">Размер вечеринки</string>
     <string name="d_party_code">Код вечеринки</string>

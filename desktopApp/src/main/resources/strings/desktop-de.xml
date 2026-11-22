@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">Playlist • %1$d Songs</string>
     <string name="d_module_index_found">Modulindex · %1$d Module</string>
     <string name="d_party_invite_qr">QR-Code zur Party-Einladung</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">Add-on · %1$s</string>
     <string name="d_google_sign_in_finish">Schließe den Vorgang im Anmeldefenster ab und wähle dann „Dieses Profil nutzen“</string>
     <string name="d_party_size">Partygröße</string>
     <string name="d_party_code">Party-Code</string>

@@ -10,7 +10,7 @@
     <string name="automix_analysis_status">自動混音 · 當前歌曲：%1$s · 下一首：%2$s</string>
     <string name="automix_not_supported_video">影片類歌曲不支援 Automix</string>
     <string name="automix_stopped_in_party">Automix：一起聽期間已停止</string>
-    <string name="autoplay">AutoPlay</string>
+    <string name="autoplay">自動播放</string>
     <string name="autoplay_empty_description">相似音樂將繼續播放</string>
     <string name="autoplay_off">AutoPlay 已關閉</string>
     <string name="autoplay_on">AutoPlay 已開啟</string>
@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d 位</string>
     <string name="cancel">取消</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">投放中</string>
+    <string name="cast_connecting">連線中…</string>
     <string name="cast_row_subtitle">Chromecast 和 Google Cast 喇叭</string>
     <string name="channel_count">%1$d 聲道</string>
     <string name="choose_lyrics_provider">選擇歌詞來源</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">暫無歌詞</string>
     <string name="lyrics_offset">歌詞偏移</string>
     <string name="lyrics_offset_description">正值會讓歌詞較晚顯示</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">重設</string>
     <string name="lyrics_provider_current">當前來源</string>
     <string name="lyrics_provider_fetching">正在獲取歌詞…</string>
     <string name="lyrics_provider_found">已找到歌詞 · 點按以使用</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">歌詞</string>
     <string name="pause">暫停</string>
     <string name="play">播放</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">由 %1$s 播放</string>
     <string name="playing_from">正在播放：%1$s</string>
     <string name="playing_radio">正在播放 %1$s 電臺</string>
     <string name="queue">播放佇列</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">有線耳機</string>
     <string name="usb_audio">USB 音訊</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">%1$s 的手機</string>
     <string name="this_phone">這支手機</string>
     <string name="albums">專輯</string>
     <string name="artists">藝人</string>

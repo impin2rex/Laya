@@ -231,7 +231,7 @@
     <string name="tv_switch_to_video">Passa al video</string>
     <string name="tv_synced_lyrics">Testi sincronizzati</string>
     <string name="tv_system_font">Carattere di sistema</string>
-    <string name="tv_theme_artwork">Artwork</string>
+    <string name="tv_theme_artwork">Copertina</string>
     <string name="tv_theme_artwork_desc">Scuro, leggermente tinto dall’artwork di ciò che è in riproduzione.</string>
     <string name="tv_theme_midnight">Mezzanotte</string>
     <string name="tv_theme_midnight_desc">Uno sfondo blu navy intenso.</string>

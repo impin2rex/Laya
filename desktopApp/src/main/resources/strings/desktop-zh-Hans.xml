@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">播放列表 • %1$d 首歌曲</string>
     <string name="d_module_index_found">模块索引 · %1$d 个模块</string>
     <string name="d_party_invite_qr">派对邀请二维码</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">插件 · %1$s</string>
     <string name="d_google_sign_in_finish">在登录窗口中完成，然后选择“使用此资料”</string>
     <string name="d_party_size">派对人数</string>
     <string name="d_party_code">派对代码</string>

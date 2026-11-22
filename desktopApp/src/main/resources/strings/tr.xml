@@ -275,7 +275,7 @@
     <string name="always_on">Her zaman açık</string>
     <string name="api_token">API belirteci</string>
     <string name="audio_quality_connection">%1$s bağlantısındayken</string>
-    <string name="autoplay">AutoPlay</string>
+    <string name="autoplay">Otomatik oynat</string>
     <string name="back_in_future_version">Gelecek bir sürümde geri dönecek</string>
     <string name="buttons">Düğmeler</string>
     <string name="clear_name">Adı temizle</string>
@@ -843,7 +843,7 @@
     <string name="pipeline_output_api">Çıkış API\'si</string>
     <string name="pipeline_device_name">Cihaz Adı</string>
     <string name="playing_from">%1$s kaynağından çalıyor</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Oynatan: %1$s</string>
     <string name="shared_link">Paylaşılan bağlantı</string>
     <string name="discord_show_audio_quality">Ses kalitesini göster</string>
     <string name="discord_show_audio_quality_subtitle">Durum kartında Hi-Res, kayıpsız ve Dolby bilgileri</string>
@@ -857,7 +857,7 @@
     <string name="wired_headphones">Kablolu kulaklık</string>
     <string name="usb_audio">USB ses</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">%1$s adlı kişinin telefonu</string>
     <string name="this_phone">Bu telefon</string>
     <string name="song_info">Şarkı Bilgisi</string>
     <string name="song_info_album">Albüm</string>

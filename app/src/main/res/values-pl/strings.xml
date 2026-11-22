@@ -201,13 +201,13 @@
     <string name="on_mobile_data">Na danych komórkowych</string>
     <string name="in_use">W użyciu</string>
     <string name="blocking">Blokowanie</string>
-    <string name="crossfade">Crossfade</string>
+    <string name="crossfade">Przenikanie</string>
     <string name="crossfade_subtitle">Płynne przejścia między utworami</string>
     <string name="automix">Automix [BETA]</string>
     <string name="skip_silence">Pomiń ciszę</string>
     <string name="skip_silence_subtitle">Przycinanie przerw dłuższych niż sekunda</string>
     <string name="skip_silence_float_subtitle">Niedostępne przy 32-bitowym wyjściu float</string>
-    <string name="equalizer">Equalizer</string>
+    <string name="equalizer">Korektor</string>
     <string name="equalizer_subtitle">Panel systemowy Twojego urządzenia</string>
     <string name="show_nerd_stats">Pokaż statystyki dla nerdów</string>
     <string name="show_nerd_stats_subtitle">Kodek, bitrate i sample rate na odtwarzaczu</string>
@@ -242,7 +242,7 @@
     <string name="low">Niskie</string>
     <string name="medium">Średnie</string>
     <string name="high">Wysokie</string>
-    <string name="standard">Standard</string>
+    <string name="standard">Standardowy</string>
     <string name="lossless">Lossless</string>
     <string name="system">System</string>
     <string name="light">Jasny</string>
@@ -1069,7 +1069,7 @@
 
     <string name="auto_quick_picks">Szybki wybór</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">Ostatnie</string>
 
     <string name="auto_liked">Polubione utwory</string>
 
@@ -1081,7 +1081,7 @@
 
     <string name="auto_empty_recents_subtitle">Odtwarzane utwory pojawią się tutaj</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">Brak sugestii</string>
 
     <string name="auto_empty_quick_picks_subtitle">Sprawdź połączenie i spróbuj ponownie</string>
 
@@ -1115,33 +1115,33 @@
 
     <string name="equalizer_footer">Kształtuje dźwięk wewnątrz Laya, zanim trafi do systemu.</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">Dynamiczny</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">Ręczny</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">Ton</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">Nachylenie</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">Kontur</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">Szeroki</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">Skupiony</string>
 
     <string name="equalizer_broad_footer">Przeciągnij w lewo, by dźwięk był cieplejszy, w prawo — jaśniejszy; w dół wycina środek, w górę wysuwa go do przodu. „Szeroki” przesuwa naraz duże fragmenty widma.</string>
 
     <string name="equalizer_focused_footer">Przeciągnij w lewo, by dźwięk był cieplejszy, w prawo — jaśniejszy; w dół wycina środek, w górę wysuwa go do przodu. „Wąski” działa na mniejsze fragmenty, więc mniej zmienia się wokół nich.</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">Ustawienie</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">Pasma</string>
 
     <string name="equalizer_bands_footer">Przesunięcie pasma opuszcza preset, a krzywa staje się Twoja.</string>
 
     <string name="equalizer_reset">Zresetuj wszystkie pasma</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">Balans</string>
 
     <string name="equalizer_balance_left">L</string>
 
@@ -1158,15 +1158,15 @@
 
     <string name="system_equalizer_footer">Działa po korektorze Laya, na całej sesji audio. Użycie obu stosuje oba.</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">Płaski</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">Akustyczna</string>
 
     <string name="eq_preset_bass_boost">Wzmocnienie basów</string>
 
     <string name="eq_preset_bass_cut">Obcięcie basów</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">Wokal</string>
 
     <string name="eq_preset_treble_boost">Wzmocnienie wysokich tonów</string>
 
@@ -1176,7 +1176,7 @@
 
     <string name="eq_preset_spoken_word">Mowa</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">Elektroniczna</string>
 
     <string name="eq_preset_rock">Rock</string>
 
@@ -1184,7 +1184,7 @@
 
     <string name="eq_preset_jazz">Jazz</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">Klasyczna</string>
 
     <string name="eq_preset_small_speakers">Małe głośniki</string>
 
@@ -1211,8 +1211,8 @@
     <string name="cast_dialog_subtitle">Odtwarzaj na Chromecast lub głośniku Google Cast</string>
     <string name="cast_searching">Szukanie urządzeń…</string>
     <string name="cast_searching_hint">Telefon i odbiornik muszą być w tej samej sieci Wi-Fi.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">Łączenie…</string>
+    <string name="cast_device_connected">Przesyłanie</string>
     <string name="cast_stop">Zatrzymaj przesyłanie</string>
     <string name="cast_track_unsupported">Tego utworu nie można przesłać</string>
     <string name="cast_connect_failed">Nie udało się połączyć z odbiornikiem</string>
@@ -1220,7 +1220,7 @@
 
     <string name="pipeline_track_info">Informacje o utworze</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">Dekoder</string>
 
     <string name="pipeline_resampler">Resampler</string>
 
@@ -1228,7 +1228,7 @@
 
     <string name="pipeline_output_device">Urządzenie wyjściowe</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">Źródło</string>
 
     <string name="pipeline_format">Format</string>
 
@@ -1236,27 +1236,27 @@
 
     <string name="pipeline_sample_rate">Częstotliwość próbkowania</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">Przepływność</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">Kanały</string>
 
     <string name="pipeline_decoder_name">Nazwa dekodera</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">Częstotliwość We/Wy</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">Typ</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">Częstotliwość odcięcia</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">Jakość</string>
 
     <string name="pipeline_pcm_format">Format PCM</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">Ustawienie korektora</string>
 
     <string name="pipeline_stereo_expand">Rozszerzenie stereo</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">Bufory</string>
 
     <string name="pipeline_output_api">API wyjścia</string>
 

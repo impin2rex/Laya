@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d-bit</string>
     <string name="cancel">Anuluj</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Przesyłanie</string>
+    <string name="cast_connecting">Łączenie…</string>
     <string name="cast_row_subtitle">Głośniki Chromecast i Google Cast</string>
     <string name="channel_count">%1$d kan</string>
     <string name="choose_lyrics_provider">Wybierz źródło tekstów</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Tekst niedostępny</string>
     <string name="lyrics_offset">Przesunięcie tekstu</string>
     <string name="lyrics_offset_description">Wartości dodatnie pokazują tekst później</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Resetuj</string>
     <string name="lyrics_provider_current">Aktualne źródło</string>
     <string name="lyrics_provider_fetching">Pobieranie tekstu…</string>
     <string name="lyrics_provider_found">Tekst znaleziony · Dotknij, aby użyć</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Teksty</string>
     <string name="pause">Wstrzymaj</string>
     <string name="play">Odtwórz</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Odtwarza: %1$s</string>
     <string name="playing_from">Odtwarzanie z: %1$s</string>
     <string name="playing_radio">Odtwarzanie radia %1$s</string>
     <string name="queue">Kolejka</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Słuchawki przewodowe</string>
     <string name="usb_audio">Dźwięk USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Telefon użytkownika %1$s</string>
     <string name="this_phone">Ten telefon</string>
     <string name="albums">Albumy</string>
     <string name="artists">Artyści</string>

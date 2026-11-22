@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">Playlist • %1$d lagu</string>
     <string name="d_module_index_found">Indeks modul · %1$d modul</string>
     <string name="d_party_invite_qr">Kode QR undangan pesta</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">Add-on · %1$s</string>
     <string name="d_google_sign_in_finish">Selesaikan di jendela masuk, lalu pilih “Gunakan profil ini”</string>
     <string name="d_party_size">Ukuran pesta</string>
     <string name="d_party_code">Kode pesta</string>

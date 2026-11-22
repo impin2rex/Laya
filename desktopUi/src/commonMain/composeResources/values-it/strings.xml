@@ -10,7 +10,7 @@
     <string name="automix_analysis_status">Automix · questo brano: %1$s · successivo: %2$s</string>
     <string name="automix_not_supported_video">Automix non supportato sui video musicali</string>
     <string name="automix_stopped_in_party">Automix: interrotto in “Ascoltare insieme”</string>
-    <string name="autoplay">AutoPlay</string>
+    <string name="autoplay">Riproduzione automatica</string>
     <string name="autoplay_empty_description">Continuerà con musica simile</string>
     <string name="autoplay_off">AutoPlay disattivo</string>
     <string name="autoplay_on">AutoPlay attivo</string>
@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d bit</string>
     <string name="cancel">Annulla</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Trasmissione</string>
+    <string name="cast_connecting">Connessione in corso…</string>
     <string name="cast_row_subtitle">Altoparlanti Chromecast e Google Cast</string>
     <string name="channel_count">%1$d canali</string>
     <string name="choose_lyrics_provider">Scegli la fonte dei testi</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Testi non disponibili</string>
     <string name="lyrics_offset">Sfasamento dei testi</string>
     <string name="lyrics_offset_description">I valori positivi mostrano i testi più tardi</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Ripristina</string>
     <string name="lyrics_provider_current">Fonte attuale</string>
     <string name="lyrics_provider_fetching">Recupero del testo…</string>
     <string name="lyrics_provider_found">Testo trovato · Tocca per usarlo</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Testo</string>
     <string name="pause">Pausa</string>
     <string name="play">Riproduci</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Riprodotto da %1$s</string>
     <string name="playing_from">In riproduzione da %1$s</string>
     <string name="playing_radio">Riproduzione radio %1$s</string>
     <string name="queue">Coda</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Cuffie con cavo</string>
     <string name="usb_audio">Audio USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Telefono di %1$s</string>
     <string name="this_phone">Questo telefono</string>
     <string name="albums">Album</string>
     <string name="artists">Artisti</string>

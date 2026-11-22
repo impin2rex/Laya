@@ -204,7 +204,7 @@
     <string name="on_mobile_data">בנתונים סלולריים</string>
     <string name="in_use">בשימוש</string>
     <string name="blocking">חוסם</string>
-    <string name="crossfade">Crossfade</string>
+    <string name="crossfade">מעבר הדרגתי</string>
     <string name="crossfade_subtitle">ממזג רצועה אחת לתוך הבאה</string>
     <string name="automix">Automix [BETA]</string>
     <string name="skip_silence">דילוג על שקט</string>
@@ -1036,7 +1036,7 @@
 
     <string name="auto_quick_picks">בחירות מהירות</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">אחרונים</string>
 
     <string name="auto_liked">שירים שאהבתי</string>
 
@@ -1048,7 +1048,7 @@
 
     <string name="auto_empty_recents_subtitle">שירים שתנגנו יופיעו כאן</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">אין הצעות</string>
 
     <string name="auto_empty_quick_picks_subtitle">בדקו את החיבור ונסו שוב</string>
 
@@ -1080,33 +1080,33 @@
 
     <string name="equalizer_footer">מעצב את הצליל בתוך Laya, לפני שהוא מגיע למערכת.</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">דינמי</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">ידני</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">גוון</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">הטיה</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">קווי מתאר</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">רחב</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">ממוקד</string>
 
     <string name="equalizer_broad_footer">גררו שמאלה לצליל חם יותר וימינה לצליל בהיר יותר; למטה מנמיך את הטווח האמצעי, למעלה מקדם אותו. ״רחב״ מזיז קטעים רחבים בספקטרום בבת אחת.</string>
 
     <string name="equalizer_focused_footer">גררו שמאלה לצליל חם יותר וימינה לצליל בהיר יותר; למטה מנמיך את הטווח האמצעי, למעלה מקדם אותו. ״ממוקד״ פועל על קטעים צרים יותר, ולכן משנה פחות את מה שסביבו.</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">הגדרה מוכנה</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">תחומי תדר</string>
 
     <string name="equalizer_bands_footer">הזזת פס מבטלת את ההגדרה המוכנה והעקומה הופכת לשלכם.</string>
 
     <string name="equalizer_reset">איפוס כל הפסים</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">איזון</string>
 
     <string name="equalizer_balance_left">L</string>
 
@@ -1123,15 +1123,15 @@
 
     <string name="system_equalizer_footer">פועל אחרי זה של Laya, על כל סשן השמע. שימוש בשניהם מפעיל את שניהם.</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">שטוח</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">אקוסטי</string>
 
     <string name="eq_preset_bass_boost">הגברת בס</string>
 
     <string name="eq_preset_bass_cut">הנמכת בס</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">שירה</string>
 
     <string name="eq_preset_treble_boost">הגברת גבהים</string>
 
@@ -1141,15 +1141,15 @@
 
     <string name="eq_preset_spoken_word">דיבור</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">אלקטרוני</string>
 
-    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_rock">רוק</string>
 
     <string name="eq_preset_hip_hop">היפ הופ</string>
 
-    <string name="eq_preset_jazz">Jazz</string>
+    <string name="eq_preset_jazz">ג׳אז</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">קלאסי</string>
 
     <string name="eq_preset_small_speakers">רמקולים קטנים</string>
 
@@ -1176,8 +1176,8 @@
     <string name="cast_dialog_subtitle">ניגון ברמקול Chromecast או Google Cast</string>
     <string name="cast_searching">מחפש מכשירים…</string>
     <string name="cast_searching_hint">הטלפון והמקלט חייבים להיות באותה רשת Wi-Fi.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">מתחבר…</string>
+    <string name="cast_device_connected">שידור</string>
     <string name="cast_stop">הפסקת שידור</string>
     <string name="cast_track_unsupported">אי אפשר להעביר את הרצועה הזו</string>
     <string name="cast_connect_failed">לא ניתן להתחבר למקלט</string>
@@ -1185,43 +1185,43 @@
 
     <string name="pipeline_track_info">פרטי רצועה</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">מפענח</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">ממיר קצב דגימה</string>
 
     <string name="pipeline_dsp">DSP</string>
 
     <string name="pipeline_output_device">התקן פלט</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">מקור</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">פורמט</string>
 
     <string name="pipeline_bit_depth">עומק סיביות</string>
 
     <string name="pipeline_sample_rate">קצב דגימה</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">קצב סיביות</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">ערוצים</string>
 
     <string name="pipeline_decoder_name">שם מפענח</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">קצב קלט/פלט</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">סוג</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">תדר חיתוך</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">איכות</string>
 
     <string name="pipeline_pcm_format">פורמט PCM</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">הגדרת אקולייזר מוכנה</string>
 
     <string name="pipeline_stereo_expand">הרחבת סטריאו</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">מאגרים</string>
 
     <string name="pipeline_output_api">API פלט</string>
 

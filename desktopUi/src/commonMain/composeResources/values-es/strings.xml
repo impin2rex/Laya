@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d bits</string>
     <string name="cancel">Cancelar</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Transmitiendo</string>
+    <string name="cast_connecting">Conectando…</string>
     <string name="cast_row_subtitle">Altavoces Chromecast y Google Cast</string>
     <string name="channel_count">%1$d canales</string>
     <string name="choose_lyrics_provider">Elegir proveedor de letras</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Letra no disponible</string>
     <string name="lyrics_offset">Desfase de la letra</string>
     <string name="lyrics_offset_description">Los valores positivos muestran la letra más tarde</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Restablecer</string>
     <string name="lyrics_provider_current">Proveedor actual</string>
     <string name="lyrics_provider_fetching">Obteniendo letra…</string>
     <string name="lyrics_provider_found">Letra encontrada · Toca para usarla</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Letra</string>
     <string name="pause">Pausar</string>
     <string name="play">Reproducir</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Reproducido por %1$s</string>
     <string name="playing_from">Reproduciendo desde %1$s</string>
     <string name="playing_radio">Reproduciendo radio %1$s</string>
     <string name="queue">Cola</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Auriculares con cable</string>
     <string name="usb_audio">Audio USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Teléfono de %1$s</string>
     <string name="this_phone">Este teléfono</string>
     <string name="albums">Álbumes</string>
     <string name="artists">Artistas</string>

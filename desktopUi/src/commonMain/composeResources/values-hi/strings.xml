@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d-बिट</string>
     <string name="cancel">रद्द करें</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">कास्ट हो रहा है</string>
+    <string name="cast_connecting">कनेक्ट हो रहा है…</string>
     <string name="cast_row_subtitle">Chromecast और Google Cast स्पीकर</string>
     <string name="channel_count">%1$d ch</string>
     <string name="choose_lyrics_provider">लिरिक्स प्रदाता चुनें</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">लिरिक्स उपलब्ध नहीं हैं</string>
     <string name="lyrics_offset">लिरिक्स ऑफ़सेट</string>
     <string name="lyrics_offset_description">पॉज़िटिव मान लिरिक्स को देर से दिखाते हैं</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">रीसेट करें</string>
     <string name="lyrics_provider_current">मौजूदा प्रदाता</string>
     <string name="lyrics_provider_fetching">लिरिक्स लाए जा रहे हैं…</string>
     <string name="lyrics_provider_found">लिरिक्स मिल गए · इस्तेमाल करने के लिए टैप करें</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">लिरिक्स</string>
     <string name="pause">रोकें</string>
     <string name="play">चलाएं</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">%1$s द्वारा चलाया गया</string>
     <string name="playing_from">%1$s से चल रहा है</string>
     <string name="playing_radio">%1$s रेडियो चल रहा है</string>
     <string name="queue">कतार</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">तार वाले हेडफ़ोन</string>
     <string name="usb_audio">USB ऑडियो</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">%1$s का फ़ोन</string>
     <string name="this_phone">यह फ़ोन</string>
     <string name="albums">एल्बम</string>
     <string name="artists">कलाकार</string>
@@ -185,7 +185,7 @@
     <string name="shelf_quick_picks">त्वरित चयन</string>
     <string name="shelf_recents">हाल ही के</string>
     <string name="shelf_recommended_music_videos">अनुशंसित संगीत वीडियो</string>
-    <string name="shelf_shorts">Shorts</string>
+    <string name="shelf_shorts">शॉर्ट्स</string>
     <string name="shelf_similar_to">%1$s के समान</string>
     <string name="shelf_single">सिंगल</string>
     <string name="shelf_song_item">गाना</string>

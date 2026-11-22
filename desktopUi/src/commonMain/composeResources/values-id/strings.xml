@@ -10,7 +10,7 @@
     <string name="automix_analysis_status">Automix · lagu ini: %1$s · berikutnya: %2$s</string>
     <string name="automix_not_supported_video">Automix tidak didukung pada lagu video</string>
     <string name="automix_stopped_in_party">Automix: dihentikan saat Dengar bersama</string>
-    <string name="autoplay">AutoPlay</string>
+    <string name="autoplay">Putar otomatis</string>
     <string name="autoplay_empty_description">Musik serupa akan terus diputar</string>
     <string name="autoplay_off">AutoPlay nonaktif</string>
     <string name="autoplay_on">AutoPlay aktif</string>
@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d-bit</string>
     <string name="cancel">Batal</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Mentransmisikan</string>
+    <string name="cast_connecting">Menyambungkan…</string>
     <string name="cast_row_subtitle">Speaker Chromecast dan Google Cast</string>
     <string name="channel_count">%1$d kanal</string>
     <string name="choose_lyrics_provider">Pilih penyedia lirik</string>
@@ -46,7 +46,7 @@
     <string name="listen_together_open">Dengar bersama</string>
     <string name="listen_together_open_count">Mendengar bersama · %1$d</string>
     <string name="listen_together_you">Kamu</string>
-    <string name="mixing">Mixing</string>
+    <string name="mixing">Pencampuran</string>
     <string name="lossless">Lossless</string>
     <string name="lyrics_already_in_language">Lirik ini sudah dalam %1$s</string>
     <string name="lyrics_already_romanized">Lirik ini sudah memakai huruf Latin</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Lirik tidak tersedia</string>
     <string name="lyrics_offset">Offset lirik</string>
     <string name="lyrics_offset_description">Nilai positif menampilkan lirik lebih lambat</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Setel ulang</string>
     <string name="lyrics_provider_current">Penyedia saat ini</string>
     <string name="lyrics_provider_fetching">Mengambil lirik…</string>
     <string name="lyrics_provider_found">Lirik ditemukan · Ketuk untuk memakai</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Lirik</string>
     <string name="pause">Jeda</string>
     <string name="play">Putar</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Diputar oleh %1$s</string>
     <string name="playing_from">Diputar dari %1$s</string>
     <string name="playing_radio">Memutar Radio %1$s</string>
     <string name="queue">Antrean</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Headphone berkabel</string>
     <string name="usb_audio">Audio USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Ponsel %1$s</string>
     <string name="this_phone">Ponsel ini</string>
     <string name="albums">Album</string>
     <string name="artists">Artis</string>
@@ -158,7 +158,7 @@
     <string name="playlist">playlist</string>
     <string name="playlist_action">Playlist</string>
     <string name="playlists">Playlist</string>
-    <string name="recent_search_edit">Edit “%1$s”</string>
+    <string name="recent_search_edit">Ubah “%1$s”</string>
     <string name="recent_search_remove">Hapus “%1$s” dari pencarian terbaru</string>
     <string name="recent_searches">Pencarian terbaru</string>
     <string name="replay_subtitle">Lagu, artis, album, dan genre teratas Anda</string>

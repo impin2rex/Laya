@@ -1013,7 +1013,7 @@
 
     <string name="auto_quick_picks">快速选曲</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">最近</string>
 
     <string name="auto_liked">喜欢的歌曲</string>
 
@@ -1025,7 +1025,7 @@
 
     <string name="auto_empty_recents_subtitle">你播放过的歌曲会显示在这里</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">无建议</string>
 
     <string name="auto_empty_quick_picks_subtitle">请检查网络连接后重试</string>
 
@@ -1057,33 +1057,33 @@
 
     <string name="equalizer_footer">在声音进入系统之前，先由 Laya 对其进行调整。</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">动态</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">手动</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">音调</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">倾斜</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">轮廓</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">宽</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">聚焦</string>
 
     <string name="equalizer_broad_footer">向左拖动声音更温暖，向右拖动更明亮；向下拖动压低中频，向上拖动则突出中频。“宽”会一次调整更宽的频段。</string>
 
     <string name="equalizer_focused_footer">向左拖动声音更温暖，向右拖动更明亮；向下拖动压低中频，向上拖动则突出中频。“窄”作用于更窄的频段，因此对周围频段的影响更小。</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">预设</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">频段</string>
 
     <string name="equalizer_bands_footer">调整任意频段后将不再使用预设，曲线将变为你自己的设置。</string>
 
     <string name="equalizer_reset">重置所有频段</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">平衡</string>
 
     <string name="equalizer_balance_left">L</string>
 
@@ -1100,15 +1100,15 @@
 
     <string name="system_equalizer_footer">在 Laya 之后运行，作用于整个音频会话。同时使用两者会同时生效。</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">平坦</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">原声</string>
 
     <string name="eq_preset_bass_boost">低音增强</string>
 
     <string name="eq_preset_bass_cut">低音削减</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">人声</string>
 
     <string name="eq_preset_treble_boost">高音增强</string>
 
@@ -1118,15 +1118,15 @@
 
     <string name="eq_preset_spoken_word">语音</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">电子</string>
 
-    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_rock">摇滚</string>
 
     <string name="eq_preset_hip_hop">嘻哈</string>
 
-    <string name="eq_preset_jazz">Jazz</string>
+    <string name="eq_preset_jazz">爵士</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">古典</string>
 
     <string name="eq_preset_small_speakers">小型扬声器</string>
 
@@ -1153,8 +1153,8 @@
     <string name="cast_dialog_subtitle">在 Chromecast 或 Google Cast 扬声器上播放</string>
     <string name="cast_searching">正在查找设备…</string>
     <string name="cast_searching_hint">你的手机和接收设备必须连接到同一个 Wi-Fi 网络。</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">正在连接…</string>
+    <string name="cast_device_connected">投放中</string>
     <string name="cast_stop">停止投放</string>
     <string name="cast_track_unsupported">无法投放此曲目</string>
     <string name="cast_connect_failed">无法连接到接收设备</string>
@@ -1162,43 +1162,43 @@
 
     <string name="pipeline_track_info">曲目信息</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">解码器</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">重采样器</string>
 
     <string name="pipeline_dsp">DSP</string>
 
     <string name="pipeline_output_device">输出设备</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">来源</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">格式</string>
 
     <string name="pipeline_bit_depth">位深度</string>
 
     <string name="pipeline_sample_rate">采样率</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">比特率</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">声道</string>
 
     <string name="pipeline_decoder_name">解码器名称</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">输入/输出速率</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">类型</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">截止频率</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">音质</string>
 
     <string name="pipeline_pcm_format">PCM 格式</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">均衡器预设</string>
 
     <string name="pipeline_stereo_expand">立体声扩展</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">缓冲区</string>
 
     <string name="pipeline_output_api">输出 API</string>
 

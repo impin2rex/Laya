@@ -124,7 +124,7 @@
     <string name="d_playlist_songs">播放列表 • %1$d 首歌曲</string>
     <string name="d_module_index_found">模組索引 · %1$d 個模組</string>
     <string name="d_party_invite_qr">派對邀請 QR 碼</string>
-    <string name="d_addon_found">Addon · %1$s</string>
+    <string name="d_addon_found">外掛程式 · %1$s</string>
     <string name="d_google_sign_in_finish">在登入視窗中完成，然後選擇「使用此資料」</string>
     <string name="d_party_size">派對人數</string>
     <string name="d_party_code">派對程式碼</string>

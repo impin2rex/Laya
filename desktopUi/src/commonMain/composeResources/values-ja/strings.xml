@@ -10,7 +10,7 @@
     <string name="automix_analysis_status">オートミックス · この曲：%1$s · 次：%2$s</string>
     <string name="automix_not_supported_video">動画の曲では Automix はサポートされていません</string>
     <string name="automix_stopped_in_party">Automix: 一緒に聴く中は停止</string>
-    <string name="autoplay">AutoPlay</string>
+    <string name="autoplay">自動再生</string>
     <string name="autoplay_empty_description">似た曲が引き続き再生されます</string>
     <string name="autoplay_off">AutoPlay: オフ</string>
     <string name="autoplay_on">AutoPlay: オン</string>
@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$dビット</string>
     <string name="cancel">キャンセル</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">キャスト中</string>
+    <string name="cast_connecting">接続中…</string>
     <string name="cast_row_subtitle">Chromecast と Google Cast スピーカー</string>
     <string name="channel_count">%1$dch</string>
     <string name="choose_lyrics_provider">歌詞の提供元を選択</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">歌詞は利用できません</string>
     <string name="lyrics_offset">歌詞オフセット</string>
     <string name="lyrics_offset_description">正の値にすると歌詞が遅れて表示されます</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">リセット</string>
     <string name="lyrics_provider_current">現在の提供元</string>
     <string name="lyrics_provider_fetching">歌詞を取得中…</string>
     <string name="lyrics_provider_found">歌詞が見つかりました · タップして使用</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">歌詞</string>
     <string name="pause">一時停止</string>
     <string name="play">再生</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">%1$s が再生</string>
     <string name="playing_from">%1$s から再生中</string>
     <string name="playing_radio">%1$s ラジオを再生中</string>
     <string name="queue">再生キュー</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">有線ヘッドフォン</string>
     <string name="usb_audio">USB オーディオ</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">%1$s のスマートフォン</string>
     <string name="this_phone">このスマートフォン</string>
     <string name="albums">アルバム</string>
     <string name="artists">アーティスト</string>

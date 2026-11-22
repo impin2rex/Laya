@@ -1131,8 +1131,8 @@
     <string name="cast_dialog_subtitle">Chromecast veya Google Cast hoparlöründe çal</string>
     <string name="cast_searching">Cihazlar aranıyor…</string>
     <string name="cast_searching_hint">Telefonun ve alıcının aynı Wi-Fi ağında olması gerekir.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
+    <string name="cast_device_connecting">Bağlanıyor…</string>
+    <string name="cast_device_connected">Yayınlanıyor</string>
     <string name="cast_stop">Yayını durdur</string>
     <string name="cast_track_unsupported">Bu parça yayınlanamıyor</string>
     <string name="cast_connect_failed">Alıcıya bağlanılamadı</string>

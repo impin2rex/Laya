@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d-bit</string>
     <string name="cancel">Hủy</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Đang truyền</string>
+    <string name="cast_connecting">Đang kết nối…</string>
     <string name="cast_row_subtitle">Loa Chromecast và Google Cast</string>
     <string name="channel_count">%1$d kênh</string>
     <string name="choose_lyrics_provider">Chọn nguồn lời bài hát</string>
@@ -38,8 +38,8 @@
     <string name="like">Thích</string>
     <string name="listen_together">Nghe cùng nhau</string>
     <string name="listen_together_away">Vắng mặt — vị trí vẫn được giữ</string>
-    <string name="listen_together_host">Host</string>
-    <string name="listen_together_in_party">In a party · %1$s</string>
+    <string name="listen_together_host">Chủ phòng</string>
+    <string name="listen_together_in_party">Trong phòng nghe chung · %1$s</string>
     <string name="listen_together_jam">%1$s’s Jam</string>
     <string name="listen_together_jam_unnamed">Đang nghe cùng nhau</string>
     <string name="listen_together_manage">Quản lý</string>
@@ -82,7 +82,7 @@
     <string name="lyrics_not_available">Không có lời bài hát</string>
     <string name="lyrics_offset">Độ lệch lời bài hát</string>
     <string name="lyrics_offset_description">Giá trị dương sẽ hiện lời bài hát muộn hơn</string>
-    <string name="lyrics_offset_reset">Reset</string>
+    <string name="lyrics_offset_reset">Đặt lại</string>
     <string name="lyrics_provider_current">Nguồn hiện tại</string>
     <string name="lyrics_provider_fetching">Đang tải lời bài hát…</string>
     <string name="lyrics_provider_found">Đã tìm thấy lời bài hát · Chạm để dùng</string>
@@ -92,7 +92,7 @@
     <string name="lyrics_romanized">Phiên âm Latinh</string>
     <string name="lyrics_saved_with_download">Lời bài hát được lưu kèm bản tải này</string>
     <string name="lyrics_share_pick_limit">Thẻ đã đầy</string>
-    <string name="lyrics_translated_to">Translated to %1$s</string>
+    <string name="lyrics_translated_to">Đã dịch sang %1$s</string>
     <string name="lyrics_translation_unavailable">Hiện không thể dịch</string>
     <string name="medium_quality">Chất lượng trung bình</string>
     <string name="mono">Mono</string>
@@ -105,7 +105,7 @@
     <string name="open_lyrics">Lời bài hát</string>
     <string name="pause">Tạm dừng</string>
     <string name="play">Phát</string>
-    <string name="played_by">Played by %1$s</string>
+    <string name="played_by">Phát bởi %1$s</string>
     <string name="playing_from">Đang phát từ %1$s</string>
     <string name="playing_radio">Đang phát %1$s Radio</string>
     <string name="queue">Hàng đợi</string>
@@ -126,7 +126,7 @@
     <string name="karaoke_mono">Không thể bỏ giọng hát khỏi bài này: bài hát là mono</string>
     <string name="karaoke_remote">Karaoke chỉ hoạt động khi nhạc phát trên thiết bị này</string>
     <string name="karaoke_level">Loại bỏ giọng hát</string>
-    <string name="translating_lyrics_to">Translating to %1$s…</string>
+    <string name="translating_lyrics_to">Đang dịch sang %1$s…</string>
     <string name="up_next">Tiếp theo</string>
     <string name="upgrading_quality">Đang nâng cấp chất lượng</string>
     <string name="waiting">đang chờ</string>
@@ -135,7 +135,7 @@
     <string name="wired_headphones">Tai nghe có dây</string>
     <string name="usb_audio">Âm thanh USB</string>
     <string name="hdmi_output">HDMI</string>
-    <string name="personal_phone">%1$s’s Phone</string>
+    <string name="personal_phone">Điện thoại của %1$s</string>
     <string name="this_phone">Điện thoại này</string>
     <string name="albums">Album</string>
     <string name="artists">Nghệ sĩ</string>
