@@ -94,7 +94,12 @@ internal fun IosSongInfoDialog(song: Song, onDismiss: () -> Unit) {
 
 /** Lists the account's playlists (the call Android's picker makes) and adds [song] to the tapped one. */
 @Composable
-internal fun IosPlaylistPicker(song: Song, onDismiss: () -> Unit, notify: (String) -> Unit) {
+internal fun IosPlaylistPicker(song: Song, onDismiss: () -> Unit, notify: (String) -> Unit) =
+    IosPlaylistPicker(listOf(song), onDismiss, notify)
+
+/** The same picker for many tracks — the queue's selection. */
+@Composable
+internal fun IosPlaylistPicker(songs: List<Song>, onDismiss: () -> Unit, notify: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     val playlists by produceState<List<UserPlaylist>?>(null) { value = YtMusicRepository.userPlaylists().getOrDefault(emptyList()) }
     AlertDialog(
@@ -108,7 +113,7 @@ internal fun IosPlaylistPicker(song: Song, onDismiss: () -> Unit, notify: (Strin
                     PickRow(p.title) {
                         onDismiss()
                         scope.launch {
-                            YtMusicRepository.addToPlaylist(p.playlistId, listOf(song.videoId))
+                            YtMusicRepository.addToPlaylist(p.playlistId, songs.map { it.videoId }.distinct())
                                 .onSuccess { notify("Added to ${p.title}") }
                                 .onFailure { notify("Couldn't add to ${p.title}") }
                         }

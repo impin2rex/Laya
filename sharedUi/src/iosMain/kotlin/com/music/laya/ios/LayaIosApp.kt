@@ -133,6 +133,7 @@ import com.music.laya.ui.player.PlayerSheetShape
 import com.music.laya.ui.theme.LayaTheme
 import com.music.laya.ui.utils.guardSheetFromContentTouches
 import com.music.laya.ui.player.NowPlayingScreen
+import com.music.laya.ui.player.QueueActions
 import com.music.laya.ui.screens.DetailScreen
 import com.music.laya.ui.screens.ExploreScreen
 import com.music.laya.ui.screens.MoodGenrePlaylistsScreen
@@ -483,6 +484,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    var queuePlaylistSongs by remember { mutableStateOf<List<Song>?>(null) }
     var infoTarget by remember { mutableStateOf<Song?>(null) }
     var sleepPicker by remember { mutableStateOf(false) }
     var testSheet by remember { mutableStateOf<String?>(null) } // only set by the LAYA_OPEN=player-output|pipeline hook
@@ -1413,6 +1415,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         )
                     }
                     playlistTarget?.let { IosPlaylistPicker(it, onDismiss = { playlistTarget = null }, notify = IosPlayerHost::showMessage) }
+                    queuePlaylistSongs?.let { IosPlaylistPicker(it, onDismiss = { queuePlaylistSongs = null }, notify = IosPlayerHost::showMessage) }
                     infoTarget?.let { IosSongInfoDialog(it, onDismiss = { infoTarget = null }) }
                     if (sleepPicker) IosSleepTimerDialog(player, onDismiss = { sleepPicker = false })
                     testSheet?.let { which ->
@@ -1517,6 +1520,14 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         onRemoveFromQueue = player::removeAt,
                                         onMoveInQueue = player::move,
                                         onClearQueue = player::clearUserQueue,
+                                        queueActions = remember(player, signedIn) {
+                                            QueueActions(
+                                                remove = { player.removeEntries(it) },
+                                                undo = { player.undoRemoval(it) },
+                                                moveToUserQueue = { player.moveToUserQueue(it) },
+                                                addToPlaylist = if (signedIn) ({ queuePlaylistSongs = it }) else null,
+                                            )
+                                        },
                                         onOpenMenu = { menuSong = song },
                                         onOpenAlbum = { id ->
                                             sheetMotion.close()

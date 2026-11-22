@@ -16,6 +16,7 @@ import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.PlaybackTracker
 import com.music.laya.data.innertube.PlayerClient
 import com.music.laya.data.innertube.StreamResolver
+import com.music.laya.data.model.QueueEntryIdentity
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.artworkAt
@@ -47,6 +48,7 @@ import com.music.laya.data.settings.EqualizerMode
 import com.music.laya.playback.QueueBuilder
 import com.music.laya.playback.manualCurve
 import com.music.laya.playback.toneCurve
+import com.music.laya.playback.QueueEdits
 import com.music.laya.playback.QueueTimeline
 import com.music.laya.playback.QueueTimeline.asQueueEntry
 import com.music.laya.ui.player.RepeatModes
@@ -424,6 +426,57 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         queue = queue.toMutableList().apply { removeAt(i) }
         if (i < index) index--
         queueChanged()
+    }
+
+    private class Removal(val token: Long, val before: List<Song>, val removed: List<Int>)
+    private var lastRemoval: Removal? = null
+    private var removalTokens = 0L
+
+    /** The queue screen's removal: rows by identity, one Undo token for the lot. Null when nothing went. */
+    fun removeEntries(entries: List<QueueEntryIdentity>): Long? {
+        var token: Long? = null
+        intent {
+            val before = queue
+            val indices = QueueEdits.resolve(before, entries, QueueEdits.songKey).filter { it != index }
+            if (indices.isEmpty()) return@intent
+            val (kept, at) = QueueEdits.remove(before, index, indices)
+            queue = kept
+            index = at
+            token = ++removalTokens
+            lastRemoval = Removal(removalTokens, before, indices)
+            queueChanged()
+        }
+        return token
+    }
+
+    /** Puts back what [removeEntries] answered [token] for, unless the queue has moved on too far. */
+    fun undoRemoval(token: Long): Boolean {
+        val removal = lastRemoval?.takeIf { it.token == token } ?: return false
+        lastRemoval = null
+        var done = false
+        intent {
+            val (restored, at) = QueueEdits.restore(removal.before, removal.removed, queue, index, QueueEdits.sameSong)
+                ?: return@intent
+            queue = restored
+            index = at
+            done = true
+            queueChanged()
+        }
+        return done
+    }
+
+    /** A swipe into Next in queue: its head or tail, per the swipe setting. */
+    fun moveToUserQueue(entry: QueueEntryIdentity): Boolean {
+        var done = false
+        intent {
+            val from = QueueEdits.resolve(queue, listOf(entry), QueueEdits.songKey).singleOrNull() ?: return@intent
+            val (moved, at) = QueueEdits.moveToUserQueue(queue, index, from, AppSettings.swipeToPlayNext.value) ?: return@intent
+            queue = moved
+            index = at
+            done = true
+            queueChanged()
+        }
+        return done
     }
 
     fun move(from: Int, to: Int) = intent {
