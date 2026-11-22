@@ -224,6 +224,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
            let head = loader.headOnlyState, positionMs >= head.ms - 2000 {
             return deferSeekToWhole(loader, at: positionMs)
         }
+        if let item = player.currentItem, let loader = loaders[ObjectIdentifier(item)], loader.headOnlyState != nil {
+            // Back inside the head: it plays on from there, and nothing is waiting for the whole file any more.
+            loader.deferredSeekMs = nil
+            headStalled = false
+        }
         cancelSwap()
         cancelFade()
         guard let item = player.currentItem, item.status == .readyToPlay else {
@@ -526,7 +531,32 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                 self.upgradeHead(item, loader)
             }
         }
+        loader.onHeadFailed = { [weak self, weak item] in
+            DispatchQueue.main.async {
+                guard let self, let item, item === self.currentItem else { return }
+                self.headStalled = false
+                self.fail(item, message: "Premium audio download failed", httpStatus: 0)
+            }
+        }
         loaders[ObjectIdentifier(item)] = loader
+    }
+
+    /// The head of a Premium item ran out while the whole file is still downloading: the track is not over. Playback
+    /// holds at the head's end, shown as buffering, and the whole file is opened there as soon as it lands.
+    private var headStalled = false
+
+    private func holdOnHead(_ item: AVPlayerItem, _ loader: ChunkedResourceLoader, headMs: Int64, next: AVPlayerItem?) {
+        print("AudioEngine: Premium head ran out at \(headMs) ms; waiting for the whole file")
+        // The queue moved on to the track behind this one (or ran dry): undo that, Kotlin queues the next again.
+        if let next, next === nextItem { player.remove(next); dropItem(next); nextItem = nil } else { clearNextOnMain() }
+        if loader.headDownloadFailed { return fail(item, message: "Premium audio download failed", httpStatus: 0) }
+        headStalled = true
+        if loader.deferredSeekMs == nil { loader.deferredSeekMs = headMs; loader.deferredResume = true }
+        seekingToMs = loader.deferredSeekMs
+        player.pause()
+        player.insert(item, after: nil)
+        reportProgress()
+        if loader.headOnlyState?.ready == true { upgradeHead(item, loader) }
     }
 
     /// Replaces the playing head-only Premium item with the whole file once it is downloaded: gaplessly through the
@@ -676,6 +706,9 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Point the status observation and the end/fail notifications at [item].
     private func becomeCurrent(_ item: AVPlayerItem) {
         currentItem = item
+        headStalled = false
+        // A Premium item queued behind another may have had its whole file land before it was playing.
+        if let l = loaders[ObjectIdentifier(item)], l.headOnlyState != nil { upgradeHead(item, l) }
         lastWatchedPosition = -1
         stuckAt = -1
         EqualizerTuning.dspKey = UnsafeRawPointer(Unmanaged.passUnretained(item).toOpaque())
@@ -747,6 +780,10 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             seekingToMs = pendingSeekMs
             return
         }
+        if let old, old !== now, old === currentItem, fade == nil, !atStatedEnd(old),
+           let loader = loaders[ObjectIdentifier(old)], let head = loader.headOnlyState {
+            return holdOnHead(old, loader, headMs: head.ms, next: now)
+        }
         if let old, old !== now, old === currentItem, hasFailed(old) {
             // The queue moved past a track that broke rather than ended. Undo that and let Kotlin recover it.
             cancelFade()
@@ -791,7 +828,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         let position = seekingToMs.map { Double($0) / 1000 } ?? player.currentTime().seconds
         let duration = streamDuration(of: item)
         let isPlaying = player.timeControlStatus == .playing
-        let isBuffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+        let isBuffering = headStalled || player.timeControlStatus == .waitingToPlayAtSpecifiedRate
         // Past the stated end and still "playing" or waiting for bytes that don't exist (the doubled length above):
         // the track is over. Not while seeking, or while a blend owns the hand-over.
         if let hint = loaders[ObjectIdentifier(item)]?.durationHint, seekingToMs == nil, fade == nil,

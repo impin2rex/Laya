@@ -261,6 +261,11 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     /// Set by the engine for a seek that landed past the head: made once the whole file is in.
     var deferredSeekMs: Int64?
     var deferredResume = false
+    /// Called on the loader's queue when the rest of the file will not arrive after the head started.
+    var onHeadFailed: (() -> Void)?
+    private var headFailed = false
+    /// The download failed after the head started, so the head is all this item will ever have.
+    var headDownloadFailed: Bool { queue.sync { headFailed } }
 
     /// The head's audio length and whether the whole file is ready, or nil once the item is the whole file.
     var headOnlyState: (ms: Int64, ready: Bool)? {
@@ -382,8 +387,12 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     }
 
     private func failRemux(_ error: Error) {
-        // After the head started, the engine keeps playing it; a failure then only costs the upgrade.
-        if headOnly { return print("Loader: Premium download failed after the head started: \(error.localizedDescription)") }
+        // After the head started, the engine is told and restarts the track at its position.
+        if headOnly {
+            print("Loader: Premium download failed after the head started: \(error.localizedDescription)")
+            headFailed = true
+            return onHeadFailed?() ?? ()
+        }
         remuxError = error
         serveRemuxed()
     }
