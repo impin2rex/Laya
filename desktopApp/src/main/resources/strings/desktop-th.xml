@@ -136,7 +136,7 @@
     <string name="d_nothing_playing_yet">ยังไม่มีอะไรเล่น</string>
     <string name="d_sign_in_with_google">ลงชื่อเข้าใช้ด้วย Google</string>
     <string name="d_leave_party">ออกจากปาร์ตี้</string>
-    <string name="d_already_added_as">Already added as %1$s</string>
+    <string name="d_already_added_as">เพิ่มแล้วในชื่อ %1$s</string>
     <string name="d_downloading_percent">กำลังดาวน์โหลด · %1$d%%</string>
     <string name="d_downloading">กำลังดาวน์โหลด</string>
     <string name="d_repeat_one">วนซ้ำเพลงเดียว</string>

@@ -171,7 +171,7 @@
     <string name="tv_reset_all">Đặt lại tất cả</string>
     <string name="tv_reset_to_default">Đặt lại mặc định</string>
     <string name="tv_restore_vocals">Khôi phục giọng hát</string>
-    <string name="tv_reverb">Reverb</string>
+    <string name="tv_reverb">Vang</string>
     <string name="tv_reverb_cathedral">Nhà thờ lớn</string>
     <string name="tv_reverb_damping">Giảm chấn</string>
     <string name="tv_reverb_decay">Độ tắt dần</string>
@@ -180,7 +180,7 @@
     <string name="tv_reverb_mix">Trộn</string>
     <string name="tv_reverb_off">Tắt Reverb</string>
     <string name="tv_reverb_on">Bật Reverb</string>
-    <string name="tv_reverb_plate">Plate</string>
+    <string name="tv_reverb_plate">Tấm vang</string>
     <string name="tv_reverb_predelay">Độ trễ trước</string>
     <string name="tv_reverb_room">Phòng</string>
     <string name="tv_reverb_width">Độ rộng</string>

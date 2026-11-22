@@ -16,7 +16,7 @@
     <string name="tv_already_in">Déjà dans « %1$s »</string>
     <string name="tv_app_lock">Verrouillage de l’app (code PIN à 4 chiffres)</string>
     <string name="tv_artist_signatures">Signatures d’artistes</string>
-    <string name="tv_auto">Auto</string>
+    <string name="tv_auto">Automatique</string>
     <string name="tv_automix">Automix</string>
     <string name="tv_autoplay">Lecture automatique</string>
     <string name="tv_autoplay_off">Rien ne sera mis en file d’attente après ce titre.</string>
@@ -90,7 +90,7 @@
     <string name="tv_go_to_artist">Aller à l’artiste</string>
     <string name="tv_hd">HD</string>
     <string name="tv_hide">Masquer</string>
-    <string name="tv_hires_lossless">Hi-Res Lossless</string>
+    <string name="tv_hires_lossless">Sans perte haute résolution</string>
     <string name="tv_interface_size">Taille de l’interface</string>
     <string name="tv_lastfm">Last.fm</string>
     <string name="tv_latest_release">Dernière sortie</string>

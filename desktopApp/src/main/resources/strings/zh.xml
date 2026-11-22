@@ -760,7 +760,7 @@
     <string name="eq_preset_classical">Classical</string>
     <string name="eq_preset_small_speakers">小型扬声器</string>
     <string name="eq_preset_late_night">深夜</string>
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">自定义</string>
     <string name="liquid_glass">液态玻璃 (Liquid Glass)</string>
     <string name="liquid_glass_subtitle">浮动导航栏上的折射玻璃效果。仅限 Android 12+；会占用更多 GPU。</string>
     <string name="liquid_glass_unavailable">需要 Android 12 或更高版本</string>
@@ -832,7 +832,7 @@
     <string name="use_this_profile">使用此资料</string>
     <string name="switch_profile_hint">点击头像切换，然后使用此个人资料。</string>
     <string name="profile_unavailable">此页面暂无已登录的个人资料。</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">歌词</string>
     <string name="audio_output">音频输出</string>
     <string name="audio_output_playing">正在此处播放</string>
     <string name="wired_headphones">有线耳机</string>

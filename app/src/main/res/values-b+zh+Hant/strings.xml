@@ -1114,7 +1114,7 @@
 
     <string name="eq_preset_treble_cut">高音削減</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">響度</string>
 
     <string name="eq_preset_spoken_word">語音</string>
 
@@ -1132,7 +1132,7 @@
 
     <string name="eq_preset_late_night">深夜</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">自訂</string>
 
     <string name="translation_language">翻譯語言</string>
 

@@ -806,7 +806,7 @@
     <string name="eq_preset_classical">Classical</string>
     <string name="eq_preset_small_speakers">Altoparlanti piccoli</string>
     <string name="eq_preset_late_night">Notte fonda</string>
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">Personalizzato</string>
     <string name="legacy_mesh_gradient">Gradiente fluido classico</string>
     <string name="legacy_mesh_gradient_subtitle">Ripristina le sfumature di colore animate dietro il lettore della v1.5</string>
     <string name="add_addon">Aggiungi un componente aggiuntivo</string>
@@ -851,7 +851,7 @@
     <string name="sort_default">Ordine predefinito</string>
     <string name="sort_library">Ordina</string>
     <string name="sort_songs">Ordina brani</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Testo</string>
     <string name="audio_output">Uscita audio</string>
     <string name="audio_output_playing">In riproduzione qui</string>
     <string name="wired_headphones">Cuffie con cavo</string>

@@ -102,7 +102,7 @@
     <string name="no_lyrics_for_track">Bu parça için söz yok</string>
     <string name="no_lyrics_found">Söz bulunamadı</string>
     <string name="now_playing">Şu an çalıyor</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Şarkı Sözleri</string>
     <string name="pause">Duraklat</string>
     <string name="play">Çal</string>
     <string name="played_by">Played by %1$s</string>
@@ -465,7 +465,7 @@
     <string name="eq_preset_hip_hop">Hip-hop</string>
     <string name="eq_preset_jazz">Caz</string>
     <string name="eq_preset_late_night">Gece dinlemesi</string>
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">Ses yüksekliği</string>
     <string name="eq_preset_rock">Rock</string>
     <string name="eq_preset_small_speakers">Küçük hoparlörler</string>
     <string name="eq_preset_spoken_word">Konuşma</string>
@@ -839,9 +839,9 @@
     <string name="song_info">Şarkı Bilgisi</string>
     <string name="done">Tamam</string>
     <string name="upgrade_quality">Kaliteyi yükselt</string>
-    <string name="cast_subtitle">Play on a Chromecast or Google Cast speaker</string>
-    <string name="cast_searching">Looking for devices…</string>
-    <string name="cast_searching_hint">Your phone and the receiver need to be on the same Wi-Fi network.</string>
+    <string name="cast_subtitle">Chromecast veya Google Cast hoparlöründe çal</string>
+    <string name="cast_searching">Cihazlar aranıyor…</string>
+    <string name="cast_searching_hint">Telefonun ve alıcının aynı Wi-Fi ağında olması gerekir.</string>
     <string name="downloaded_songs">İndirilen şarkılar</string>
     <string name="added_to_named_playlist">%1$s listesine eklendi</string>
     <string name="add_to_playlist_failed">%1$s listesine eklenemedi</string>

@@ -90,7 +90,7 @@
     <string name="tv_go_to_artist">Sanatçıya Git</string>
     <string name="tv_hd">HD</string>
     <string name="tv_hide">Gizle</string>
-    <string name="tv_hires_lossless">Hi-Res Lossless</string>
+    <string name="tv_hires_lossless">Hi-Res Kayıpsız</string>
     <string name="tv_interface_size">Arayüz Boyutu</string>
     <string name="tv_lastfm">Last.fm</string>
     <string name="tv_latest_release">Son Çıkan</string>
@@ -171,7 +171,7 @@
     <string name="tv_reset_all">Tümünü Sıfırla</string>
     <string name="tv_reset_to_default">Varsayılana Sıfırla</string>
     <string name="tv_restore_vocals">Vokalleri geri getir</string>
-    <string name="tv_reverb">Reverb</string>
+    <string name="tv_reverb">Yankı</string>
     <string name="tv_reverb_cathedral">Katedral</string>
     <string name="tv_reverb_damping">Sönümleme</string>
     <string name="tv_reverb_decay">Sönüm</string>

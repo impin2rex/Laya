@@ -16,7 +16,7 @@
     <string name="tv_already_in">Ya está en «%1$s»</string>
     <string name="tv_app_lock">Bloqueo de la app (PIN de 4 dígitos)</string>
     <string name="tv_artist_signatures">Firmas de artistas</string>
-    <string name="tv_auto">Auto</string>
+    <string name="tv_auto">Automático</string>
     <string name="tv_automix">Automix</string>
     <string name="tv_autoplay">Reproducción automática</string>
     <string name="tv_autoplay_off">No se añadirá nada a la cola después de esta canción.</string>
@@ -90,7 +90,7 @@
     <string name="tv_go_to_artist">Ir al artista</string>
     <string name="tv_hd">HD</string>
     <string name="tv_hide">Ocultar</string>
-    <string name="tv_hires_lossless">Hi-Res Lossless</string>
+    <string name="tv_hires_lossless">Audio sin pérdida de alta resolución</string>
     <string name="tv_interface_size">Tamaño de la interfaz</string>
     <string name="tv_lastfm">Last.fm</string>
     <string name="tv_latest_release">Último lanzamiento</string>
@@ -171,7 +171,7 @@
     <string name="tv_reset_all">Restablecer todo</string>
     <string name="tv_reset_to_default">Restablecer valores predeterminados</string>
     <string name="tv_restore_vocals">Restaurar voces</string>
-    <string name="tv_reverb">Reverb</string>
+    <string name="tv_reverb">Reverberación</string>
     <string name="tv_reverb_cathedral">Catedral</string>
     <string name="tv_reverb_damping">Amortiguación</string>
     <string name="tv_reverb_decay">Decaimiento</string>

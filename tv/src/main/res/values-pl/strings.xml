@@ -16,7 +16,7 @@
     <string name="tv_already_in">Już w „%1$s”</string>
     <string name="tv_app_lock">Blokada aplikacji (4-cyfrowy PIN)</string>
     <string name="tv_artist_signatures">Podpisy wykonawców</string>
-    <string name="tv_auto">Auto</string>
+    <string name="tv_auto">Automatycznie</string>
     <string name="tv_automix">Automix</string>
     <string name="tv_autoplay">Autoodtwarzanie</string>
     <string name="tv_autoplay_off">Po tym utworze nic nie jest w kolejce.</string>

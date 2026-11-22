@@ -1136,7 +1136,7 @@
 
     <string name="eq_preset_treble_cut">Atténuation des aigus</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">Intensité</string>
 
     <string name="eq_preset_spoken_word">Parole</string>
 

@@ -102,7 +102,7 @@
     <string name="no_lyrics_for_track">此曲目没有歌词</string>
     <string name="no_lyrics_found">未找到歌词</string>
     <string name="now_playing">正在播放</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">歌词</string>
     <string name="pause">暂停</string>
     <string name="play">播放</string>
     <string name="played_by">Played by %1$s</string>

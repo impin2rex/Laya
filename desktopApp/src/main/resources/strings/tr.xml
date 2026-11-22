@@ -851,7 +851,7 @@
     <string name="sort_default">Varsayılan sıra</string>
     <string name="sort_library">Sırala</string>
     <string name="sort_songs">Şarkıları sırala</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Şarkı Sözleri</string>
     <string name="audio_output">Ses çıkışı</string>
     <string name="audio_output_playing">Burada çalıyor</string>
     <string name="wired_headphones">Kablolu kulaklık</string>

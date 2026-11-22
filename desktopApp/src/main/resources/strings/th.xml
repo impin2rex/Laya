@@ -777,7 +777,7 @@
     <string name="eq_preset_vocal">Vocal</string>
     <string name="eq_preset_treble_boost">เพิ่มเสียงแหลม</string>
     <string name="eq_preset_treble_cut">ลดเสียงแหลม</string>
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">ความดัง</string>
     <string name="eq_preset_spoken_word">เสียงพูด</string>
     <string name="eq_preset_electronic">Electronic</string>
     <string name="eq_preset_rock">Rock</string>
@@ -786,7 +786,7 @@
     <string name="eq_preset_classical">Classical</string>
     <string name="eq_preset_small_speakers">ลำโพงขนาดเล็ก</string>
     <string name="eq_preset_late_night">ดึกดื่น</string>
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">กำหนดเอง</string>
     <string name="legacy_mesh_gradient">เมชกราเดียนต์แบบเดิม</string>
     <string name="legacy_mesh_gradient_subtitle">นำเบลอสีที่ลอยอยู่ด้านหลังเครื่องเล่นจาก v1.5 กลับมา</string>
     <string name="add_addon">เพิ่มแอดออน</string>
@@ -831,7 +831,7 @@
     <string name="sort_default">ลำดับเริ่มต้น</string>
     <string name="sort_library">Sort</string>
     <string name="sort_songs">เรียงเพลง</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">เนื้อเพลง</string>
     <string name="audio_output">เอาต์พุตเสียง</string>
     <string name="audio_output_playing">กำลังเล่นที่นี่</string>
     <string name="wired_headphones">หูฟังแบบมีสาย</string>

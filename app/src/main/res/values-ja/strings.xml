@@ -1115,7 +1115,7 @@
 
     <string name="eq_preset_treble_cut">高音カット</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">ラウドネス</string>
 
     <string name="eq_preset_spoken_word">スポークンワード</string>
 
@@ -1133,7 +1133,7 @@
 
     <string name="eq_preset_late_night">深夜</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">カスタム</string>
 
     <string name="translation_language">翻訳言語</string>
 

@@ -1137,7 +1137,7 @@
 
     <string name="eq_preset_treble_cut">הנמכת גבהים</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">עוצמה</string>
 
     <string name="eq_preset_spoken_word">דיבור</string>
 
@@ -1155,7 +1155,7 @@
 
     <string name="eq_preset_late_night">שעת לילה מאוחרת</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">מותאם אישית</string>
 
     <string name="translation_language">שפת תרגום</string>
 

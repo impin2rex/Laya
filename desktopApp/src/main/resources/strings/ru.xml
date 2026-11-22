@@ -803,7 +803,7 @@
     <string name="eq_preset_classical">Classical</string>
     <string name="eq_preset_small_speakers">Маленькие колонки</string>
     <string name="eq_preset_late_night">Поздний вечер</string>
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">Свой</string>
     <string name="liquid_glass">Жидкое стекло</string>
     <string name="liquid_glass_subtitle">Эффект стекла на панели навигации. Только Android 12+.</string>
     <string name="liquid_glass_unavailable">Требуется Android 12 или новее</string>
@@ -875,7 +875,7 @@
     <string name="use_this_profile">Использовать этот профиль</string>
     <string name="switch_profile_hint">Смените через аватар и используйте этот профиль.</string>
     <string name="profile_unavailable">На этой странице еще нет авторизованного профиля.</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Тексты песен</string>
     <string name="audio_output">Аудиовыход</string>
     <string name="audio_output_playing">Воспроизводится здесь</string>
     <string name="wired_headphones">Проводные наушники</string>

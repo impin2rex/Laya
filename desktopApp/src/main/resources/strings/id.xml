@@ -760,7 +760,7 @@
     <string name="eq_preset_classical">Classical</string>
     <string name="eq_preset_small_speakers">Speaker kecil</string>
     <string name="eq_preset_late_night">Larut malam</string>
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">Kustom</string>
     <string name="liquid_glass">Kaca Cair</string>
     <string name="liquid_glass_subtitle">Efek kaca pada bilah navigasi. Khusus Android 12+.</string>
     <string name="liquid_glass_unavailable">Memerlukan Android 12 atau yang lebih baru</string>
@@ -832,7 +832,7 @@
     <string name="use_this_profile">Gunakan profil ini</string>
     <string name="switch_profile_hint">Beralih menggunakan avatar, lalu gunakan profil ini.</string>
     <string name="profile_unavailable">Belum ada profil masuk yang tersedia di halaman ini.</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Lirik</string>
     <string name="audio_output">Keluaran audio</string>
     <string name="audio_output_playing">Diputar di sini</string>
     <string name="wired_headphones">Headphone berkabel</string>

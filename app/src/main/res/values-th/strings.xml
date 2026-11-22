@@ -932,7 +932,7 @@
 
     <string name="eq_preset_treble_cut">ลดเสียงแหลม</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">ความดัง</string>
 
     <string name="eq_preset_spoken_word">เสียงพูด</string>
 
@@ -950,7 +950,7 @@
 
     <string name="eq_preset_late_night">ดึกดื่น</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">กำหนดเอง</string>
 
     <string name="legacy_mesh_gradient">เมชกราเดียนต์แบบเดิม</string>
 

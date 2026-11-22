@@ -851,7 +851,7 @@
     <string name="use_this_profile">Utiliser ce profil</string>
     <string name="switch_profile_hint">Changez via l\'avatar, puis utilisez ce profil.</string>
     <string name="profile_unavailable">Aucun profil connecté disponible pour le moment.</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Paroles</string>
     <string name="audio_output">Sortie audio</string>
     <string name="audio_output_playing">Lecture ici</string>
     <string name="wired_headphones">Casque filaire</string>

@@ -1135,7 +1135,7 @@
 
     <string name="eq_preset_treble_cut">ट्रेबल कट</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">लाउडनेस</string>
 
     <string name="eq_preset_spoken_word">स्पोकन वर्ड</string>
 
@@ -1153,7 +1153,7 @@
 
     <string name="eq_preset_late_night">देर रात</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">कस्टम</string>
 
     <string name="translation_language">अनुवाद की भाषा</string>
 

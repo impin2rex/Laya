@@ -906,7 +906,7 @@
 
     <string name="eq_preset_late_night">Đêm khuya</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">Tùy chỉnh</string>
 
 
 
@@ -1029,7 +1029,7 @@
 
     <string name="listen_together_server_offline">Hiện không thể kết nối</string>
 
-    <string name="listen_together_server_checking">Checking…</string>
+    <string name="listen_together_server_checking">Đang kiểm tra…</string>
 
     <string name="listen_together_server_unknown">Chạm để kiểm tra</string>
 
@@ -1116,7 +1116,7 @@
     <string name="listen_together_party_size">Quy mô nhóm nghe</string>
     <string name="listen_together_party_size_subtitle">Chọn 2–10 người nghe</string>
     <string name="listen_together_host_controls">Chỉ bạn mới có thể thay đổi sức chứa hoặc xóa người nghe</string>
-    <string name="listen_together_remove">Remove</string>
+    <string name="listen_together_remove">Xóa</string>
     <string name="listen_together_activity">Hoạt động gần đây</string>
     <string name="listen_together_activity_footer">Chỉ trong phiên này · mới nhất trước · tối đa 100 thao tác</string>
     <string name="listen_together_activity_played">Đã bắt đầu phát</string>

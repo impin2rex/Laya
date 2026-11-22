@@ -760,7 +760,7 @@
     <string name="eq_preset_classical">Classical</string>
     <string name="eq_preset_small_speakers">小型スピーカー</string>
     <string name="eq_preset_late_night">深夜</string>
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">カスタム</string>
     <string name="liquid_glass">リキッド グラス</string>
     <string name="liquid_glass_subtitle">フローティング ナビゲーション バーの屈折ガラス効果。Android 12 以降のみ。</string>
     <string name="liquid_glass_unavailable">Android 12 以降が必要です</string>
@@ -832,7 +832,7 @@
     <string name="use_this_profile">このプロフィールを使用</string>
     <string name="switch_profile_hint">アバターで切り替えて、このプロフィールを使用します。</string>
     <string name="profile_unavailable">このページではログインしているプロフィールはまだありません。</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">歌詞</string>
     <string name="audio_output">オーディオ出力</string>
     <string name="audio_output_playing">ここで再生中</string>
     <string name="wired_headphones">有線ヘッドフォン</string>

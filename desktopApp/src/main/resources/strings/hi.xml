@@ -779,7 +779,7 @@
     <string name="eq_preset_classical">Classical</string>
     <string name="eq_preset_small_speakers">छोटे स्पीकर</string>
     <string name="eq_preset_late_night">देर रात</string>
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">कस्टम</string>
     <string name="liquid_glass">लिक्विड ग्लास</string>
     <string name="liquid_glass_subtitle">नेविगेशन बार पर ग्लास प्रभाव। केवल Android 12+।</string>
     <string name="liquid_glass_unavailable">Android 12 या नए की आवश्यकता है</string>
@@ -851,7 +851,7 @@
     <string name="use_this_profile">इस प्रोफ़ाइल का उपयोग करें</string>
     <string name="switch_profile_hint">अवतार से बदलें, फिर इस प्रोफ़ाइल का उपयोग करें।</string>
     <string name="profile_unavailable">इस पृष्ठ पर अभी कोई साइन-इन प्रोफ़ाइल उपलब्ध नहीं है।</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">लिरिक्स</string>
     <string name="audio_output">ऑडियो आउटपुट</string>
     <string name="audio_output_playing">यहाँ चल रहा है</string>
     <string name="wired_headphones">तार वाले हेडफ़ोन</string>

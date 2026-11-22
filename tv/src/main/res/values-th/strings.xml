@@ -90,7 +90,7 @@
     <string name="tv_go_to_artist">ไปที่ศิลปิน</string>
     <string name="tv_hd">HD</string>
     <string name="tv_hide">ซ่อน</string>
-    <string name="tv_hires_lossless">Hi-Res Lossless</string>
+    <string name="tv_hires_lossless">Hi-Res ไม่สูญเสียคุณภาพ</string>
     <string name="tv_interface_size">ขนาดอินเทอร์เฟซ</string>
     <string name="tv_lastfm">Last.fm</string>
     <string name="tv_latest_release">เพลงออกใหม่ล่าสุด</string>

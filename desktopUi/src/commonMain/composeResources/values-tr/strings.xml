@@ -102,7 +102,7 @@
     <string name="no_lyrics_for_track">Bu parça için söz yok</string>
     <string name="no_lyrics_found">Söz bulunamadı</string>
     <string name="now_playing">Şu an çalıyor</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Şarkı Sözleri</string>
     <string name="pause">Duraklat</string>
     <string name="play">Çal</string>
     <string name="played_by">Played by %1$s</string>

@@ -18,8 +18,8 @@
     <string name="bit_depth">%1$d bits</string>
     <string name="cancel">Annuler</string>
     <string name="cast">Cast</string>
-    <string name="cast_casting">Casting</string>
-    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_casting">Diffusion en cours</string>
+    <string name="cast_connecting">Connexion en cours…</string>
     <string name="cast_row_subtitle">Enceintes Chromecast et Google Cast</string>
     <string name="channel_count">%1$d canaux</string>
     <string name="choose_lyrics_provider">Choisir la source des paroles</string>
@@ -102,7 +102,7 @@
     <string name="no_lyrics_for_track">Aucune parole pour ce titre</string>
     <string name="no_lyrics_found">Aucune parole trouvée</string>
     <string name="now_playing">Lecture en cours</string>
-    <string name="open_lyrics">Lyrics</string>
+    <string name="open_lyrics">Paroles</string>
     <string name="pause">Pause</string>
     <string name="play">Lecture</string>
     <string name="played_by">Played by %1$s</string>
@@ -465,7 +465,7 @@
     <string name="eq_preset_hip_hop">Hip-hop</string>
     <string name="eq_preset_jazz">Jazz</string>
     <string name="eq_preset_late_night">Écoute nocturne</string>
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">Intensité</string>
     <string name="eq_preset_rock">Rock</string>
     <string name="eq_preset_small_speakers">Petits haut-parleurs</string>
     <string name="eq_preset_spoken_word">Parole</string>
