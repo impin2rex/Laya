@@ -54,10 +54,23 @@ object StreamResolver {
      * while signed in — a signed-out ask has no entitlement to send. Every later
      * ask is the ordinary one, so a Premium miss falls back to the usual best.
      */
-    internal fun premiumFor(attempt: Int): Boolean {
+    internal fun premiumFor(attempt: Int, videoId: String? = null): Boolean {
         if (attempt != 0 || Innertube.cookie.isNullOrBlank()) return false
+        if (videoId != null && videoId in premiumFailed) return false
         PremiumAudio.ensureChecked()
         return premiumAudio()
+    }
+
+    /** Tracks whose Premium stream broke mid-play this session; they resolve the ordinary way from then on. */
+    private val premiumFailed = ConcurrentMap<String, Boolean>()
+
+    /**
+     * [videoId]'s Premium (774) stream failed while playing: the next resolve for it, this session, skips Premium
+     * so a restart cannot loop on the same failing stream. Other tracks are unaffected.
+     */
+    fun markPremiumFailed(videoId: String) {
+        premiumFailed[videoId] = true
+        recent.remove(videoId)
     }
 
     /**
@@ -333,7 +346,7 @@ object StreamResolver {
         repeat(INNERTUBEX_ATTEMPTS) { attempt ->
             // When Premium's ask finds nothing, throws, or its URL fails the probe (a 403 on
             // 774, an account that isn't Premium after all), the next ask is the ordinary one.
-            val premium = premiumFor(attempt)
+            val premium = premiumFor(attempt, videoId)
             // AAC-only players (iOS) still take Premium's Opus: they remux it themselves, and only for 774.
             val askM4a = requireM4a && !(premium && premiumRemux)
             val found = try {

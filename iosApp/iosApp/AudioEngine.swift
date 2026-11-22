@@ -535,7 +535,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             DispatchQueue.main.async {
                 guard let self, let item, item === self.currentItem else { return }
                 self.headStalled = false
-                self.fail(item, message: "Premium audio download failed", httpStatus: 0)
+                self.fail(item, message: "Premium audio download failed", httpStatus: Self.premiumDownloadFailed)
             }
         }
         loaders[ObjectIdentifier(item)] = loader
@@ -544,12 +544,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// The head of a Premium item ran out while the whole file is still downloading: the track is not over. Playback
     /// holds at the head's end, shown as buffering, and the whole file is opened there as soon as it lands.
     private var headStalled = false
+    /// IosPlayer.PREMIUM_DOWNLOAD_FAILED: the restart must not ask for Premium again.
+    private static let premiumDownloadFailed: Int32 = -774
 
     private func holdOnHead(_ item: AVPlayerItem, _ loader: ChunkedResourceLoader, headMs: Int64, next: AVPlayerItem?) {
         print("AudioEngine: Premium head ran out at \(headMs) ms; waiting for the whole file")
         // The queue moved on to the track behind this one (or ran dry): undo that, Kotlin queues the next again.
         if let next, next === nextItem { player.remove(next); dropItem(next); nextItem = nil } else { clearNextOnMain() }
-        if loader.headDownloadFailed { return fail(item, message: "Premium audio download failed", httpStatus: 0) }
+        if loader.headDownloadFailed { return fail(item, message: "Premium audio download failed", httpStatus: Self.premiumDownloadFailed) }
         headStalled = true
         if loader.deferredSeekMs == nil { loader.deferredSeekMs = headMs; loader.deferredResume = true }
         seekingToMs = loader.deferredSeekMs
