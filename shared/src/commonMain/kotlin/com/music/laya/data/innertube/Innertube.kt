@@ -602,6 +602,45 @@ object Innertube {
         put("isAudioOnly", true)
     }
 
+    /**
+     * youtube.com's own `next` answer for [videoId], asked as the plain WEB
+     * client: only its watch page carries the "Most replayed" heat markers
+     * the player's Best Part button reads ([com.music.laya.data.bestpart.BestPart]).
+     *
+     * Anonymous on purpose: no cookie, no visitor id, so a lookup never puts a
+     * watch-page visit on the listener's history. One retry, since a miss only
+     * costs the button.
+     */
+    suspend fun webNext(videoId: String): JsonObject = withRetry(attempts = 2) {
+        client.post("$YOUTUBE_ORIGIN/youtubei/v1/next") {
+            contentType(ContentType.Application.Json)
+            parameter("prettyPrint", "false")
+            header("User-Agent", WEB_USER_AGENT)
+            header("Origin", YOUTUBE_ORIGIN)
+            header("Referer", "$YOUTUBE_ORIGIN/")
+            header("X-YouTube-Client-Name", WEB_CLIENT_ID)
+            header("X-YouTube-Client-Version", WEB_CLIENT_VERSION)
+            header("Accept-Language", acceptLanguageHeader)
+            setBody(
+                buildJsonObject {
+                    putJsonObject("context") {
+                        putJsonObject("client") {
+                            put("clientName", "WEB")
+                            put("clientVersion", WEB_CLIENT_VERSION)
+                            put("hl", currentLanguage)
+                            put("gl", currentRegion)
+                        }
+                    }
+                    put("videoId", videoId)
+                },
+            )
+        }.body<JsonObject>()
+    }
+
+    /** Kept in step with the WEB entry in [PlayerClient]; `next` is lenient about an old version. */
+    private const val WEB_CLIENT_VERSION = "2.20260708.00.00"
+    private const val WEB_CLIENT_ID = "1"
+
     /** Timed caption transcript used as a last-resort lyrics source. */
     suspend fun transcript(videoId: String): JsonObject = postMusic("get_transcript") {
         // get_transcript expects a tiny protobuf: field 1, length, video id.

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BlurOff
 import androidx.compose.material.icons.rounded.BlurOn
@@ -192,6 +193,7 @@ fun SettingsScreen(
     val reverbEnabled by AppSettings.reverbEnabled.collectAsStateWithLifecycle()
     val reverb by AppSettings.reverb.collectAsStateWithLifecycle()
     val nerdStats by AppSettings.showNerdStats.collectAsStateWithLifecycle()
+    val bestPart by AppSettings.showBestPart.collectAsStateWithLifecycle()
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
     val systemFont by AppSettings.systemFont.collectAsStateWithLifecycle()
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
@@ -1487,6 +1489,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setSmartVersionAlignment(!smartVersionAlignment) },
+                )
+            }
+            val bestPartTitle = stringResource(Res.string.show_best_part)
+            row(bestPartTitle, "best part", "chorus", "skip", "replayed", "highlight") {
+                SettingsRow(
+                    icon = Icons.Rounded.MusicNote,
+                    title = bestPartTitle,
+                    subtitle = stringResource(Res.string.show_best_part_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = bestPart,
+                            onCheckedChange = AppSettings::setShowBestPart,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setShowBestPart(!bestPart) },
                 )
             }
             val showNerdStatsTitle = stringResource(Res.string.show_nerd_stats)

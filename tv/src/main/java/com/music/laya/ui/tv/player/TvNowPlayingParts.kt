@@ -35,6 +35,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.runtime.produceState
+import com.music.laya.data.bestpart.BestPart
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Translate
@@ -352,8 +355,16 @@ internal fun TvTransport(
     /** Opens the music video's quality picker; null while no video plays. */
     onOpenVideoQuality: (() -> Unit)? = null,
     versionSwitching: Boolean = false,
+    /** Seeks straight to a moment; with it, the Best Part button is offered when the song has one. */
+    onSeek: ((Long) -> Unit)? = null,
 ) {
     val showStats by AppSettings.showNerdStats.collectAsState()
+    val bestPartOn by AppSettings.showBestPart.collectAsState()
+    // ponytail: kept up for the whole track rather than hidden once heard as on
+    // the phone, since a button vanishing under the D-pad's focus strands it.
+    val bestPart by produceState<Long?>(null, song.videoId, bestPartOn) {
+        value = if (bestPartOn && onSeek != null) BestPart.startFor(song) else null
+    }
     val reverbOn by AppSettings.reverbEnabled.collectAsState()
     val karaokeOn by Karaoke.enabled.collectAsState()
     val karaokeMono by Karaoke.unavailable.collectAsState()
@@ -414,6 +425,13 @@ internal fun TvTransport(
                         icon = Icons.Rounded.AspectRatio,
                         contentDescription = androidx.compose.ui.res.stringResource(com.music.laya.R.string.video_scale),
                         onClick = { AppSettings.setVideoScale(AppSettings.videoScale.value.next) },
+                    )
+                }
+                bestPart?.let { start ->
+                    TvTransportButton(
+                        icon = Icons.Rounded.AutoAwesome,
+                        contentDescription = "Skip to the best part",
+                        onClick = { onSeek?.invoke(start) },
                     )
                 }
                 TvTransportButton(

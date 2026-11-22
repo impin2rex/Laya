@@ -730,6 +730,7 @@ fun LayaDesktopApp() {
     var spotifySignInJob by remember { mutableStateOf<Job?>(null) }
     var spotifySignInError by remember { mutableStateOf<String?>(null) }
     var showNerdStats by remember { mutableStateOf(persistence.boolean("show_nerd_stats", false)) }
+    var showBestPart by remember { mutableStateOf(persistence.boolean("show_best_part", true)) }
     var syncedLyrics by remember {
         mutableStateOf(persistence.boolean(DesktopLyricsClient.KEY_SYNCED_LYRICS, true))
     }
@@ -3365,6 +3366,7 @@ fun LayaDesktopApp() {
         DesktopPlayerSettings.lyricsBlur.value = lyricsBlur
         DesktopPlayerSettings.syncedLyrics.value = syncedLyrics
         DesktopPlayerSettings.showNerdStats.value = showNerdStats
+        DesktopPlayerSettings.showBestPart.value = showBestPart
         DesktopPlayerSettings.smartFadeEnabled.value = automix
         DesktopPlayerSettings.smartAnalysis.value = playback.smartAnalysis
         DesktopPlayerSettings.smartMixInProgress.value = playback.mixing
@@ -4248,6 +4250,7 @@ fun LayaDesktopApp() {
                                     },
                                     animatedCanvas = animatedCanvas,
                                     showNerdStats = showNerdStats,
+                                    showBestPart = showBestPart,
                                     fullBleedArtwork = fullBleedArtwork,
                                     onAnimatedCanvasChange = {
                                         animatedCanvas = it
@@ -4296,6 +4299,10 @@ fun LayaDesktopApp() {
                                     onShowNerdStatsChange = {
                                         showNerdStats = it
                                         persistence.saveBoolean("show_nerd_stats", it)
+                                    },
+                                    onShowBestPartChange = {
+                                        showBestPart = it
+                                        persistence.saveBoolean("show_best_part", it)
                                     },
                                     onFullBleedArtworkChange = {
                                         fullBleedArtwork = it
@@ -6395,6 +6402,8 @@ private fun DesktopSettingsScreen(
     onOpenListenTogether: () -> Unit,
     showNerdStats: Boolean,
     onShowNerdStatsChange: (Boolean) -> Unit,
+    showBestPart: Boolean,
+    onShowBestPartChange: (Boolean) -> Unit,
     fullBleedArtwork: Boolean,
     onFullBleedArtworkChange: (Boolean) -> Unit,
     legacyMeshGradient: Boolean,
@@ -7258,6 +7267,12 @@ private fun DesktopSettingsScreen(
             }
             if (section == DesktopSettingsSection.ADVANCED) item {
                 SettingsGroup(DesktopStrings["advanced_options", "Advanced options"]) {
+                    SettingsToggle(
+                        DesktopStrings["show_best_part", "Best Part button"],
+                        DesktopStrings["show_best_part_subtitle", "A button on the artwork that skips to the part of the song people replay most"],
+                        showBestPart,
+                        onShowBestPartChange,
+                    )
                     SettingsToggle(
                         DesktopStrings["show_nerd_stats", "Show stats for nerds"],
                         DesktopStrings["show_nerd_stats_subtitle", "Codec, bitrate and sample rate on the player"],

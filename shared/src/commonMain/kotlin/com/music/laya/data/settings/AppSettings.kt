@@ -379,6 +379,12 @@ object AppSettings {
     /** Put the playing track's codec, bitrate and sample rate on the player. */
     val showNerdStats = MutableStateFlow(false)
 
+    /**
+     * The "Best Part" button on the player's artwork, which skips to the part of
+     * the song listeners replay most. On unless turned off.
+     */
+    val showBestPart = MutableStateFlow(true)
+
     /** Freezes the main player's mesh gradient instead of letting it drift/crossfade. */
     val reduceAnimation = MutableStateFlow(false)
 
@@ -915,6 +921,7 @@ object AppSettings {
         shuffleEnabled.value = prefs.getBoolean(KEY_SHUFFLE_ENABLED, false)
         repeatMode.value = prefs.getInt(KEY_REPEAT_MODE, REPEAT_MODE_OFF)
         showNerdStats.value = prefs.getBoolean(KEY_NERD_STATS, false)
+        showBestPart.value = prefs.getBoolean(KEY_BEST_PART, true)
         reduceAnimation.value = prefs.getBoolean(KEY_REDUCE_ANIMATION, false)
         systemFont.value = prefs.getBoolean(KEY_SYSTEM_FONT, false)
         onboardingComplete.value = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
@@ -1273,6 +1280,11 @@ object AppSettings {
     fun setShowNerdStats(value: Boolean) {
         showNerdStats.value = value
         prefs.edit().putBoolean(KEY_NERD_STATS, value).apply()
+    }
+
+    fun setShowBestPart(value: Boolean) {
+        showBestPart.value = value
+        prefs.edit().putBoolean(KEY_BEST_PART, value).apply()
     }
 
     fun setThemeMode(value: ThemeMode) {
@@ -2113,6 +2125,7 @@ object AppSettings {
     private const val KEY_SHUFFLE_ENABLED = "shuffle_enabled"
     private const val KEY_REPEAT_MODE = "repeat_mode"
     private const val KEY_NERD_STATS = "show_nerd_stats"
+    private const val KEY_BEST_PART = "show_best_part"
     private const val KEY_CACHE_LIMIT = "audio_cache_limit_bytes"
     private const val KEY_REDUCE_ANIMATION = "reduce_animation"
     private const val KEY_SYSTEM_FONT = "system_font"
