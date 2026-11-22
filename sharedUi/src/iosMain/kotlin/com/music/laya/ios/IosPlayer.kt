@@ -153,6 +153,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
          */
         fun shared(engine: AudioEngine): IosPlayer =
             instance ?: IosPlayer(engine, CoroutineScope(SupervisorJob() + Dispatchers.Main)).also { instance = it }
+
+        /** What [videoId] was last opened from, for the lyrics share video to cut the song from. */
+        internal fun shareStream(videoId: String): IosShareStream? =
+            instance?.streams?.get(videoId)?.let { IosShareStream(it.url, it.headers, it.mime, it.length, chunkBytesFor(it.url)) }
     }
 
     var queue by mutableStateOf(emptyList<Song>()); private set

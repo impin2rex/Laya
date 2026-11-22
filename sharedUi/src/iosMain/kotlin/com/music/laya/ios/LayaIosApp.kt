@@ -924,7 +924,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         // The glass samples this layer; opaque like Android's, so it has something to blur.
         val windowBackground = MaterialTheme.colorScheme.background
         val appBackdrop = rememberLayerBackdrop(onDraw = remember(windowBackground) { { drawRect(windowBackground); drawContent() } })
-        CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer) {
+        CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer, com.music.laya.ui.share.LocalVideoSharer provides IosVideoSharer) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 // In landscape the notch and Dynamic Island sit on a side edge; keep pages, tab bar and mini player clear of it.
                 BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
