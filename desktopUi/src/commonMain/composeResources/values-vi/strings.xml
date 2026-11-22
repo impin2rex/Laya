@@ -146,6 +146,9 @@
     <string name="downloaded">Đã tải</string>
     <string name="explore">Khám phá</string>
     <string name="library">Thư viện</string>
+    <string name="mixes_yours">Mix của bạn</string>
+    <string name="mixes_none">Chưa có mix nào. Hãy tiếp tục nghe và YouTube Music sẽ tạo mix cho bạn.</string>
+    <string name="radio">Radio</string>
     <string name="library_sign_in_description">Đăng nhập vào tài khoản Google của bạn để xem các bài hát đã thích, danh sách phát và lịch sử YouTube Music.</string>
     <string name="new_playlist">Danh sách phát mới</string>
     <string name="on_device">Trên thiết bị</string>

@@ -146,6 +146,9 @@
     <string name="downloaded">Загружено</string>
     <string name="explore">Обзор</string>
     <string name="library">Библиотека</string>
+    <string name="mixes_yours">Ваши миксы</string>
+    <string name="mixes_none">Миксов пока нет. Продолжайте слушать, и YouTube Music создаст их для вас.</string>
+    <string name="radio">Радио</string>
     <string name="library_sign_in_description">Войдите в свой аккаунт Google, чтобы видеть понравившиеся песни, плейлисты и историю YouTube Music.</string>
     <string name="new_playlist">Новый плейлист</string>
     <string name="on_device">На устройстве</string>

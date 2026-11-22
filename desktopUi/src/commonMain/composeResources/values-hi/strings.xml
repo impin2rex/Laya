@@ -146,6 +146,9 @@
     <string name="downloaded">डाउनलोड किया गया</string>
     <string name="explore">एक्सप्लोर करें</string>
     <string name="library">लाइब्रेरी</string>
+    <string name="mixes_yours">आपके मिक्स</string>
+    <string name="mixes_none">अभी कोई मिक्स नहीं है। सुनते रहें, YouTube Music आपके लिए मिक्स बनाएगा।</string>
+    <string name="radio">रेडियो</string>
     <string name="library_sign_in_description">अपने पसंदीदा गाने, प्लेलिस्ट और YouTube Music इतिहास देखने के लिए अपने Google खाते में साइन इन करें।</string>
     <string name="new_playlist">नई प्लेलिस्ट</string>
     <string name="on_device">डिवाइस पर</string>

@@ -152,6 +152,9 @@
     <string name="downloaded">İndirildi</string>
     <string name="explore">Keşfet</string>
     <string name="library">Kitaplık</string>
+    <string name="mixes_yours">Mikslerin</string>
+    <string name="mixes_none">Henüz miks yok. Dinlemeye devam et, YouTube Music senin için miksler oluşturacak.</string>
+    <string name="radio">Radyo</string>
     <string name="library_sign_in_description">Beğendiğin şarkıları, çalma listelerini ve YouTube Music geçmişini görmek için Google hesabınla giriş yap.</string>
     <string name="new_playlist">Yeni çalma listesi</string>
     <string name="on_device">Cihazda</string>

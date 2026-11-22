@@ -146,6 +146,9 @@
     <string name="downloaded">Diunduh</string>
     <string name="explore">Jelajahi</string>
     <string name="library">Perpustakaan</string>
+    <string name="mixes_yours">Mix Anda</string>
+    <string name="mixes_none">Belum ada mix. Terus dengarkan dan YouTube Music akan membuatkannya untuk Anda.</string>
+    <string name="radio">Radio</string>
     <string name="library_sign_in_description">Masuk ke akun Google Anda untuk melihat lagu yang disukai, playlist, dan riwayat YouTube Music Anda.</string>
     <string name="new_playlist">Playlist baru</string>
     <string name="on_device">Di Perangkat</string>

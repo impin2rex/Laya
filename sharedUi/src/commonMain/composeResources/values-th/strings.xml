@@ -152,6 +152,9 @@
     <string name="downloaded">ดาวน์โหลดแล้ว</string>
     <string name="explore">สำรวจ</string>
     <string name="library">คลังเพลง</string>
+    <string name="mixes_yours">มิกซ์ของคุณ</string>
+    <string name="mixes_none">ยังไม่มีมิกซ์ ฟังต่อไปแล้ว YouTube Music จะสร้างมิกซ์ให้คุณ</string>
+    <string name="radio">วิทยุ</string>
     <string name="library_sign_in_description">ลงชื่อเข้าใช้บัญชี Google เพื่อดูเพลงที่ถูกใจ เพลย์ลิสต์ และประวัติ YouTube Music ของคุณ</string>
     <string name="new_playlist">เพลย์ลิสต์ใหม่</string>
     <string name="on_device">ในอุปกรณ์</string>

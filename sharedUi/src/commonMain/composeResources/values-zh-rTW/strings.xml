@@ -152,6 +152,9 @@
     <string name="downloaded">已下載</string>
     <string name="explore">探索</string>
     <string name="library">資料庫</string>
+    <string name="mixes_yours">你的混音</string>
+    <string name="mixes_none">暫無混音。繼續收聽，YouTube Music 會為你生成混音。</string>
+    <string name="radio">電台</string>
     <string name="library_sign_in_description">登入 Google 賬號即可檢視你喜歡的歌曲、播放列表和 YouTube Music 歷史記錄。</string>
     <string name="new_playlist">新建播放列表</string>
     <string name="on_device">裝置內</string>
