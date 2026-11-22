@@ -11,6 +11,8 @@
     <string name="audio_pipeline">Audio Pipeline</string>
     <string name="automix_analysis_status">Automix · this song: %1$s · next: %2$s</string>
     <string name="automix_not_supported_video">Automix not supported on video songs</string>
+    <string name="best_part">Best Part</string>
+    <string name="best_part_description">Skip to the best part</string>
     <string name="automix_stopped_in_party">Automix: stopped in listen together</string>
     <string name="autoplay">AutoPlay</string>
     <string name="autoplay_empty_description">Similar music will keep playing</string>
@@ -413,6 +415,8 @@
     <string name="settings_search_hint">Search settings</string>
     <string name="show_cache_folder">Show cached songs folder</string>
     <string name="show_cache_folder_subtitle">Adds a Cached songs folder to Library with the YouTube and JioSaavn songs kept in the song cache</string>
+    <string name="show_best_part">Best Part button</string>
+    <string name="show_best_part_subtitle">A button on the artwork that skips to the part of the song people replay most</string>
     <string name="show_nerd_stats">Show stats for nerds</string>
     <string name="show_nerd_stats_subtitle">Codec, bitrate and sample rate on the player</string>
     <string name="show_queue_history">Show queue history</string>

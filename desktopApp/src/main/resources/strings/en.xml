@@ -288,6 +288,8 @@
     <string name="eq_preset_small_speakers">Small speakers</string>
     <string name="eq_preset_late_night">Late night</string>
     <string name="eq_preset_custom">Custom</string>
+    <string name="show_best_part">Best Part button</string>
+    <string name="show_best_part_subtitle">A button on the artwork that skips to the part of the song people replay most</string>
     <string name="show_nerd_stats">Show stats for nerds</string>
     <string name="show_nerd_stats_subtitle">Codec, bitrate and sample rate on the player</string>
     <string name="theme">Theme</string>

@@ -264,6 +264,8 @@ interface PlayerSettingsSource {
     val reduceDynamicBlur: StateFlow<Boolean>
     val reverbEnabled: StateFlow<Boolean>
     val showNerdStats: StateFlow<Boolean>
+    /** Whether the "Best Part" button is offered on the artwork. */
+    val showBestPart: StateFlow<Boolean>
     val smartAnalysis: StateFlow<SmartAnalysis>
     val smartFadeEnabled: StateFlow<Boolean>
     /** True only while an analysed Automix transition is audibly mixing two tracks. */

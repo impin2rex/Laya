@@ -2004,6 +2004,7 @@ fun NowPlayingScreen(
                                     // Faded with the player rather than flown with
                                     // the sleeve: the cover in the bar has none.
                                     .graphicsLayer { alpha = if (panelOpen) 0f else dockFade() },
+                                bestPart = { BestPartPill(song, position, onSeek) },
                             )
                         }
                     },
@@ -3292,6 +3293,8 @@ fun NowPlayingScreen(
                                         .graphicsLayer {
                                             alpha = (1f - p() * 2f) * spotifyChromeAlpha
                                         },
+                                    // Under the stats, or in their place with them off.
+                                    bestPart = { BestPartPill(song, position, onSeek) },
                                 )
                             }
                         }

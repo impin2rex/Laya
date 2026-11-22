@@ -234,6 +234,7 @@ internal object DesktopPlayerSettings : PlayerSettingsSource {
     override val reduceDynamicBlur = MutableStateFlow(false)
     override val reverbEnabled get() = DesktopReverbSettings.enabled
     override val showNerdStats = MutableStateFlow(false)
+    override val showBestPart = MutableStateFlow(true)
     override val smartAnalysis = MutableStateFlow(SmartAnalysis())
     override val smartFadeEnabled = MutableStateFlow(false)
     override val smartMixInProgress = MutableStateFlow(false)
