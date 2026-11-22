@@ -297,4 +297,5 @@
     <string name="audio_short">音频</string>
     <string name="lyrics_share_making_video">正在制作视频…</string>
     <string name="top_result">最佳结果</string>
+    <string name="something_went_wrong">出了点问题</string>
 </resources>

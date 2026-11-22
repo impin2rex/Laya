@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.music.laya.R
+import com.music.laya.data.DebugLog
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.canvas.CanvasRepository
 import com.music.laya.data.settings.AppSettings
@@ -98,6 +99,10 @@ internal fun AndroidLyricsShareSheet(
 
     var image by remember(request) { mutableStateOf<Bitmap?>(null) }
     var failed by remember(request) { mutableStateOf(false) }
+    // Separate from [failed]: that one is the card's own render, shown as
+    // "couldn't draw picture"; this is the save or share step after a picture
+    // that drew fine, so it gets the generic error text instead.
+    var actionFailed by remember(request) { mutableStateOf(false) }
     var saved by remember(request) { mutableStateOf(false) }
     // The 9:16 story is what these are mostly made for, so it is where the
     // sheet opens; the card cut to its lines is one tap away.
@@ -130,12 +135,16 @@ internal fun AndroidLyricsShareSheet(
         image = null
         painter = null
         failed = false
+        actionFailed = false
         saved = false
         runCatching {
             val paint = lyricsCardPainter(context, request, story, showLogo, transparent = clip != null)
             image = withContext(Dispatchers.Default) { paint.render(null) }
             painter = paint
-        }.onFailure { failed = true }
+        }.onFailure {
+            DebugLog.w(TAG, "lyrics card render failed", it)
+            failed = true
+        }
     }
 
     // One export per look, reused by Save and Share alike.
@@ -301,6 +310,15 @@ internal fun AndroidLyricsShareSheet(
                 )
             }
 
+            if (actionFailed) {
+                Text(
+                    text = stringResource(R.string.something_went_wrong),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -319,8 +337,13 @@ internal fun AndroidLyricsShareSheet(
                         if (drawn != null) {
                             haptics.play(Haptic.Tap)
                             saved = false
+                            actionFailed = false
                             saving = true
                             scope.launch {
+                                // A failed export or write must land here as `false`, not as an
+                                // exception that skips `saving = false` and crashes the sheet —
+                                // the video pipeline (Media3 Transformer, device codecs, a flaky
+                                // network for the song's Opus) can throw, not just return null.
                                 val done = try {
                                     if (isVideo) {
                                         val video = videoFile()
@@ -328,10 +351,13 @@ internal fun AndroidLyricsShareSheet(
                                     } else {
                                         saveToGallery(context, drawn, request.song.title, LYRICS_FILE_PREFIX)
                                     }
+                                } catch (e: Exception) {
+                                    DebugLog.w(TAG, "lyrics video save failed", e)
+                                    false
                                 } finally {
                                     saving = false
                                 }
-                                if (!done) failed = true
+                                actionFailed = !done
                                 saved = done
                             }
                         }
@@ -347,14 +373,20 @@ internal fun AndroidLyricsShareSheet(
                         val drawn = image
                         if (drawn != null) {
                             haptics.play(Haptic.Tap)
+                            actionFailed = false
                             scope.launch {
-                                val send = if (isVideo) {
-                                    videoFile()?.let { shareVideoIntent(context, it) }
-                                } else {
-                                    cacheForSharing(context, drawn, LYRICS_FILE_NAME)?.let(::sendIntent)
+                                val send = try {
+                                    if (isVideo) {
+                                        videoFile()?.let { shareVideoIntent(context, it) }
+                                    } else {
+                                        cacheForSharing(context, drawn, LYRICS_FILE_NAME)?.let(::sendIntent)
+                                    }
+                                } catch (e: Exception) {
+                                    DebugLog.w(TAG, "lyrics video share failed", e)
+                                    null
                                 }
                                 if (send == null) {
-                                    failed = true
+                                    actionFailed = true
                                     saved = false
                                 } else {
                                     context.startActivity(
@@ -377,6 +409,7 @@ internal fun AndroidLyricsShareSheet(
  * other while the receiving app is still reading the first, and the gallery
  * prefix so a saved card in the pictures folder says which feature produced it.
  */
+private const val TAG = "LyricsShareSheet"
 private const val LYRICS_FILE_NAME = "lyrics.png"
 private const val LYRICS_FILE_PREFIX = "laya-lyrics"
 

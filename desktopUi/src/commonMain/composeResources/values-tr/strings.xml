@@ -298,4 +298,5 @@
     <string name="audio_short">Ses</string>
     <string name="lyrics_share_making_video">Video hazırlanıyor…</string>
     <string name="top_result">En iyi sonuç</string>
+    <string name="something_went_wrong">Bir şeyler ters gitti</string>
 </resources>

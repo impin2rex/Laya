@@ -99,6 +99,10 @@ fun LyricsShareSheetContent(
     var frames by remember(request) { mutableStateOf<LyricsCardFrames?>(null) }
     var image by remember(request) { mutableStateOf<ImageBitmap?>(null) }
     var failed by remember(request) { mutableStateOf(false) }
+    // Separate from [failed]: that one is the card's own render, shown as
+    // "couldn't draw picture"; this is the save or share step after a picture
+    // that drew fine, so it gets the generic error text instead.
+    var actionFailed by remember(request) { mutableStateOf(false) }
     var saved by remember(request) { mutableStateOf(false) }
     var saving by remember(request) { mutableStateOf(false) }
     var story by remember(request) { mutableStateOf(true) }
@@ -107,6 +111,7 @@ fun LyricsShareSheetContent(
         frames = null
         image = null
         failed = false
+        actionFailed = false
         saved = false
         runCatching {
             val laid = lyricsCardFrames(context, pen, logo, request, story, showLogo)
@@ -223,6 +228,15 @@ fun LyricsShareSheetContent(
                 )
             }
 
+            if (actionFailed) {
+                Text(
+                    text = stringResource(Res.string.something_went_wrong),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
             if (isVideo && exporting) {
                 Text(
                     text = stringResource(Res.string.lyrics_share_making_video),
@@ -253,9 +267,12 @@ fun LyricsShareSheetContent(
                         val drawn = image ?: return@ShareAction
                         haptics.play(Haptic.Tap)
                         saved = false
+                        actionFailed = false
                         saving = true
                         scope.launch {
                             val name = "$LYRICS_FILE_PREFIX-${request.song.title}"
+                            // A failed export or save must land here as `false`, not as an
+                            // exception that skips `saving = false` and leaves the sheet stuck.
                             val done = try {
                                 if (isVideo) {
                                     val path = videoFile()
@@ -263,10 +280,13 @@ fun LyricsShareSheetContent(
                                 } else {
                                     sharer?.saveToPhotos(drawn, name) == true
                                 }
+                            } catch (e: Exception) {
+                                println("LyricsShare: save failed: ${e.message ?: e}")
+                                false
                             } finally {
                                 saving = false
                             }
-                            if (!done) failed = true
+                            actionFailed = !done
                             saved = done
                         }
                     },
@@ -280,14 +300,20 @@ fun LyricsShareSheetContent(
                     onClick = {
                         val drawn = image ?: return@ShareAction
                         haptics.play(Haptic.Tap)
+                        actionFailed = false
                         scope.launch {
-                            val sent = if (isVideo) {
-                                videoFile()?.let { videos?.share(it) } == true
-                            } else {
-                                sharer?.share(drawn, LYRICS_FILE_NAME) == true
+                            val sent = try {
+                                if (isVideo) {
+                                    videoFile()?.let { videos?.share(it) } == true
+                                } else {
+                                    sharer?.share(drawn, LYRICS_FILE_NAME) == true
+                                }
+                            } catch (e: Exception) {
+                                println("LyricsShare: share failed: ${e.message ?: e}")
+                                false
                             }
                             if (!sent) {
-                                failed = true
+                                actionFailed = true
                                 saved = false
                             }
                         }

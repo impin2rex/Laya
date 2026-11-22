@@ -298,4 +298,5 @@
     <string name="audio_short">אודיו</string>
     <string name="lyrics_share_making_video">יוצר את הסרטון…</string>
     <string name="top_result">התוצאה המובילה</string>
+    <string name="something_went_wrong">משהו השתבש</string>
 </resources>

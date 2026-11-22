@@ -292,4 +292,5 @@
         <item quantity="other">%1$d টি গান সরানো হয়েছে</item></plurals>
     <string name="lyrics_share_making_video">ভিডিও তৈরি হচ্ছে…</string>
     <string name="top_result">সেরা ফলাফল</string>
+    <string name="something_went_wrong">কিছু একটা সমস্যা হয়েছে</string>
 </resources>

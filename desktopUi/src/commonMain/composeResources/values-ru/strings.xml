@@ -300,4 +300,5 @@
     <string name="audio_short">Аудио</string>
     <string name="lyrics_share_making_video">Создаём видео…</string>
     <string name="top_result">Лучший результат</string>
+    <string name="something_went_wrong">Что-то пошло не так</string>
 </resources>

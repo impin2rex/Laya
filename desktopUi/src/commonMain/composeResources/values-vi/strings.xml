@@ -297,4 +297,5 @@
     <string name="audio_short">Âm thanh</string>
     <string name="lyrics_share_making_video">Đang tạo video…</string>
     <string name="top_result">Kết quả hàng đầu</string>
+    <string name="something_went_wrong">Đã xảy ra lỗi</string>
 </resources>

@@ -297,4 +297,5 @@
     <string name="audio_short">オーディオ</string>
     <string name="lyrics_share_making_video">動画を作成中…</string>
     <string name="top_result">トップ結果</string>
+    <string name="something_went_wrong">問題が発生しました</string>
 </resources>

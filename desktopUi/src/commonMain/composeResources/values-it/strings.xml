@@ -298,4 +298,5 @@
     <string name="audio_short">Audio</string>
     <string name="lyrics_share_making_video">Creazione del video…</string>
     <string name="top_result">Risultato migliore</string>
+    <string name="something_went_wrong">Qualcosa è andato storto</string>
 </resources>

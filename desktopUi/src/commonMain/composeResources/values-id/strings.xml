@@ -297,4 +297,5 @@
     <string name="audio_short">Audio</string>
     <string name="lyrics_share_making_video">Membuat video…</string>
     <string name="top_result">Hasil teratas</string>
+    <string name="something_went_wrong">Terjadi kesalahan</string>
 </resources>

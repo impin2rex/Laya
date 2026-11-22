@@ -104,7 +104,7 @@ internal suspend fun exportLyricsVideo(
                 val picture = renderLyricsShareBackdrop(context, request, height)
                 file.outputStream().use { picture.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 file
-            }.getOrNull()
+            }.onFailure { Log.w(TAG, "lyrics video backdrop render failed", it) }.getOrNull()
         } ?: return null
     } else {
         null
@@ -153,7 +153,9 @@ internal suspend fun exportLyricsVideo(
 
     if (opus != null && attempt(withAudio = true)) return out
     if (timeline != null) onSilent()
-    return if (attempt(withAudio = false)) out else null
+    if (attempt(withAudio = false)) return out
+    Log.w(TAG, "lyrics video export failed on every attempt (clip=${clip != null}, audio=${opus != null})")
+    return null
 }
 
 /** Scaled and cropped to fill the card's frame. */
@@ -284,22 +286,24 @@ private suspend fun probeLengthMs(context: Context, url: String): Long? = withCo
     val player = ExoPlayer.Builder(context).build()
     try {
         withTimeoutOrNull(PROBE_TIMEOUT_MS) {
-            suspendCancellableCoroutine { cont ->
-                player.addListener(object : Player.Listener {
-                    override fun onPlaybackStateChanged(state: Int) {
-                        if (state == Player.STATE_READY && cont.isActive) {
-                            cont.resume(player.duration.takeIf { it != C.TIME_UNSET && it > 0 })
+            runCatching {
+                suspendCancellableCoroutine { cont ->
+                    player.addListener(object : Player.Listener {
+                        override fun onPlaybackStateChanged(state: Int) {
+                            if (state == Player.STATE_READY && cont.isActive) {
+                                cont.resume(player.duration.takeIf { it != C.TIME_UNSET && it > 0 })
+                            }
                         }
-                    }
 
-                    override fun onPlayerError(error: PlaybackException) {
-                        if (cont.isActive) cont.resume(null)
-                    }
-                })
-                player.volume = 0f
-                player.setMediaItem(MediaItem.fromUri(url))
-                player.prepare()
-            }
+                        override fun onPlayerError(error: PlaybackException) {
+                            if (cont.isActive) cont.resume(null)
+                        }
+                    })
+                    player.volume = 0f
+                    player.setMediaItem(MediaItem.fromUri(url))
+                    player.prepare()
+                }
+            }.onFailure { Log.w(TAG, "lyrics video cover length probe failed", it) }.getOrNull()
         }
     } finally {
         player.release()
@@ -345,44 +349,54 @@ private suspend fun transform(
 
     return withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { cont ->
-            val transformer = Transformer.Builder(context)
-                .setVideoMimeType(MimeTypes.VIDEO_H264)
-                .setAudioMimeType(MimeTypes.AUDIO_AAC)
-                .setAssetLoaderFactory(
-                    DefaultAssetLoaderFactory(
-                        context,
-                        DefaultDecoderFactory.Builder(context).build(),
-                        Clock.DEFAULT,
-                        RoutingSourceFactory(DefaultMediaSourceFactory(context), songFactory),
-                        DataSourceBitmapLoader(context),
-                    ),
-                )
-                .setEncoderFactory(
-                    DefaultEncoderFactory.Builder(context)
-                        .setRequestedVideoEncoderSettings(
-                            VideoEncoderSettings.Builder().setBitrate(VIDEO_BITRATE).build(),
-                        )
-                        .build(),
-                )
-                .addListener(object : Transformer.Listener {
-                    override fun onCompleted(composition: Composition, exportResult: ExportResult) {
-                        if (cont.isActive) cont.resume(true)
-                    }
+            // Building or starting the Transformer can itself throw — a codec or GL
+            // context the device doesn't have, say — rather than reaching the
+            // listener below. Caught here so that throw resumes false instead of
+            // escaping un-awaited: left to propagate normally it would skip the
+            // silent-video fallback this attempt is one half of (see [attempt]).
+            try {
+                val transformer = Transformer.Builder(context)
+                    .setVideoMimeType(MimeTypes.VIDEO_H264)
+                    .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                    .setAssetLoaderFactory(
+                        DefaultAssetLoaderFactory(
+                            context,
+                            DefaultDecoderFactory.Builder(context).build(),
+                            Clock.DEFAULT,
+                            RoutingSourceFactory(DefaultMediaSourceFactory(context), songFactory),
+                            DataSourceBitmapLoader(context),
+                        ),
+                    )
+                    .setEncoderFactory(
+                        DefaultEncoderFactory.Builder(context)
+                            .setRequestedVideoEncoderSettings(
+                                VideoEncoderSettings.Builder().setBitrate(VIDEO_BITRATE).build(),
+                            )
+                            .build(),
+                    )
+                    .addListener(object : Transformer.Listener {
+                        override fun onCompleted(composition: Composition, exportResult: ExportResult) {
+                            if (cont.isActive) cont.resume(true)
+                        }
 
-                    override fun onError(
-                        composition: Composition,
-                        exportResult: ExportResult,
-                        exportException: ExportException,
-                    ) {
-                        Log.w(TAG, "lyrics video export failed (audio=${audio != null})", exportException)
-                        if (cont.isActive) cont.resume(false)
-                    }
-                })
-                .build()
-            out.delete()
-            transformer.start(composition, out.path)
-            // The sheet closed mid-export: stop encoding, on the thread it runs on.
-            cont.invokeOnCancellation { Handler(Looper.getMainLooper()).post { transformer.cancel() } }
+                        override fun onError(
+                            composition: Composition,
+                            exportResult: ExportResult,
+                            exportException: ExportException,
+                        ) {
+                            Log.w(TAG, "lyrics video export failed (audio=${audio != null})", exportException)
+                            if (cont.isActive) cont.resume(false)
+                        }
+                    })
+                    .build()
+                out.delete()
+                transformer.start(composition, out.path)
+                // The sheet closed mid-export: stop encoding, on the thread it runs on.
+                cont.invokeOnCancellation { Handler(Looper.getMainLooper()).post { transformer.cancel() } }
+            } catch (e: Exception) {
+                Log.w(TAG, "lyrics video transformer setup failed (audio=${audio != null})", e)
+                if (cont.isActive) cont.resume(false)
+            }
         }
     }
 }
@@ -436,7 +450,7 @@ internal suspend fun saveVideoToGallery(context: Context, video: File, label: St
                 video.copyTo(File(dir, name), overwrite = true)
             }
             true
-        }.getOrDefault(false)
+        }.onFailure { Log.w(TAG, "lyrics video gallery save failed", it) }.getOrDefault(false)
     }
 
 private const val SHARE_FOLDER = "shared"

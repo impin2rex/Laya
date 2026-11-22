@@ -297,4 +297,5 @@
     <string name="audio_short">เสียง</string>
     <string name="lyrics_share_making_video">กำลังสร้างวิดีโอ…</string>
     <string name="top_result">ผลลัพธ์ยอดนิยม</string>
+    <string name="something_went_wrong">เกิดข้อผิดพลาดบางอย่าง</string>
 </resources>

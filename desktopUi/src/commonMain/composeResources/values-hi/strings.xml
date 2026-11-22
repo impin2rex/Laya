@@ -298,4 +298,5 @@
     <string name="audio_short">ऑडियो</string>
     <string name="lyrics_share_making_video">वीडियो बनाया जा रहा है…</string>
     <string name="top_result">शीर्ष परिणाम</string>
+    <string name="something_went_wrong">कुछ गड़बड़ हो गई</string>
 </resources>
