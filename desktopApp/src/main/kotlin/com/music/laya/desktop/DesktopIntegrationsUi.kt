@@ -107,10 +107,10 @@ internal fun DesktopLastfmLoginDialog(onDismiss: () -> Unit) {
             title = DesktopStrings["d_sign_in_to_last_fm", "Sign in to Last.fm"],
             message = error
                 ?: if (needsAppKey) {
-                    "Your password is sent to Last.fm once and never stored. The API key " +
-                        "and shared secret are your app's, from last.fm/api."
+                    DesktopStrings["d_lastfm_password_notice", "Your password is sent to Last.fm once and never stored."] + " " +
+                        DesktopStrings["d_lastfm_app_key_notice", "The API key and shared secret are your app’s, from last.fm/api."]
                 } else {
-                    "Your password is sent to Last.fm once and never stored."
+                    DesktopStrings["d_lastfm_password_notice", "Your password is sent to Last.fm once and never stored."]
                 },
             isError = error != null,
         )

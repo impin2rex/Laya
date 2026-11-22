@@ -296,4 +296,5 @@
     <string name="switch_to_video">Chuyển sang video</string>
     <string name="audio_short">Âm thanh</string>
     <string name="lyrics_share_making_video">Đang tạo video…</string>
+    <string name="top_result">Kết quả hàng đầu</string>
 </resources>

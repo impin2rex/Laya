@@ -46,7 +46,7 @@ internal fun DesktopQrCode(content: String, size: Dp = 104.dp) {
             .background(Color.White)
             .padding(quietZone),
     ) {
-        image?.let { Image(it, contentDescription = "Party invite QR code", modifier = Modifier.fillMaxSize()) }
+        image?.let { Image(it, contentDescription = DesktopStrings["d_party_invite_qr", "Party invite QR code"], modifier = Modifier.fillMaxSize()) }
     }
 }
 

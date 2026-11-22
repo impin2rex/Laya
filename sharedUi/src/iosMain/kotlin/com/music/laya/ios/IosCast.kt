@@ -23,6 +23,14 @@ import com.music.laya.ui.player.CastUi
 import com.music.laya.ui.player.PlayerDrawer
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.cast
+import com.music.laya.sharedui.resources.cast_casting
+import com.music.laya.sharedui.resources.cast_connecting
+import com.music.laya.sharedui.resources.cast_searching
+import com.music.laya.sharedui.resources.cast_searching_hint
+import com.music.laya.sharedui.resources.cast_subtitle
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Google Cast, implemented in Swift on the Cast SDK (iosApp/iosApp/CastNative.swift) and handed
@@ -132,13 +140,13 @@ internal fun IosCastDialog(hazeState: HazeState, onDismiss: () -> Unit) {
         onDispose { IosCast.native?.discover(false) }
     }
     LaunchedEffect(cast.connectedName, picked) { if (picked && cast.connectedName != null) onDismiss() }
-    PlayerDrawer(hazeState = hazeState, title = "Cast", onDismiss = onDismiss) {
-        Text("Play on a Chromecast or Google Cast speaker", color = Color.White.copy(alpha = 0.7f), fontSize = 12.5.sp)
+    PlayerDrawer(hazeState = hazeState, title = stringResource(Res.string.cast), onDismiss = onDismiss) {
+        Text(stringResource(Res.string.cast_subtitle), color = Color.White.copy(alpha = 0.7f), fontSize = 12.5.sp)
         Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
             if (devices.isEmpty()) {
-                Text("Looking for devices…", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.W600)
+                Text(stringResource(Res.string.cast_searching), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.W600)
                 Text(
-                    "Your phone and the receiver need to be on the same Wi-Fi network.",
+                    stringResource(Res.string.cast_searching_hint),
                     color = Color.White.copy(alpha = 0.7f), fontSize = 12.5.sp, modifier = Modifier.padding(top = 4.dp),
                 )
             }
@@ -146,7 +154,7 @@ internal fun IosCastDialog(hazeState: HazeState, onDismiss: () -> Unit) {
                 val here = cast.casting && cast.connectedName == d.name
                 Row(Modifier.fillMaxWidth().clickable(enabled = !here) { picked = true; IosCast.native?.connect(d.id) }.padding(vertical = 12.dp)) {
                     Text(d.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.W600, modifier = Modifier.weight(1f))
-                    Text(if (here) "Casting" else if (cast.connecting) "Connecting…" else "", color = Color.White.copy(alpha = 0.7f), fontSize = 12.5.sp)
+                    Text(if (here) stringResource(Res.string.cast_casting) else if (cast.connecting) stringResource(Res.string.cast_connecting) else "", color = Color.White.copy(alpha = 0.7f), fontSize = 12.5.sp)
                 }
             }
             if (cast.casting) {

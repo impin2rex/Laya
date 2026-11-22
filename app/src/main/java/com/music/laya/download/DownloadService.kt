@@ -227,7 +227,7 @@ class DownloadService : Service() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(0, "Cancel", cancel)
+            .addAction(0, getString(R.string.cancel), cancel)
             .build()
     }
 
@@ -236,12 +236,12 @@ class DownloadService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,
-                "Downloads",
+                getString(R.string.download_channel_name),
                 // Progress, not news. It belongs in the shade without a sound
                 // or a heads-up every time a track finishes.
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Songs being saved to your Music folder"
+                description = getString(R.string.download_channel_description)
                 setShowBadge(false)
             },
         )

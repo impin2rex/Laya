@@ -1452,4 +1452,5 @@
     <string name="show_best_part">Кнопка «Лучший момент»</string>
     <string name="show_best_part_subtitle">Кнопка на обложке, которая переходит к части песни, которую переслушивают чаще всего</string>
     <string name="lyrics_share_video_silent">Не удалось получить звук песни, поэтому в этом видео нет звука.</string>
+    <string name="choose_in_youtube_music">Выбрать в YouTube Music</string>
 </resources>

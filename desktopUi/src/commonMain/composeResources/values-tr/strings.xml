@@ -297,4 +297,5 @@
     <string name="switch_to_video">Videoya geç</string>
     <string name="audio_short">Ses</string>
     <string name="lyrics_share_making_video">Video hazırlanıyor…</string>
+    <string name="top_result">En iyi sonuç</string>
 </resources>

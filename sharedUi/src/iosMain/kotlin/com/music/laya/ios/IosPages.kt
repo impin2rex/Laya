@@ -146,6 +146,23 @@ import com.music.laya.data.model.UiState
 import com.music.laya.ui.utils.guardSheetFromContentTouches
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
+import com.music.laya.sharedui.resources.add_to_playlist
+import com.music.laya.sharedui.resources.add_to_queue
+import com.music.laya.sharedui.resources.copy_log
+import com.music.laya.sharedui.resources.dislike
+import com.music.laya.sharedui.resources.like
+import com.music.laya.sharedui.resources.no_tracks_here
+import com.music.laya.sharedui.resources.nothing_to_explore
+import com.music.laya.sharedui.resources.open_album
+import com.music.laya.sharedui.resources.open_artist
+import com.music.laya.sharedui.resources.play_next
+import com.music.laya.sharedui.resources.remove_from_liked
+import com.music.laya.sharedui.resources.revert_to_original
+import com.music.laya.sharedui.resources.share
+import com.music.laya.sharedui.resources.sleep_timer
+import com.music.laya.sharedui.resources.song_info
+import com.music.laya.sharedui.resources.undo_dislike
+import com.music.laya.sharedui.resources.upgrade_quality
 
 /** A pushed page: an album / artist / playlist, or a mood / genre's playlists. */
 internal sealed interface IosPage {
@@ -191,7 +208,7 @@ internal suspend fun loadDetail(base: DetailPage): DetailPage {
     return if (base.type == BrowseType.ARTIST) {
         YtMusicRepository.artistPage(base.browseId).fold({ p ->
             base.copy(
-                songs = if (p.songs.isEmpty()) UiState.Error("No tracks here") else UiState.Success(p.songs.withArt(fallback ?: p.thumbnailUrl)),
+                songs = if (p.songs.isEmpty()) UiState.Error(getString(Res.string.no_tracks_here)) else UiState.Success(p.songs.withArt(fallback ?: p.thumbnailUrl)),
                 sections = p.sections,
                 thumbnailUrl = p.thumbnailUrl ?: fallback,
                 title = p.name ?: base.title,
@@ -206,7 +223,7 @@ internal suspend fun loadDetail(base: DetailPage): DetailPage {
         YtMusicRepository.browseSongs(base.browseId).fold({ p ->
             val header = p.header
             base.copy(
-                songs = if (p.songs.isEmpty()) UiState.Error("No tracks here") else UiState.Success(p.songs.withArt(fallback ?: header?.thumbnailUrl)),
+                songs = if (p.songs.isEmpty()) UiState.Error(getString(Res.string.no_tracks_here)) else UiState.Success(p.songs.withArt(fallback ?: header?.thumbnailUrl)),
                 suggestedSongs = p.suggested.withArt(fallback ?: header?.thumbnailUrl),
                 continuation = p.continuation,
                 description = p.description,
@@ -262,7 +279,7 @@ internal suspend fun loadSpotifyPage(browseId: String, update: ((DetailPage) -> 
 
 internal suspend fun loadMood(item: MoodGenre): UiState<List<HomeShelf>> =
     YtMusicRepository.moodGenreShelves(item.browseId, item.params).fold(
-        { if (it.isEmpty()) UiState.Error("Nothing to explore") else UiState.Success(it) },
+        { if (it.isEmpty()) UiState.Error(getString(Res.string.nothing_to_explore)) else UiState.Success(it) },
         { UiState.Error(friendly(it)) },
     )
 
@@ -323,27 +340,27 @@ internal fun IosSongMenu(
                 supportingContent = { Text(song.artist, maxLines = 1) },
                 colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
             )
-            onRevertToOriginal?.let { Action(Icons.AutoMirrored.Rounded.Undo, "Revert to original", it) }
+            onRevertToOriginal?.let { Action(Icons.AutoMirrored.Rounded.Undo, stringResource(Res.string.revert_to_original), it) }
             onUpgradeQuality?.let {
                 ListItem(
-                    headlineContent = { Text("Upgrade quality") },
+                    headlineContent = { Text(stringResource(Res.string.upgrade_quality)) },
                     leadingContent = { Icon(Icons.Rounded.HighQuality, null) },
                     colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
                     modifier = Modifier.clickable(enabled = !upgradeInProgress) { onDismiss(); it() },
                 )
             }
-            liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) "Remove from liked" else "Like", onToggleLike) }
-            disliked?.let { Action(if (it) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt, if (it) "Undo dislike" else "Dislike", onToggleDislike) }
-            onAddToPlaylist?.let { Action(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist", it) }
+            liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) stringResource(Res.string.remove_from_liked) else stringResource(Res.string.like), onToggleLike) }
+            disliked?.let { Action(if (it) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt, if (it) stringResource(Res.string.undo_dislike) else stringResource(Res.string.dislike), onToggleDislike) }
+            onAddToPlaylist?.let { Action(Icons.AutoMirrored.Rounded.PlaylistAdd, stringResource(Res.string.add_to_playlist), it) }
             DownloadRow(song)
-            Action(Icons.AutoMirrored.Rounded.PlaylistPlay, "Play next", onPlayNext)
-            Action(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue", onAddToQueue)
-            song.albumId?.let { id -> Action(Icons.Rounded.Album, "Open album") { onOpenAlbum(id) } }
-            song.artistId?.let { id -> Action(Icons.Rounded.Person, "Open artist") { onOpenArtist(id) } }
-            onSongInfo?.let { Action(Icons.Rounded.Info, "Song info", it) }
-            onSleepTimer?.let { Action(Icons.Rounded.Bedtime, sleepStatus?.let { s -> "Sleep timer · $s" } ?: "Sleep timer", it) }
-            Action(Icons.Rounded.Share, "Share") { shareText("https://music.youtube.com/watch?v=${song.videoId}") }
-            onCopyLog?.let { Action(Icons.Rounded.BugReport, "Copy log", it) }
+            Action(Icons.AutoMirrored.Rounded.PlaylistPlay, stringResource(Res.string.play_next), onPlayNext)
+            Action(Icons.AutoMirrored.Rounded.QueueMusic, stringResource(Res.string.add_to_queue), onAddToQueue)
+            song.albumId?.let { id -> Action(Icons.Rounded.Album, stringResource(Res.string.open_album)) { onOpenAlbum(id) } }
+            song.artistId?.let { id -> Action(Icons.Rounded.Person, stringResource(Res.string.open_artist)) { onOpenArtist(id) } }
+            onSongInfo?.let { Action(Icons.Rounded.Info, stringResource(Res.string.song_info), it) }
+            onSleepTimer?.let { Action(Icons.Rounded.Bedtime, sleepStatus?.let { s -> stringResource(Res.string.sleep_timer) + " · " + s } ?: stringResource(Res.string.sleep_timer), it) }
+            Action(Icons.Rounded.Share, stringResource(Res.string.share)) { shareText("https://music.youtube.com/watch?v=${song.videoId}") }
+            onCopyLog?.let { Action(Icons.Rounded.BugReport, stringResource(Res.string.copy_log), it) }
         }
     }
 }

@@ -1403,4 +1403,5 @@
     <string name="show_best_part">ปุ่มท่อนเด็ด</string>
     <string name="show_best_part_subtitle">ปุ่มบนปกเพลงที่ข้ามไปยังช่วงของเพลงที่ผู้คนเล่นซ้ำมากที่สุด</string>
     <string name="lyrics_share_video_silent">ไม่สามารถดึงเสียงของเพลงได้ วิดีโอนี้จึงไม่มีเสียง</string>
+    <string name="choose_in_youtube_music">เลือกใน YouTube Music</string>
 </resources>

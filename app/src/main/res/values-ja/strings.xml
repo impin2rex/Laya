@@ -1398,4 +1398,5 @@
     <string name="show_best_part">ベストパートボタン</string>
     <string name="show_best_part_subtitle">アートワーク上のボタンで、みんなが最も繰り返し聴く曲の部分へスキップします</string>
     <string name="lyrics_share_video_silent">曲の音声を取得できなかったため、この動画には音声がありません。</string>
+    <string name="choose_in_youtube_music">YouTube Musicで選択</string>
 </resources>

@@ -297,4 +297,5 @@
     <string name="switch_to_video">Passer à la vidéo</string>
     <string name="audio_short">Audio</string>
     <string name="lyrics_share_making_video">Création de la vidéo…</string>
+    <string name="top_result">Meilleur résultat</string>
 </resources>

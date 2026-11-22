@@ -297,4 +297,5 @@
     <string name="switch_to_video">מעבר לוידאו</string>
     <string name="audio_short">אודיו</string>
     <string name="lyrics_share_making_video">יוצר את הסרטון…</string>
+    <string name="top_result">התוצאה המובילה</string>
 </resources>
