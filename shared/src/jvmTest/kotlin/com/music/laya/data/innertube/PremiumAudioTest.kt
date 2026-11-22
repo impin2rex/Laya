@@ -38,6 +38,17 @@ class PremiumAudioTest {
     }
 
     @Test
+    fun `a track whose Premium stream failed mid-play skips Premium, others do not`() {
+        StreamResolver.premiumAudio = { true }
+        Innertube.cookie = "SAPISID=x"
+        assertTrue(StreamResolver.premiumFor(0, "aaaaaaaaaaa"))
+        StreamResolver.markPremiumFailed("aaaaaaaaaaa")
+        assertFalse(StreamResolver.premiumFor(0, "aaaaaaaaaaa"))
+        assertTrue(StreamResolver.premiumFor(0, "bbbbbbbbbbb"))
+        assertTrue(StreamResolver.premiumFor(0), "no track named: unaffected")
+    }
+
+    @Test
     fun `only the first signed-in ask takes Premium's route`() {
         StreamResolver.premiumAudio = { true }
         assertFalse(StreamResolver.premiumFor(0), "signed out")

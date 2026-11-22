@@ -118,6 +118,9 @@ private fun pcmHead(src: Opened, native: KaraokeNative): FloatArray? {
 /** Retries of one broken track before it is left paused for the listener; reset by a different track or a quiet minute. */
 private const val MAX_RECOVERIES = 3
 
+/** AudioEngine.swift's code for a Premium WebM whose download broke after playback began. */
+private const val PREMIUM_DOWNLOAD_FAILED = -774
+
 /** Most AutoPlay tracks queued ahead at once, same as Android's MAX_QUEUED_AUTOPLAY. */
 private const val MAX_AUTOPLAY = 10
 
@@ -1219,6 +1222,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
      * URL when the old one was refused. It is never skipped: after [MAX_RECOVERIES] it waits, paused, for Play.
      */
     private fun recover(failed: Song, reason: String, httpStatus: Int) {
+        // The engine's code for a Premium WebM whose download broke after playback began: the restart resolves AAC.
+        if (httpStatus == PREMIUM_DOWNLOAD_FAILED) StreamResolver.markPremiumFailed(failed.videoId)
         if (httpStatus > 0) streams[failed.videoId]?.url?.let { StreamResolver.onPlaybackRefused(it, httpStatus) }
         val now = NSDate().timeIntervalSinceReferenceDate
         if (recoverFor != failed.videoId || now - recoverAt > 60) { recoverFor = failed.videoId; recoverCount = 0 }
