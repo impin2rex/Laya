@@ -268,4 +268,18 @@
     <plurals name="queue_removed_count">
         <item quantity="other">%1$d lagu dihapus</item>
     </plurals>
+    <string name="save">Simpan</string>
+    <string name="lyrics_share_title">Bagikan lirik</string>
+    <string name="lyrics_share_description">Baris yang kamu pilih, ditata pada kartu bersama sampul.</string>
+    <string name="lyrics_share_story">Jadikan story</string>
+    <string name="lyrics_share_story_revert">Kembali ke kartu</string>
+    <string name="lyrics_share_video">Video</string>
+    <string name="lyrics_share_image">Gambar</string>
+    <string name="lyrics_share_saving">Menyimpan…</string>
+    <string name="lyrics_share_show_logo">Tampilkan logo Laya</string>
+    <string name="your_lyrics_card">Kartu lirikmu</string>
+    <string name="couldnt_draw_picture">Tidak dapat membuat gambar</string>
+    <string name="saved_bang">Tersimpan!</string>
+    <string name="sign_in_with_google">Masuk dengan Google</string>
+    <string name="video_quality_auto">Otomatis</string>
 </resources>

@@ -269,4 +269,18 @@
         <item quantity="one">%1$d titre retiré</item>
         <item quantity="other">%1$d titres retirés</item>
     </plurals>
+    <string name="save">Enregistrer</string>
+    <string name="lyrics_share_title">Partager les paroles</string>
+    <string name="lyrics_share_description">Les lignes que vous avez choisies, mises en page sur une carte avec la pochette.</string>
+    <string name="lyrics_share_story">Convertir en story</string>
+    <string name="lyrics_share_story_revert">Revenir à la carte</string>
+    <string name="lyrics_share_video">Vidéo</string>
+    <string name="lyrics_share_image">Image</string>
+    <string name="lyrics_share_saving">Enregistrement…</string>
+    <string name="lyrics_share_show_logo">Afficher le logo Laya</string>
+    <string name="your_lyrics_card">Votre carte de paroles</string>
+    <string name="couldnt_draw_picture">Impossible de créer l\'image</string>
+    <string name="saved_bang">Enregistré !</string>
+    <string name="sign_in_with_google">Se connecter avec Google</string>
+    <string name="video_quality_auto">Automatique</string>
 </resources>

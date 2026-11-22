@@ -268,4 +268,18 @@
     <plurals name="queue_removed_count">
         <item quantity="other">Đã xóa %1$d bài hát</item>
     </plurals>
+    <string name="save">Lưu</string>
+    <string name="lyrics_share_title">Chia sẻ lời bài hát</string>
+    <string name="lyrics_share_description">Những dòng bạn chọn, được bố trí trên một thẻ cùng ảnh bìa.</string>
+    <string name="lyrics_share_story">Chuyển thành story</string>
+    <string name="lyrics_share_story_revert">Quay lại thẻ</string>
+    <string name="lyrics_share_video">Video</string>
+    <string name="lyrics_share_image">Hình ảnh</string>
+    <string name="lyrics_share_saving">Đang lưu…</string>
+    <string name="lyrics_share_show_logo">Hiện logo Laya</string>
+    <string name="your_lyrics_card">Thẻ lời bài hát của bạn</string>
+    <string name="couldnt_draw_picture">Không thể tạo hình ảnh</string>
+    <string name="saved_bang">Đã lưu!</string>
+    <string name="sign_in_with_google">Đăng nhập bằng Google</string>
+    <string name="video_quality_auto">Tự động</string>
 </resources>

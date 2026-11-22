@@ -1331,4 +1331,7 @@
     <string name="lossless_verified_until">已驗證 · 有效期至 %1$s</string>
     <string name="artist_signatures_builtin">內置伺服器</string>
     <string name="artist_signatures_online">在線</string>
+    <string name="song_info_retry">重試</string>
+    <string name="wear_os_checking">正在檢查…</string>
+    <string name="wear_os_done">完成</string>
 </resources>

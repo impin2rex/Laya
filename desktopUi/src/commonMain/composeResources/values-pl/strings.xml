@@ -271,4 +271,18 @@
         <item quantity="many">Usunięto %1$d utworów</item>
         <item quantity="other">Usunięto %1$d utworu</item>
     </plurals>
+    <string name="save">Zapisz</string>
+    <string name="lyrics_share_title">Udostępnij tekst</string>
+    <string name="lyrics_share_description">Wybrane wersy, ułożone na karcie z okładką.</string>
+    <string name="lyrics_share_story">Zmień na relację</string>
+    <string name="lyrics_share_story_revert">Wróć do karty</string>
+    <string name="lyrics_share_video">Wideo</string>
+    <string name="lyrics_share_image">Obraz</string>
+    <string name="lyrics_share_saving">Zapisywanie…</string>
+    <string name="lyrics_share_show_logo">Pokaż logo Laya</string>
+    <string name="your_lyrics_card">Twoja karta tekstu</string>
+    <string name="couldnt_draw_picture">Nie można utworzyć obrazka</string>
+    <string name="saved_bang">Zapisano!</string>
+    <string name="sign_in_with_google">Zaloguj się przez Google</string>
+    <string name="video_quality_auto">Automatycznie</string>
 </resources>

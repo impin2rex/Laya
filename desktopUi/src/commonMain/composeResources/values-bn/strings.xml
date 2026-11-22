@@ -233,4 +233,21 @@
     <string name="recognize_minutes_ago">%1$d মিনিট আগে</string>
     <string name="recognize_hours_ago">%1$d ঘণ্টা আগে</string>
     <string name="recognize_days_ago">%1$d দিন আগে</string>
+    <string name="save">সেভ করুন</string>
+    <string name="lyrics_share_title">লিরিক্স শেয়ার করুন</string>
+    <string name="lyrics_share_description">আপনার বাছাই করা লাইনগুলো, কভারসহ একটা কার্ডে সাজানো।</string>
+    <string name="lyrics_share_story">স্টোরি বানান</string>
+    <string name="lyrics_share_story_revert">কার্ডে ফিরে যান</string>
+    <string name="lyrics_share_video">ভিডিও</string>
+    <string name="lyrics_share_image">ছবি</string>
+    <string name="lyrics_share_saving">সংরক্ষণ হচ্ছে…</string>
+    <string name="lyrics_share_show_logo">Laya লোগো দেখান</string>
+    <string name="your_lyrics_card">আপনার লিরিক্স কার্ড</string>
+    <string name="couldnt_draw_picture">ছবিটা তৈরি করা গেল না</string>
+    <string name="saved_bang">সেভ হয়ে গেছে!</string>
+    <string name="video_quality_auto">স্বয়ংক্রিয়</string>
+    <string name="add_to_queue">কিউতে যোগ করুন</string>
+    <string name="queue_select_all">সব বেছে নিন</string>
+    <string name="queue_add_to_playlist">প্লেলিস্ট</string>
+    <string name="queue_selection_remove">সরান</string>
 </resources>

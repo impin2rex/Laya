@@ -268,4 +268,18 @@
     <plurals name="queue_removed_count">
         <item quantity="other">นำออก %1$d เพลงแล้ว</item>
     </plurals>
+    <string name="save">บันทึก</string>
+    <string name="lyrics_share_title">แชร์เนื้อเพลง</string>
+    <string name="lyrics_share_description">บรรทัดที่คุณเลือก เรียงเป็นการ์ดพร้อมปก</string>
+    <string name="lyrics_share_story">แปลงเป็นสตอรี่</string>
+    <string name="lyrics_share_story_revert">กลับเป็นการ์ด</string>
+    <string name="lyrics_share_video">วิดีโอ</string>
+    <string name="lyrics_share_image">รูปภาพ</string>
+    <string name="lyrics_share_saving">กำลังบันทึก…</string>
+    <string name="lyrics_share_show_logo">แสดงโลโก้ Laya</string>
+    <string name="your_lyrics_card">การ์ดเนื้อเพลงของคุณ</string>
+    <string name="couldnt_draw_picture">สร้างภาพไม่สำเร็จ</string>
+    <string name="saved_bang">บันทึกแล้ว!</string>
+    <string name="sign_in_with_google">ลงชื่อเข้าใช้ด้วย Google</string>
+    <string name="video_quality_auto">อัตโนมัติ</string>
 </resources>

@@ -268,4 +268,18 @@
     <plurals name="queue_removed_count">
         <item quantity="other">已移除 %1$d 首歌曲</item>
     </plurals>
+    <string name="save">保存</string>
+    <string name="lyrics_share_title">分享歌词</string>
+    <string name="lyrics_share_description">你选中的几行，连同封面排在一张卡片上。</string>
+    <string name="lyrics_share_story">转为快拍尺寸</string>
+    <string name="lyrics_share_story_revert">恢复为卡片</string>
+    <string name="lyrics_share_video">视频</string>
+    <string name="lyrics_share_image">图片</string>
+    <string name="lyrics_share_saving">正在保存…</string>
+    <string name="lyrics_share_show_logo">显示 Laya 标志</string>
+    <string name="your_lyrics_card">你的歌词卡片</string>
+    <string name="couldnt_draw_picture">无法生成图片</string>
+    <string name="saved_bang">已保存！</string>
+    <string name="sign_in_with_google">使用 Google 登录</string>
+    <string name="video_quality_auto">自动</string>
 </resources>

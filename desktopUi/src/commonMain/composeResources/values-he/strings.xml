@@ -269,4 +269,18 @@
         <item quantity="one">%1$d שיר הוסר</item>
         <item quantity="other">%1$d שירים הוסרו</item>
     </plurals>
+    <string name="save">שמירה</string>
+    <string name="lyrics_share_title">שיתוף המילים</string>
+    <string name="lyrics_share_description">השורות שבחרת, על כרטיס עם העטיפה.</string>
+    <string name="lyrics_share_story">המר לסטורי</string>
+    <string name="lyrics_share_story_revert">חזרה לכרטיס</string>
+    <string name="lyrics_share_video">וידאו</string>
+    <string name="lyrics_share_image">תמונה</string>
+    <string name="lyrics_share_saving">שומר…</string>
+    <string name="lyrics_share_show_logo">הצג את הלוגו של Laya</string>
+    <string name="your_lyrics_card">כרטיס המילים שלך</string>
+    <string name="couldnt_draw_picture">לא ניתן ליצור תמונה</string>
+    <string name="saved_bang">נשמר!</string>
+    <string name="sign_in_with_google">התחברות עם Google</string>
+    <string name="video_quality_auto">אוטומטי</string>
 </resources>

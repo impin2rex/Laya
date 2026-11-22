@@ -269,4 +269,18 @@
         <item quantity="one">%1$d गाना हटाया गया</item>
         <item quantity="other">%1$d गाने हटाए गए</item>
     </plurals>
+    <string name="save">सेव करें</string>
+    <string name="lyrics_share_title">गाने के शब्द साझा करें</string>
+    <string name="lyrics_share_description">आपकी चुनी हुई पंक्तियाँ, कवर के साथ एक कार्ड पर।</string>
+    <string name="lyrics_share_story">स्टोरी बनाएँ</string>
+    <string name="lyrics_share_story_revert">कार्ड पर वापस जाएँ</string>
+    <string name="lyrics_share_video">वीडियो</string>
+    <string name="lyrics_share_image">छवि</string>
+    <string name="lyrics_share_saving">सहेजा जा रहा है…</string>
+    <string name="lyrics_share_show_logo">Laya लोगो दिखाएँ</string>
+    <string name="your_lyrics_card">आपका शब्द कार्ड</string>
+    <string name="couldnt_draw_picture">तस्वीर नहीं बन सकी</string>
+    <string name="saved_bang">सहेजा गया!</string>
+    <string name="sign_in_with_google">Google से साइन इन करें</string>
+    <string name="video_quality_auto">अपने आप</string>
 </resources>

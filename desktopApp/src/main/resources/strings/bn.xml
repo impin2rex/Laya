@@ -844,4 +844,13 @@
     <string name="prefer_music_only_subtitle">মিউজিক ভিডিও গান হিসেবে, কভার আর্ট সহ বাজবে, যতক্ষণ না আপনি ভিডিওতে যান</string>
     <string name="youtube_premium_audio">YouTube Premium অডিও</string>
     <string name="youtube_premium_audio_subtitle">আমার Premium আছে: সাধারণ 160 kbps-এর বদলে উচ্চমানের ~256 kbps Opus স্ট্রিম করুন</string>
+    <string name="song_info">গানের তথ্য</string>
+    <string name="song_info_album">অ্যালবাম</string>
+    <string name="song_info_release_date">প্রকাশের তারিখ</string>
+    <string name="song_info_views">প্লে / ভিউ</string>
+    <string name="song_info_likes">পছন্দ</string>
+    <string name="song_info_comments">মন্তব্য</string>
+    <string name="song_info_unavailable">পাওয়া যাচ্ছে না</string>
+    <string name="song_info_error">কিছু তথ্য লোড করা যায়নি।</string>
+    <string name="song_info_retry">আবার চেষ্টা করুন</string>
 </resources>
