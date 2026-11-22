@@ -1599,7 +1599,7 @@ fun LayaDesktopApp() {
             DesktopCollection(
                 browseId = playlist.id,
                 title = playlist.title,
-                subtitle = "Playlist • ${playlist.songs.size} songs",
+                subtitle = DesktopStrings.format("d_playlist_songs", playlist.songs.size, fallback = "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 type = BrowseType.PLAYLIST,
                 songs = playlist.songs,
@@ -2748,7 +2748,7 @@ fun LayaDesktopApp() {
         playlists.map { playlist ->
             ShelfItem(
                 title = playlist.title,
-                subtitle = "Playlist • ${playlist.songs.size} songs",
+                subtitle = DesktopStrings.format("d_playlist_songs", playlist.songs.size, fallback = "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 videoId = null,
                 browseId = LOCAL_PLAYLIST_PREFIX + playlist.id,
@@ -5064,7 +5064,7 @@ private fun DesktopTopBar(
                                     color = tint,
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.semantics { contentDescription = "Repeat one" },
+                                    modifier = Modifier.semantics { contentDescription = DesktopStrings["d_repeat_one", "Repeat one"] },
                                 )
                             } else {
                                 Icon(
@@ -7675,9 +7675,9 @@ private fun DesktopSourceEditorDialog(
                             )
                             val duplicate = configuredSources.duplicateOf(named.baseUrl, exceptId = named.id)
                             if (duplicate != null) {
-                                message = "Already added as ${duplicate.displayName}"
+                                message = DesktopStrings.format("d_already_added_as", duplicate.displayName, fallback = "Already added as %1\$s")
                             } else {
-                                message = "Addon · ${detected.manifest.displayName}"
+                                message = DesktopStrings.format("d_addon_found", detected.manifest.displayName, fallback = "Addon · %1\$s")
                                 if (thenSave) onSave(named)
                             }
                         }
@@ -7686,7 +7686,7 @@ private fun DesktopSourceEditorDialog(
                                 kind = DesktopSourceKind.CUSTOM_MODULE,
                                 baseUrl = detected.url.ifBlank { candidate.baseUrl },
                             )
-                            message = "Module index · ${detected.moduleCount} modules"
+                            message = DesktopStrings.format("d_module_index_found", detected.moduleCount, fallback = "Module index · %1\$d modules")
                             if (thenSave) onSave(asIndex)
                         }
                         is DesktopDetectedFormat.Unsupported -> message = detected.reason

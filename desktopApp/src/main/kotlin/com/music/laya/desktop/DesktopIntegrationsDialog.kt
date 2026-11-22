@@ -158,7 +158,7 @@ private fun SpotifySection(spotify: DesktopSpotifyConnection) {
             DesktopCardRule()
             PanelActionRow(
                 title = DesktopStrings["spotify_disconnect", "Disconnect"],
-                subtitle = "Signs out of Spotify; Canvas stops until you sign in again",
+                subtitle = DesktopStrings["d_spotify_sign_out_subtitle", "Signs out of Spotify; Canvas stops until you sign in again"],
                 destructive = true,
                 onClick = spotify.onDisconnect,
             )
@@ -193,9 +193,12 @@ private fun DiscordSection(
     val connected = local || token.isNotBlank()
 
     PanelGroup(
-        header = "Rich presence",
-        footer = "The card updates when the track, position or playback state changes. " +
-            "It clears when playback stops.",
+        header = DesktopStrings["rich_presence", "Rich presence"],
+        footer = DesktopStrings[
+            "discord_presence_footer",
+            "The card updates when the track, position or playback state changes. " +
+                "It clears when playback stops.",
+        ],
     ) {
         PanelSwitchRow(
             title = DesktopStrings["show_what_playing", "Show what I am playing"],
@@ -236,7 +239,7 @@ private fun DiscordSection(
     }
 
     if (connected && rpcEnabled && advanced) {
-        PanelGroup(header = "Presence") {
+        PanelGroup(header = DesktopStrings["presence", "Presence"]) {
             PanelValueRow("Status", DesktopDiscordSettings.statusLabel(status)) {
                 onChoose(
                     DiscordChoice(
@@ -280,9 +283,12 @@ private fun DiscordSection(
         }
 
         PanelGroup(
-            header = "Buttons",
-            footer = "{song_name}, {artist_name} and {album_name} are replaced with the track. " +
-                "The first button opens the song on YouTube Music and the second opens this project.",
+            header = DesktopStrings["buttons", "Buttons"],
+            footer = DesktopStrings[
+                "discord_buttons_footer",
+                "{song_name}, {artist_name} and {album_name} are replaced with the track. " +
+                    "The first button opens the song on YouTube Music and the second opens this project.",
+            ],
         ) {
             PanelSwitchRow(
                 title = DesktopStrings["first_button", "First button"],
@@ -323,7 +329,7 @@ private fun DiscordSection(
     }
 
     PanelGroup(
-        header = "Preview",
+        header = DesktopStrings["preview", "Preview"],
         boxed = true,
         footer = if (song == null) "Play something to fill in the preview." else null,
     ) {
@@ -344,15 +350,18 @@ private fun DiscordSection(
     // is not answering; see [DesktopDiscordRpc].
     if (!local) {
         PanelGroup(
-            footer = "Signing in with a token grants full account access, and account " +
-                "automation is against Discord's terms. Use it only if you accept that risk.",
+            footer = DesktopStrings[
+                "d_discord_token_warning",
+                "Signing in with a token grants full account access, and account " +
+                    "automation is against Discord’s terms. Use it only if you accept that risk.",
+            ],
         ) {
             PanelActionRow(
-                title = if (token.isBlank()) "Enter a token instead" else "Disconnect",
+                title = if (token.isBlank()) DesktopStrings["d_enter_token_instead", "Enter a token instead"] else DesktopStrings["spotify_disconnect", "Disconnect"],
                 subtitle = if (token.isBlank()) {
-                    "Use this if Discord is not running on this computer"
+                    DesktopStrings["d_discord_not_running_hint", "Use this if Discord is not running on this computer"]
                 } else {
-                    "Signed in as @$username"
+                    DesktopStrings.format("d_signed_in_as_user", username, fallback = "Signed in as @%1\$s")
                 },
                 destructive = token.isNotBlank(),
                 onClick = { if (token.isBlank()) onOpenDiscordToken() else DesktopDiscordRpc.signOut() },
@@ -371,8 +380,8 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
     val signedIn = lastfmSession.isNotBlank()
 
     PanelGroup(
-        header = "Scrobbling",
-        footer = "Scrobble your listens to Last.fm and ListenBrainz.",
+        header = DesktopStrings["scrobbling", "Scrobbling"],
+        footer = DesktopStrings["scrobbling_footer", "Scrobble your listens to Last.fm and ListenBrainz."],
     ) {
         PanelSwitchRow(
             title = "ListenBrainz",
@@ -441,10 +450,10 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
         val minDuration by DesktopScrobbleSettings.minDuration.collectAsState()
         val delayPercent by DesktopScrobbleSettings.delayPercent.collectAsState()
         val delaySeconds by DesktopScrobbleSettings.delaySeconds.collectAsState()
-        PanelGroup(header = "Scrobble timing") {
+        PanelGroup(header = DesktopStrings["scrobble_timing", "Scrobble timing"]) {
             PanelSliderRow(
-                "Minimum song duration",
-                "Shorter songs will not scrobble",
+                DesktopStrings["min_song_duration", "Minimum song duration"],
+                DesktopStrings["min_song_duration_subtitle", "Shorter songs will not scrobble"],
                 "${minDuration}s",
                 minDuration.toFloat(),
                 15f..120f,
@@ -452,8 +461,8 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
             ) { DesktopScrobbleSettings.setMinDuration(it.roundToInt()) }
             DesktopCardRule()
             PanelSliderRow(
-                "Scrobble delay",
-                "How far into a song to scrobble it",
+                DesktopStrings["scrobble_delay", "Scrobble delay"],
+                DesktopStrings["scrobble_delay_subtitle", "How far into a song to scrobble it"],
                 "${(delayPercent * 100).roundToInt()}%",
                 delayPercent,
                 0.1f..1.0f,
@@ -461,8 +470,8 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
             ) { DesktopScrobbleSettings.setDelayPercent(it) }
             DesktopCardRule()
             PanelSliderRow(
-                "Maximum delay",
-                "Maximum scrobble delay in seconds",
+                DesktopStrings["max_delay", "Maximum delay"],
+                DesktopStrings["max_delay_subtitle", "Maximum scrobble delay in seconds"],
                 "${delaySeconds}s",
                 delaySeconds.toFloat(),
                 30f..300f,
@@ -485,8 +494,8 @@ private fun RichPresencePreview(
     button2Text: String,
     button2Visible: Boolean,
 ) {
-    val title = song?.title ?: "Song title"
-    val artist = song?.artist ?: "Artist"
+    val title = song?.title ?: DesktopStrings["widget_preview_title", "Song title"]
+    val artist = song?.artist ?: DesktopStrings["widget_preview_artist", "Artist"]
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             "$verb $heading".uppercase(Locale.ROOT),
