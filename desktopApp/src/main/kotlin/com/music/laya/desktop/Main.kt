@@ -56,6 +56,7 @@ fun main() {
     StreamResolver.maxKbps = {
         DesktopStreamClient.ceiling.get() ?: DesktopSourceRegistry.ceiling(null).maxKbps
     }
+    StreamResolver.premiumAudio = { DesktopStreamClient.premiumAudio }
     InnerTubeXResolver.init(
         filesDir = DesktopMediaCache.directory.toOkioPath(),
         store = DesktopInnerTubeXStore,

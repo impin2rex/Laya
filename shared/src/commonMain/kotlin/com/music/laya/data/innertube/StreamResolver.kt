@@ -41,6 +41,30 @@ object StreamResolver {
     @Volatile
     var maxKbps: () -> Int = { Int.MAX_VALUE }
 
+    /**
+     * Whether the listener says their account has YouTube Premium and wants
+     * its ~256kbps Opus (itag 774) — see [InnerTubeXResolver.ask]. Asked rather
+     * than detected: nothing InnerTubeX exposes confirms the entitlement, and
+     * claiming it without Premium only costs the faster anonymous route.
+     */
+    @Volatile
+    var premiumAudio: () -> Boolean = { false }
+
+    /**
+     * Whether ask number [attempt] takes Premium's route: only the first, and only
+     * while signed in — a signed-out ask has no entitlement to send. Every later
+     * ask is the ordinary one, so a Premium miss falls back to the usual best.
+     */
+    internal fun premiumFor(attempt: Int): Boolean =
+        attempt == 0 && premiumAudio() && !Innertube.cookie.isNullOrBlank()
+
+    /**
+     * Drops the remembered stream URLs, so the next play of a track resolves
+     * afresh — for a setting that changes which stream a resolve picks.
+     */
+    fun forgetResolved() {
+        recent.clear()
+    }
 
     private const val TAG = "Laya"
 
@@ -296,14 +320,18 @@ object StreamResolver {
     ): Stream? {
         val skip = mutableSetOf<String>()
         repeat(INNERTUBEX_ATTEMPTS) { attempt ->
+            // When Premium's ask finds nothing, throws, or its URL fails the probe (a 403 on
+            // 774, an account that isn't Premium after all), the next ask is the ordinary one.
+            val premium = premiumFor(attempt)
             val found = try {
-                InnerTubeXResolver.extract(videoId, maxKbps, skip, requireM4a, uploaded)
+                InnerTubeXResolver.extract(videoId, maxKbps, skip, requireM4a, uploaded, premium)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 TrackLog.w(TAG, "InnerTubeX failed for $videoId: ${e::class.simpleName}: ${e.message}")
+                if (premium) return@repeat
                 return null
-            } ?: return null
+            } ?: if (premium) return@repeat else return null
             val verdict = timed("$videoId InnerTubeX ${found.profileId} probe") { probe(found.url) }
             if (verdict == Probe.OK) {
                 TrackLog.d(TAG, "resolved $videoId via InnerTubeX ${found.profileId} @ ${found.kbps}kbps")
