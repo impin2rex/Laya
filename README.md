@@ -215,13 +215,3 @@ This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. 
 Laya is a modified version of [BitChord](https://github.com/kushagrasinghx/BitChord), also licensed under GPLv3.
 
 </div>
-
----
-
-<div align="center">
-<sub>
-
-**Topics:** lossless music player · hi-res audio · FLAC streaming · ALAC · music downloader · offline music · YouTube Music client · Spotify playlist player · Tidal · Qobuz · synced lyrics · karaoke vocal remover · open source music app · ad-free music streaming · Android · iOS · Windows · macOS · Linux · Android TV · Wear OS · Kotlin Multiplatform · Compose Multiplatform
-
-</sub>
-</div>
