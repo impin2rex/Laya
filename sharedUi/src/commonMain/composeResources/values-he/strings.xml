@@ -751,4 +751,19 @@
     <string name="lossless_verify_expired_notice">האימות של %1$s פג. הפעילו אותו שוב במקורות כדי להמשיך באיכות ללא אובדן.</string>
     <string name="lossless_verify_expired">האימות פג · הפעילו שוב</string>
     <string name="lossless_verified_until">אומת · עד %1$s</string>
+    <string name="add_to_queue">הוסף לתור</string>
+    <string name="queue_selected_count">%1$d נבחרו</string>
+    <string name="queue_select_all">בחירת הכול</string>
+    <string name="queue_select">בחירה</string>
+    <string name="queue_close_selection">סגירת מצב הבחירה</string>
+    <string name="queue_add_to_playlist">פלייליסט</string>
+    <string name="queue_selection_remove">הסר</string>
+    <string name="queue_add_all_to_playlist">הוספת הכול לפלייליסט</string>
+    <string name="queue_removed_song">הוסר %1$s</string>
+    <string name="queue_undo_action">ביטול</string>
+    <string name="queue_cleared">התור נוקה</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">%1$d שיר הוסר</item>
+        <item quantity="other">%1$d שירים הוסרו</item>
+    </plurals>
 </resources>

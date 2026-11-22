@@ -235,6 +235,9 @@ import com.music.laya.playback.QualityUpgrade
 import com.music.laya.playback.rememberMediaController
 import com.music.laya.playback.rememberPlayerState
 import com.music.laya.playback.setQueueDragActive
+import com.music.laya.playback.moveQueueEntryToUser
+import com.music.laya.playback.removeQueueEntries
+import com.music.laya.playback.undoQueueRemoval
 import com.music.laya.ui.MainViewModel
 import com.music.laya.ui.SearchSource
 import com.music.laya.ui.components.BottomFadeScrim
@@ -280,6 +283,7 @@ import com.music.laya.ui.icons.LayaIcons
 import androidx.media3.common.Player
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.ui.player.NowPlayingScreen
+import com.music.laya.ui.player.QueueActions
 import com.music.laya.ui.player.MusicVideoEngine
 import com.music.laya.ui.player.PlayerSheetMotion
 import com.music.laya.ui.player.attachWindow
@@ -665,6 +669,8 @@ private fun LayaApp(
     // Separate from [songActions] so the menu can close behind it — the picker
     // is the next step, not a second sheet stacked on the first.
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    // The queue's selection (or one section) on its way into the picker.
+    var queuePlaylistSongs by remember { mutableStateOf<List<Song>?>(null) }
     // The picker opened from the Library tab, where there is no track and
     // creating the playlist is the whole errand.
     var creatingPlaylist by remember { mutableStateOf(false) }
@@ -2441,6 +2447,20 @@ private fun LayaApp(
 
     // The player's whole parameter list, kept apart from the sheet that
     // mounts it so the sheet's own setup reads on its own.
+    // The queue screen's swipes, Undo and multi-select, run by the service.
+    val queueActions = remember(controller) {
+        controller?.let { c ->
+            QueueActions(
+                remove = { entries -> c.removeQueueEntries(entries) },
+                undo = { token -> c.undoQueueRemoval(token) },
+                moveToUserQueue = { entry -> c.moveQueueEntryToUser(entry) },
+                addToPlaylist = { songs ->
+                    viewModel.loadPlaylists()
+                    queuePlaylistSongs = songs
+                },
+            )
+        }
+    }
     val nowPlaying: @Composable (Song) -> Unit = { song ->
         val effectiveSong = optimisticVersionSong?.takeIf {
             it.videoId == convertedAudioId || it.videoId == convertedVideoId || it.videoId == keepVideoId ||
@@ -2700,6 +2720,7 @@ private fun LayaApp(
                 dismissPlayer()
                 navigator.pushAll(AppRoute.Settings, AppRoute.ListenTogether)
             },
+            queueActions = queueActions,
             onClearQueue = {
                 // Keep what's playing and context/autoplay; drop user-queued tracks.
                 controller?.let { c ->
@@ -4548,6 +4569,40 @@ private fun LayaApp(
         // One sheet for both, because they are one decision: the list of
         // playlists with a way to make another. `creatingPlaylist` opens it
         // straight onto the form, which is what the Library tile means.
+        queuePlaylistSongs?.let { songs ->
+            val dismiss = { queuePlaylistSongs = null }
+            ModalBottomSheet(
+                onDismissRequest = dismiss,
+                containerColor = MaterialTheme.colorScheme.background,
+            ) {
+                PlaylistPickerSheet(
+                    playlists = playlists,
+                    loading = playlistsLoading,
+                    song = songs.singleOrNull(),
+                    onAdd = { picked ->
+                        viewModel.addSongsToPlaylists(picked, songs) { added, alreadyThere, failed ->
+                            showQueueNotice(
+                                when {
+                                    added > 1 -> context.resources.getQuantityString(
+                                        R.plurals.added_to_playlists_notice, added, added,
+                                    )
+                                    added == 1 -> context.getString(R.string.song_added_to_playlist)
+                                    alreadyThere > 0 && failed == 0 ->
+                                        context.getString(R.string.song_already_in_playlist)
+                                    else -> context.getString(R.string.failed)
+                                },
+                            )
+                        }
+                        dismiss()
+                    },
+                    onCreate = { title, privacy ->
+                        viewModel.createPlaylistWithVideoIds(title, privacy, songs.map { it.videoId }.distinct(), songs)
+                        dismiss()
+                    },
+                )
+            }
+        }
+
         if (playlistTarget != null || creatingPlaylist) {
             val target = playlistTarget
             val dismiss = {

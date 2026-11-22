@@ -751,4 +751,19 @@
     <string name="lossless_verify_expired_notice">%1$s का सत्यापन समाप्त हो गया। लॉसलेस जारी रखने के लिए स्रोत में इसे फिर से चालू करें।</string>
     <string name="lossless_verify_expired">सत्यापन समाप्त · फिर से चालू करें</string>
     <string name="lossless_verified_until">सत्यापित · %1$s तक</string>
+    <string name="add_to_queue">कतार में जोड़ें</string>
+    <string name="queue_selected_count">%1$d चुने गए</string>
+    <string name="queue_select_all">सभी चुनें</string>
+    <string name="queue_select">चुनें</string>
+    <string name="queue_close_selection">चयन बंद करें</string>
+    <string name="queue_add_to_playlist">प्लेलिस्ट</string>
+    <string name="queue_selection_remove">हटाएं</string>
+    <string name="queue_add_all_to_playlist">सभी को प्लेलिस्ट में जोड़ें</string>
+    <string name="queue_removed_song">%1$s हटाया गया</string>
+    <string name="queue_undo_action">पहले जैसा करें</string>
+    <string name="queue_cleared">कतार खाली की गई</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">%1$d गाना हटाया गया</item>
+        <item quantity="other">%1$d गाने हटाए गए</item>
+    </plurals>
 </resources>

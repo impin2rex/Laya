@@ -751,4 +751,19 @@
     <string name="lossless_verify_expired_notice">A verificação do %1$s expirou. Ative de novo em Fontes para continuar sem perdas.</string>
     <string name="lossless_verify_expired">Verificação expirada · ative de novo</string>
     <string name="lossless_verified_until">Verificado · até %1$s</string>
+    <string name="add_to_queue">Adicionar à fila</string>
+    <string name="queue_selected_count">Selecionadas: %1$d</string>
+    <string name="queue_select_all">Selecionar tudo</string>
+    <string name="queue_select">Selecionar</string>
+    <string name="queue_close_selection">Fechar seleção</string>
+    <string name="queue_add_to_playlist">Playlist</string>
+    <string name="queue_selection_remove">Remover</string>
+    <string name="queue_add_all_to_playlist">Adicionar todas à playlist</string>
+    <string name="queue_removed_song">Removido: %1$s</string>
+    <string name="queue_undo_action">Desfazer</string>
+    <string name="queue_cleared">Fila limpa</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">%1$d música removida</item>
+        <item quantity="other">%1$d músicas removidas</item>
+    </plurals>
 </resources>

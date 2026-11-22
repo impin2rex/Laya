@@ -995,6 +995,44 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * [addToPlaylists] for many tracks at once — the queue's selection, or a
+     * whole section of it — counting songs rather than playlists. Each
+     * playlist is read once and sent its missing tracks in batches of 50.
+     */
+    fun addSongsToPlaylists(
+        playlists: List<UserPlaylist>,
+        songs: List<Song>,
+        onResult: (added: Int, alreadyThere: Int, failed: Int) -> Unit = { _, _, _ -> },
+    ) {
+        if (!requireSignIn() || playlists.isEmpty() || songs.isEmpty()) return
+        viewModelScope.launch {
+            var added = 0
+            var alreadyThere = 0
+            var failed = 0
+            val unique = songs.distinctBy { it.videoId }
+            playlists.forEach { playlist ->
+                val openSongs = (_detailStack.value.firstOrNull { it.browseId == playlist.browseId }
+                    ?.songs as? UiState.Success)?.data
+                val known = (openSongs ?: YtMusicRepository.allSongs(playlist.browseId).getOrNull())
+                    ?.mapTo(HashSet()) { it.videoId }.orEmpty()
+                val missing = unique.filterNot { it.videoId in known }
+                alreadyThere += unique.size - missing.size
+                missing.chunked(50).forEach { chunk ->
+                    YtMusicRepository.addToPlaylist(playlist.playlistId, chunk.map { it.videoId }).fold(
+                        onSuccess = { returned ->
+                            libraryStale = true
+                            added += chunk.size
+                            chunk.forEach { appendToOpenPlaylist(playlist.browseId, it, returned[it.videoId]) }
+                        },
+                        onFailure = { failed += chunk.size },
+                    )
+                }
+            }
+            onResult(added, alreadyThere, failed)
+        }
+    }
+
     private enum class AddOutcome { ADDED, ALREADY_THERE, FAILED }
 
     private suspend fun addOne(playlist: UserPlaylist, song: Song): AddOutcome {

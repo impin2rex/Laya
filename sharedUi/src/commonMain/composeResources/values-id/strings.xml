@@ -746,4 +746,18 @@
     <string name="lossless_verify_expired_notice">Verifikasi %1$s kedaluwarsa. Nyalakan lagi di Sumber agar tetap lossless.</string>
     <string name="lossless_verify_expired">Verifikasi kedaluwarsa · nyalakan lagi</string>
     <string name="lossless_verified_until">Terverifikasi · hingga %1$s</string>
+    <string name="add_to_queue">Tambahkan ke antrean</string>
+    <string name="queue_selected_count">%1$d dipilih</string>
+    <string name="queue_select_all">Pilih semua</string>
+    <string name="queue_select">Pilih</string>
+    <string name="queue_close_selection">Tutup mode pilih</string>
+    <string name="queue_add_to_playlist">Playlist</string>
+    <string name="queue_selection_remove">Hapus</string>
+    <string name="queue_add_all_to_playlist">Tambahkan semua ke playlist</string>
+    <string name="queue_removed_song">%1$s dihapus</string>
+    <string name="queue_undo_action">Urungkan</string>
+    <string name="queue_cleared">Antrean dikosongkan</string>
+    <plurals name="queue_removed_count">
+        <item quantity="other">%1$d lagu dihapus</item>
+    </plurals>
 </resources>

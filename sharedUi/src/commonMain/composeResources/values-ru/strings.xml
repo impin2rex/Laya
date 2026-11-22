@@ -758,4 +758,21 @@
     <string name="lossless_verify_expired_notice">Срок подтверждения %1$s истёк. Включите его снова в разделе «Источники», чтобы слушать без потерь.</string>
     <string name="lossless_verify_expired">Подтверждение истекло · включите снова</string>
     <string name="lossless_verified_until">Подтверждено · до %1$s</string>
+    <string name="add_to_queue">Добавить в очередь</string>
+    <string name="queue_selected_count">Выбрано: %1$d</string>
+    <string name="queue_select_all">Выбрать все</string>
+    <string name="queue_select">Выбрать</string>
+    <string name="queue_close_selection">Выйти из режима выбора</string>
+    <string name="queue_add_to_playlist">Плейлист</string>
+    <string name="queue_selection_remove">Удалить</string>
+    <string name="queue_add_all_to_playlist">Добавить все в плейлист</string>
+    <string name="queue_removed_song">Удалено: %1$s</string>
+    <string name="queue_undo_action">Отменить</string>
+    <string name="queue_cleared">Очередь очищена</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">Удалён %1$d трек</item>
+        <item quantity="few">Удалено %1$d трека</item>
+        <item quantity="many">Удалено %1$d треков</item>
+        <item quantity="other">Удалено %1$d трека</item>
+    </plurals>
 </resources>
