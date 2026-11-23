@@ -2,14 +2,14 @@ package com.music.laya.download
 
 import com.music.laya.data.Http
 import com.music.laya.download.Mp4Boxes.boxes
-import com.music.laya.download.Mp4Boxes.child
-import com.music.laya.download.Mp4Boxes.find
-import com.music.laya.download.Mp4Boxes.readU32
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
+import okio.buffer
+import okio.sink
+import okio.source
 import java.io.File
 import java.io.OutputStream
 
@@ -123,81 +123,22 @@ internal object ManifestFile {
     }
 
     /**
-     * FLAC-in-MP4 to native FLAC. The frames go to a temporary file first
-     * because STREAMINFO, which comes before them, carries a total that is
-     * only known once the last fragment is in — and a hi-res track is too
+     * FLAC-in-MP4 to native FLAC, by the shared [FlacFromMp4] that iOS writes its downloads with
+     * too. The frames go to a temporary file first because STREAMINFO, which comes before them,
+     * carries a total that is only known once the last fragment is in — and a hi-res track is too
      * large to hold in memory while waiting for it.
      */
     private fun writeFlac(cacheDir: File, init: ByteArray, media: Sequence<ByteArray>, sink: OutputStream) {
-        val trak = find(init, "moov", "trak") ?: error("Not an MP4 initialisation segment")
-        val trackId = readU32(init, (child(init, trak, "tkhd") ?: error("No track header")).let {
-            it.content + if (init[it.content].toInt() == 1) 20 else 12
-        })
-        val mdhd = find(init, "moov", "trak", "mdia", "mdhd") ?: error("No media header")
-        val timescale = readU32(init, mdhd.content + if (init[mdhd.content].toInt() == 1) 20 else 12)
-        val stsd = find(init, "moov", "trak", "mdia", "minf", "stbl", "stsd") ?: error("No sample description")
-        // stsd: FullBox header and entry count, then the entries.
-        val entry = boxes(init, stsd.content + 8, stsd.end).firstOrNull()
-        if (entry?.type != "fLaC") error("Stream is ${entry?.type ?: "unknown"}, not FLAC")
-        // AudioSampleEntry: 28 bytes of fields before its child boxes.
-        val dfla = boxes(init, entry.content + 28, entry.end).firstOrNull { it.type == "dfLa" }
-            ?: error("FLAC stream has no dfLa")
-        val blocks = metadataBlocks(init.copyOfRange(dfla.content + 4, dfla.end))
-        val trex = find(init, "moov", "mvex", "trex")
-        val trexDuration = trex?.let { readU32(init, it.content + 12) } ?: 0L
-        val trexSize = trex?.let { readU32(init, it.content + 16) } ?: 0L
-
+        val stream = FlacFromMp4.open(init)
         val frames = File.createTempFile("manifest-", ".flac", cacheDir)
         try {
             var ticks = 0L
-            frames.outputStream().buffered().use { out ->
-                media.forEach { segment ->
-                    boxes(segment).filter { it.type == "moof" }.forEach { moof ->
-                        val samples = Mp4Boxes.samples(segment, moof, trackId, trexDuration, trexSize)
-                            ?: error("Unreadable FLAC fragment")
-                        samples.forEach {
-                            out.write(segment, it.offset, it.size)
-                            ticks += it.duration
-                        }
-                    }
-                }
+            frames.sink().buffer().use { out -> media.forEach { ticks += stream.frames(it, out) } }
+            frames.source().buffer().use { spilled ->
+                sink.sink().buffer().use { out -> stream.finish(ticks, spilled, out) }
             }
-            if (ticks <= 0) error("Manifest held no audio")
-
-            val info = blocks.first().second
-            val rate = ((info[10].toLong() and 0xFF) shl 12) or ((info[11].toLong() and 0xFF) shl 4) or
-                ((info[12].toLong() and 0xFF) shr 4)
-            val totalSamples = if (timescale > 0 && rate > 0) ticks * rate / timescale else ticks
-            info[13] = ((info[13].toInt() and 0xF0) or ((totalSamples shr 32).toInt() and 0x0F)).toByte()
-            for (i in 0 until 4) info[14 + i] = (totalSamples shr (8 * (3 - i))).toByte()
-
-            sink.write("fLaC".toByteArray(Charsets.ISO_8859_1))
-            blocks.forEachIndexed { i, (type, body) ->
-                val last = if (i == blocks.lastIndex) 0x80 else 0
-                sink.write(byteArrayOf((last or type).toByte(), (body.size shr 16).toByte(), (body.size shr 8).toByte(), body.size.toByte()))
-                sink.write(body)
-            }
-            frames.inputStream().use { it.copyTo(sink) }
         } finally {
             frames.delete()
         }
-    }
-
-    /** `dfLa`'s payload as (type, body) pairs, STREAMINFO first as FLAC requires. */
-    private fun metadataBlocks(payload: ByteArray): List<Pair<Int, ByteArray>> {
-        val out = mutableListOf<Pair<Int, ByteArray>>()
-        var p = 0
-        while (p + 4 <= payload.size) {
-            val type = payload[p].toInt() and 0x7F
-            val length = ((payload[p + 1].toInt() and 0xFF) shl 16) or
-                ((payload[p + 2].toInt() and 0xFF) shl 8) or (payload[p + 3].toInt() and 0xFF)
-            if (p + 4 + length > payload.size) break
-            out += type to payload.copyOfRange(p + 4, p + 4 + length)
-            val last = payload[p].toInt() and 0x80 != 0
-            p += 4 + length
-            if (last) break
-        }
-        if (out.firstOrNull()?.let { it.first == 0 && it.second.size == 34 } != true) error("FLAC stream has no STREAMINFO")
-        return out
     }
 }
