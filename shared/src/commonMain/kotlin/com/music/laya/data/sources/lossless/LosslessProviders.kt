@@ -139,7 +139,12 @@ sealed class LosslessProvider(val id: String, val label: String, appVersion: Str
                     TrackLog.w(TAG, "Tidal: $trackId is a DASH manifest, which this player can't open; skipping")
                     return null
                 }
-                return LosslessStream(url = file, format = format, transport = "dash")
+                // iOS's manifestFile rewrites the DASH manifest into an HLS playlist of the same
+                // segments and hands back a local .m3u8 it can already open directly — no transport
+                // flag to ask the host about. Android/Desktop still save the raw .mpd for their own
+                // DASH engines, which do need acceptTransport asked before it is opened.
+                val transport = if (file.endsWith(".m3u8", ignoreCase = true)) null else "dash"
+                return LosslessStream(url = file, format = format, transport = transport)
             }
             val bts = json.parseToJsonElement(manifest).jsonObject
             val url = bts["urls"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: return null

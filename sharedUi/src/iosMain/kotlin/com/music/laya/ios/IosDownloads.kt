@@ -31,6 +31,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,6 +46,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import com.music.laya.download.FlacFromMp4
 import okio.BufferedSink
 import okio.FileSystem
 import okio.Path
@@ -273,9 +277,13 @@ internal object IosDownloads {
     private suspend fun routeFor(song: Song, quality: DownloadQuality): Route {
         fromSources(song, quality)?.let { (stream, ext) ->
             val format = stream.format
+            val playlist = isLocalPlaylist(stream.url)
             return Route(
                 ext, if (format.isDolbyAtmos) "DOLBY" else if (ext == "flac") "FLAC" else null,
-            ) { sink, progress -> fetchDirect(stream.url, stream.headers, sink, progress) }
+            ) { sink, progress ->
+                if (playlist) fetchSegments(stream.url, sink, progress)
+                else fetchDirect(stream.url, stream.headers, sink, progress)
+            }
         }
         val ytId = youtubeSeedFor(song) ?: error(getString(Res.string.download_no_youtube_match))
         // m4a only: AVPlayer can't play the WebM/Opus rungs.
@@ -283,7 +291,10 @@ internal object IosDownloads {
         return Route("m4a", if (stream.kbps > 0) "AAC · ${stream.kbps} kbps" else null) { sink, progress -> fetchRanged(stream.url, sink, progress) }
     }
 
-    /** Android's fromSources: bounded, and null is not a failure, just YouTube's turn. Manifests (HLS/DASH) are not assembled on iOS. */
+    /**
+     * Android's fromSources: bounded, and null is not a failure, just YouTube's turn. A remote manifest
+     * is still nobody's job here; the local playlist [DashToHls] writes for Tidal is assembled instead.
+     */
     private suspend fun fromSources(song: Song, quality: DownloadQuality): Pair<SourceStream, String>? {
         val stream = withTimeoutOrNull(SOURCE_LOOKUP_MS) {
             try {
@@ -295,6 +306,8 @@ internal object IosDownloads {
                 null
             }
         } ?: return null
+        // Its segments hold FLAC frames, which [FlacFromMp4] writes out as a native FLAC file.
+        if (isLocalPlaylist(stream.url)) return stream to "flac"
         val path = stream.url.substringBefore('?').lowercase()
         if (path.endsWith(".m3u8") || path.endsWith(".mpd")) return null
         val ext = when (stream.format.codec?.lowercase()?.trim()) {
@@ -332,6 +345,54 @@ internal object IosDownloads {
             pos += bytes.size
             progress(pos, total)
         }
+    }
+
+    /** The playlist [DashToHls] wrote for a Tidal stream, saved where only this device can see it. */
+    private fun isLocalPlaylist(url: String) =
+        url.startsWith("file://") && url.substringBefore('?').lowercase().endsWith(".m3u8")
+
+    /**
+     * An HLS playlist's segments written out as the native FLAC they hold, by the same [FlacFromMp4]
+     * Android files its manifest downloads with: the frames are kept bit for bit and only the container
+     * changes, so what lands on disk is a `.flac` any player opens rather than an MP4 wearing the name.
+     *
+     * A window at a time, in playlist order, so a track arrives in a few seconds while only a window of
+     * it is ever held in memory. The frames spill to a file first because STREAMINFO goes in front of
+     * them and stated the total sample count, which is only known once the last segment is in. Progress
+     * counts segments: their lengths are stated nowhere up front, and the bar only wanted a fraction.
+     */
+    private suspend fun fetchSegments(playlist: String, sink: BufferedSink, progress: (Long, Long) -> Unit) {
+        val text = fs.read(playlist.removePrefix("file://").toPath()) { readUtf8() }
+        // Without the init segment the media segments describe no track at all.
+        val initial = INIT_SEGMENT.find(text)?.groupValues?.get(1) ?: error(getString(Res.string.download_failed_generic))
+        val media = text.lineSequence().map { it.trim() }.filter { it.startsWith("http") }.toList()
+        if (media.isEmpty()) error(getString(Res.string.download_failed_generic))
+        val total = media.size + 1L
+        val stream = FlacFromMp4.open(fetchPart(initial))
+        progress(1, total)
+
+        val spill = dir / "${playlist.substringAfterLast('/')}.frames"
+        try {
+            var ticks = 0L
+            var done = 1L
+            fs.sink(spill).buffer().use { frames ->
+                media.chunked(SEGMENT_WINDOW).forEach { window ->
+                    coroutineScope { window.map { async { fetchPart(it) } }.awaitAll() }.forEach { bytes ->
+                        ticks += stream.frames(bytes, frames)
+                        progress(++done, total)
+                    }
+                }
+            }
+            fs.source(spill).buffer().use { frames -> stream.finish(ticks, frames, sink) }
+        } finally {
+            fs.delete(spill, mustExist = false)
+        }
+    }
+
+    private suspend fun fetchPart(url: String): ByteArray {
+        val r = client.get(url)
+        if (r.status.value !in 200..299) error(getString(Res.string.download_http_failed, r.status.value))
+        return r.bodyAsBytes().also { if (it.isEmpty()) error(getString(Res.string.download_stopped, 0L)) }
     }
 
     /**
@@ -373,6 +434,10 @@ internal object IosDownloads {
     }
 
     private const val RESUMES = 3
+
+    /** Segments in the air at once while a playlist is assembled (see fetchSegments). */
+    private const val SEGMENT_WINDOW = 8
+    private val INIT_SEGMENT = Regex("""#EXT-X-MAP:URI="([^"]+)"""")
 }
 
 private const val COVER_PX = 544

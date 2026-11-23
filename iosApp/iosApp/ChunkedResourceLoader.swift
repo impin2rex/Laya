@@ -496,3 +496,46 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         }
     }
 }
+
+/// Hands AVPlayer an HLS playlist it refuses to read from disk: a file URL is rejected outright
+/// (-11800, no tracks), while the identical bytes under a scheme of our own load. Tidal's lossless
+/// arrives as a DASH manifest that DashToHls rewrites into one of these, pointing at absolute CDN
+/// segment URLs, so AVFoundation fetches the audio itself and only the playlist comes through here.
+final class PlaylistResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
+    static let scheme = "bitchord-playlist"
+
+    let queue = DispatchQueue(label: "bitchord.playlist-loader")
+    let proxyURL: URL
+    /// The playlist file this was made from, so the engine can ask [HlsAssembly] about the same track.
+    let source: URL
+    private let playlist: Data
+
+    init?(file: URL) {
+        guard let data = try? Data(contentsOf: file),
+              var components = URLComponents(url: file, resolvingAgainstBaseURL: false) else { return nil }
+        components.scheme = PlaylistResourceLoader.scheme
+        guard let proxy = components.url else { return nil }
+        playlist = data
+        proxyURL = proxy
+        source = file
+        super.init()
+    }
+
+    func resourceLoader(
+        _ resourceLoader: AVAssetResourceLoader,
+        shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest
+    ) -> Bool {
+        loadingRequest.contentInformationRequest?.contentType = "public.m3u-playlist"
+        loadingRequest.contentInformationRequest?.contentLength = Int64(playlist.count)
+        loadingRequest.contentInformationRequest?.isByteRangeAccessSupported = true
+        if let wanted = loadingRequest.dataRequest {
+            let start = min(Int(wanted.requestedOffset), playlist.count)
+            let end = wanted.requestsAllDataToEndOfResource
+                ? playlist.count
+                : min(start + wanted.requestedLength, playlist.count)
+            wanted.respond(with: playlist.subdata(in: start..<end))
+        }
+        loadingRequest.finishLoading()
+        return true
+    }
+}

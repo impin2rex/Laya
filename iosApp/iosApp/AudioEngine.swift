@@ -38,6 +38,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     /// Loader per queued item; an item's loader must live as long as the item.
     private var loaders: [ObjectIdentifier: ChunkedResourceLoader] = [:]
+    /// The same, for the items playing an HLS playlist (see PlaylistResourceLoader).
+    private var playlists: [ObjectIdentifier: PlaylistResourceLoader] = [:]
     private var speed: Float = 1
     /// Racing through a silent stretch (see EqualizerTap.listen).
     private var skipping = false
@@ -197,6 +199,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func dropItem(_ item: AVPlayerItem) {
         loaders.removeValue(forKey: ObjectIdentifier(item))?.cancelAll()
+        playlists.removeValue(forKey: ObjectIdentifier(item))
     }
 
     func pause() { onMain { self.pauseOnMain() } }
@@ -275,6 +278,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         nextItem = nil
         loaders.values.forEach { $0.cancelAll() }
         loaders.removeAll()
+        playlists.removeAll()
         pendingSeekMs = nil
         seekingToMs = nil
         reopening = nil
@@ -465,6 +469,28 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         guard let source = URL(string: url) else { return nil }
         // A downloaded or imported file: AVFoundation reads it directly.
         if source.isFileURL {
+            // Except an HLS playlist, which it will not open from a file URL at all — Tidal's
+            // rewritten manifest goes through a loader so the same bytes arrive under our scheme.
+            if source.pathExtension.lowercased() == "m3u8" {
+                // Assembled already (by an earlier play, or by the analysis of this one): read that
+                // instead. It is the same audio, and it cues and seeks at once where the playlist cannot.
+                if let assembled = HlsAssembly.cached(for: source) {
+                    let item = AVPlayerItem(asset: AVURLAsset(url: assembled))
+                    item.preferredForwardBufferDuration = 30
+                    prepare(item)
+                    return item
+                }
+                guard let playlist = PlaylistResourceLoader(file: source) else { return nil }
+                let asset = AVURLAsset(url: playlist.proxyURL)
+                asset.resourceLoader.setDelegate(playlist, queue: playlist.queue)
+                let item = AVPlayerItem(asset: asset)
+                item.preferredForwardBufferDuration = 30
+                prepare(item)
+                playlists[ObjectIdentifier(item)] = playlist
+                // Audio starts now off the playlist; the file takes over behind it (see assemble).
+                assemble(source, under: item)
+                return item
+            }
             let flac = (try? FileHandle(forReadingFrom: source))
                 .map { h in defer { try? h.close() }; return h.readData(ofLength: 4) == Data("fLaC".utf8) } ?? false
             let item = AVPlayerItem(asset: AVURLAsset(url: source, options: flac ? Self.precise : nil))
@@ -488,6 +514,34 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         prepare(item)
         adopt(loader, for: item)
         return item
+    }
+
+    /// Fetches [playlist]'s segments into one file behind the playing playlist and hands it over at the
+    /// position reached, by the same swap a better source arrives on (watchUpgrade).
+    ///
+    /// A playlist starts instantly but cues like the network stream it is: AVPlayer must fetch the
+    /// segments at an offset before it can sound there, which is why seeking into a Tidal track stalls
+    /// and why the automix blend never lines up — it has to start the incoming track partway in, and the
+    /// deck is not ready in time, so the plan slides forward until the track has run out. The assembled
+    /// file cues in milliseconds, so once it is in hand there is nothing left to wait for.
+    private func assemble(_ playlist: URL, under item: AVPlayerItem) {
+        DispatchQueue.global(qos: .utility).async { [weak self, weak item] in
+            guard let file = HlsAssembly.assemble(playlist: playlist) else { return }
+            DispatchQueue.main.async {
+                guard let self, let item, self.player.currentItem === item else { return }
+                self.handOverToFile(file, from: item)
+            }
+        }
+    }
+
+    /// Swaps the playing playlist for its assembled [file], unless something is mid-flight that owns the
+    /// decks: a fade, a parked hand-over or a swap already running. Those each end on their own, and the
+    /// playlist plays correctly meanwhile — only its seeking is dear.
+    private func handOverToFile(_ file: URL, from item: AVPlayerItem) {
+        guard fade == nil, !parked, swapItem == nil, reopening == nil, seekingToMs == nil,
+              item.status == .readyToPlay else { return }
+        print("AudioEngine: Tidal playlist assembled; taking over from the file at \(item.currentTime().seconds)s")
+        swapOnMain(url: file.absoluteString, headers: [:], mimeType: "audio/mp4", contentLength: 0, chunkBytes: 0)
     }
 
     /// The precise copy of the playing item while it takes over (see reopenPrecise).
@@ -816,6 +870,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             nextItem = nil
             becomeCurrent(now)
             listener?.onAdvancedToNext()
+        }
+        // A playlist queued earlier was assembled while it waited its turn: now that it is the one
+        // playing, the swap that was skipped back then is worth making.
+        if let playlist = playlists[ObjectIdentifier(now)]?.source, let file = HlsAssembly.cached(for: playlist) {
+            handOverToFile(file, from: now)
         }
     }
 

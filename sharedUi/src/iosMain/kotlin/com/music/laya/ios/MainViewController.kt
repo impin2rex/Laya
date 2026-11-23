@@ -83,6 +83,18 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     com.music.laya.ui.screens.PartyPlatform.host = IosPartyPlatform
     com.music.laya.data.sources.lossless.LosslessStore.read = { Keychain.get(it) }
     com.music.laya.data.sources.lossless.LosslessStore.write = { key, value -> Keychain.set(key, value) }
+    // AVPlayer has no DASH engine; DashToHls rewrites the manifest into an HLS playlist of the
+    // same segments, which it reads natively. Null here (encrypted/multi-period/unrecognised
+    // manifest) falls back to Tidal's own "can't open this" skip.
+    com.music.laya.data.sources.lossless.LosslessStore.manifestFile = { name, mpd ->
+        com.music.laya.data.sources.lossless.DashToHls.convert(mpd)?.let { playlist ->
+            val manifestsDir = dir.toPath() / "lossless-manifests"
+            okio.FileSystem.SYSTEM.createDirectories(manifestsDir)
+            val file = manifestsDir / (name.substringBeforeLast('.') + ".m3u8")
+            okio.FileSystem.SYSTEM.write(file) { writeUtf8(playlist) }
+            "file://$file"
+        }
+    }
     // A session that ran out while the app was closed is reported (and its source switched off) like any other.
     com.music.laya.data.sources.lossless.LosslessProvider.all.forEach { it.session.reload() }
     SourceRegistry.init(IosSourcesHost)
