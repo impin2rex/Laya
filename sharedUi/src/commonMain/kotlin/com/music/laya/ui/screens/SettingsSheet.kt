@@ -130,7 +130,6 @@ import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.data.model.Account
 import com.music.laya.data.NerdStats
 import com.music.laya.data.canvas.ArtistSignatureRepository
-import com.music.laya.data.innertube.PremiumAudio
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.OutputPcmMode
 import com.music.laya.data.settings.AutomixPerformanceMode
@@ -187,9 +186,6 @@ fun SettingsScreen(
     val automixPerformance by AppSettings.automixPerformanceMode.collectAsStateWithLifecycle()
     val skipSilence by AppSettings.skipSilence.collectAsStateWithLifecycle()
     val dolbyAtmos by AppSettings.dolbyAtmos.collectAsStateWithLifecycle()
-    val premiumOverride by PremiumAudio.override.collectAsStateWithLifecycle()
-    val premiumDetected by PremiumAudio.detected.collectAsStateWithLifecycle()
-    LaunchedEffect(signedIn) { if (signedIn) PremiumAudio.ensureChecked() }
     // A property of the hardware (null where the platform has no such row) —
     // see DeviceCodecs.playsDolbyAtmos, which caches the codec-list walk.
     val dolbyAtmosSupported = host.playsDolbyAtmos
@@ -435,36 +431,6 @@ fun SettingsScreen(
                             )
                         },
                         onClick = { AppSettings.setDolbyAtmos(!dolbyAtmos) },
-                    )
-                }
-            }
-            // A claim about the account, so only for a signed-in one. Detected from the account itself;
-            // the switch is the listener's override either way.
-            if (host.hasPremiumAudioRow && signedIn) {
-                val premiumTitle = stringResource(Res.string.youtube_premium_audio)
-                val premiumOn = premiumOverride ?: (premiumDetected == true)
-                row(premiumTitle, "premium", "opus") {
-                    SettingsRow(
-                        icon = Icons.Rounded.GraphicEq,
-                        title = premiumTitle,
-                        subtitle = stringResource(
-                            if (premiumDetected == true && premiumOverride != false) {
-                                Res.string.youtube_premium_audio_detected
-                            } else {
-                                Res.string.youtube_premium_audio_subtitle
-                            },
-                        ),
-                        trailing = {
-                            Switch(
-                                checked = premiumOn,
-                                onCheckedChange = PremiumAudio::setOverride,
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                    checkedBorderColor = MaterialTheme.colorScheme.primary,
-                                ),
-                            )
-                        },
-                        onClick = { PremiumAudio.setOverride(!premiumOn) },
                     )
                 }
             }

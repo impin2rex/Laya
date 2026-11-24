@@ -669,8 +669,6 @@
     <string name="app_icon_default">デフォルト</string>
     <string name="prefer_music_only">音楽のみのバージョンを優先</string>
     <string name="prefer_music_only_subtitle">ミュージックビデオは、動画に切り替えるまでジャケット付きの曲として再生されます</string>
-    <string name="youtube_premium_audio">YouTube Premium オーディオ</string>
-    <string name="youtube_premium_audio_subtitle">Premium に加入済み：標準の 160 kbps ではなく、高音質の約 256 kbps Opus で再生します</string>
     <string name="auto_quick_picks">クイック ミックス</string>
     <string name="auto_recents">最近</string>
     <string name="auto_liked">高く評価した曲</string>
@@ -865,6 +863,5 @@
     <string name="reorder_playlist">並べ替え</string>
     <string name="d_reorder_subtitle">行をドラッグして好きな順に並べ、保存してください。</string>
     <string name="translate">翻訳</string>
-    <string name="youtube_premium_audio_detected">このアカウントで Premium を検出しました。高音質の約 256 kbps Opus をストリーミングします。</string>
     <string name="lossless_verify_failed">確認に失敗しました</string>
 </resources>

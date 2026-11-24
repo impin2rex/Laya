@@ -671,8 +671,6 @@
     <string name="app_icon_default">默认</string>
     <string name="prefer_music_only">优先播放纯音乐版本</string>
     <string name="prefer_music_only_subtitle">音乐视频将以歌曲形式播放并显示封面，直到你切换到视频</string>
-    <string name="youtube_premium_audio">YouTube Premium 音频</string>
-    <string name="youtube_premium_audio_subtitle">我有 Premium：串流更高音质的约 256 kbps Opus，而不是标准的 160 kbps</string>
     <string name="auto_quick_picks">快速选择</string>
     <string name="auto_recents">最近</string>
     <string name="auto_liked">喜欢的歌曲</string>
@@ -865,6 +863,5 @@
     <string name="reorder_playlist">编辑顺序</string>
     <string name="d_reorder_subtitle">将各行拖动到想要的顺序，然后保存。</string>
     <string name="translate">翻译</string>
-    <string name="youtube_premium_audio_detected">已在此账号检测到 Premium。正在串流更高音质的约 256 kbps Opus。</string>
     <string name="lossless_verify_failed">验证失败</string>
 </resources>

@@ -842,8 +842,6 @@
     <string name="app_icon_default">ডিফল্ট</string>
     <string name="prefer_music_only">শুধু মিউজিক সংস্করণ পছন্দ করুন</string>
     <string name="prefer_music_only_subtitle">মিউজিক ভিডিও গান হিসেবে, কভার আর্ট সহ বাজবে, যতক্ষণ না আপনি ভিডিওতে যান</string>
-    <string name="youtube_premium_audio">YouTube Premium অডিও</string>
-    <string name="youtube_premium_audio_subtitle">আমার Premium আছে: সাধারণ 160 kbps-এর বদলে উচ্চমানের ~256 kbps Opus স্ট্রিম করুন</string>
     <string name="song_info">গানের তথ্য</string>
     <string name="song_info_album">অ্যালবাম</string>
     <string name="song_info_release_date">প্রকাশের তারিখ</string>
@@ -879,6 +877,5 @@
         <item>সঠিক কথা খোঁজা হচ্ছে</item>
         <item>গানের কথা জোড়া লাগছে</item>
         <item>প্রায় কথাগুলো পেয়ে গেছি</item></string-array>
-    <string name="youtube_premium_audio_detected">এই অ্যাকাউন্টে Premium শনাক্ত হয়েছে। উচ্চমানের ~256 kbps Opus স্ট্রিম হচ্ছে।</string>
     <string name="lossless_verify_failed">যাচাই ব্যর্থ হয়েছে</string>
 </resources>

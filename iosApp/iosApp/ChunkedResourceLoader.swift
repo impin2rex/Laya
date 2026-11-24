@@ -84,8 +84,6 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             self.invalidated = true
             self.tasks.values.forEach { $0.cancel() }
             self.tasks.removeAll()
-            self.remuxTask?.cancel()
-            self.remuxWaiters.removeAll()
             self.session.invalidateAndCancel()
             self.releaseStreaming()
         }
@@ -97,8 +95,6 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     ) -> Bool {
         let key = ObjectIdentifier(loadingRequest)
         cancelled.remove(key)
-
-        if isWebmOpus { remuxWaiters.append(loadingRequest); serveRemuxed(); return true }
 
         if let info = loadingRequest.contentInformationRequest {
             info.contentType = uti(for: mimeType)
@@ -131,7 +127,6 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     ) {
         let key = ObjectIdentifier(loadingRequest)
         cancelled.insert(key)
-        remuxWaiters.removeAll { $0 === loadingRequest }
         tasks.removeValue(forKey: key)?.cancel()
         if let s = serves.removeValue(forKey: key), let t = s.token { entry?.cancelWait(t) }
     }
@@ -228,173 +223,6 @@ final class ChunkedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         }
         tasks[key] = task
         task.resume()
-    }
-
-    // MARK: - WebM Opus (YouTube Premium, itag 774)
-
-    /// AVFoundation cannot read WebM, so the Opus packets are rewritten into a CAF (OpusRemux) and AVPlayer is
-    /// served that. CAF needs its packet table up front, so a growing CAF is not possible; instead playback starts
-    /// on a head CAF of the first `headPackets` (40 s) as soon as they have arrived, while the rest keeps
-    /// downloading. When the whole file is down the full CAF is ready: `onUpgrade` tells the engine, which swaps
-    /// to a loader reopened with it (`reopenedWhole`) gaplessly. Until then the head is all there is: a seek past
-    /// it waits for the upgrade (see `headOnlyState`).
-    private var isWebmOpus: Bool { mimeType.lowercased().hasPrefix("audio/webm") }
-    private var remuxWaiters: [AVAssetResourceLoadingRequest] = []
-    private var remuxTask: URLSessionDataTask?
-    private var remuxStarted = false
-    /// The CAF AVPlayer is being served: the head while `headOnly`, else the whole file.
-    private var caf: Data?
-    private var remuxError: Error?
-    private var webm = Data()
-    private var headTried = 0
-    private var headMs: Int64 = 0
-    private var headOnly = false
-    private var fullCaf: Data?
-
-    /// A head is cut once this many 20 ms packets (40 s) are in.
-    private static let headPackets = 40 * 50
-    /// Only retry the head after this much more has arrived: each try re-reads it from the start.
-    private static let headRetryBytes = 256 * 1024
-
-    /// Called on the loader's queue once the whole file is remuxed and the playing item is only the head.
-    var onUpgrade: (() -> Void)?
-    /// Set by the engine for a seek that landed past the head: made once the whole file is in.
-    var deferredSeekMs: Int64?
-    var deferredResume = false
-    /// Called on the loader's queue when the rest of the file will not arrive after the head started.
-    var onHeadFailed: (() -> Void)?
-    private var headFailed = false
-    /// The download failed after the head started, so the head is all this item will ever have.
-    var headDownloadFailed: Bool { queue.sync { headFailed } }
-
-    /// The head's audio length and whether the whole file is ready, or nil once the item is the whole file.
-    var headOnlyState: (ms: Int64, ready: Bool)? {
-        queue.sync { headOnly ? (headMs, fullCaf != nil) : nil }
-    }
-
-    /// A loader over the same stream that is handed the finished CAF, for the item taking over from the head.
-    func reopenedWhole() -> ChunkedResourceLoader? {
-        queue.sync {
-            guard let full = fullCaf else { return nil }
-            let fresh = ChunkedResourceLoader(source: source, headers: headers, mimeType: mimeType,
-                                              knownLength: Int64(full.count), chunkBytes: chunkBytes)
-            fresh.caf = full
-            fresh.remuxStarted = true
-            return fresh
-        }
-    }
-
-    private func serveRemuxed() {
-        if let caf {
-            for lr in remuxWaiters { answer(lr, from: caf) }
-            remuxWaiters.removeAll()
-        } else if let remuxError {
-            for lr in remuxWaiters { lr.finishLoading(with: remuxError) }
-            remuxWaiters.removeAll()
-        } else if !remuxStarted {
-            remuxStarted = true
-            downloadWebm(attempt: 0)
-        }
-    }
-
-    private func answer(_ lr: AVAssetResourceLoadingRequest, from caf: Data) {
-        guard !lr.isCancelled else { return }
-        if let info = lr.contentInformationRequest {
-            info.contentType = "com.apple.coreaudio-format"
-            info.isByteRangeAccessSupported = true
-            info.contentLength = Int64(caf.count)
-        }
-        if let data = lr.dataRequest {
-            let start = Int(min(Int64(caf.count), data.requestedOffset))
-            let end = data.requestsAllDataToEndOfResource ? caf.count : min(caf.count, start + data.requestedLength)
-            data.respond(with: caf.subdata(in: start ..< end))
-            // The head's end is not the track's: only the whole file reaching AVPlayer means it has all been delivered.
-            if end >= caf.count, !headOnly { deliveredEnd = true }
-        }
-        lr.finishLoading()
-    }
-
-    /// Appends the next range of the stream to `webm` until the file is whole.
-    private func downloadWebm(attempt: Int) {
-        if invalidated { return }
-        let start = Int64(webm.count)
-        var request = URLRequest(url: source)
-        request.setValue("bytes=\(start)-\(start + chunkBytes - 1)", forHTTPHeaderField: "Range")
-        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
-        let task = session.dataTask(with: request) { [weak self] data, response, error in
-            guard let self else { return }
-            self.queue.async {
-                if self.invalidated || (error as NSError?)?.code == NSURLErrorCancelled { return }
-                let http = response as? HTTPURLResponse
-                let status = http?.statusCode ?? 0
-                guard error == nil, (200...299).contains(status), let data else {
-                    if status == 416, !self.webm.isEmpty { return self.finishRemux() } // asked past the end
-                    if error != nil || status == 429 || status >= 500 || status == 0, attempt < Self.retryDelays.count {
-                        self.queue.asyncAfter(deadline: .now() + Self.retryDelays[attempt]) {
-                            self.downloadWebm(attempt: attempt + 1)
-                        }
-                        return
-                    }
-                    if [403, 404, 410].contains(status), !self.reportedHTTPError {
-                        self.reportedHTTPError = true
-                        self.onHTTPError?(status)
-                    }
-                    return self.failRemux(NSError(domain: "BitChord", code: status,
-                                                  userInfo: [NSLocalizedDescriptionKey: "HTTP \(status)"]))
-                }
-                self.webm.append(data)
-                let total = Self.totalLength(http) ?? (status == 200 ? Int64(self.webm.count) : nil)
-                if data.isEmpty || total.map({ Int64(self.webm.count) >= $0 }) ?? false {
-                    self.finishRemux()
-                } else {
-                    self.serveHeadIfReady()
-                    self.downloadWebm(attempt: 0)
-                }
-            }
-        }
-        remuxTask = task
-        task.resume()
-    }
-
-    /// Starts playback on the first packets while the rest downloads.
-    private func serveHeadIfReady() {
-        guard caf == nil, webm.count - headTried >= Self.headRetryBytes else { return }
-        headTried = webm.count
-        guard let head = OpusRemux.head(of: webm, packets: Self.headPackets) else { return }
-        caf = head.caf
-        headMs = head.durationMs
-        headOnly = true
-        knownLength = Int64(head.caf.count)
-        serveRemuxed()
-    }
-
-    private func finishRemux() {
-        let bytes = webm
-        webm = Data()
-        guard let converted = OpusRemux.cafFromWebm(bytes) else {
-            return failRemux(NSError(domain: "BitChord", code: -1,
-                                     userInfo: [NSLocalizedDescriptionKey: "Premium audio is not a readable WebM Opus stream"]))
-        }
-        if headOnly {
-            // AVPlayer holds the head's length and bytes; the engine swaps in a loader that serves this.
-            fullCaf = converted
-            onUpgrade?()
-        } else {
-            caf = converted
-            knownLength = Int64(converted.count)
-            serveRemuxed()
-        }
-    }
-
-    private func failRemux(_ error: Error) {
-        // After the head started, the engine is told and restarts the track at its position.
-        if headOnly {
-            print("Loader: Premium download failed after the head started: \(error.localizedDescription)")
-            headFailed = true
-            return onHeadFailed?() ?? ()
-        }
-        remuxError = error
-        serveRemuxed()
     }
 
     // MARK: - Streaming (any host but googlevideo)

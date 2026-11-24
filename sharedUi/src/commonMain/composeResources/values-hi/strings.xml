@@ -828,9 +828,6 @@
     <string name="switch_to_video">वीडियो पर स्विच करें</string>
     <string name="audio_short">ऑडियो</string>
     <string name="lyrics_share_video_silent">गाने का ऑडियो नहीं मिल सका, इसलिए इस वीडियो में आवाज़ नहीं है।</string>
-    <string name="youtube_premium_audio">YouTube Premium ऑडियो</string>
-    <string name="youtube_premium_audio_subtitle">मेरे पास Premium है: सामान्य 160 kbps के बजाय उच्च गुणवत्ता वाला ~256 kbps Opus स्ट्रीम करें</string>
-    <string name="youtube_premium_audio_detected">इस खाते में Premium मिला। ज़्यादा गुणवत्ता वाला ~256 kbps Opus स्ट्रीम हो रहा है।</string>
     <string name="top_result">शीर्ष परिणाम</string>
     <string name="loading">लोड हो रहा है…</string>
     <string name="no_playlists">कोई प्लेलिस्ट नहीं</string>

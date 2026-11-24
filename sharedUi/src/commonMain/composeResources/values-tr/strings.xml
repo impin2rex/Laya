@@ -828,9 +828,6 @@
     <string name="switch_to_video">Videoya geç</string>
     <string name="audio_short">Ses</string>
     <string name="lyrics_share_video_silent">Şarkının sesi alınamadı, bu yüzden bu videoda ses yok.</string>
-    <string name="youtube_premium_audio">YouTube Premium sesi</string>
-    <string name="youtube_premium_audio_subtitle">Premium\'um var: standart 160 kbps yerine daha yüksek kaliteli ~256 kbps Opus akışı</string>
-    <string name="youtube_premium_audio_detected">Bu hesapta Premium algılandı. Daha yüksek kaliteli ~256 kbps Opus yayınlanıyor.</string>
     <string name="top_result">En iyi sonuç</string>
     <string name="loading">Yükleniyor…</string>
     <string name="no_playlists">Çalma listesi yok</string>

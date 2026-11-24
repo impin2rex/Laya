@@ -688,8 +688,6 @@
     <string name="app_icon_default">Padrão</string>
     <string name="prefer_music_only">Preferir versão só com música</string>
     <string name="prefer_music_only_subtitle">Os videoclipes tocam como músicas, com a capa, até você mudar para o vídeo</string>
-    <string name="youtube_premium_audio">Áudio do YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">Tenho Premium: transmitir o Opus de maior qualidade a ~256 kbps em vez dos 160 kbps padrão</string>
     <string name="auto_quick_picks">Escolhas rápidas</string>
     <string name="auto_recents">Recentes</string>
     <string name="auto_liked">Músicas curtidas</string>
@@ -885,6 +883,5 @@
     <string name="reorder_playlist">Editar ordem</string>
     <string name="d_reorder_subtitle">Arraste as linhas para a ordem desejada e depois salve.</string>
     <string name="translate">Traduzir</string>
-    <string name="youtube_premium_audio_detected">Premium detetado nesta conta. A transmitir o Opus de maior qualidade a ~256 kbps.</string>
     <string name="lossless_verify_failed">Falha na verificação</string>
 </resources>

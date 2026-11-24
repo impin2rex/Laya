@@ -687,8 +687,6 @@
     <string name="app_icon_default">Standard</string>
     <string name="prefer_music_only">Reine Musikversion bevorzugen</string>
     <string name="prefer_music_only_subtitle">Musikvideos werden als Songs mit Cover abgespielt, bis du zum Video wechselst</string>
-    <string name="youtube_premium_audio">YouTube Premium-Audio</string>
-    <string name="youtube_premium_audio_subtitle">Ich habe Premium: das hochwertigere Opus mit ~256 kbps statt der üblichen 160 kbps streamen</string>
     <string name="auto_quick_picks">Schnellauswahl</string>
     <string name="auto_recents">Zuletzt</string>
     <string name="auto_liked">Gelikte Songs</string>
@@ -884,6 +882,5 @@
     <string name="reorder_playlist">Reihenfolge bearbeiten</string>
     <string name="d_reorder_subtitle">Ziehe die Zeilen in die gewünschte Reihenfolge und speichere dann.</string>
     <string name="translate">Übersetzen</string>
-    <string name="youtube_premium_audio_detected">Premium für dieses Konto erkannt. Es wird das hochwertigere Opus mit ~256 kbps gestreamt.</string>
     <string name="lossless_verify_failed">Verifizierung fehlgeschlagen</string>
 </resources>

@@ -1105,31 +1105,6 @@ object InnertubeParser {
     }
 
     /**
-     * Whether the account behind an `account_menu` popup has YouTube Premium, or null when the menu says nothing
-     * either way (an error body, an empty popup).
-     *
-     * Premium is read off the menu's links: every account without it is shown the "Get Music Premium" upsell
-     * (a `music_premium` / `youtube.com/premium` URL), and one with it never is, but is shown "Paid memberships"
-     * (`paid_memberships`) instead. Only that pair is a verdict; either alone would be a guess, so a menu with
-     * neither is unknown. A stream that really came back as 774 settles it anyway (see [PremiumAudio.confirm]).
-     */
-    fun parsePremium(response: JsonElement): Boolean? {
-        val urls = mutableListOf<String>()
-        fun walk(node: JsonElement) {
-            when (node) {
-                is JsonObject -> node.forEach { (k, v) ->
-                    if (k == "url" && v is JsonPrimitive) v.contentOrNull?.let(urls::add) else walk(v)
-                }
-                is JsonArray -> node.forEach(::walk)
-                else -> Unit
-            }
-        }
-        walk(response)
-        if (urls.any { "music_premium" in it || "youtube.com/premium" in it }) return false
-        return true.takeIf { urls.any { "paid_memberships" in it } }
-    }
-
-    /**
      * The channels a switcher response offers, in the order YouTube lists them.
      *
      * Read by scanning for `accountItem` rather than by walking a fixed path:

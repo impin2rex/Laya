@@ -203,7 +203,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import com.music.laya.data.innertube.PremiumAudio
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -7276,24 +7275,6 @@ private fun DesktopSettingsScreen(
                         )
                     }
                     }
-                    val premiumOverride by PremiumAudio.override.collectAsState()
-                    val premiumDetected by PremiumAudio.detected.collectAsState()
-                    LaunchedEffect(Unit) { PremiumAudio.ensureChecked() }
-                    SettingsToggle(
-                        DesktopStrings["youtube_premium_audio", "YouTube Premium audio"],
-                        if (premiumDetected == true && premiumOverride != false) {
-                            DesktopStrings[
-                                "youtube_premium_audio_detected",
-                                "Premium detected on this account. Streaming the higher-quality ~256 kbps Opus.",
-                            ]
-                        } else {
-                            DesktopStrings[
-                                "youtube_premium_audio_subtitle",
-                                "I have Premium: stream the higher-quality ~256 kbps Opus instead of the standard 160 kbps",
-                            ]
-                        },
-                        premiumOverride ?: (premiumDetected == true),
-                    ) { PremiumAudio.setOverride(it) }
                 }
             }
             if (section == DesktopSettingsSection.LISTEN_TOGETHER) item {

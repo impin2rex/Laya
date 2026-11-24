@@ -688,8 +688,6 @@
     <string name="app_icon_default">ברירת מחדל</string>
     <string name="prefer_music_only">העדפת גרסת מוזיקה בלבד</string>
     <string name="prefer_music_only_subtitle">קליפים מתנגנים כשירים, עם עטיפת האלבום, עד שתעברו לווידאו</string>
-    <string name="youtube_premium_audio">אודיו של YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">יש לי Premium: הזרמת Opus באיכות גבוהה יותר של ~256 kbps במקום 160 kbps הרגילים</string>
     <string name="auto_quick_picks">בחירות מהירות</string>
     <string name="auto_recents">אחרונים</string>
     <string name="auto_liked">שירים שאהבתי</string>
@@ -885,6 +883,5 @@
     <string name="reorder_playlist">עריכת סדר</string>
     <string name="d_reorder_subtitle">גררו את השורות לסדר הרצוי ואז שמרו.</string>
     <string name="translate">תרגום</string>
-    <string name="youtube_premium_audio_detected">זוהה Premium בחשבון הזה. מושמע Opus באיכות גבוהה יותר, ~256 kbps.</string>
     <string name="lossless_verify_failed">האימות נכשל</string>
 </resources>

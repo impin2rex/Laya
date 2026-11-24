@@ -715,8 +715,6 @@
     <string name="app_icon_default">ค่าเริ่มต้น</string>
     <string name="prefer_music_only">เลือกเวอร์ชันเพลงอย่างเดียวก่อน</string>
     <string name="prefer_music_only_subtitle">มิวสิกวิดีโอจะเล่นเป็นเพลงพร้อมภาพปก จนกว่าคุณจะสลับไปดูวิดีโอ</string>
-    <string name="youtube_premium_audio">เสียง YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">ฉันมี Premium: สตรีม Opus คุณภาพสูงกว่า ~256 kbps แทน 160 kbps มาตรฐาน</string>
     <string name="auto_quick_picks">เลือกด่วน</string>
     <string name="auto_recents">ล่าสุด</string>
     <string name="auto_liked">เพลงที่ถูกใจ</string>
@@ -865,6 +863,5 @@
     <string name="reorder_playlist">แก้ไขลำดับ</string>
     <string name="d_reorder_subtitle">ลากแถวตามลำดับที่ต้องการ แล้วบันทึก</string>
     <string name="translate">แปล</string>
-    <string name="youtube_premium_audio_detected">ตรวจพบ Premium ในบัญชีนี้ กำลังสตรีม Opus คุณภาพสูงกว่าที่ ~256 kbps</string>
     <string name="lossless_verify_failed">การยืนยันล้มเหลว</string>
 </resources>

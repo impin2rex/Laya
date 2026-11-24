@@ -752,8 +752,6 @@
     <string name="app_icon_default">Predefinita</string>
     <string name="prefer_music_only">Preferisci la versione solo musica</string>
     <string name="prefer_music_only_subtitle">I video musicali vengono riprodotti come brani, con la copertina, finché non passi al video</string>
-    <string name="youtube_premium_audio">Audio YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">Ho Premium: riproduci l\'Opus di qualità superiore a ~256 kbps invece dei 160 kbps standard</string>
     <string name="subscribe">Iscriviti</string>
     <string name="unsubscribe">Annulla iscrizione</string>
     <string name="settings_search_hint">Cerca nelle impostazioni</string>
@@ -884,6 +882,5 @@
     <string name="reorder_playlist">Modifica ordine</string>
     <string name="d_reorder_subtitle">Trascina le righe nell’ordine desiderato, poi salva.</string>
     <string name="translate">Traduci</string>
-    <string name="youtube_premium_audio_detected">Premium rilevato su questo account. Streaming dell’Opus di qualità superiore a ~256 kbps.</string>
     <string name="lossless_verify_failed">Verifica non riuscita</string>
 </resources>

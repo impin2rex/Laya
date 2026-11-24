@@ -822,9 +822,6 @@
     <string name="switch_to_video">สลับเป็นวิดีโอ</string>
     <string name="audio_short">เสียง</string>
     <string name="lyrics_share_video_silent">ไม่สามารถดึงเสียงของเพลงได้ วิดีโอนี้จึงไม่มีเสียง</string>
-    <string name="youtube_premium_audio">เสียง YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">ฉันมี Premium: สตรีม Opus คุณภาพสูงกว่า ~256 kbps แทน 160 kbps มาตรฐาน</string>
-    <string name="youtube_premium_audio_detected">ตรวจพบ Premium ในบัญชีนี้ กำลังสตรีม Opus คุณภาพสูงกว่าที่ ~256 kbps</string>
     <string name="top_result">ผลลัพธ์ยอดนิยม</string>
     <string name="loading">กำลังโหลด…</string>
     <string name="no_playlists">ไม่มีเพลย์ลิสต์</string>

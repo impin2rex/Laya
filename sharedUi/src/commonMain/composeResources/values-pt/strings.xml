@@ -828,9 +828,6 @@
     <string name="switch_to_video">Mudar para vídeo</string>
     <string name="audio_short">Áudio</string>
     <string name="lyrics_share_video_silent">Não foi possível obter o áudio da música, então este vídeo está sem som.</string>
-    <string name="youtube_premium_audio">Áudio do YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">Tenho Premium: transmitir o Opus de maior qualidade a ~256 kbps em vez dos 160 kbps padrão</string>
-    <string name="youtube_premium_audio_detected">Premium detetado nesta conta. A transmitir o Opus de maior qualidade a ~256 kbps.</string>
     <string name="top_result">Melhor resultado</string>
     <string name="loading">Carregando…</string>
     <string name="no_playlists">Nenhuma playlist</string>

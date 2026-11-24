@@ -303,14 +303,6 @@ object AppSettings {
     val dolbyAtmos = MutableStateFlow(true)
 
     /**
-     * The listener's word that their YouTube account has Premium: YouTube
-     * playback then asks the signed-in route for Premium's ~256kbps Opus
-     * (itag 774) before the usual 251. Off by default and asked rather than
-     * detected; see [StreamResolver.premiumAudio][com.music.laya.data.innertube.StreamResolver.premiumAudio].
-     * Ignored where the player needs AAC (iOS).
-     */
-
-    /**
      * Widens stereo output via [com.music.laya.playback.SpatialAudioProcessor],
      * a stereo widening + cross-feed effect running inside ExoPlayer's own
      * pipeline. Not true object-based spatial audio — YouTube only ever hands
@@ -856,15 +848,6 @@ object AppSettings {
     fun init(settings: Settings, host: AppSettingsHost) {
         prefs = Prefs(settings)
         this.host = host
-        // Premium audio is detected per account; the old opt-in toggle, stored as a boolean, stays as the override.
-        com.music.laya.data.innertube.PremiumAudio.read = { key ->
-            runCatching { settings.getStringOrNull(key) }.getOrNull()
-                ?: runCatching { settings.getBooleanOrNull(key)?.toString() }.getOrNull()
-        }
-        com.music.laya.data.innertube.PremiumAudio.write = { key, value ->
-            if (value == null) settings.remove(key) else settings.putString(key, value)
-        }
-        com.music.laya.data.innertube.PremiumAudio.load()
         readAll()
     }
 

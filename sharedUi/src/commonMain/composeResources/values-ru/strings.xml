@@ -837,9 +837,6 @@
     <string name="switch_to_video">Переключиться на видео</string>
     <string name="audio_short">Аудио</string>
     <string name="lyrics_share_video_silent">Не удалось получить звук песни, поэтому в этом видео нет звука.</string>
-    <string name="youtube_premium_audio">Звук YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">У меня есть Premium: воспроизводить Opus повышенного качества ~256 кбит/с вместо стандартных 160 кбит/с</string>
-    <string name="youtube_premium_audio_detected">На этом аккаунте обнаружена подписка Premium. Воспроизводится Opus повышенного качества ~256 кбит/с.</string>
     <string name="top_result">Лучший результат</string>
     <string name="loading">Загрузка…</string>
     <string name="no_playlists">Нет плейлистов</string>

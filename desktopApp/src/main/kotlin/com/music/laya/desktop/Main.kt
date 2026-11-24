@@ -5,7 +5,6 @@ import com.music.laya.ui.player.PlayerPlatform
 import com.music.laya.data.DebugLog
 import com.music.laya.data.TrackLog
 import com.music.laya.data.innertube.InnerTubeXResolver
-import com.music.laya.data.innertube.PremiumAudio
 import com.music.laya.data.innertube.StreamResolver
 import com.music.laya.data.innertube.potoken.PoTokenGenerator
 import com.music.laya.data.lyrics.LyricsTranslation
@@ -57,9 +56,6 @@ fun main() {
     StreamResolver.maxKbps = {
         DesktopStreamClient.ceiling.get() ?: DesktopSourceRegistry.ceiling(null).maxKbps
     }
-    PremiumAudio.read = { DesktopPersistence().string(it).ifEmpty { null } }
-    PremiumAudio.write = { key, value -> DesktopPersistence().saveString(key, value.orEmpty()) }
-    PremiumAudio.load()
     InnerTubeXResolver.init(
         filesDir = DesktopMediaCache.directory.toOkioPath(),
         store = DesktopInnerTubeXStore,

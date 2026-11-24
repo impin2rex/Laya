@@ -709,8 +709,6 @@
     <string name="app_icon_default">По умолчанию</string>
     <string name="prefer_music_only">Предпочитать аудиоверсию</string>
     <string name="prefer_music_only_subtitle">Клипы воспроизводятся как песни, с обложкой, пока вы не переключитесь на видео</string>
-    <string name="youtube_premium_audio">Звук YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">У меня есть Premium: воспроизводить Opus повышенного качества ~256 кбит/с вместо стандартных 160 кбит/с</string>
     <string name="auto_quick_picks">Быстрый выбор</string>
     <string name="auto_recents">Недавние</string>
     <string name="auto_liked">Любимые песни</string>
@@ -908,6 +906,5 @@
     <string name="reorder_playlist">Изменить порядок</string>
     <string name="d_reorder_subtitle">Перетащите строки в нужном порядке, затем сохраните.</string>
     <string name="translate">Перевести</string>
-    <string name="youtube_premium_audio_detected">На этом аккаунте обнаружена подписка Premium. Воспроизводится Opus повышенного качества ~256 кбит/с.</string>
     <string name="lossless_verify_failed">Не удалось подтвердить</string>
 </resources>

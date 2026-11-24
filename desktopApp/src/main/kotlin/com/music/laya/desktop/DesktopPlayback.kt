@@ -221,7 +221,6 @@ internal object DesktopStreamClient {
      */
     internal val ceiling = ThreadLocal<Int>()
 
-
     /** `mime=audio/webm` off a googlevideo URL: the container, which is what FFmpeg is told. */
     private fun mimeOf(url: String): String? =
         runCatching { java.net.URI(url).rawQuery }.getOrNull()

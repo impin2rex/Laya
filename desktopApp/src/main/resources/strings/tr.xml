@@ -735,8 +735,6 @@
     <string name="app_icon_default">Varsayılan</string>
     <string name="prefer_music_only">Yalnızca müzik sürümünü tercih et</string>
     <string name="prefer_music_only_subtitle">Müzik videoları, siz videoya geçene kadar kapak görseliyle şarkı olarak çalınır</string>
-    <string name="youtube_premium_audio">YouTube Premium sesi</string>
-    <string name="youtube_premium_audio_subtitle">Premium\'um var: standart 160 kbps yerine daha yüksek kaliteli ~256 kbps Opus akışı</string>
     <string name="auto_quick_picks">Hızlı seçimler</string>
     <string name="auto_recents">Son dinlenenler</string>
     <string name="auto_liked">Beğenilen şarkılar</string>
@@ -884,6 +882,5 @@
     <string name="reorder_playlist">Sırayı düzenle</string>
     <string name="d_reorder_subtitle">Satırları istediğiniz sıraya sürükleyin, sonra kaydedin.</string>
     <string name="translate">Çevir</string>
-    <string name="youtube_premium_audio_detected">Bu hesapta Premium algılandı. Daha yüksek kaliteli ~256 kbps Opus yayınlanıyor.</string>
     <string name="lossless_verify_failed">Doğrulama başarısız</string>
 </resources>

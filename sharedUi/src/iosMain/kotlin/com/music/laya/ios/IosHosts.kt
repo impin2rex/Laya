@@ -38,7 +38,6 @@ internal object IosSettingsHost : SettingsHost {
     override val hasCrossfade = true
     override val hasAutomix = true
     override val hasLiquidGlassOption = false
-    override val hasPremiumAudioRow = true
     override val party = IosParty.info
     override val hasDownloads = true
     override val hasExportDownloads = false // no shared Music folder on iOS; downloads stay in the app

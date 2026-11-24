@@ -219,8 +219,6 @@ object InnerTubeXResolver {
      * changes which clients InnerTubeX will use — authenticated ones only, login
      * cookies first, no embedded fallback — see [UploadedTracks].
      *
-     * [premium] says the signed-in account has YouTube Premium; see [ask].
-     *
      * @return a stream for [videoId], or null when every client InnerTubeX would
      *   try is refused or [skipClients] has ruled it out.
      * @throws com.metrolist.innertubex.extraction.StreamResolveException with a
@@ -232,19 +230,20 @@ object InnerTubeXResolver {
         skipClients: Set<String> = emptySet(),
         requireM4a: Boolean = false,
         uploaded: Boolean = false,
-        premium: Boolean = false,
     ): Extracted? {
         innerTube.cookie = Innertube.cookie
         innerTube.visitorData = Innertube.ensureVisitorData()
         innerTube.locale = YouTubeLocale(gl = Innertube.currentRegion, hl = Innertube.currentLanguage)
-        val (premiumOpus, audioQuality) = ask(maxKbps, requireM4a, premium)
         val stream = extractor.extract(
             videoId = videoId,
             hints = ContentHints(isUploaded = true.takeIf { uploaded })
-                .withPremium(premiumOpus)
                 .withStreamCapabilities(allowHls = false, allowSabr = false, allowBoundedRange = true),
             excludedClients = excludedFor(videoId) + skipClients,
-            audioQuality = audioQuality,
+            audioQuality = when {
+                requireM4a -> AudioQuality.MP4
+                maxKbps <= LOW_KBPS -> AudioQuality.LOW
+                else -> AudioQuality.AUTO
+            },
             clientPlaybackNonce = generateClientPlaybackNonce(),
         ) ?: return null
         check(stream.sabrBootstrap == null) { "SABR is not supported by this playback engine" }
@@ -391,32 +390,6 @@ object InnerTubeXResolver {
     private const val PLAYER_CONFIG_URL =
         "https://raw.githubusercontent.com/ZemerTeam/zemer-cipher/master/library/src/main/assets/player_configs.json"
     private const val LOW_KBPS = 64
-
-    /** Itag 774, Premium's Opus rung. */
-    internal const val PREMIUM_OPUS_KBPS = 256
-
-    /**
-     * Whether to ask for Premium's Opus, and the quality to ask InnerTubeX for.
-     *
-     * [premium] sends InnerTubeX down the route age-restricted tracks already
-     * take: the signed-in clients first. Only a signed-in client is offered
-     * Premium's ~256kbps Opus (itag 774); the anonymous one tops out at itag
-     * 251. The ask is then [AudioQuality.HIGH] — highest bitrate wins — since
-     * AUTO's scoring would happily settle for 251. An account without Premium,
-     * or a track without 774, simply gets the best of what is offered (251).
-     *
-     * Never for an M4A-only player — iOS's AVPlayer has no WebM/Opus decoder,
-     * so it keeps asking for AAC — nor under a ceiling that couldn't keep it.
-     */
-    internal fun ask(maxKbps: Int, requireM4a: Boolean, premium: Boolean): Pair<Boolean, AudioQuality> {
-        val premiumOpus = premium && !requireM4a && maxKbps >= PREMIUM_OPUS_KBPS
-        return premiumOpus to when {
-            requireM4a -> AudioQuality.MP4
-            maxKbps <= LOW_KBPS -> AudioQuality.LOW
-            premiumOpus -> AudioQuality.HIGH
-            else -> AudioQuality.AUTO
-        }
-    }
     private const val EXCLUDE_MS = 10 * 60 * 1000L
     private const val MAX_REMEMBERED = 64
     /** Off the cold-start path; the first tap on a track is rarely sooner. */

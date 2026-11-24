@@ -822,9 +822,6 @@
     <string name="switch_to_video">Beralih ke Video</string>
     <string name="audio_short">Audio</string>
     <string name="lyrics_share_video_silent">Audio lagu tidak dapat diambil, jadi video ini tanpa suara.</string>
-    <string name="youtube_premium_audio">Audio YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">Saya punya Premium: putar Opus berkualitas lebih tinggi ~256 kbps, bukan 160 kbps standar</string>
-    <string name="youtube_premium_audio_detected">Premium terdeteksi di akun ini. Memutar Opus berkualitas lebih tinggi ~256 kbps.</string>
     <string name="top_result">Hasil teratas</string>
     <string name="loading">Memuat…</string>
     <string name="no_playlists">Tidak ada playlist</string>

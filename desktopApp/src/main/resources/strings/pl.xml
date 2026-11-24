@@ -716,8 +716,6 @@
     <string name="app_icon_default">Domyślna</string>
     <string name="prefer_music_only">Preferuj wersję muzyczną</string>
     <string name="prefer_music_only_subtitle">Teledyski są odtwarzane jak utwory, z okładką, dopóki nie przełączysz na wideo</string>
-    <string name="youtube_premium_audio">Dźwięk YouTube Premium</string>
-    <string name="youtube_premium_audio_subtitle">Mam Premium: odtwarzaj Opus wyższej jakości ~256 kb/s zamiast standardowych 160 kb/s</string>
     <string name="auto_quick_picks">Szybki wybór</string>
     <string name="auto_recents">Ostatnie</string>
     <string name="auto_liked">Polubione utwory</string>
@@ -915,6 +913,5 @@
     <string name="reorder_playlist">Edytuj kolejność</string>
     <string name="d_reorder_subtitle">Przeciągnij wiersze w żądanej kolejności, a następnie zapisz.</string>
     <string name="translate">Tłumacz</string>
-    <string name="youtube_premium_audio_detected">Wykryto Premium na tym koncie. Odtwarzanie wyższej jakości Opus ~256 kbps.</string>
     <string name="lossless_verify_failed">Weryfikacja nie powiodła się</string>
 </resources>

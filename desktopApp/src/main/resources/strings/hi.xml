@@ -687,8 +687,6 @@
     <string name="app_icon_default">डिफ़ॉल्ट</string>
     <string name="prefer_music_only">केवल संगीत वाला संस्करण पसंद करें</string>
     <string name="prefer_music_only_subtitle">म्यूज़िक वीडियो कवर आर्ट के साथ गानों की तरह चलेंगे, जब तक आप वीडियो पर स्विच न करें</string>
-    <string name="youtube_premium_audio">YouTube Premium ऑडियो</string>
-    <string name="youtube_premium_audio_subtitle">मेरे पास Premium है: सामान्य 160 kbps के बजाय उच्च गुणवत्ता वाला ~256 kbps Opus स्ट्रीम करें</string>
     <string name="auto_quick_picks">त्वरित चयन</string>
     <string name="auto_recents">हाल के</string>
     <string name="auto_liked">पसंदीदा गाने</string>
@@ -884,6 +882,5 @@
     <string name="reorder_playlist">क्रम बदलें</string>
     <string name="d_reorder_subtitle">पंक्तियों को मनचाहे क्रम में खींचें, फिर सेव करें।</string>
     <string name="translate">अनुवाद करें</string>
-    <string name="youtube_premium_audio_detected">इस खाते में Premium मिला। ज़्यादा गुणवत्ता वाला ~256 kbps Opus स्ट्रीम हो रहा है।</string>
     <string name="lossless_verify_failed">सत्यापन विफल</string>
 </resources>
