@@ -159,13 +159,30 @@ class WebDavTest {
     }
 
     @Test
-    fun authorizesOnlyConfiguredHost() {
+    fun authorizesOnlyConfiguredOrigin() {
         WebDavAuth.update("https://cloud.example.com/music", "user", "pass")
-        assertTrue(WebDavAuth.shouldAuthorize("cloud.example.com"))
-        assertFalse(WebDavAuth.shouldAuthorize("other.example.com"))
+        assertTrue(WebDavAuth.shouldAuthorize("https", "cloud.example.com", 443))
+        assertTrue(WebDavAuth.shouldAuthorize("HTTPS", "Cloud.Example.com", -1))
+        assertFalse(WebDavAuth.shouldAuthorize("https", "other.example.com", 443))
         assertNotNull(WebDavAuth.authHeader)
         WebDavAuth.update("", "", "")
-        assertFalse(WebDavAuth.shouldAuthorize("cloud.example.com"))
+        assertFalse(WebDavAuth.shouldAuthorize("https", "cloud.example.com", 443))
+    }
+
+    @Test
+    fun neverAuthorizesAnotherServiceOnTheSameHost() {
+        // An add-on on the same NAS: same host, other port. And the same host over plain http.
+        WebDavAuth.update("https://192.168.1.10:5006/music", "user", "pass")
+        try {
+            assertTrue(WebDavAuth.shouldAuthorize("https", "192.168.1.10", 5006))
+            assertFalse(WebDavAuth.shouldAuthorize("http", "192.168.1.10", 8080))
+            assertFalse(WebDavAuth.shouldAuthorize("https", "192.168.1.10", 443))
+            assertFalse(WebDavAuth.shouldAuthorize("http", "192.168.1.10", 5006))
+            assertNull(WebDavCoilAuth.authHeaderFor("http://192.168.1.10:8080/cover.jpg"))
+            assertNotNull(WebDavCoilAuth.authHeaderFor("https://192.168.1.10:5006/music/cover.jpg"))
+        } finally {
+            WebDavAuth.update("", "", "")
+        }
     }
 
     @Test

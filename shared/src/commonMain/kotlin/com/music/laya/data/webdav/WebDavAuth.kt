@@ -10,19 +10,33 @@ import kotlin.concurrent.Volatile
  * on every WebDAV edit.
  */
 object WebDavAuth {
-    @Volatile var host: String? = null
+    /** The saved server's origin as [originOf] spells it, or null when none is configured. */
+    @Volatile var origin: String? = null
     @Volatile var authHeader: String? = null
 
-    /** [host] and [header] as WebDavConfig derives them from the saved server. */
-    fun update(host: String?, header: String?) {
-        this.host = host
+    /** [origin] and [header] as WebDavConfig derives them from the saved server. */
+    fun update(origin: String?, header: String?) {
+        this.origin = origin
         authHeader = header
     }
 
-    fun shouldAuthorize(requestHost: String): Boolean {
-        val expected = host ?: return false
+    /**
+     * Whether a request to this scheme, host and port is the saved server's.
+     *
+     * The whole origin, not the host alone: an add-on on the same NAS under another port, or the
+     * same host over plain http, is a different server, and the Basic credential must not reach it.
+     */
+    fun shouldAuthorize(scheme: String, host: String, port: Int): Boolean {
+        val expected = origin ?: return false
         val header = authHeader ?: return false
         if (header.isBlank()) return false
-        return requestHost.equals(expected, ignoreCase = true)
+        return originOf(scheme, host, port) == expected
+    }
+
+    /** `scheme://host:port`, lowercased, with a missing port (-1) filled in from the scheme. */
+    fun originOf(scheme: String, host: String, port: Int): String {
+        val s = scheme.lowercase()
+        val p = if (port >= 0) port else if (s == "http") 80 else 443
+        return "$s://${host.lowercase()}:$p"
     }
 }

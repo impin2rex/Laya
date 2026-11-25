@@ -1,5 +1,6 @@
 package com.music.laya.data.sources.module
 
+import kotlinx.serialization.json.JsonPrimitive
 import android.util.Log
 import com.music.laya.data.TrackLog
 import com.music.laya.data.Http
@@ -264,7 +265,7 @@ class ModuleManager {
             val result = QuickJsExecutor.callExport(
                 moduleId = loaded.module.id,
                 functionName = "searchTracks",
-                args = listOf("\"$query\"", limit.toString(), contextArg),
+                args = listOf(jsString(query), limit.toString(), contextArg),
             ).getOrThrow()
             json.decodeFromString<ModuleSearchResponse>(result).also {
                 TrackLog.d(TAG, "  ✓ Parsed ${it.tracks.size} tracks (total=${it.total})")
@@ -310,7 +311,7 @@ class ModuleManager {
             val result = QuickJsExecutor.callExport(
                 moduleId = loaded.module.id,
                 functionName = "getTrackStreamUrl",
-                args = listOf("\"$trackId\"", "\"$quality\"", contextArg),
+                args = listOf(jsString(trackId), jsString(quality), contextArg),
             ).getOrThrow()
             json.decodeFromString<ModuleStreamResponse>(result).also {
                 TrackLog.d(TAG, "  ✓ streamUrl=${it.streamUrl?.take(100) ?: "<none>"} quality=${it.track?.audioQuality}")
@@ -352,12 +353,24 @@ class ModuleManager {
      * out of it: every lookup landed on undefined and fell through to the
      * module's own default. Silent, and worth exactly one misplaced brace.
      */
-    private fun contextArg(settings: Map<String, String>): String =
+    internal fun contextArg(settings: Map<String, String>): String =
         settings.entries.joinToString(
             separator = ",",
             prefix = "{settings:{",
             postfix = "}}",
-        ) { (key, value) -> "\"$key\":{\"value\":\"$value\"}" }
+        ) { (key, value) -> "${jsString(key)}:{\"value\":${jsString(value)}}" }
+
+    /**
+     * [value] as a JavaScript string literal, escaped.
+     *
+     * Every argument reaches the module by being spliced into the source that calls it, and a search
+     * query is often a YouTube title — text a stranger wrote. Unescaped, a title with a `"` in it broke
+     * the call, and a crafted one ran its own code inside the module's VM.
+     */
+    internal fun jsString(value: String): String = JsonPrimitive(value).toString()
+        // JSON allows these two raw; a JavaScript string literal (before ES2019) does not.
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
