@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.data.aifilter.AiSongs
 import com.music.laya.ui.player.VideoKeys
 import androidx.compose.foundation.lazy.LazyListState
@@ -1989,6 +1990,21 @@ fun LayaDesktopApp() {
     // switch then only showing it.
     val versionSwitching by playbackEngine.versionSwitching.collectAsState()
     val versionPairs = remember { mutableMapOf<String, Song>() }
+    // "Prefer music-only": the next video becomes its audio release before the transition, not on
+    // arrival, so AutoMix (which never mixes into a video) can blend into it. The phone does the same.
+    LaunchedEffect(selectedSong?.videoId, liveQueue.songs, partyState.inParty, repeatMode) {
+        val current = selectedSong ?: return@LaunchedEffect
+        val next = liveQueue.followingFor(current.videoId, repeatAll = repeatMode == DesktopRepeatMode.ALL)
+        if (!MusicVideoChoice.swapAheadWanted(next, partyState.inParty) || next == null) return@LaunchedEffect
+        val audio = withContext(Dispatchers.IO) { runCatching { YtMusicRepository.resolveAudio(next) }.getOrNull() }
+            ?.takeIf { it.videoId != next.videoId } ?: return@LaunchedEffect
+        val at = liveQueue.songs.indexOfFirst { it === next }.takeIf { it >= 0 } ?: return@LaunchedEffect
+        val swapped = MusicVideoChoice.audioInPlaceOf(next, audio)
+        versionPairs[swapped.videoId] = next
+        versionPairs[next.videoId] = swapped
+        liveQueue = liveQueue.copy(songs = liveQueue.songs.toMutableList().also { it[at] = swapped })
+        saveQueue()
+    }
     var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
     // The video the listener asked to watch.
     var watching by remember { mutableStateOf<String?>(null) }

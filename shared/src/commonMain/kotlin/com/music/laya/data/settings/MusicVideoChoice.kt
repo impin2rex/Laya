@@ -31,6 +31,26 @@ object MusicVideoChoice {
         watching.value = if (watching.value == videoId) null else videoId
     }
 
+    /**
+     * [audio], the audio release found for the queued [video], made to take the video's place in
+     * the queue: its row, tier and where it is playing from stay the video's. Each player swaps the
+     * *next* video for it ahead of the transition under [AppSettings.preferMusicOnly], because AutoMix
+     * never mixes into a video and the swap on arrival came too late for the blend.
+     */
+    fun audioInPlaceOf(video: Song, audio: Song): Song = audio.copy(
+        isVideoOrigin = true,
+        queueTier = video.queueTier,
+        queueEntryId = video.queueEntryId,
+        radioName = video.radioName,
+        playbackSource = video.playbackSource,
+        playbackSourceType = video.playbackSourceType,
+        playbackSourceId = video.playbackSourceId,
+    )
+
+    /** Whether the queued [next] track should be swapped for its audio release ahead of time. */
+    fun swapAheadWanted(next: Song?, inParty: Boolean): Boolean =
+        next != null && next.isVideo && next.localUri == null && !inParty && AppSettings.preferMusicOnly.value
+
     /** The track moved on to [videoId]: an ask for another video no longer stands. */
     fun onTrackChanged(videoId: String?) {
         if (watching.value != videoId) watching.value = null

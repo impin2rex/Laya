@@ -1,5 +1,6 @@
 package com.music.laya.ios
 
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.data.aifilter.AiSongs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -1000,7 +1001,23 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         nextJob?.cancel()
         preloaded = autoNext()
         val upcoming = queue.getOrNull(preloaded) ?: return engine.clearNext()
-        nextJob = scope.launch { runCatching { resolveInto(upcoming, next = true) } }
+        val at = preloaded
+        nextJob = scope.launch {
+            runCatching {
+                // "Prefer music-only": the next video becomes its audio release now, before the
+                // transition, so AutoMix (which never mixes into a video) can blend into it.
+                val audio = if (MusicVideoChoice.swapAheadWanted(upcoming, ListenTogether.state.value.inParty)) {
+                    YtMusicRepository.resolveAudio(upcoming).takeIf { it.videoId != upcoming.videoId }
+                } else null
+                val next = if (audio != null && queue.getOrNull(at) === upcoming) {
+                    MusicVideoChoice.audioInPlaceOf(upcoming, audio).also { swapped ->
+                        queue = queue.toMutableList().also { it[at] = swapped }
+                        IosPlayerStore.saveQueue(queue, index)
+                    }
+                } else upcoming
+                resolveInto(next, next = true)
+            }
+        }
     }
 
     // ---- Cast (Android's CastPlayback): this queue stays, the receiver owns the clock ----

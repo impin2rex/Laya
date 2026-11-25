@@ -1,5 +1,6 @@
 package com.music.laya.playback
 
+import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.data.aifilter.AiSongs
 import android.app.PendingIntent
 import android.content.Context
@@ -6357,8 +6358,37 @@ class PlaybackService : MediaLibraryService() {
                 }
                 .getOrDefault(next)
             if (preferredPrefetchRequest != request) return@launch
+            if (preferred.videoId != next.videoId) queueAudioVersion(next, preferred)
             warm(listOf(preferred) + upcomingSongs.drop(1))
         }
+    }
+
+    /**
+     * Puts [audio], the audio release found for the queued [video], in the video's place.
+     *
+     * "Prefer music-only" otherwise swaps a video only once it has started playing, so the
+     * transition into it was always into a video, which AutoMix never mixes (see
+     * [CrossfadeController]): the queue had to hold the audio release before the transition,
+     * not after it. Same target as the player's own switch, keeping the row's place in the
+     * queue; the video copy is remembered ([keptVersion]) so switching back is exact.
+     * Not in a party, whose track is everyone's (see [smoothSwapCurrentTrackVersion]).
+     */
+    private fun queueAudioVersion(video: Song, audio: Song) {
+        if (!MusicVideoChoice.swapAheadWanted(video, ListenTogether.state.value.inParty)) return
+        val live = player ?: return
+        val index = live.nextMediaItemIndex.takeIf { it != C.INDEX_UNSET } ?: return
+        val queued = live.getMediaItemAt(index)
+        if (queued.mediaId != video.videoId || !queued.isVideo) return
+        val target = MusicVideoChoice.audioInPlaceOf(video, audio)
+        val item = QueueShuffle.withQueueMetadata(
+            target.toMediaItem(),
+            newEntryId = queued.queueEntryId,
+            newCanonicalIndex = queued.canonicalIndex,
+            newTier = queued.queueTier,
+            newContextCycleId = queued.contextCycleId,
+        )
+        TrackLog.d("Laya", "music-only: queued '${audio.title}' (${audio.videoId}) in place of the video", about = video.videoId)
+        live.replaceMediaItem(index, keptVersion(queued, item))
     }
 
     /** Stops both rendition selection and byte read-ahead, and makes resume retry. */
