@@ -89,6 +89,11 @@ fun MixesScreen(
     modifier: Modifier = Modifier,
     /** Holding a card: the playlist menu, as on Home. */
     onItemLongPress: ((ShelfItem) -> Unit)? = null,
+    /**
+     * Signed out, the page's stations instead: one shelf per mood of YouTube Music's own curated
+     * playlists ([com.music.laya.data.YtMusicRepository.moodStations]), laid out as the mixes are.
+     */
+    moodStations: UiState<List<HomeShelf>> = UiState.Loading,
 ) {
     val sections = remember(state) { (state as? UiState.Success)?.data?.let(::groupMixes) }
     PullToRefresh(
@@ -119,10 +124,29 @@ fun MixesScreen(
                     )
                 }
             }
-            // Every mix here is made from an account's listening; signed out
-            // there is nothing to show but the way in.
+            // Every mix here is made from an account's listening. Signed out, the way in sits
+            // over the same layout filled from the moods: a tile per mood (its top playlist under
+            // the mood's name), then each mood's other playlists as a shelf.
             if (!signedIn) {
                 item(key = "sign-in") { SignInBanner(onSignIn = onSignIn) }
+                when (moodStations) {
+                    is UiState.Loading -> feedSkeleton()
+                    // The banner is the page then; Explore says what went wrong with the moods.
+                    is UiState.Error -> Unit
+                    is UiState.Success -> {
+                        val tiles = moodStations.data.map { it.items.first().copy(title = it.title) }
+                        item(key = "stations") { StationGrid(tiles, onItemClick, onItemLongPress) }
+                        moodStations.data.filter { it.items.size > 1 }.forEach { mood ->
+                            item(key = "mood:${mood.title}") {
+                                Shelf(
+                                    shelf = mood.copy(items = mood.items.drop(1)),
+                                    onItemClick = onItemClick,
+                                    onItemLongPress = onItemLongPress,
+                                )
+                            }
+                        }
+                    }
+                }
                 return@LazyColumn
             }
             when (state) {

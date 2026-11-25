@@ -303,6 +303,38 @@ object YtMusicRepository {
     private const val MIXED_FOR_YOU = "FEmusic_mixed_for_you"
 
     /**
+     * Radio for a listener who is signed out: "Mixed for you" answers 401 without an account,
+     * but every mood in "Moods & moments" (Chill, Commute, Energize…) opens a page of YouTube
+     * Music's own curated playlists, and those need none. One shelf per mood, its playlists in
+     * the page's order, so the Radio page keeps the shape it has signed in.
+     *
+     * Kept for the session once found; each mood's page is [moodGenreShelves]'s, which Explore's
+     * artwork has usually fetched already.
+     */
+    suspend fun moodStations(): Result<List<HomeShelf>> {
+        moodStationsCache?.let { return Result.success(it) }
+        return moodAndGenres().mapCatching { sections ->
+            val moods = sections.firstOrNull()?.items.orEmpty()
+            coroutineScope {
+                moods.map { mood ->
+                    async {
+                        val playlists = moodGenreShelves(mood.browseId, mood.params).getOrNull().orEmpty()
+                            .flatMap { it.items }
+                            .filter { it.browseId != null && it.videoId == null }
+                            .distinctBy { it.browseId }
+                            .take(MOOD_STATION_PLAYLISTS)
+                        HomeShelf(title = mood.title, items = playlists)
+                    }
+                }.awaitAll().filter { it.items.isNotEmpty() }
+            }.also { check(it.isNotEmpty()) { "No mood stations" } }
+        }.onSuccess { moodStationsCache = it }
+    }
+
+    @kotlin.concurrent.Volatile
+    private var moodStationsCache: List<HomeShelf>? = null
+    private const val MOOD_STATION_PLAYLISTS = 12
+
+    /**
      * The playlist shelves behind one mood/genre category. This result also
      * supplies its tile artwork, so caching it avoids a second request when a
      * user taps a category whose cover has already appeared.

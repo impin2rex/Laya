@@ -794,6 +794,7 @@ private fun LayaApp(
     val query by viewModel.query.collectAsStateWithLifecycle()
     val results by viewModel.results.collectAsStateWithLifecycle()
     val exploreState by viewModel.explore.collectAsStateWithLifecycle()
+    val moodStationsState by viewModel.moodStations.collectAsStateWithLifecycle()
     val mixesState by viewModel.mixes.collectAsStateWithLifecycle()
     val selectedMoodGenre by viewModel.selectedMoodGenre.collectAsStateWithLifecycle()
     val moodGenreShelves by viewModel.moodGenreShelves.collectAsStateWithLifecycle()
@@ -3378,6 +3379,7 @@ private fun LayaApp(
                                 onItemLongPress = onShelfLongPress,
                                 onRetry = viewModel::loadMixes,
                                 onSignIn = { webSession = WebSessionMode.SIGN_IN },
+                                moodStations = moodStationsState,
                                 refreshing = MainViewModel.Feed.MIXES in refreshing,
                                 onRefresh = { viewModel.refresh(MainViewModel.Feed.MIXES) },
                                 pullState = mixesPull,

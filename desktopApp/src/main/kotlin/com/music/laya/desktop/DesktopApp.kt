@@ -3061,6 +3061,14 @@ fun LayaDesktopApp() {
         }
     }
 
+    // Signed out, Radio's stations come from the moods instead; loaded once, retried on a later visit.
+    var moodStations by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
+    LaunchedEffect(destination, youtubeSignedIn) {
+        if (destination != DesktopDestination.RADIO || youtubeSignedIn || moodStations is UiState.Success) return@LaunchedEffect
+        moodStations = UiState.Loading
+        moodStations = YtMusicRepository.moodStations().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Could not load stations") })
+    }
+
     // Radio loads the first time it is opened, again for a different account, and on a retry.
     LaunchedEffect(destination, youtubeSignedIn, activeAccountId, activeProfileId, sessionRevision, mixesReloads) {
         if (destination != DesktopDestination.RADIO || !youtubeSignedIn) return@LaunchedEffect
@@ -4704,6 +4712,7 @@ fun LayaDesktopApp() {
                             onItemClick = { openShelfItem(it) },
                             onRetry = { mixesReloads++ },
                             onSignIn = { overlays.accounts = true },
+                            moodStations = moodStations,
                             refreshing = false,
                             onRefresh = { mixesReloads++ },
                             pullState = rememberPullToRefreshState(),

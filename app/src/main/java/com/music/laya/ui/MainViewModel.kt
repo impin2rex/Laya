@@ -153,6 +153,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _mixes = MutableStateFlow<UiState<List<KeyedMix>>>(UiState.Loading)
     val mixes: StateFlow<UiState<List<KeyedMix>>> = _mixes.asStateFlow()
 
+    /** Signed-out Radio's stations, one shelf per mood; see [YtMusicRepository.moodStations]. */
+    private val _moodStations = MutableStateFlow<UiState<List<HomeShelf>>>(UiState.Loading)
+    val moodStations: StateFlow<UiState<List<HomeShelf>>> = _moodStations.asStateFlow()
+    private var moodStationsJob: kotlinx.coroutines.Job? = null
+
     private val _selectedMoodGenre = MutableStateFlow<MoodGenre?>(null)
     val selectedMoodGenre: StateFlow<MoodGenre?> = _selectedMoodGenre.asStateFlow()
 
@@ -1644,8 +1649,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * may have changed; loads only the first time, or for a different listener.
      */
     fun onMixesShown() {
-        if (!_signedIn.value) return
+        if (!_signedIn.value) return loadMoodStations()
         if (!mixesRequested || mixesRequestedFor != listenerKey()) loadMixes()
+    }
+
+    /** Loads signed-out Radio's stations, once; a failed load is tried again on the next visit. */
+    private fun loadMoodStations() {
+        if (_moodStations.value is UiState.Success || moodStationsJob?.isActive == true) return
+        _moodStations.value = UiState.Loading
+        moodStationsJob = viewModelScope.launch {
+            _moodStations.value = YtMusicRepository.moodStations().fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.friendly()) },
+            )
+        }
     }
 
     private suspend fun fetchMixes(identity: String?) {

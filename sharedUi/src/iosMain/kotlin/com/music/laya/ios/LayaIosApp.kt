@@ -374,6 +374,13 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         mixes = YtMusicRepository.mixedForYouKeyed().fold({ UiState.Success(it) }, { UiState.Error(friendly(it)) })
     }
     var mixesLoadedFor by remember { mutableStateOf<Int?>(null) }
+    // Signed out, Radio's stations come from the moods instead (YtMusicRepository.moodStations).
+    var moodStations by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
+    LaunchedEffect(tab == 2, signedIn) {
+        if (tab != 2 || signedIn || moodStations is UiState.Success) return@LaunchedEffect
+        moodStations = UiState.Loading
+        moodStations = YtMusicRepository.moodStations().fold({ UiState.Success(it) }, { UiState.Error(friendly(it)) })
+    }
     LaunchedEffect(tab == 2, signedIn, sessionVersion) {
         if (!signedIn) mixesLoadedFor = null
         else if (tab == 2 && mixesLoadedFor != sessionVersion) {
@@ -1185,6 +1192,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 onItemClick = ::openShelfItem,
                                 onRetry = { scope.launch { mixes = UiState.Loading; loadMixes() } },
                                 onSignIn = { showLogin = true },
+                                moodStations = moodStations,
                                 refreshing = mixesRefreshing,
                                 onRefresh = { scope.launch { mixesRefreshing = true; loadMixes(); mixesRefreshing = false } },
                                 pullState = mixesPull,
