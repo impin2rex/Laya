@@ -1,10 +1,26 @@
 package com.music.laya.ui
 
+import android.app.NotificationManager
+import android.os.PowerManager
+import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.OpenInFull
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.graphics.vector.ImageVector
 import android.content.Context
 import android.content.Intent
 import android.media.AudioFormat
 import android.media.audiofx.AudioEffect
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,9 +40,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LinearScale
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import coil3.SingletonImageLoader
 import com.music.laya.AppIcon
 import com.music.laya.R
@@ -134,6 +158,7 @@ object AndroidSettingsHost : SettingsHost {
     override val hasBackgroundService get() = true
 
     override val appIconRow: (@Composable () -> Unit) = { AppIconPicker() }
+    override val lockScreenRow: (@Composable () -> Unit) = { LockScreenPlayerRow() }
 
     @Composable
     override fun versionName(): String {
@@ -263,6 +288,227 @@ private fun Context.countOfMonths(months: Int): String = if (months == 0) {
     getString(R.string.no_listening_history)
 } else {
     resources.getQuantityString(R.plurals.listening_month_count, months, months)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LockScreenPlayerRow() {
+    val context = LocalContext.current
+    val enabled by AppSettings.lockScreenPlayer.collectAsState()
+    var setupOpen by remember { mutableStateOf(false) }
+    // Read again on every return to the app, which is how a grant made in
+    // system Settings shows up here.
+    var grants by remember { mutableStateOf(LockScreenGrants.of(context)) }
+    LifecycleResumeEffect(Unit) {
+        grants = LockScreenGrants.of(context)
+        onPauseOrDispose {}
+    }
+    // On only with every permission in the setup sheet granted: turning it on
+    // without them opens the sheet instead, and one taken back later in system
+    // Settings turns it off again.
+    LaunchedEffect(enabled, grants) {
+        if (enabled && !grants.all) AppSettings.setLockScreenPlayer(false)
+    }
+    SettingsRow(
+        icon = Icons.Rounded.Lock,
+        title = stringResource(R.string.lock_screen_player),
+        subtitle = stringResource(
+            if (grants.all) R.string.lock_screen_player_subtitle else R.string.lock_screen_player_needs_setup,
+        ),
+        trailing = {
+            Switch(
+                checked = enabled && grants.all,
+                onCheckedChange = { on ->
+                    if (!on) AppSettings.setLockScreenPlayer(false)
+                    else if (grants.all) AppSettings.setLockScreenPlayer(true)
+                    else setupOpen = true
+                },
+                colors = SwitchDefaults.colors(
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    checkedBorderColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+        },
+        onClick = { setupOpen = true },
+    )
+    if (setupOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { setupOpen = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            LockScreenSetup(grants, onClose = { setupOpen = false })
+        }
+    }
+}
+
+/** What the lock-screen player is allowed, as the setup sheet shows it. */
+private data class LockScreenGrants(
+    val overlay: Boolean,
+    /** Always true before Android 14, where the manifest entry is the grant. */
+    val fullScreen: Boolean,
+    val battery: Boolean,
+) {
+    val all get() = overlay && fullScreen && battery
+
+    companion object {
+        fun of(context: Context) = LockScreenGrants(
+            overlay = Settings.canDrawOverlays(context),
+            fullScreen = Build.VERSION.SDK_INT < 34 ||
+                context.getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == true,
+            battery = context.getSystemService(PowerManager::class.java)
+                ?.isIgnoringBatteryOptimizations(context.packageName) == true,
+        )
+    }
+}
+
+@Composable
+private fun LockScreenSetup(grants: LockScreenGrants, onClose: () -> Unit) {
+    val context = LocalContext.current
+    fun open(action: String) {
+        runCatching { context.startActivity(Intent(action, Uri.parse("package:${context.packageName}"))) }
+            .onFailure { openAppDetails(context) }
+    }
+    Column(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = ROW_INSET, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(R.string.lock_screen_setup),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, contentDescription = null) }
+        }
+        Text(
+            stringResource(R.string.lock_screen_setup_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = ROW_INSET, vertical = 8.dp),
+        )
+        SetupRow(
+            Icons.Rounded.Layers,
+            R.string.lock_screen_setup_overlay,
+            R.string.lock_screen_setup_overlay_subtitle,
+            granted = grants.overlay,
+        ) { open(Settings.ACTION_MANAGE_OVERLAY_PERMISSION) }
+        if (Build.VERSION.SDK_INT >= 34) {
+            SetupRow(
+                Icons.Rounded.OpenInFull,
+                R.string.lock_screen_setup_full_screen,
+                R.string.lock_screen_setup_full_screen_subtitle,
+                granted = grants.fullScreen,
+            ) { open(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT) }
+        }
+        SetupRow(
+            Icons.Rounded.BatteryChargingFull,
+            R.string.lock_screen_setup_battery,
+            R.string.lock_screen_setup_battery_subtitle,
+            granted = grants.battery,
+        ) { open(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) }
+        // Nothing reports these back, so there is no tick to show.
+        SetupRow(
+            Icons.Rounded.Tune,
+            R.string.lock_screen_setup_manufacturer,
+            R.string.lock_screen_setup_manufacturer_subtitle,
+            granted = null,
+        ) { openManufacturerPermissions(context) }
+        Text(
+            stringResource(R.string.lock_screen_options),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, top = 20.dp, bottom = 4.dp),
+        )
+        val lyricsInteractive by AppSettings.lockScreenLyricsInteractive.collectAsState()
+        OptionRow(
+            Icons.Rounded.TouchApp,
+            R.string.lock_screen_lyrics_interactive,
+            R.string.lock_screen_lyrics_interactive_subtitle,
+            lyricsInteractive,
+            AppSettings::setLockScreenLyricsInteractive,
+        )
+        val progress by AppSettings.lockScreenProgress.collectAsState()
+        OptionRow(
+            Icons.Rounded.LinearScale,
+            R.string.lock_screen_progress,
+            R.string.lock_screen_progress_subtitle,
+            progress,
+            AppSettings::setLockScreenProgress,
+        )
+    }
+}
+
+@Composable
+private fun OptionRow(icon: ImageVector, title: Int, subtitle: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
+    SettingsRow(
+        icon = icon,
+        title = stringResource(title),
+        subtitle = stringResource(subtitle),
+        trailing = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onChange,
+                colors = SwitchDefaults.colors(
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    checkedBorderColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+        },
+        onClick = { onChange(!checked) },
+    )
+}
+
+/** [granted] null: a row with no state to read, only somewhere to go. */
+@Composable
+private fun SetupRow(icon: ImageVector, title: Int, subtitle: Int, granted: Boolean?, onGrant: () -> Unit) {
+    SettingsRow(
+        icon = icon,
+        title = stringResource(title),
+        subtitle = stringResource(subtitle),
+        trailing = {
+            if (granted == true) {
+                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            } else {
+                TextButton(onClick = onGrant) {
+                    Text(stringResource(if (granted == null) R.string.lock_screen_setup_open else R.string.lock_screen_setup_grant))
+                }
+            }
+        },
+        onClick = if (granted == true) null else onGrant,
+    )
+}
+
+/**
+ * The OEM screens that hold "Show on lock screen", background pop-ups and
+ * autostart, which stock Android has no equivalent of; the app's own system
+ * page everywhere else.
+ */
+private fun openManufacturerPermissions(context: Context) {
+    val pkg = context.packageName
+    val candidates = when (Build.MANUFACTURER.lowercase()) {
+        "xiaomi", "redmi", "poco" -> listOf(
+            Intent("miui.intent.action.APP_PERM_EDITOR")
+                .setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
+                .putExtra("extra_pkgname", pkg),
+        )
+        "vivo", "iqoo" -> listOf(
+            Intent().setClassName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.SoftPermissionDetailActivity")
+                .putExtra("packagename", pkg),
+            Intent().setClassName("com.iqoo.secure", "com.iqoo.secure.safeguard.SoftPermissionDetailActivity")
+                .putExtra("packagename", pkg),
+        )
+        else -> emptyList()
+    }
+    if (candidates.none { runCatching { context.startActivity(it) }.isSuccess }) openAppDetails(context)
+}
+
+private fun openAppDetails(context: Context) {
+    runCatching {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")),
+        )
+    }
 }
 
 @Composable

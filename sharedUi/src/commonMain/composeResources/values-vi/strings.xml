@@ -888,4 +888,5 @@
     </plurals>
     <string name="hide_ai_songs">Ẩn bài hát do AI tạo</string>
     <string name="hide_ai_songs_subtitle">Loại bài hát từ các kênh trong danh sách chặn AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) khỏi Trang chủ, tìm kiếm và radio</string>
+    <string name="lock_screen_player">Trình phát trên màn hình khóa</string>
 </resources>

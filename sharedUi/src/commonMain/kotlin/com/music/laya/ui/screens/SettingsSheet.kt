@@ -1572,6 +1572,10 @@ fun SettingsScreen(
                     onClick = { AppSettings.setShowNerdStats(!nerdStats) },
                 )
             }
+            host.lockScreenRow?.let { lockScreenRow ->
+                val lockScreenTitle = stringResource(Res.string.lock_screen_player)
+                row(lockScreenTitle, "lock screen", "lockscreen", "lyrics", "keyguard", "album art") { lockScreenRow() }
+            }
             host.appIconRow?.let { appIconRow ->
                 val appIconTitle = stringResource(Res.string.app_icon)
                 row(appIconTitle, "icon", "launcher", "logo") { appIconRow() }

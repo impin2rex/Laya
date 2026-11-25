@@ -888,4 +888,5 @@
     </plurals>
     <string name="hide_ai_songs">Sembunyikan lagu buatan AI</string>
     <string name="hide_ai_songs_subtitle">Menjauhkan lagu dari channel di daftar blokir AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) dari Beranda, penelusuran, dan radio</string>
+    <string name="lock_screen_player">Pemutar layar kunci</string>
 </resources>

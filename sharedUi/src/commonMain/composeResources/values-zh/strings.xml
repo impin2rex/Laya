@@ -888,4 +888,5 @@
     </plurals>
     <string name="hide_ai_songs">隐藏 AI 生成的歌曲</string>
     <string name="hide_ai_songs_subtitle">将 AiSList 屏蔽列表 (AiSList, aisloplist.com, CC BY-NC 4.0) 中频道的歌曲排除在首页、搜索和电台之外</string>
+    <string name="lock_screen_player">锁屏播放器</string>
 </resources>

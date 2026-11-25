@@ -896,4 +896,5 @@
     </plurals>
     <string name="hide_ai_songs">Yapay zekâ ile üretilmiş şarkıları gizle</string>
     <string name="hide_ai_songs_subtitle">AiSList engel listesindeki kanalların şarkılarını (AiSList, aisloplist.com, CC BY-NC 4.0) Ana Sayfa, arama ve radyodan uzak tutar</string>
+    <string name="lock_screen_player">Kilit ekranı oynatıcısı</string>
 </resources>

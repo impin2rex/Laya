@@ -896,4 +896,5 @@
     </plurals>
     <string name="hide_ai_songs">Masquer les titres générés par IA</string>
     <string name="hide_ai_songs_subtitle">Écarte de l’accueil, de la recherche et de la radio les titres des chaînes de la liste de blocage AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="lock_screen_player">Lecteur sur l’écran de verrouillage</string>
 </resources>

@@ -2,9 +2,12 @@ package com.music.laya.playback
 
 import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.data.aifilter.AiSongs
+import android.app.KeyguardManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
@@ -93,6 +96,7 @@ import com.music.laya.playback.audio.PcmEncoding
 import com.music.laya.playback.audio.SourceDescriptor
 import com.music.laya.playback.audio.bluetooth.BluetoothAudioTracker
 import com.music.laya.playback.audio.bluetooth.BluetoothTelemetry
+import com.music.laya.LockScreenActivity
 import com.music.laya.MainActivity
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.listentogether.partyQueueIndexOf
@@ -218,6 +222,14 @@ const val EXTRA_SWAP_PLAY = "laya.swap.play"
 private const val WATCH_SESSION_FOREGROUND_MS = 6 * 60 * 60 * 1000L
 
 const val ACTION_TOGGLE_FAVORITE = "com.music.laya.action.TOGGLE_FAVORITE"
+
+/**
+ * The playing track's lyrics as the service fetched them, published for the
+ * lock-screen player so it needs no lookup of its own. Null while there are none.
+ */
+object ServiceLyrics {
+    val lines = kotlinx.coroutines.flow.MutableStateFlow<List<LyricLine>?>(null)
+}
 
 /** Session command used by the media notification's and the 4×1 widget's Shuffle button. */
 const val ACTION_TOGGLE_SHUFFLE = "com.music.laya.action.TOGGLE_SHUFFLE"
@@ -881,7 +893,9 @@ class PlaybackService : MediaLibraryService() {
     private val sessionSongHistory = mutableListOf<Song>()
 
     private var serviceLyricsJob: Job? = null
-    private var serviceLyrics: List<LyricLine>? = null
+    private var serviceLyrics: List<LyricLine>?
+        get() = ServiceLyrics.lines.value
+        set(value) { ServiceLyrics.lines.value = value }
     private var lastPublishedSubtitle: String? = null
     private var lyricsTickerJob: Job? = null
 
@@ -1415,6 +1429,12 @@ class PlaybackService : MediaLibraryService() {
         }
 
         bluetoothTracker.start()
+        androidx.core.content.ContextCompat.registerReceiver(
+            this,
+            screenOnReceiver,
+            IntentFilter(Intent.ACTION_SCREEN_ON),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         scope.launch {
             bluetoothTracker.telemetry.collect {
                 applyOutputRoute()
@@ -3570,6 +3590,22 @@ class PlaybackService : MediaLibraryService() {
             .apply { if (isTv) putExtra(PlayerDeepLink.EXTRA_OPEN_PLAYER, true) },
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
+
+    /**
+     * Puts the lock-screen player up as the screen comes on over a locked
+     * keyguard with music playing. On screen-on rather than screen-off, so a
+     * phone put down and never woken has nothing started for it. See
+     * [LockScreenActivity.show] for how it gets there from the background.
+     */
+    private val screenOnReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (!AppSettings.lockScreenPlayer.value || isTv) return
+            val p = player ?: return
+            val playing = p.isPlaying || (p.playWhenReady && p.playbackState == Player.STATE_BUFFERING)
+            val locked = getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
+            if (playing && locked) LockScreenActivity.show(this@PlaybackService)
+        }
+    }
 
     /** Android TV / Google TV: the same test as the TV build's DeviceType.isTv. */
     private val isTv: Boolean by lazy {
@@ -7628,6 +7664,13 @@ class PlaybackService : MediaLibraryService() {
      */
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
+        // The lock-screen player runs in a task of its own, and closing it
+        // removes that task: not the listener swiping the app away.
+        if (rootIntent?.component?.className == LockScreenActivity::class.java.name ||
+            LockScreenActivity.closedRecently()
+        ) {
+            return
+        }
         if (AppSettings.stopOnTaskRemoved.value) {
             // A receiver left playing with nothing on the phone to drive it
             // would run out its few queued tracks and stop on its own anyway;
@@ -7652,6 +7695,7 @@ class PlaybackService : MediaLibraryService() {
         castPlayback.release()
         closeAudioEffectSession()
         bluetoothTracker.stop()
+        runCatching { unregisterReceiver(screenOnReceiver) }
         audioManager?.unregisterAudioDeviceCallback(outputDeviceCallback)
         partySync?.stop()
         partySync = null

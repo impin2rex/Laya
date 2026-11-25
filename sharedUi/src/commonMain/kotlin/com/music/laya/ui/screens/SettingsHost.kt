@@ -51,6 +51,8 @@ interface SettingsHost {
     /** false hides the Liquid Glass switch: it gates Android's own nav bar, which iOS replaces with the always-glass GlassNavBar. */
     val hasLiquidGlassOption: Boolean get() = true
     val appIconRow: (@Composable () -> Unit)? get() = null
+    /** Android only: the lock-screen player's switch and the permissions it needs. */
+    val lockScreenRow: (@Composable () -> Unit)? get() = null
 
     @Composable fun versionName(): String = ""
     @Composable fun appLanguageName(): String = ""

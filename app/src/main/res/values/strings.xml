@@ -318,6 +318,26 @@
     <string name="show_nerd_stats">Show stats for nerds</string>
     <string name="show_nerd_stats_subtitle">Codec, bitrate and sample rate on the player</string>
     <string name="app_icon">App icon</string>
+    <string name="lock_screen_player">Lock screen player</string>
+    <string name="lock_screen_player_subtitle">Artwork, synced lyrics and controls over the lock screen while music plays</string>
+    <string name="lock_screen_player_needs_setup">Grant the setup permissions to turn it on. Tap to set up</string>
+    <string name="lock_screen_setup">Lock screen setup</string>
+    <string name="lock_screen_setup_subtitle">Grant all of these to turn on the lock screen player</string>
+    <string name="lock_screen_setup_overlay">Display over other apps</string>
+    <string name="lock_screen_setup_overlay_subtitle">Lets the player open over the lock screen</string>
+    <string name="lock_screen_setup_full_screen">Full-screen notifications</string>
+    <string name="lock_screen_setup_full_screen_subtitle">Lets the player open from a notification over the lock screen</string>
+    <string name="lock_screen_setup_battery">Battery: no restrictions</string>
+    <string name="lock_screen_setup_battery_subtitle">Stops the system closing the player during playback</string>
+    <string name="lock_screen_setup_manufacturer">Manufacturer permissions</string>
+    <string name="lock_screen_setup_manufacturer_subtitle">On Xiaomi, vivo and similar phones, also allow Show on lock screen, pop-up windows while in background, and Autostart</string>
+    <string name="lock_screen_setup_grant">Grant</string>
+    <string name="lock_screen_setup_open">Open settings</string>
+    <string name="lock_screen_previous">Previous</string>
+    <string name="lock_screen_play_pause">Play or pause</string>
+    <string name="lock_screen_next">Next</string>
+    <string name="lock_screen_like">Like</string>
+    <string name="lock_screen_unlock">Unlock</string>
     <string name="app_icon_default">Default</string>
     <string name="app_icon_game_booster_note">Samsung Game Booster lists Laya in its pop-up apps only with the Default icon.</string>
     <string name="app_icon_liquid_glass" translatable="false">Liquid Glass</string>
@@ -1270,4 +1290,9 @@
     <string name="show_best_part_subtitle">A button on the artwork that skips to the part of the song people replay most</string>
     <string name="lyrics_share_video_silent">Couldn’t get the song’s audio, so this video has no sound.</string>
     <string name="choose_in_youtube_music">Choose in YouTube Music</string>
+    <string name="lock_screen_options">Options</string>
+    <string name="lock_screen_lyrics_interactive">Interactive lyrics</string>
+    <string name="lock_screen_lyrics_interactive_subtitle">Scroll the lyrics and tap a line to jump to it</string>
+    <string name="lock_screen_progress">Progress bar</string>
+    <string name="lock_screen_progress_subtitle">Show a seek bar with elapsed and total time</string>
 </resources>

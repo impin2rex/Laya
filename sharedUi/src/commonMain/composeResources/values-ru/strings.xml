@@ -908,4 +908,5 @@
     </plurals>
     <string name="hide_ai_songs">Скрывать песни, созданные ИИ</string>
     <string name="hide_ai_songs_subtitle">Убирает из главной, поиска и радио песни каналов из чёрного списка AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="lock_screen_player">Плеер на экране блокировки</string>
 </resources>

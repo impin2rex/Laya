@@ -14,6 +14,14 @@
     <!-- Tells Wi-Fi from mobile data, so the matching quality ceiling applies. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- "Display over other apps": lets the lock-screen player start from the
+         background as the screen comes on. Asked for only when that setting is on. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- The lock-screen player's fallback without "Display over other apps": a
+         full-screen notification that opens it. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Lock screen setup's "Battery: no restrictions" row asks with the system dialog. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
@@ -114,6 +122,19 @@
             android:showWhenLocked="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- The lock-screen player (Settings > Lock screen player). A task of its
+             own, so closing it never brings the main screen up over the keyguard,
+             and kept out of Recents. Started by PlaybackService on screen-on. -->
+        <activity
+            android:name=".LockScreenActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity="com.music.laya.lockscreen"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <!-- Android Auto support -->
         <meta-data

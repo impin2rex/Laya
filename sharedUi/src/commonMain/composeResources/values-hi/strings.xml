@@ -896,4 +896,5 @@
     </plurals>
     <string name="hide_ai_songs">AI से बने गाने छिपाएँ</string>
     <string name="hide_ai_songs_subtitle">AiSList ब्लॉकलिस्ट के चैनलों के गाने (AiSList, aisloplist.com, CC BY-NC 4.0) होम, सर्च और रेडियो से बाहर रखता है</string>
+    <string name="lock_screen_player">लॉक स्क्रीन प्लेयर</string>
 </resources>
