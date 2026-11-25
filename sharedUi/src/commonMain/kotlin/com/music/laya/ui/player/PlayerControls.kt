@@ -448,31 +448,34 @@ private fun NerdStatsLines(song: Song) {
 }
 
 /**
- * "Best Part": a pill on the artwork that skips to the part of the song people
- * replay most, read off YouTube's "Most replayed" curve ([BestPart]).
+ * One track's Best Part: where it starts, and whether its pill is up.
  *
- * Offered only while it is still ahead: once the playhead has reached the best
- * part, by the button or by just listening, it goes for the rest of the track.
- * A track with no curve (a local file, a video too new to chart, no answer)
- * never shows it, rather than guessing.
+ * The pill has its moment ([BEST_PART_INTRO_MS]) and then goes for the rest of the track. Worked
+ * out here, once for the player, rather than inside the pill: the pill is not drawn while the
+ * lyrics or the queue cover the sleeve, and its few seconds must not start over when they close.
  */
+@Immutable
+internal data class BestPartUi(
+    val startMs: Long? = null,
+    /** The pill, on the sleeve. */
+    val pillVisible: Boolean = false,
+    /** The listener took the pill: the best part has been heard. */
+    val onTaken: () -> Unit = {},
+)
+
 @Composable
-internal fun BestPartPill(
-    song: Song,
-    position: PlaybackPosition,
-    onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-    /** The track's lyrics once loaded: a song with no curve gets its chorus, from the synced ones. */
-    lyrics: List<LyricLine>? = null,
-) {
+internal fun rememberBestPart(song: Song, position: PlaybackPosition, lyrics: List<LyricLine>?): BestPartUi {
     val enabled by PlayerSettings.showBestPart.collectAsStateWithLifecycle()
-    if (!enabled) return
-    val at by produceState<Long?>(null, song.videoId, lyrics) { value = BestPart.startFor(song, lyrics) }
-    // Remembered per track: having been heard is what puts the button away.
+    val at by produceState<Long?>(null, song.videoId, lyrics, enabled) {
+        value = if (enabled) BestPart.startFor(song, lyrics) else null
+    }
+    // Remembered per track: having been heard is what puts the pill away.
     var heard by remember(song.videoId) { mutableStateOf(false) }
+    // The pill has had its moment, and does not come back this track.
+    var settled by remember(song.videoId) { mutableStateOf(false) }
     val start = at
-    // Through derivedStateOf, so the pill recomposes as the playhead crosses
-    // the best part, not on every tick of it.
+    // Through derivedStateOf, so this recomposes as the playhead crosses the
+    // best part, not on every tick of it.
     val ahead by remember(start, position) {
         derivedStateOf { start != null && position.positionMs < start - BEST_PART_SLACK_MS }
     }
@@ -487,10 +490,40 @@ internal fun BestPartPill(
     // Not while Automix is mixing into the next track: what is ahead then is
     // the next song, not this one's best part.
     val mixing by PlayerSettings.smartMixInProgress.collectAsStateWithLifecycle()
+    val offered = start != null && ahead && !heard && !mixing
+    LaunchedEffect(start, offered) {
+        if (start == null) return@LaunchedEffect
+        if (offered) delay(BEST_PART_INTRO_MS)
+        settled = true
+    }
+    return BestPartUi(
+        startMs = start,
+        pillVisible = offered && !settled,
+        onTaken = {
+            heard = true
+            settled = true
+        },
+    )
+}
 
+/**
+ * "Best Part": a pill on the artwork that skips to the part of the song people
+ * replay most, read off YouTube's "Most replayed" curve ([BestPart]).
+ *
+ * Up for a few seconds once there is one ahead ([rememberBestPart]), then it
+ * goes. A track with no curve (a local file, a video too new to chart, no
+ * answer) never shows it, rather than guessing.
+ */
+@Composable
+internal fun BestPartPill(
+    bestPart: BestPartUi,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val start = bestPart.startMs
     val haptics = rememberHaptics()
     AnimatedVisibility(
-        visible = start != null && ahead && !heard && !mixing,
+        visible = bestPart.pillVisible,
         // The room it takes opens and closes around the fade, so the stats over it glide.
         enter = expandVertically(tween(BEST_PART_FADE_MS)) +
             fadeIn(tween(BEST_PART_FADE_MS, delayMillis = BEST_PART_FADE_MS / 2)),
@@ -517,7 +550,7 @@ internal fun BestPartPill(
                 .clickable(role = Role.Button) {
                     val target = start ?: return@clickable
                     haptics.play(Haptic.Tap)
-                    heard = true
+                    bestPart.onTaken()
                     onSeek(target)
                 }
                 .semantics { contentDescription = description }
@@ -548,6 +581,9 @@ private const val BEST_PART_SLACK_MS = 400L
 private const val BEST_PART_HEARD_MS = 20_000L
 
 private const val BEST_PART_FADE_MS = 280
+
+/** How long the pill stays up before it goes. */
+private const val BEST_PART_INTRO_MS = 3_000L
 
 /**
  * Previous, play/pause, next.

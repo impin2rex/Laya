@@ -376,9 +376,9 @@ object AppSettings {
 
     /**
      * The "Best Part" button on the player's artwork, which skips to the part of
-     * the song listeners replay most. On unless turned off.
+     * the song listeners replay most. Off until turned on.
      */
-    val showBestPart = MutableStateFlow(true)
+    val showBestPart = MutableStateFlow(false)
 
     /** Freezes the main player's mesh gradient instead of letting it drift/crossfade. */
     val reduceAnimation = MutableStateFlow(false)
@@ -925,7 +925,7 @@ object AppSettings {
         shuffleEnabled.value = prefs.getBoolean(KEY_SHUFFLE_ENABLED, false)
         repeatMode.value = prefs.getInt(KEY_REPEAT_MODE, REPEAT_MODE_OFF)
         showNerdStats.value = prefs.getBoolean(KEY_NERD_STATS, false)
-        showBestPart.value = prefs.getBoolean(KEY_BEST_PART, true)
+        showBestPart.value = prefs.getBoolean(KEY_BEST_PART, false)
         reduceAnimation.value = prefs.getBoolean(KEY_REDUCE_ANIMATION, false)
         systemFont.value = prefs.getBoolean(KEY_SYSTEM_FONT, false)
         onboardingComplete.value = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)

@@ -801,6 +801,8 @@ fun NowPlayingScreen(
     // every surface below reads the same value rather than each triggering
     // its own extraction.
     val remoteArt = rememberRemoteArtworkUrl(song)
+    // Where the song's Best Part is, and whether its pill or the seek bar's marker shows it.
+    val bestPartUi = rememberBestPart(song, position, lyrics)
     // This is produced by the palette's existing 128 px decode and cache. It
     // samples the upper band rather than the whole sleeve because that is what
     // lies beneath the status bar when the player expands to full bleed.
@@ -2238,7 +2240,7 @@ fun NowPlayingScreen(
                                     // Faded with the player rather than flown with
                                     // the sleeve: the cover in the bar has none.
                                     .graphicsLayer { alpha = if (panelOpen) 0f else dockFade() },
-                                bestPart = { BestPartPill(song, position, onSeek, lyrics = lyrics) },
+                                bestPart = { BestPartPill(bestPartUi, onSeek) },
                             )
                         }
                     },
@@ -3511,7 +3513,7 @@ fun NowPlayingScreen(
                                             alpha = (1f - p() * 2f) * spotifyChromeAlpha
                                         },
                                     // Under the stats, or in their place with them off.
-                                    bestPart = { BestPartPill(song, position, onSeek, lyrics = lyrics) },
+                                    bestPart = { BestPartPill(bestPartUi, onSeek) },
                                 )
                             }
                         }

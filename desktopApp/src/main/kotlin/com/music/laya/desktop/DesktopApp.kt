@@ -748,7 +748,7 @@ fun LayaDesktopApp() {
     var spotifySignInJob by remember { mutableStateOf<Job?>(null) }
     var spotifySignInError by remember { mutableStateOf<String?>(null) }
     var showNerdStats by remember { mutableStateOf(persistence.boolean("show_nerd_stats", false)) }
-    var showBestPart by remember { mutableStateOf(persistence.boolean("show_best_part", true)) }
+    var showBestPart by remember { mutableStateOf(persistence.boolean("show_best_part", false)) }
     var syncedLyrics by remember {
         mutableStateOf(persistence.boolean(DesktopLyricsClient.KEY_SYNCED_LYRICS, true))
     }
