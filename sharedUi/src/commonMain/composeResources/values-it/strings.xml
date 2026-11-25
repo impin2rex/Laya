@@ -894,4 +894,6 @@
         <item quantity="one">%1$d brano</item>
         <item quantity="other">%1$d brani</item>
     </plurals>
+    <string name="hide_ai_songs">Nascondi brani generati dall’IA</string>
+    <string name="hide_ai_songs_subtitle">Tiene fuori da Home, ricerca e radio i brani dei canali nella blocklist AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
 </resources>

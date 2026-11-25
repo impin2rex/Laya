@@ -1,6 +1,7 @@
 package com.music.laya.data
 
 import com.music.laya.data.DebugLog as Log
+import com.music.laya.data.aifilter.AiSongs
 import com.music.laya.data.innertube.Innertube
 import com.music.laya.data.innertube.InnertubeParser
 import com.music.laya.data.model.Account
@@ -63,7 +64,7 @@ object YtMusicRepository {
      */
     suspend fun home(): Result<HomeFeed> = call("home") {
         val home = Innertube.browse("FEmusic_home")
-        HomeFeed(InnertubeParser.parseHome(home), InnertubeParser.continuationToken(home))
+        HomeFeed(InnertubeParser.parseHome(home).withoutAi(), InnertubeParser.continuationToken(home))
     }
 
     /** Recently played is rendered independently, at the top of the Play page. */
@@ -71,7 +72,7 @@ object YtMusicRepository {
 
     /** Extra Play shelves are independently fetchable so each can appear as soon as it arrives. */
     suspend fun homeSupplement(browseId: String): Result<List<HomeShelf>> = call("home:$browseId") {
-        shelvesOf(browseId)
+        shelvesOf(browseId).withoutAi()
     }
 
     val HOME_SUPPLEMENT_BROWSE_IDS = listOf(
@@ -88,7 +89,7 @@ object YtMusicRepository {
     suspend fun moreHome(token: String): Result<HomeFeed> = call("home:more") {
         val response = Innertube.browseContinuation(token)
         HomeFeed(
-            shelves = InnertubeParser.parseHomeContinuation(response),
+            shelves = InnertubeParser.parseHomeContinuation(response).withoutAi(),
             continuation = InnertubeParser.continuationToken(response),
         )
     }
@@ -163,7 +164,10 @@ object YtMusicRepository {
     /**
      * Recommended discovery tracks for Quick Picks, strictly excluding listening history and recents.
      */
-    suspend fun quickPicks(excludeSongIds: Set<String> = emptySet()): Result<List<Song>> = call("quickPicks") {
+    suspend fun quickPicks(excludeSongIds: Set<String> = emptySet()): Result<List<Song>> =
+        quickPicksUnfiltered(excludeSongIds).map { songs -> AiSongs.keep(songs) { it.videoId } }
+
+    private suspend fun quickPicksUnfiltered(excludeSongIds: Set<String>): Result<List<Song>> = call("quickPicks") {
         val homeRaw = runCatching { Innertube.browse("FEmusic_home") }.getOrNull()
         val shelves = if (homeRaw != null) InnertubeParser.parseHome(homeRaw) else emptyList()
 
@@ -386,7 +390,7 @@ object YtMusicRepository {
                 Innertube.search(query, filter.params, anonymous),
                 includeVideos = filter == SearchFilter.VIDEOS,
             ).let { page ->
-                SearchPage(page.rows.distinctBy { it.identityKey() }, page.continuation)
+                SearchPage(page.rows.distinctBy { it.identityKey() }.withoutAi(), page.continuation)
             }
         }
 
@@ -396,7 +400,7 @@ object YtMusicRepository {
             Innertube.searchContinuation(token),
             includeVideos = filter == SearchFilter.VIDEOS,
         ).let { page ->
-            SearchPage(page.rows.distinctBy { it.identityKey() }, page.continuation)
+            SearchPage(page.rows.distinctBy { it.identityKey() }.withoutAi(), page.continuation)
         }
     }
 
@@ -406,6 +410,24 @@ object YtMusicRepository {
      */
     suspend fun search(query: String, filter: SearchFilter): Result<List<SearchResult>> =
         searchPage(query, filter).map { it.rows }
+
+    private suspend fun List<SearchResult>.withoutAi(waitMs: Long? = null): List<SearchResult> {
+        val songOf = { row: SearchResult ->
+            when (row) {
+                is SearchResult.TopTrack -> row.song.videoId
+                is SearchResult.Track -> row.song.videoId
+                is SearchResult.Browse -> null
+            }
+        }
+        return if (waitMs == null) AiSongs.keep(this, videoId = songOf) else AiSongs.keep(this, waitMs, songOf)
+    }
+
+    /** These shelves without their AI songs, and without a shelf left empty by that. */
+    private suspend fun List<HomeShelf>.withoutAi(): List<HomeShelf> {
+        if (!AiSongs.hide.value) return this
+        val kept = AiSongs.keep(flatMap { it.items }) { it.videoId }.toHashSet()
+        return map { shelf -> shelf.copy(items = shelf.items.filter { it in kept }) }.filter { it.items.isNotEmpty() }
+    }
 
     private fun SearchResult.identityKey(): String = when (this) {
         is SearchResult.TopTrack -> "v:${song.videoId}"
@@ -441,7 +463,8 @@ object YtMusicRepository {
                 Innertube.searchTypeahead(input),
                 includeVideos = false,
             ).let { page ->
-                SearchPage(page.rows.distinctBy { it.identityKey() }, page.continuation)
+                // Per keystroke: only what is already known, never a wait.
+                SearchPage(page.rows.distinctBy { it.identityKey() }.withoutAi(waitMs = 0), page.continuation)
             }
         }
 
@@ -658,7 +681,12 @@ object YtMusicRepository {
      * seed track itself comes back first, so callers filter what they have.
      */
     suspend fun radio(videoId: String): Result<List<Song>> = call("radio:$videoId") {
-        InnertubeParser.parseWatchQueue(Innertube.next(videoId))
+        // The seed stays: it is the song the listener chose; only what radio adds after it is filtered.
+        // A longer wait than a feed's: radio is mostly fetched ahead of need, and a song let
+        // through unchecked is one the player then has to take back out of the queue.
+        AiSongs.keep(InnertubeParser.parseWatchQueue(Innertube.next(videoId)), waitMs = 12_000) { song ->
+            song.videoId.takeUnless { it == videoId }
+        }
     }
 
     /**

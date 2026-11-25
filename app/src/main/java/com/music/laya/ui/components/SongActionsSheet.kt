@@ -952,6 +952,10 @@ internal fun SheetTrackHeader(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         )
         Spacer(Modifier.width(14.dp))
+        // The title's "AI" badge, once this song has been looked up.
+        androidx.compose.runtime.LaunchedEffect(song.videoId) {
+            com.music.laya.data.aifilter.AiSongs.request(listOf(song.videoId))
+        }
         Column(Modifier.weight(1f)) {
             ExplicitSongTitle(
                 song = song,

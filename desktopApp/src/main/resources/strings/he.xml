@@ -884,4 +884,7 @@
     <string name="d_reorder_subtitle">גררו את השורות לסדר הרצוי ואז שמרו.</string>
     <string name="translate">תרגום</string>
     <string name="lossless_verify_failed">האימות נכשל</string>
+    <string name="hide_ai_songs">הסתרת שירים שנוצרו בבינה מלאכותית</string>
+    <string name="hide_ai_songs_subtitle">מרחיק מהבית, מהחיפוש ומהרדיו שירים מערוצים שברשימת החסימה AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="ai_generated_note">נוצר בבינה מלאכותית, לפי רשימת AiSList</string>
 </resources>

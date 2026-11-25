@@ -886,4 +886,6 @@
     <plurals name="song_count_plural">
         <item quantity="other">%1$d曲</item>
     </plurals>
+    <string name="hide_ai_songs">AI生成の曲を非表示</string>
+    <string name="hide_ai_songs_subtitle">AiSList ブロックリストのチャンネルの曲 (AiSList, aisloplist.com, CC BY-NC 4.0) をホーム、検索、ラジオから除外します</string>
 </resources>

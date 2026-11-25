@@ -864,4 +864,7 @@
     <string name="d_reorder_subtitle">Seret baris ke urutan yang Anda inginkan, lalu simpan.</string>
     <string name="translate">Terjemahkan</string>
     <string name="lossless_verify_failed">Verifikasi gagal</string>
+    <string name="hide_ai_songs">Sembunyikan lagu buatan AI</string>
+    <string name="hide_ai_songs_subtitle">Menjauhkan lagu dari channel di daftar blokir AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) dari Beranda, penelusuran, dan radio</string>
+    <string name="ai_generated_note">Buatan AI, menurut daftar AiSList</string>
 </resources>

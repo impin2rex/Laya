@@ -148,6 +148,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.music.laya.ui.components.ExplicitBadge
+import com.music.laya.ui.components.titleBadges
 import com.music.laya.ui.theme.HideStatusBar
 import com.music.laya.ui.theme.rememberScreenOrientation
 import com.music.laya.ui.theme.StatusBarIcons
@@ -3578,11 +3579,7 @@ fun NowPlayingScreen(
                                             ),
                                             color = Color.White,
                                             enabled = scrolling,
-                                            leading = if (song.isExplicit == true) {
-                                                { ExplicitBadge(color = Color.White) }
-                                            } else {
-                                                null
-                                            },
+                                            leading = titleBadges(song, Color.White),
                                             onOverflowChange = { titleOverflowing = it },
                                             // Only the tracks YouTube hands us a browse id for
                                             // lead anywhere; the rest stay plain text.

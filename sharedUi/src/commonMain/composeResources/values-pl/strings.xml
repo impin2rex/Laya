@@ -908,4 +908,6 @@
         <item quantity="one">%1$d piosenka</item>
         <item quantity="other">%1$d piosenki</item>
     </plurals>
+    <string name="hide_ai_songs">Ukryj utwory wygenerowane przez AI</string>
+    <string name="hide_ai_songs_subtitle">Usuwa z ekranu głównego, wyszukiwania i radia utwory z kanałów z listy blokowanych AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
 </resources>

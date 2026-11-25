@@ -1,5 +1,6 @@
 package com.music.laya.ui.components
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -30,6 +31,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.music.laya.data.model.Song
+import com.music.laya.data.aifilter.AiSongs
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 fun Modifier.thumbnailBorder(shape: Shape): Modifier = composed {
     this.border(
@@ -58,9 +64,31 @@ fun ExplicitSongTitle(
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f, fill = false),
         )
+        val aiFlagged by AiSongs.flagged.collectAsState()
+        if (song.videoId in aiFlagged) {
+            Spacer(Modifier.width(6.dp))
+            AiBadge(color)
+        }
     }
+}
+
+/**
+ * The AI-generated mark: "AI" in a hairline pill, after the title. Only says what
+ * [AiSongs] already knows; the queue and the player menu ask it to look songs up.
+ */
+@Composable
+fun AiBadge(color: Color, modifier: Modifier = Modifier) {
+    Text(
+        text = "AI",
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+        color = color,
+        maxLines = 1,
+        modifier = modifier
+            .border(1.dp, color.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+            .padding(horizontal = 4.dp),
+    )
 }
 
 /**
@@ -99,5 +127,25 @@ fun ExplicitBadge(color: Color, modifier: Modifier = Modifier) {
             ),
             blendMode = BlendMode.DstOut,
         )
+    }
+}
+
+/**
+ * What goes before a title in the player: the explicit mark, then the "AI" one; null when the
+ * song carries neither. Has the playing song looked up, so its badge appears without the queue open.
+ */
+@Composable
+fun titleBadges(song: Song, color: Color): (@Composable () -> Unit)? {
+    LaunchedEffect(song.videoId) { AiSongs.request(listOf(song.videoId)) }
+    val aiFlagged by AiSongs.flagged.collectAsState()
+    val ai = song.videoId in aiFlagged
+    val explicit = song.isExplicit == true
+    if (!ai && !explicit) return null
+    return {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (explicit) ExplicitBadge(color)
+            if (explicit && ai) Spacer(Modifier.width(6.dp))
+            if (ai) AiBadge(color)
+        }
     }
 }

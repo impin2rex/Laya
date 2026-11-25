@@ -419,6 +419,9 @@ object AppSettings {
     /** Swiping a song row plays it next instead of adding it to the end of the queue. */
     val swipeToPlayNext = MutableStateFlow(false)
 
+    /** Keeps AI-generated songs out of feeds, search and radio; on unless turned off. See [com.music.laya.data.aifilter.AiSongs]. */
+    val hideAiSongs = com.music.laya.data.aifilter.AiSongs.hide
+
     /** Once a song has been suggested or played this session, AutoPlay won't offer it again. */
     val dontRepeatSuggestions = MutableStateFlow(false)
 
@@ -937,6 +940,7 @@ object AppSettings {
         lyricsCardLogo.value = prefs.getBoolean(KEY_LYRICS_CARD_LOGO, true)
         showQueueHistory.value = prefs.getBoolean(KEY_SHOW_QUEUE_HISTORY, false)
         swipeToPlayNext.value = prefs.getBoolean(KEY_SWIPE_TO_PLAY_NEXT, false)
+        hideAiSongs.value = prefs.getBoolean(KEY_HIDE_AI_SONGS, true)
         dontRepeatSuggestions.value = prefs.getBoolean(KEY_DONT_REPEAT_SUGGESTIONS, false)
         preferMusicOnly.value = prefs.getBoolean(KEY_PREFER_MUSIC_ONLY, true)
         miniPlayerVideo.value = prefs.getBoolean(KEY_MINI_PLAYER_VIDEO, false)
@@ -1343,6 +1347,11 @@ object AppSettings {
     fun setLyricsCardLogo(value: Boolean) {
         lyricsCardLogo.value = value
         prefs.edit().putBoolean(KEY_LYRICS_CARD_LOGO, value).apply()
+    }
+
+    fun setHideAiSongs(value: Boolean) {
+        hideAiSongs.value = value
+        prefs.edit().putBoolean(KEY_HIDE_AI_SONGS, value).apply()
     }
 
     fun setSwipeToPlayNext(value: Boolean) {
@@ -2149,6 +2158,7 @@ object AppSettings {
     private const val KEY_HIDE_SONG_STATUS = "hide_song_status"
     private const val KEY_SHOW_QUEUE_HISTORY = "show_queue_history"
     private const val KEY_SWIPE_TO_PLAY_NEXT = "swipe_to_play_next"
+    private const val KEY_HIDE_AI_SONGS = "hide_ai_songs"
     private const val KEY_LYRICS_CARD_LOGO = "lyrics_card_logo"
     private const val KEY_DONT_REPEAT_SUGGESTIONS = "dont_repeat_suggestions"
     private const val KEY_PREFER_MUSIC_ONLY = "prefer_music_only"

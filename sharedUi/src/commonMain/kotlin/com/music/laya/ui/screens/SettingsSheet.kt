@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.BarChart
@@ -231,6 +232,7 @@ fun SettingsScreen(
     val hideSongStatus by AppSettings.hideSongStatus.collectAsStateWithLifecycle()
     val showQueueHistory by AppSettings.showQueueHistory.collectAsStateWithLifecycle()
     val swipeToPlayNext by AppSettings.swipeToPlayNext.collectAsStateWithLifecycle()
+    val hideAiSongs by AppSettings.hideAiSongs.collectAsStateWithLifecycle()
     val dontRepeatSuggestions by AppSettings.dontRepeatSuggestions.collectAsStateWithLifecycle()
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
     val independentVolume by AppSettings.independentVolume.collectAsStateWithLifecycle()
@@ -1361,6 +1363,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setSwipeToPlayNext(!swipeToPlayNext) },
+                )
+            }
+            val hideAiSongsTitle = stringResource(Res.string.hide_ai_songs)
+            row(hideAiSongsTitle, "ai", "generated", "slop", "filter") {
+                SettingsRow(
+                    icon = Icons.Rounded.SmartToy,
+                    title = hideAiSongsTitle,
+                    subtitle = stringResource(Res.string.hide_ai_songs_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = hideAiSongs,
+                            onCheckedChange = AppSettings::setHideAiSongs,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setHideAiSongs(!hideAiSongs) },
                 )
             }
             val dontRepeatSongsTitle = stringResource(Res.string.dont_repeat_songs)

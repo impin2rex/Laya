@@ -883,4 +883,7 @@
     <string name="d_reorder_subtitle">Faites glisser les lignes dans l’ordre souhaité, puis enregistrez.</string>
     <string name="translate">Traduire</string>
     <string name="lossless_verify_failed">Échec de la vérification</string>
+    <string name="hide_ai_songs">Masquer les titres générés par IA</string>
+    <string name="hide_ai_songs_subtitle">Écarte de l’accueil, de la recherche et de la radio les titres des chaînes de la liste de blocage AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="ai_generated_note">Généré par IA, selon la liste AiSList</string>
 </resources>

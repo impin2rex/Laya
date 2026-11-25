@@ -1,5 +1,8 @@
 package com.music.laya.desktop
 
+import androidx.compose.runtime.LaunchedEffect
+import com.music.laya.ui.components.AiBadge
+import com.music.laya.data.aifilter.AiSongs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -318,6 +321,8 @@ internal fun DesktopSongMenu(
     // A local file or a finished download has no YouTube identity behind it to rate, queue into a
     // playlist, fetch again, or share a link for.
     val isOffline = song.localUri != null
+    LaunchedEffect(song.videoId) { if (!isOffline) AiSongs.request(listOf(song.videoId)) }
+    val aiFlagged by AiSongs.flagged.collectAsState()
 
     DesktopMenuSurface(onDismiss = onDismiss) {
         if (showingSongInfo) {
@@ -391,6 +396,21 @@ internal fun DesktopSongMenu(
             return@DesktopMenuSurface
         }
 
+        if (song.videoId in aiFlagged) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AiBadge(DesktopSecondary)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    DesktopStrings["ai_generated_note", "AI-generated, per the AiSList list"],
+                    color = DesktopSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            DesktopMenuDivider()
+        }
         // The two are never both offered.
         (onRevertToOriginal ?: onUpgradeQuality)?.let { action ->
             DesktopMenuRow(

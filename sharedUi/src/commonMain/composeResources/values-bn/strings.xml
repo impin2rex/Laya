@@ -888,4 +888,6 @@
         <item quantity="one">%1$dটি গান</item>
         <item quantity="other">%1$dটি গান</item>
     </plurals>
+    <string name="hide_ai_songs">AI-তৈরি গান লুকান</string>
+    <string name="hide_ai_songs_subtitle">AiSList ব্লকলিস্টের চ্যানেলের গান (AiSList, aisloplist.com, CC BY-NC 4.0) হোম, সার্চ ও রেডিও থেকে বাদ রাখে</string>
 </resources>

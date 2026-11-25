@@ -50,6 +50,7 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
         .URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }
     LyricsTranslation.cacheDir = NSFileManager.defaultManager
         .URLsForDirectory(NSCachesDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }.toPath()
+    com.music.laya.data.aifilter.AiSongs.warmUp()
     InnerTubeXResolver.init(
         filesDir = dir.toPath(),
         // ponytail: in-memory, so cached player config is refetched each launch; NSUserDefaults when that hurts.

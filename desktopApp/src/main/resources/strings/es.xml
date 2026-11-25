@@ -883,4 +883,7 @@
     <string name="d_reorder_subtitle">Arrastra las filas al orden que quieras y guarda.</string>
     <string name="translate">Traducir</string>
     <string name="lossless_verify_failed">Error de verificación</string>
+    <string name="hide_ai_songs">Ocultar canciones generadas por IA</string>
+    <string name="hide_ai_songs_subtitle">Mantiene fuera de Inicio, la búsqueda y la radio las canciones de canales de la lista de bloqueo AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="ai_generated_note">Generada por IA, según la lista AiSList</string>
 </resources>

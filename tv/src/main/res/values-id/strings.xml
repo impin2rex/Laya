@@ -265,4 +265,6 @@
     <plurals name="tv_song_count">
         <item quantity="other">%1$d lagu</item>
     </plurals>
+    <string name="tv_hide_ai_songs">Sembunyikan lagu buatan AI</string>
+    <string name="tv_hide_ai_songs_subtitle">Menjauhkan lagu dari channel di daftar blokir AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) dari Beranda, penelusuran, dan radio</string>
 </resources>

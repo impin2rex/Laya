@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.aifilter.AiSongs
 import com.music.laya.ui.player.VideoKeys
 import androidx.compose.foundation.lazy.LazyListState
 import com.music.laya.ui.components.LocalShelfRowChrome
@@ -3062,6 +3063,23 @@ fun LayaDesktopApp() {
     }
 
     // Signed out, Radio's stations come from the moods instead; loaded once, retried on a later visit.
+    // AI songs radio/AutoPlay queued before their lookup landed leave the queue once flagged
+    // (YtMusicRepository.radio filters what it can up front). The listener's own picks stay.
+    val aiFlagged by AiSongs.flagged.collectAsState()
+    val hideAi by AiSongs.hide.collectAsState()
+    LaunchedEffect(liveQueue.songs, liveQueue.index) {
+        AiSongs.request(liveQueue.songs.drop(liveQueue.index + 1).filter { it.fromAutoplay }.map { it.videoId })
+    }
+    LaunchedEffect(aiFlagged, hideAi, liveQueue.songs) {
+        if (!hideAi || aiFlagged.isEmpty() || DesktopListenTogether.state.value.controlsLocked) return@LaunchedEffect
+        val queue = liveQueue
+        val kept = queue.songs.filterIndexed { i, song -> i <= queue.index || !(song.fromAutoplay && song.videoId in aiFlagged) }
+        if (kept.size != queue.songs.size) {
+            liveQueue = queue.copy(songs = kept)
+            saveQueue()
+        }
+    }
+
     var moodStations by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
     LaunchedEffect(destination, youtubeSignedIn) {
         if (destination != DesktopDestination.RADIO || youtubeSignedIn || moodStations is UiState.Success) return@LaunchedEffect
@@ -7159,6 +7177,18 @@ private fun DesktopSettingsScreen(
             }
             if (section == DesktopSettingsSection.MISCELLANEOUS) item {
                 SettingsGroup(DesktopStrings["miscellaneous", "Miscellaneous"]) {
+                    val hideAiSongs by AiSongs.hide.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["hide_ai_songs", "Hide AI-generated songs"],
+                        DesktopStrings[
+                            "hide_ai_songs_subtitle",
+                            "Keeps songs from channels on the AiSList blocklist (AiSList, aisloplist.com, CC BY-NC 4.0) out of Home, search and radio",
+                        ],
+                        hideAiSongs,
+                    ) {
+                        AiSongs.hide.value = it
+                        DesktopPersistence().saveBoolean(KEY_HIDE_AI_SONGS, it)
+                    }
                     SettingsToggle(
                         DesktopStrings["d_dont_repeat_songs_in_current_session", "Don\u2019t repeat songs in current session"],
                         DesktopStrings["d_autoplay_wont_suggest_a_song_already_played_or_suggested", "AutoPlay won\u2019t suggest a song already played or suggested this session"],

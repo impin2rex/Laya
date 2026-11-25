@@ -267,4 +267,6 @@
         <item quantity="many">%1$d de músicas</item>
         <item quantity="other">%1$d músicas</item>
     </plurals>
+    <string name="tv_hide_ai_songs">Ocultar músicas geradas por IA</string>
+    <string name="tv_hide_ai_songs_subtitle">Mantém fora do Início, da busca e do rádio as músicas de canais da lista de bloqueio AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
 </resources>

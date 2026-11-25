@@ -896,4 +896,6 @@
         <item quantity="one">%1$d song</item>
         <item quantity="other">%1$d songs</item>
     </plurals>
+    <string name="hide_ai_songs">Hide AI-generated songs</string>
+    <string name="hide_ai_songs_subtitle">Keeps songs from channels on the AiSList blocklist (AiSList, aisloplist.com, CC BY-NC 4.0) out of Home, search and radio</string>
 </resources>

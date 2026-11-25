@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.data.aifilter.AiSongs
 import com.music.laya.ui.components.trackArtSize
 import androidx.compose.ui.layout.ContentScale
 import com.music.laya.sharedui.resources.*
@@ -476,6 +477,8 @@ internal fun InlineQueue(
             }
         } else false
     }
+    // The rows' "AI" badges: each song is looked up once, remembered after that.
+    LaunchedEffect(queue) { AiSongs.request(queue.map { it.videoId }) }
     val nowPlaying = tracks.nowPlaying
     val contextSong = tracks.context.firstOrNull()?.song
     val contextTitle = contextSong?.playbackSource?.takeIf { it.isNotBlank() }

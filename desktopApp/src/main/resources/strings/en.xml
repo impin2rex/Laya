@@ -883,4 +883,7 @@
     <string name="prefer_music_only">Prefer music-only version</string>
     <string name="prefer_music_only_subtitle">Music videos play as songs, with their cover art, until you switch to the video</string>
     <string name="lossless_verify_failed">Verification failed</string>
+    <string name="hide_ai_songs">Hide AI-generated songs</string>
+    <string name="hide_ai_songs_subtitle">Keeps songs from channels on the AiSList blocklist (AiSList, aisloplist.com, CC BY-NC 4.0) out of Home, search and radio</string>
+    <string name="ai_generated_note">AI-generated, per the AiSList list</string>
 </resources>

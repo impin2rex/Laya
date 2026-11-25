@@ -894,4 +894,6 @@
         <item quantity="one">%1$d Song</item>
         <item quantity="other">%1$d Songs</item>
     </plurals>
+    <string name="hide_ai_songs">KI-generierte Songs ausblenden</string>
+    <string name="hide_ai_songs_subtitle">Hält Songs von Kanälen auf der AiSList-Sperrliste (AiSList, aisloplist.com, CC BY-NC 4.0) aus Start, Suche und Radio fern</string>
 </resources>

@@ -914,4 +914,7 @@
     <string name="d_reorder_subtitle">Przeciągnij wiersze w żądanej kolejności, a następnie zapisz.</string>
     <string name="translate">Tłumacz</string>
     <string name="lossless_verify_failed">Weryfikacja nie powiodła się</string>
+    <string name="hide_ai_songs">Ukryj utwory wygenerowane przez AI</string>
+    <string name="hide_ai_songs_subtitle">Usuwa z ekranu głównego, wyszukiwania i radia utwory z kanałów z listy blokowanych AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="ai_generated_note">Wygenerowane przez AI według listy AiSList</string>
 </resources>

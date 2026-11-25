@@ -1,5 +1,6 @@
 package com.music.laya.playback
 
+import com.music.laya.data.aifilter.AiSongs
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -1186,7 +1187,29 @@ class PlaybackService : MediaLibraryService() {
                 // its old seed memoized. Detect that state at its source and
                 // make the current track eligible for a fresh load.
                 refreshAutoplayIfQueueEmpty()
+                checkQueuedAutoplayForAi()
             }
+        }
+    }
+
+    /**
+     * Has what radio and AutoPlay lined up looked up, and drops any already known to be
+     * AI-generated. [YtMusicRepository.radio] filters what it can before handing songs over;
+     * this catches the ones whose lookup was still in flight then. The listener's own picks stay.
+     */
+    private fun checkQueuedAutoplayForAi() {
+        val queue = mediaSession?.player ?: return
+        val upcoming = (queue.currentMediaItemIndex + 1 until queue.mediaItemCount).map(queue::getMediaItemAt)
+        AiSongs.request(upcoming.filter { it.fromAutoplay }.map { it.mediaId })
+        dropAiAutoplay(AiSongs.flagged.value)
+    }
+
+    private fun dropAiAutoplay(flagged: Set<String>) {
+        if (!AiSongs.hide.value || flagged.isEmpty()) return
+        val queue = mediaSession?.player ?: return
+        for (index in queue.mediaItemCount - 1 downTo queue.currentMediaItemIndex + 1) {
+            val item = queue.getMediaItemAt(index)
+            if (item.fromAutoplay && item.mediaId in flagged) queue.removeMediaItem(index)
         }
     }
 
@@ -6975,6 +6998,10 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun observeSettings() {
+        scope.launch {
+            // A lookup that lands after its song was queued, or the filter turned back on.
+            combine(AiSongs.hide, AiSongs.flagged) { _, flagged -> flagged }.collect(::dropAiAutoplay)
+        }
         scope.launch {
             AppSettings.skipSilence.collect { on -> eachPlayer { it.skipSilenceEnabled = on } }
         }

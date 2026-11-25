@@ -110,6 +110,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         migrateScriptOnlyAppLocale()
         registerShortcuts()
         LyricsTranslation.cacheDir = cacheDir.toOkioPath()
+        com.music.laya.data.aifilter.AiSongs.warmUp()
         // PlaybackService shares this process, so seeding the cookie here means
         // stream resolution is authenticated from the first play onwards.
         authStore = AuthStore(this)

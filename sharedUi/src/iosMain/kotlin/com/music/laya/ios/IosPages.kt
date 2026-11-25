@@ -1,5 +1,8 @@
 package com.music.laya.ios
 
+import androidx.compose.runtime.LaunchedEffect
+import com.music.laya.ui.components.ExplicitSongTitle
+import com.music.laya.data.aifilter.AiSongs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -335,8 +338,12 @@ internal fun IosSongMenu(
             Modifier.guardSheetFromContentTouches(sheetState, partialHeight = true).heightIn(max = maxHeight)
                 .navigationBarsPadding().verticalScroll(rememberScrollState()),
         ) {
+            LaunchedEffect(song.videoId) { AiSongs.request(listOf(song.videoId)) }
             ListItem(
-                headlineContent = { Text(song.title, maxLines = 1) },
+                // The shared title, so an AI-generated song carries its badge here as in the queue.
+                headlineContent = {
+                    ExplicitSongTitle(song, MaterialTheme.typography.bodyLarge, androidx.compose.material3.LocalContentColor.current)
+                },
                 supportingContent = { Text(song.artist, maxLines = 1) },
                 colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
             )

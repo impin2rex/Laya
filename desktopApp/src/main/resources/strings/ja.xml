@@ -864,4 +864,7 @@
     <string name="d_reorder_subtitle">行をドラッグして好きな順に並べ、保存してください。</string>
     <string name="translate">翻訳</string>
     <string name="lossless_verify_failed">確認に失敗しました</string>
+    <string name="hide_ai_songs">AI生成の曲を非表示</string>
+    <string name="hide_ai_songs_subtitle">AiSList ブロックリストのチャンネルの曲 (AiSList, aisloplist.com, CC BY-NC 4.0) をホーム、検索、ラジオから除外します</string>
+    <string name="ai_generated_note">AiSList によると AI 生成</string>
 </resources>

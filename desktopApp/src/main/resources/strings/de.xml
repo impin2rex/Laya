@@ -883,4 +883,7 @@
     <string name="d_reorder_subtitle">Ziehe die Zeilen in die gewünschte Reihenfolge und speichere dann.</string>
     <string name="translate">Übersetzen</string>
     <string name="lossless_verify_failed">Verifizierung fehlgeschlagen</string>
+    <string name="hide_ai_songs">KI-generierte Songs ausblenden</string>
+    <string name="hide_ai_songs_subtitle">Hält Songs von Kanälen auf der AiSList-Sperrliste (AiSList, aisloplist.com, CC BY-NC 4.0) aus Start, Suche und Radio fern</string>
+    <string name="ai_generated_note">KI-generiert laut AiSList-Liste</string>
 </resources>

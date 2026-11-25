@@ -267,4 +267,6 @@
         <item quantity="two">%1$d שירים</item>
         <item quantity="other">%1$d שירים</item>
     </plurals>
+    <string name="tv_hide_ai_songs">הסתרת שירים שנוצרו בבינה מלאכותית</string>
+    <string name="tv_hide_ai_songs_subtitle">מרחיק מהבית, מהחיפוש ומהרדיו שירים מערוצים שברשימת החסימה AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
 </resources>

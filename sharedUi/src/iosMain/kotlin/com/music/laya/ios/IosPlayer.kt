@@ -1,5 +1,6 @@
 package com.music.laya.ios
 
+import com.music.laya.data.aifilter.AiSongs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -214,8 +215,23 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private var lastSavedAt = 0L
     private val party = IosPartySync(scope, this)
 
+    /**
+     * Drops upcoming radio/AutoPlay songs known to be AI-generated, when the filter is on: the ones
+     * whose lookup was still in flight when [YtMusicRepository.radio] handed them over. The
+     * listener's own picks stay. True when the queue changed (and [queueChanged] has run for it).
+     */
+    private fun dropAiAutoplay(flagged: Set<String>): Boolean {
+        if (!AiSongs.hide.value || flagged.isEmpty() || locked()) return false
+        val kept = queue.filterIndexed { i, s -> i <= index || !(s.fromAutoplay && s.videoId in flagged) }
+        if (kept.size == queue.size) return false
+        queue = kept
+        queueChanged()
+        return true
+    }
+
     init {
         engine.setListener(this)
+        scope.launch { combine(AiSongs.hide, AiSongs.flagged) { _, flagged -> flagged }.collect { dropAiAutoplay(it) } }
         IosCast.player = this
         IosMusicVideo.player = this
         IosScrobbler.attach(scope)
@@ -597,6 +613,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun queueChanged() {
+        if (dropAiAutoplay(AiSongs.flagged.value)) return
+        AiSongs.request(queue.drop(index + 1).filter { it.fromAutoplay }.map { it.videoId })
         IosPlayerStore.saveQueue(queue, index)
         announce()
         preResolveNext()

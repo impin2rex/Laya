@@ -267,4 +267,6 @@
         <item quantity="many">%1$d de titres</item>
         <item quantity="other">%1$d titres</item>
     </plurals>
+    <string name="tv_hide_ai_songs">Masquer les titres générés par IA</string>
+    <string name="tv_hide_ai_songs_subtitle">Écarte de l’accueil, de la recherche et de la radio les titres des chaînes de la liste de blocage AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
 </resources>

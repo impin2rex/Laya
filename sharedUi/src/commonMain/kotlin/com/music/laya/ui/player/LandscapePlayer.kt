@@ -62,6 +62,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import com.music.laya.ui.components.ExplicitBadge
+import com.music.laya.ui.components.titleBadges
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.ui.theme.stableStatusBarInsets
@@ -456,11 +457,7 @@ internal fun LandscapeCredits(
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     onOverflowChange = { titleOverflowing = it },
-                    leading = if (song.isExplicit == true) {
-                        { ExplicitBadge(Color.White) }
-                    } else {
-                        null
-                    },
+                    leading = titleBadges(song, Color.White),
                     modifier = Modifier.opensPage(song.albumId, onOpenAlbum),
                 )
                 Spacer(Modifier.height(2.dp))

@@ -266,4 +266,6 @@
         <item quantity="one">%1$d şarkı</item>
         <item quantity="other">%1$d şarkı</item>
     </plurals>
+    <string name="tv_hide_ai_songs">Yapay zekâ ile üretilmiş şarkıları gizle</string>
+    <string name="tv_hide_ai_songs_subtitle">AiSList engel listesindeki kanalların şarkılarını (AiSList, aisloplist.com, CC BY-NC 4.0) Ana Sayfa, arama ve radyodan uzak tutar</string>
 </resources>

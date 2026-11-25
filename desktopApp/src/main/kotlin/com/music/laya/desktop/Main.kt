@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.aifilter.AiSongs
 import androidx.compose.runtime.CompositionLocalProvider
 import com.music.laya.ui.player.PlayerPlatform
 import com.music.laya.data.DebugLog
@@ -42,6 +43,7 @@ fun main() {
         DesktopTrackLog.log("$tag/$level: $message" + (error?.let { " (${it.message})" } ?: ""))
     }
     LyricsTranslation.cacheDir = DesktopMediaCache.directory.toOkioPath()
+    AiSongs.warmUp()
     // The Spotify library both apps share, on the tokens the web player mints in JavaFX.
     SpotifyLibrary.auth = SpotifyLibrary.Auth {
         DesktopSpotifyToken.accessToken()?.let { SpotifyLibrary.Tokens(it, DesktopSpotifyToken.clientToken()) }
@@ -53,6 +55,8 @@ fun main() {
     TrackLog.echo = { level, tag, message, error ->
         DesktopTrackLog.log("$tag/$level: $message" + (error?.let { " (${it.message})" } ?: ""))
     }
+    // On unless the listener turned it off; see AiSongs.
+    AiSongs.hide.value = DesktopPersistence().boolean(KEY_HIDE_AI_SONGS, true)
     StreamResolver.maxKbps = {
         DesktopStreamClient.ceiling.get() ?: DesktopSourceRegistry.ceiling(null).maxKbps
     }
@@ -196,3 +200,6 @@ private fun desktopMain() = application {
 // NowPlayingScreen). Narrower and short, it falls back to the portrait player, which needs height.
 private const val MIN_WINDOW_WIDTH_DP = 560.0
 private const val MIN_WINDOW_HEIGHT_DP = 400.0
+
+/** Desktop's own key for [AiSongs.hide], which the phone keeps in AppSettings. */
+internal const val KEY_HIDE_AI_SONGS = "hide_ai_songs"

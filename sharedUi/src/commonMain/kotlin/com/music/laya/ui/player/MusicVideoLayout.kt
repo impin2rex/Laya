@@ -1,5 +1,6 @@
 package com.music.laya.ui.player
 
+import com.music.laya.ui.components.titleBadges
 import com.music.laya.sharedui.resources.video_scale
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -202,14 +203,20 @@ internal fun FullscreenVideoPlayer(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text(
-                            text = song.title,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            titleBadges(song, Color.White)?.let { badges ->
+                                badges()
+                                Spacer(Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = song.title,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                         Text(
                             text = song.artist,
                             color = Color.White.copy(alpha = 0.7f),

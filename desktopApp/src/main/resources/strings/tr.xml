@@ -883,4 +883,7 @@
     <string name="d_reorder_subtitle">Satırları istediğiniz sıraya sürükleyin, sonra kaydedin.</string>
     <string name="translate">Çevir</string>
     <string name="lossless_verify_failed">Doğrulama başarısız</string>
+    <string name="hide_ai_songs">Yapay zekâ ile üretilmiş şarkıları gizle</string>
+    <string name="hide_ai_songs_subtitle">AiSList engel listesindeki kanalların şarkılarını (AiSList, aisloplist.com, CC BY-NC 4.0) Ana Sayfa, arama ve radyodan uzak tutar</string>
+    <string name="ai_generated_note">AiSList listesine göre yapay zekâ ile üretilmiş</string>
 </resources>

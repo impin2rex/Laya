@@ -861,4 +861,7 @@
     <string name="listen_together_create_footer">Bạn sẽ nhận được mã gồm sáu ký tự. Ai có mã đều có thể tham gia, tối đa năm thiết bị, kể cả thiết bị của bạn.</string>
     <string name="translate">Dịch</string>
     <string name="lossless_verify_failed">Xác minh thất bại</string>
+    <string name="hide_ai_songs">Ẩn bài hát do AI tạo</string>
+    <string name="hide_ai_songs_subtitle">Loại bài hát từ các kênh trong danh sách chặn AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) khỏi Trang chủ, tìm kiếm và radio</string>
+    <string name="ai_generated_note">Do AI tạo, theo danh sách AiSList</string>
 </resources>

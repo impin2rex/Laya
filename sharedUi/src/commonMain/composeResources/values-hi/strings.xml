@@ -894,4 +894,6 @@
         <item quantity="one">%1$d गाना</item>
         <item quantity="other">%1$d गाने</item>
     </plurals>
+    <string name="hide_ai_songs">AI से बने गाने छिपाएँ</string>
+    <string name="hide_ai_songs_subtitle">AiSList ब्लॉकलिस्ट के चैनलों के गाने (AiSList, aisloplist.com, CC BY-NC 4.0) होम, सर्च और रेडियो से बाहर रखता है</string>
 </resources>

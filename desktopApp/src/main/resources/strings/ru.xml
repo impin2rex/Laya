@@ -907,4 +907,7 @@
     <string name="d_reorder_subtitle">Перетащите строки в нужном порядке, затем сохраните.</string>
     <string name="translate">Перевести</string>
     <string name="lossless_verify_failed">Не удалось подтвердить</string>
+    <string name="hide_ai_songs">Скрывать песни, созданные ИИ</string>
+    <string name="hide_ai_songs_subtitle">Убирает из главной, поиска и радио песни каналов из чёрного списка AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="ai_generated_note">Создано ИИ, по данным списка AiSList</string>
 </resources>

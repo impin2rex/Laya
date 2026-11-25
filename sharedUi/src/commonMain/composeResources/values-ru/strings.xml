@@ -906,4 +906,6 @@
         <item quantity="many">%1$d песен</item>
         <item quantity="other">%1$d песни</item>
     </plurals>
+    <string name="hide_ai_songs">Скрывать песни, созданные ИИ</string>
+    <string name="hide_ai_songs_subtitle">Убирает из главной, поиска и радио песни каналов из чёрного списка AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
 </resources>

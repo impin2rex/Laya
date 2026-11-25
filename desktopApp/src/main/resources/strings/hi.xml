@@ -883,4 +883,7 @@
     <string name="d_reorder_subtitle">पंक्तियों को मनचाहे क्रम में खींचें, फिर सेव करें।</string>
     <string name="translate">अनुवाद करें</string>
     <string name="lossless_verify_failed">सत्यापन विफल</string>
+    <string name="hide_ai_songs">AI से बने गाने छिपाएँ</string>
+    <string name="hide_ai_songs_subtitle">AiSList ब्लॉकलिस्ट के चैनलों के गाने (AiSList, aisloplist.com, CC BY-NC 4.0) होम, सर्च और रेडियो से बाहर रखता है</string>
+    <string name="ai_generated_note">AiSList सूची के अनुसार AI से बना</string>
 </resources>

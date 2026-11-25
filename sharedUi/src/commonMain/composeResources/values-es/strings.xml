@@ -894,4 +894,6 @@
         <item quantity="one">%1$d canción</item>
         <item quantity="other">%1$d canciones</item>
     </plurals>
+    <string name="hide_ai_songs">Ocultar canciones generadas por IA</string>
+    <string name="hide_ai_songs_subtitle">Mantiene fuera de Inicio, la búsqueda y la radio las canciones de canales de la lista de bloqueo AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
 </resources>

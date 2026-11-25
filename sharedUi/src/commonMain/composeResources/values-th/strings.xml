@@ -886,4 +886,6 @@
     <plurals name="song_count_plural">
         <item quantity="other">%1$d เพลง</item>
     </plurals>
+    <string name="hide_ai_songs">ซ่อนเพลงที่สร้างด้วย AI</string>
+    <string name="hide_ai_songs_subtitle">กันเพลงจากช่องในรายการบล็อก AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) ออกจากหน้าแรก การค้นหา และวิทยุ</string>
 </resources>

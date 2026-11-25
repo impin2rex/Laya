@@ -81,6 +81,7 @@ fun TvSettingsScreen(
     val crossfade by AppSettings.crossfadeSeconds.collectAsState()
     val autoplay by AppSettings.autoplay.collectAsState()
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsState()
+    val hideAiSongs by AppSettings.hideAiSongs.collectAsState()
     val skipSilence by AppSettings.skipSilence.collectAsState()
     val eqEnabled by AppSettings.equalizerEnabled.collectAsState()
     val reverbEnabled by AppSettings.reverbEnabled.collectAsState()
@@ -199,6 +200,14 @@ fun TvSettingsScreen(
                     value = onOff(preferMusicOnly),
                     onFocused = { blurb = subtitle },
                     onClick = { AppSettings.setPreferMusicOnly(!preferMusicOnly) },
+                )
+            }
+            item {
+                TvListRow(
+                    title = stringResource(R.string.tv_hide_ai_songs),
+                    value = onOff(hideAiSongs),
+                    onFocused = { blurb = context.getString(R.string.tv_hide_ai_songs_subtitle) },
+                    onClick = { AppSettings.setHideAiSongs(!hideAiSongs) },
                 )
             }
             item {

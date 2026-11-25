@@ -883,4 +883,7 @@
     <string name="d_reorder_subtitle">Trascina le righe nell’ordine desiderato, poi salva.</string>
     <string name="translate">Traduci</string>
     <string name="lossless_verify_failed">Verifica non riuscita</string>
+    <string name="hide_ai_songs">Nascondi brani generati dall’IA</string>
+    <string name="hide_ai_songs_subtitle">Tiene fuori da Home, ricerca e radio i brani dei canali nella blocklist AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="ai_generated_note">Generato dall’IA, secondo la lista AiSList</string>
 </resources>

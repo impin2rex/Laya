@@ -878,4 +878,7 @@
         <item>গানের কথা জোড়া লাগছে</item>
         <item>প্রায় কথাগুলো পেয়ে গেছি</item></string-array>
     <string name="lossless_verify_failed">যাচাই ব্যর্থ হয়েছে</string>
+    <string name="hide_ai_songs">AI-তৈরি গান লুকান</string>
+    <string name="hide_ai_songs_subtitle">AiSList ব্লকলিস্টের চ্যানেলের গান (AiSList, aisloplist.com, CC BY-NC 4.0) হোম, সার্চ ও রেডিও থেকে বাদ রাখে</string>
+    <string name="ai_generated_note">AiSList তালিকা অনুযায়ী AI-তৈরি</string>
 </resources>
