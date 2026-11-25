@@ -1444,4 +1444,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Faites défiler les paroles et touchez une ligne pour y aller</string>
     <string name="lock_screen_progress">Barre de progression</string>
     <string name="lock_screen_progress_subtitle">Affiche une barre de lecture avec le temps écoulé et la durée totale</string>
+    <string name="remove_from_history">Retirer de l\'historique</string>
+    <string name="history_removed">Retiré de l\'historique</string>
+    <string name="history_remove_failed">Impossible de retirer de l\'historique</string>
+    <string name="lock_screen_art_transition">Transition de pochette</string>
+    <string name="lock_screen_art_transition_subtitle">Fond la pochette dans celle du titre suivant pendant que Automix les mixe.</string>
 </resources>

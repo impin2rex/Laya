@@ -222,7 +222,8 @@ fun MiniPlayer(
             val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
             val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
             val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
-            val showsVideo = miniPlayerVideo && MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
+            val hidingVideo by MusicVideoChoice.hiding.collectAsStateWithLifecycle()
+            val showsVideo = miniPlayerVideo && MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo, hidingVideo)
             val artWidth by animateDpAsState(
                 targetValue = if (showsVideo) VIDEO_ART_WIDTH else 40.dp,
                 label = "miniArtWidth",

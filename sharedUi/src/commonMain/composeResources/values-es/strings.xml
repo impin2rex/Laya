@@ -897,4 +897,8 @@
     <string name="hide_ai_songs">Ocultar canciones generadas por IA</string>
     <string name="hide_ai_songs_subtitle">Mantiene fuera de Inicio, la búsqueda y la radio las canciones de canales de la lista de bloqueo AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
     <string name="lock_screen_player">Reproductor en pantalla de bloqueo</string>
+    <string name="lock_screen_lyrics_ios_subtitle">La línea que suena en la pantalla de bloqueo y en la Dynamic Island</string>
+    <string name="remove_from_history">Quitar del historial</string>
+    <string name="history_removed">Quitado del historial</string>
+    <string name="history_remove_failed">No se pudo quitar del historial</string>
 </resources>

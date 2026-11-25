@@ -33,6 +33,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import com.music.laya.platform.ConcurrentMap
 import com.music.laya.platform.ioDispatcher
 
@@ -140,8 +142,31 @@ object YtMusicRepository {
      * under Today and Yesterday headings that the shelf parser doesn't carry
      * through either.
      */
-    private suspend fun fetchHistory(): List<Song> =
-        InnertubeParser.collectSongsDeep(Innertube.browse(HISTORY)).distinctBy { it.videoId }
+    private suspend fun fetchHistory(): List<Song> {
+        val page = Innertube.browse(HISTORY)
+        synchronized(historyLock) { historyTokens = InnertubeParser.historyRemovalTokens(page) }
+        return InnertubeParser.collectSongsDeep(page).distinctBy { it.videoId }
+    }
+
+    private val historyLock = SynchronizedObject()
+
+    /** The last history page's removal tokens, by track — see [InnertubeParser.historyRemovalTokens]. */
+    private var historyTokens: Map<String, List<String>> = emptyMap()
+
+    /** Whether [videoId] can be taken off the account's history: it was on the page last loaded. */
+    fun canRemoveFromHistory(videoId: String): Boolean =
+        synchronized(historyLock) { historyTokens[videoId] }?.isNotEmpty() == true
+
+    /**
+     * Takes [videoIds] off the account's listening history, every play of each, in one request.
+     * Only tracks on the history page last loaded can go: the tokens come from that page.
+     */
+    suspend fun removeFromHistory(videoIds: Collection<String>): Result<Unit> = call("history:remove") {
+        val tokens = synchronized(historyLock) { videoIds.flatMap { historyTokens[it].orEmpty() } }
+        require(tokens.isNotEmpty()) { "Nothing to remove from history" }
+        Innertube.sendFeedback(tokens)
+        synchronized(historyLock) { historyTokens = historyTokens - videoIds.toSet() }
+    }
 
     /**
      * The account's listening history, in the order YouTube Music keeps it.

@@ -889,4 +889,8 @@
     <string name="hide_ai_songs">隱藏 AI 生成的歌曲</string>
     <string name="hide_ai_songs_subtitle">將 AiSList 封鎖清單 (AiSList, aisloplist.com, CC BY-NC 4.0) 中頻道的歌曲排除在首頁、搜尋和電台之外</string>
     <string name="lock_screen_player">鎖定畫面播放器</string>
+    <string name="lock_screen_lyrics_ios_subtitle">在鎖定畫面和動態島上顯示正在播放的歌詞</string>
+    <string name="remove_from_history">從紀錄中移除</string>
+    <string name="history_removed">已從紀錄中移除</string>
+    <string name="history_remove_failed">無法從紀錄中移除</string>
 </resources>

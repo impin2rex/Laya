@@ -23,6 +23,8 @@ import com.music.laya.data.spotify.SpotifyLibrary
 import com.music.laya.data.spotify.SpotifyTrack
 import com.music.laya.data.lyrics.EmbeddedLyrics
 import com.music.laya.data.lyrics.LyricLine
+import com.music.laya.data.lyrics.LyricsPicks
+import com.music.laya.playback.ServiceLyrics
 import com.music.laya.data.lyrics.LyricsRepository
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.settings.AppSettings
@@ -393,7 +395,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         lyricsGeneration += 1
         val generation = lyricsGeneration
         currentLyricsRequest = LyricsRequest(videoId, title, artist, durationMs, album)
-        selectedLyricsSource = null
+        // A provider picked by hand for this track earlier, kept across leaving it and coming back.
+        selectedLyricsSource = LyricsPicks[videoId]?.takeIf { it in sources }
         manualLyricsJobs.values.forEach(Job::cancel)
         manualLyricsJobs.clear()
         lyricsProviderResults.clear()
@@ -430,15 +433,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 lyricsFor = null
                 return@launch
             }
-            val found = LyricsRepository.lyrics(
-                videoId, title, artist, durationMs, album, sources,
-                AppSettings.lyricsSourceOrder.value, AppSettings.prioritizeSyllableSync.value,
-                onSourceStarted = { source -> providerStarted(generation, source) },
-                onSourceResult = { source, result ->
-                    providerFinished(generation, source, result)
-                },
-                onSourceCancelled = { source -> providerCancelled(generation, source) },
-            )
+            suspend fun ask(from: Set<LyricsSource>, order: List<LyricsSource>, syllables: Boolean) =
+                LyricsRepository.lyrics(
+                    videoId, title, artist, durationMs, album, from, order, syllables,
+                    onSourceStarted = { source -> providerStarted(generation, source) },
+                    onSourceResult = { source, result ->
+                        providerFinished(generation, source, result)
+                    },
+                    onSourceCancelled = { source -> providerCancelled(generation, source) },
+                )
+            // The hand-picked provider alone first, so the automatic winner never flashes up
+            // before it; the usual race only if it has nothing for this track.
+            val found = selectedLyricsSource?.let { ask(setOf(it), listOf(it), false) }
+                ?: ask(sources, AppSettings.lyricsSourceOrder.value, AppSettings.prioritizeSyllableSync.value)
             val selected = selectedLyricsSource?.let(lyricsProviderResults::get) ?: found
             _lyrics.value = selected?.lines
             _lyricsSource.value = selected?.source
@@ -452,6 +459,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun selectLyricsProvider(source: LyricsSource) {
         val request = currentLyricsRequest ?: return
+        LyricsPicks[request.videoId] = source
         when (_lyricsProviderStates.value[source]) {
             LyricsProviderState.FOUND -> {
                 selectedLyricsSource = source
@@ -1477,6 +1485,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        // The lyrics the player settled on, handed to the lock screen so both show the same.
+        viewModelScope.launch {
+            combine(_lyrics, _lyricsChecked) { lines, checked -> lines.takeIf { checked } to checked }
+                .collect { (lines, checked) ->
+                    val id = currentLyricsRequest?.videoId ?: return@collect
+                    ServiceLyrics.shown.value = if (checked) ServiceLyrics.Shown(id, lines) else null
+                }
+        }
         // The library widget's liked row follows the account: its first few
         // Liked Music tracks while signed in, nothing once signed out.
         viewModelScope.launch {
@@ -1938,6 +1954,25 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 onFailure = { UiState.Error(it.friendly()) },
             )
             if (identity == listenerKey()) _history.value = next
+        }
+    }
+
+    /**
+     * Takes [songs] off the account's listening history, every play of each. The row goes at once and
+     * comes back if YouTube refuses; [onDone] says which, for the page's notice.
+     */
+    fun removeFromHistory(songs: List<Song>, onDone: (Boolean) -> Unit) {
+        if (songs.isEmpty() || !requireSignIn()) return
+        val before = _history.value
+        val ids = songs.mapTo(HashSet()) { it.videoId }
+        (before as? UiState.Success)?.let { shown ->
+            val left = shown.data.filterNot { it.videoId in ids }
+            _history.value = if (left.isEmpty()) UiState.Error(text(R.string.history_empty)) else UiState.Success(left)
+        }
+        viewModelScope.launch {
+            val removed = YtMusicRepository.removeFromHistory(ids).isSuccess
+            if (!removed) _history.value = before
+            onDone(removed)
         }
     }
 

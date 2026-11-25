@@ -1420,4 +1420,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">捲動歌詞，輕觸某一行即可跳轉</string>
     <string name="lock_screen_progress">進度列</string>
     <string name="lock_screen_progress_subtitle">顯示帶有已播放時間和總長度的進度列</string>
+    <string name="remove_from_history">從紀錄中移除</string>
+    <string name="history_removed">已從紀錄中移除</string>
+    <string name="history_remove_failed">無法從紀錄中移除</string>
+    <string name="lock_screen_art_transition">封面轉場</string>
+    <string name="lock_screen_art_transition_subtitle">Automix 混音時，封面會漸變為下一首歌的封面。</string>
 </resources>

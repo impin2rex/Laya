@@ -13,17 +13,32 @@ class MusicVideoChoiceTest {
 
     @Test
     fun videoShowsItsPictureOnlyWhenWatchedUnderMusicOnly() {
-        assertFalse(MusicVideoChoice.pictureWanted(video, preferMusicOnly = true, watching = null))
-        assertTrue(MusicVideoChoice.pictureWanted(video, preferMusicOnly = true, watching = "v"))
-        assertTrue(MusicVideoChoice.pictureWanted(video, preferMusicOnly = false, watching = null))
+        assertFalse(MusicVideoChoice.pictureWanted(video, preferMusicOnly = true, watching = null, hiding = null))
+        assertTrue(MusicVideoChoice.pictureWanted(video, preferMusicOnly = true, watching = "v", hiding = null))
+        assertTrue(MusicVideoChoice.pictureWanted(video, preferMusicOnly = false, watching = null, hiding = null))
+    }
+
+    @Test
+    fun toggleHidesAVideosPictureWithoutMusicOnlyAndBringsItBack() {
+        assertFalse(MusicVideoChoice.pictureWanted(video, preferMusicOnly = false, watching = null, hiding = "v"))
+        assertTrue(MusicVideoChoice.pictureWanted(video, preferMusicOnly = false, watching = "v", hiding = "v"))
+        AppSettings.preferMusicOnly.value = false
+        MusicVideoChoice.toggle(video)
+        assertFalse(MusicVideoChoice.pictureWanted(video))
+        MusicVideoChoice.toggle(video)
+        assertTrue(MusicVideoChoice.pictureWanted(video))
+        AppSettings.preferMusicOnly.value = true
+        MusicVideoChoice.toggle(video)
+        assertFalse(MusicVideoChoice.pictureWanted(video))
+        MusicVideoChoice.onTrackChanged(null)
     }
 
     @Test
     fun trackThatIsItsOwnVideoShowsItWhenSwitchedTo() {
-        assertFalse(MusicVideoChoice.pictureWanted(track, preferMusicOnly = false, watching = null))
-        assertTrue(MusicVideoChoice.pictureWanted(track, preferMusicOnly = true, watching = "t"))
-        assertTrue(MusicVideoChoice.pictureWanted(track, preferMusicOnly = false, watching = "t"))
-        assertFalse(MusicVideoChoice.pictureWanted(track, preferMusicOnly = false, watching = "v"))
+        assertFalse(MusicVideoChoice.pictureWanted(track, preferMusicOnly = false, watching = null, hiding = null))
+        assertTrue(MusicVideoChoice.pictureWanted(track, preferMusicOnly = true, watching = "t", hiding = null))
+        assertTrue(MusicVideoChoice.pictureWanted(track, preferMusicOnly = false, watching = "t", hiding = null))
+        assertFalse(MusicVideoChoice.pictureWanted(track, preferMusicOnly = false, watching = "v", hiding = null))
     }
 
     @Test

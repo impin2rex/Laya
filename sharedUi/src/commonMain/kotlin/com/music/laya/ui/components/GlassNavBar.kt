@@ -380,7 +380,8 @@ private fun GlassNowPlaying(
                 // "Prefer music-only version", only once the listener switched to the video.
                 val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
                 val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
-                if (MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)) {
+                val hidingVideo by MusicVideoChoice.hiding.collectAsStateWithLifecycle()
+                if (MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo, hidingVideo)) {
                     PlayerPlatform.host.MiniPlayerVideo(song.videoId, Modifier.matchParentSize())
                 }
             }

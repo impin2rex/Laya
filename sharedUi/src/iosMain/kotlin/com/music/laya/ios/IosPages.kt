@@ -150,6 +150,7 @@ import com.music.laya.ui.utils.guardSheetFromContentTouches
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 import com.music.laya.sharedui.resources.add_to_playlist
+import com.music.laya.sharedui.resources.remove_from_history
 import com.music.laya.sharedui.resources.add_to_queue
 import com.music.laya.sharedui.resources.copy_log
 import com.music.laya.sharedui.resources.dislike
@@ -313,6 +314,8 @@ internal fun IosSongMenu(
     onUpgradeQuality: (() -> Unit)? = null,
     /** Greys the row out while the lookup runs; the player's seekbar label says "Upgrading quality". */
     upgradeInProgress: Boolean = false,
+    /** History page only, as Android's: take the track off the account's history. */
+    onRemoveFromHistory: (() -> Unit)? = null,
 ) {
     @Composable
     fun Action(icon: ImageVector, label: String, onClick: () -> Unit) = ListItem(
@@ -359,6 +362,7 @@ internal fun IosSongMenu(
             liked?.let { Action(if (it) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (it) stringResource(Res.string.remove_from_liked) else stringResource(Res.string.like), onToggleLike) }
             disliked?.let { Action(if (it) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt, if (it) stringResource(Res.string.undo_dislike) else stringResource(Res.string.dislike), onToggleDislike) }
             onAddToPlaylist?.let { Action(Icons.AutoMirrored.Rounded.PlaylistAdd, stringResource(Res.string.add_to_playlist), it) }
+            onRemoveFromHistory?.let { Action(Icons.Rounded.History, stringResource(Res.string.remove_from_history), it) }
             DownloadRow(song)
             Action(Icons.AutoMirrored.Rounded.PlaylistPlay, stringResource(Res.string.play_next), onPlayNext)
             Action(Icons.AutoMirrored.Rounded.QueueMusic, stringResource(Res.string.add_to_queue), onAddToQueue)

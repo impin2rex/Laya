@@ -25,6 +25,12 @@ struct iOSApp: App {
         let liveActivity = RecognitionLiveActivityImpl()
         liveActivity.end()
         RecognitionNotifier.shared.liveActivity = liveActivity
+        // The playing lyric line on the lock screen (Settings > Lock screen player). Any left up by the last run
+        // goes; the next progress tick with the app in front starts a fresh one.
+        let lyricsActivity = LyricsLiveActivityImpl()
+        lyricsActivity.end()
+        IosLyricsActivity.shared.host = lyricsActivity
+        LayaWidgetCommands.restartLyrics = { lyricsActivity.restart() }
     }
 
     var body: some Scene {

@@ -14,6 +14,7 @@ struct LayaWidgetBundle: WidgetBundle {
             RecognizeControl()
         }
         RecognitionLiveActivity()
+        LyricsLiveActivity()
     }
 }
 
@@ -88,6 +89,84 @@ struct RecognitionLiveActivity: Widget {
                 Image("laya_logo")
             }
             .widgetURL(Self.open)
+        }
+    }
+}
+
+/// The playing lyric line, with the next one dimmed under it and a small cover. No buttons: the system's Now
+/// Playing card beside it has the transport and the scrubber. Tapping it opens Laya. See LayaLyricsAttributes.
+struct LyricsLiveActivity: Widget {
+    private static let open = URL(string: "laya://widget/open")
+
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: LayaLyricsAttributes.self) { context in
+            HStack(alignment: .center, spacing: 14) {
+                LyricsCover(name: context.state.art, side: 52)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(context.state.line)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                    if !context.state.next.isEmpty {
+                        Text(context.state.next)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentTransition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: context.state.line)
+            }
+            .padding(16)
+            .activityBackgroundTint(.black.opacity(0.75))
+            .activitySystemActionForegroundColor(.white)
+            .widgetURL(Self.open)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    LyricsCover(name: context.state.art, side: 44).padding(.leading, 6)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(context.state.line).font(.headline).lineLimit(2)
+                        if !context.state.next.isEmpty {
+                            Text(context.state.next).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } compactLeading: {
+                LyricsCover(name: context.state.art, side: 22)
+            } compactTrailing: {
+                Image(systemName: "music.note").foregroundStyle(.white)
+            } minimal: {
+                LyricsCover(name: context.state.art, side: 22)
+            }
+            .widgetURL(Self.open)
+        }
+    }
+}
+
+/// The small cover the app wrote to the shared container, or the Laya mark until there is one.
+private struct LyricsCover: View {
+    let name: String?
+    let side: CGFloat
+
+    var body: some View {
+        if let url = LayaWidgetStore.fileURL(name), let image = UIImage(contentsOfFile: url.path) {
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: side, height: side)
+                .clipShape(RoundedRectangle(cornerRadius: side * 0.2))
+        } else {
+            Image("laya_logo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: side, height: side)
+                .foregroundStyle(.white)
         }
     }
 }

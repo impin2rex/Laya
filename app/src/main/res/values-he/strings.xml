@@ -1445,4 +1445,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">גלילה במילים והקשה על שורה כדי לקפוץ אליה</string>
     <string name="lock_screen_progress">סרגל התקדמות</string>
     <string name="lock_screen_progress_subtitle">הצגת סרגל דילוג עם הזמן שחלף והזמן הכולל</string>
+    <string name="remove_from_history">הסר מההיסטוריה</string>
+    <string name="history_removed">הוסר מההיסטוריה</string>
+    <string name="history_remove_failed">לא ניתן להסיר מההיסטוריה</string>
+    <string name="lock_screen_art_transition">מעבר עטיפה</string>
+    <string name="lock_screen_art_transition_subtitle">ממזג את העטיפה בזו של השיר הבא בזמן ש-Automix ממזג אותם.</string>
 </resources>

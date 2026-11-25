@@ -1382,4 +1382,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Scorri il testo e tocca una riga per saltarci</string>
     <string name="lock_screen_progress">Barra di avanzamento</string>
     <string name="lock_screen_progress_subtitle">Mostra una barra di scorrimento con tempo trascorso e totale</string>
+    <string name="remove_from_history">Rimuovi dalla cronologia</string>
+    <string name="history_removed">Rimosso dalla cronologia</string>
+    <string name="history_remove_failed">Impossibile rimuovere dalla cronologia</string>
+    <string name="lock_screen_art_transition">Transizione copertina</string>
+    <string name="lock_screen_art_transition_subtitle">Sfuma la copertina in quella del brano successivo mentre Automix li mixa.</string>
 </resources>

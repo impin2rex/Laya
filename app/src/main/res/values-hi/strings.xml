@@ -1443,4 +1443,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">लिरिक्स स्क्रॉल करें और किसी लाइन पर टैप करके वहाँ जाएँ</string>
     <string name="lock_screen_progress">प्रोग्रेस बार</string>
     <string name="lock_screen_progress_subtitle">बीता हुआ और कुल समय के साथ सीक बार दिखाएँ</string>
+    <string name="remove_from_history">इतिहास से हटाएँ</string>
+    <string name="history_removed">इतिहास से हटाया गया</string>
+    <string name="history_remove_failed">इतिहास से हटाया नहीं जा सका</string>
+    <string name="lock_screen_art_transition">आर्टवर्क ट्रांज़िशन</string>
+    <string name="lock_screen_art_transition_subtitle">Automix के गाने मिलाते समय कवर अगले गाने के कवर में घुल जाता है।</string>
 </resources>

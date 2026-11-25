@@ -155,6 +155,7 @@ fun TvNowPlayingScreen(
     // its own sound with no picture otherwise — until the listener switches to the video.
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsState()
     val watchingVideo by MusicVideoChoice.watching.collectAsState()
+    val hidingVideo by MusicVideoChoice.hiding.collectAsState()
     LaunchedEffect(song.videoId, inParty) {
         alternate = null
         MusicVideoChoice.onTrackChanged(song.videoId)
@@ -180,8 +181,8 @@ fun TvNowPlayingScreen(
     }
     val toggleVideo: (() -> Unit)? = alternate?.let { other -> { swapTo(other) } }
         // No audio version to go to: the switch only puts the video's picture up or away.
-        ?: song.takeIf { it.isVideo && preferMusicOnly }?.let { video -> { MusicVideoChoice.toggle(video.videoId) } }
-    val videoMode = MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
+        ?: song.takeIf { it.isVideo }?.let { video -> { MusicVideoChoice.toggle(video) } }
+    val videoMode = MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo, hidingVideo)
     // The aspect button's choice — see [com.music.laya.data.settings.VideoScale].
     val videoScale by AppSettings.videoScale.collectAsState()
     var videoRendered by remember(song.videoId) { mutableStateOf(false) }

@@ -80,12 +80,15 @@ enum LayaWidgetStore {
 /// the extension. Returns false while the app has no player to run it yet (launched in the background, no UI).
 enum LayaWidgetCommands {
     static var handler: ((String) -> Bool)?
+    /// Brings the lock-screen lyrics card back if it is gone (LyricsLiveActivityImpl.restart).
+    static var restartLyrics: (() -> Void)?
 }
 
 /// A widget button: previous, toggle, next, like or shuffle. An AudioPlaybackIntent, so the system runs it in the
-/// app's process, where the player is, rather than in the extension.
+/// app's process, where the player is, rather than in the extension. Also a LiveActivityIntent: iOS lets an app
+/// start a Live Activity from the background only inside one, so a widget tap can bring the lyrics card back.
 @available(iOS 17.0, *)
-struct LayaWidgetIntent: AudioPlaybackIntent {
+struct LayaWidgetIntent: AudioPlaybackIntent, LiveActivityIntent {
     static var title: LocalizedStringResource = "Laya playback"
     static var isDiscoverable = false
 
@@ -104,6 +107,7 @@ struct LayaWidgetIntent: AudioPlaybackIntent {
         if LayaWidgetCommands.handler?(command) == true {
             // Running now (the player is up, the app possibly in the background): answer the tap at once.
             LayaWidgetStore.applyOptimistically(command)
+            LayaWidgetCommands.restartLyrics?()
             return .result()
         }
         // No player yet (the app was started in the background for this tap): the command is queued, so bring
@@ -185,5 +189,24 @@ struct LayaCancelRecognitionIntent: LiveActivityIntent {
             }
         }
         return .result()
+    }
+}
+
+// MARK: - Lock-screen lyrics' Live Activity
+
+/// The playing lyric line on the lock screen and in the Dynamic Island, beside the system's Now Playing card (which
+/// keeps the controls). Started and updated by the app (LyricsLiveActivityImpl, fed by IosLyricsActivity), drawn by
+/// the widget extension (LyricsLiveActivity).
+@available(iOS 16.1, *)
+struct LayaLyricsAttributes: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        var title: String
+        var artist: String
+        /// The sung line, or the title when the song has no synced lyrics.
+        var line: String
+        /// The line after it, or the artist.
+        var next: String
+        /// File name of a small cover in the shared container (LayaWidgetStore), once there is one.
+        var art: String?
     }
 }

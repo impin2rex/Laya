@@ -897,4 +897,8 @@
     <string name="hide_ai_songs">AI से बने गाने छिपाएँ</string>
     <string name="hide_ai_songs_subtitle">AiSList ब्लॉकलिस्ट के चैनलों के गाने (AiSList, aisloplist.com, CC BY-NC 4.0) होम, सर्च और रेडियो से बाहर रखता है</string>
     <string name="lock_screen_player">लॉक स्क्रीन प्लेयर</string>
+    <string name="lock_screen_lyrics_ios_subtitle">लॉक स्क्रीन और डायनैमिक आइलैंड पर चल रही लिरिक्स लाइन</string>
+    <string name="remove_from_history">इतिहास से हटाएँ</string>
+    <string name="history_removed">इतिहास से हटाया गया</string>
+    <string name="history_remove_failed">इतिहास से हटाया नहीं जा सका</string>
 </resources>

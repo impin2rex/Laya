@@ -1211,4 +1211,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">লিরিক্স স্ক্রল করুন এবং কোনো লাইনে ট্যাপ করে সেখানে যান</string>
     <string name="lock_screen_progress">প্রগ্রেস বার</string>
     <string name="lock_screen_progress_subtitle">পার হওয়া ও মোট সময়সহ একটি সিক বার দেখান</string>
+    <string name="remove_from_history">ইতিহাস থেকে সরান</string>
+    <string name="history_removed">ইতিহাস থেকে সরানো হয়েছে</string>
+    <string name="history_remove_failed">ইতিহাস থেকে সরানো যায়নি</string>
+    <string name="lock_screen_art_transition">আর্টওয়ার্ক ট্রানজিশন</string>
+    <string name="lock_screen_art_transition_subtitle">Automix গান মেশানোর সময় কভার পরের গানের কভারে মিশে যায়।</string>
 </resources>

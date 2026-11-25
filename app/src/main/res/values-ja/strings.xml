@@ -1421,4 +1421,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">歌詞をスクロールし、行をタップしてその位置へ移動します</string>
     <string name="lock_screen_progress">進行バー</string>
     <string name="lock_screen_progress_subtitle">経過時間と全体の長さ付きのシークバーを表示します</string>
+    <string name="remove_from_history">履歴から削除</string>
+    <string name="history_removed">履歴から削除しました</string>
+    <string name="history_remove_failed">履歴から削除できませんでした</string>
+    <string name="lock_screen_art_transition">アートワークの切り替え</string>
+    <string name="lock_screen_art_transition_subtitle">Automix で曲をつなぐ間、ジャケットを次の曲のものへなめらかに切り替えます。</string>
 </resources>

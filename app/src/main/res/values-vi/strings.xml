@@ -1360,4 +1360,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Cuộn lời bài hát và nhấn vào một dòng để chuyển đến đó</string>
     <string name="lock_screen_progress">Thanh tiến trình</string>
     <string name="lock_screen_progress_subtitle">Hiển thị thanh tua với thời gian đã phát và tổng thời gian</string>
+    <string name="remove_from_history">Xóa khỏi lịch sử</string>
+    <string name="history_removed">Đã xóa khỏi lịch sử</string>
+    <string name="history_remove_failed">Không thể xóa khỏi lịch sử</string>
+    <string name="lock_screen_art_transition">Chuyển ảnh bìa</string>
+    <string name="lock_screen_art_transition_subtitle">Hòa ảnh bìa sang ảnh bìa bài tiếp theo khi Automix trộn hai bài.</string>
 </resources>

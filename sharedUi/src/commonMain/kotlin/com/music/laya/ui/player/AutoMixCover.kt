@@ -384,6 +384,11 @@ fun rememberMiniAutoMixArtwork(
     index: Int,
     /** The decode size of the bar's cover; the phone's row art unless a bigger surface asks. */
     px: Int = ROW_ART_PX,
+    /**
+     * A surface's own switch in place of the mini player's — the Android lock screen's. Null: the mini
+     * player's. Either way only while Automix is on.
+     */
+    ownSwitch: Boolean? = null,
 ): @Composable (String?, Modifier) -> Unit {
     val occurrence = remember(song?.videoId, song?.queueEntryId, queue, index) {
         song?.let { coverOccurrence(it, queue, index) }
@@ -391,7 +396,9 @@ fun rememberMiniAutoMixArtwork(
     val feed = AutoMixVisualFeed.state
     val displayed = remember { DisplayedMiniCovers() }
     val cover = remember { AutoMixCoverState(displayed::before) }
-    val gate = autoMixArtworkGate(mini = true)
+    val miniGate = autoMixArtworkGate(mini = true)
+    val automix by PlayerSettings.smartFadeEnabled.collectAsStateWithLifecycle()
+    val gate = if (ownSwitch == null) miniGate else AutoMixArtworkGate(enabled = automix && ownSwitch)
     SideEffect { cover.bind(occurrence, null, feed.value?.takeIf { gate.allows(it.generation) }) }
     LaunchedEffect(cover, gate) { feed.collect { cover.update(it, gate) } }
     AutoMixRevealClockEffect()

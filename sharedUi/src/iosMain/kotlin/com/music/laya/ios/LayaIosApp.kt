@@ -96,6 +96,8 @@ import com.music.laya.data.model.HEADER_ART_PX
 import com.music.laya.data.model.ROW_ART_PX
 import com.music.laya.data.model.artworkAt
 import com.music.laya.data.lyrics.LyricLine
+import kotlinx.coroutines.flow.first
+import com.music.laya.data.lyrics.LyricsPicks
 import com.music.laya.data.lyrics.LyricsRepository
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.HomeShelf
@@ -206,6 +208,8 @@ import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.recognize_title
 import com.music.laya.sharedui.resources.radio
 import com.music.laya.sharedui.resources.history_empty
+import com.music.laya.sharedui.resources.history_removed
+import com.music.laya.sharedui.resources.history_remove_failed
 import com.music.laya.sharedui.resources.library_empty
 import com.music.laya.ui.screens.HistoryScreen
 import org.jetbrains.compose.resources.getString
@@ -233,6 +237,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     // Pushed pages (one global stack; a tab tap clears it) and the long-press menu.
     var stack by remember { mutableStateOf(emptyList<IosPage>()) }
     var menuSong by remember { mutableStateOf<Song?>(null) }
+    // The menu was opened on the account history page: it offers Remove from history.
+    var menuFromHistory by remember { mutableStateOf(false) }
+    LaunchedEffect(menuSong) { if (menuSong == null) menuFromHistory = false }
     val repeat by AppSettings.repeatMode.collectAsState()
     val shuffle by AppSettings.shuffleEnabled.collectAsState()
     val autoplay by AppSettings.autoplay.collectAsState()
@@ -393,6 +400,21 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     LaunchedEffect(signedIn, sessionVersion) {
         if (signedIn) { library = UiState.Loading; loadLibrary(); loadHome() }
         else { library = UiState.Loading; stack = stack.filterNot { it is IosPage.Account || it is IosPage.History } }
+    }
+    /** As MainViewModel.removeFromHistory: the row goes at once and comes back if YouTube refuses. */
+    fun removeFromHistory(songs: List<Song>) {
+        val page = stack.lastOrNull { it is IosPage.History } as? IosPage.History ?: return
+        val ids = songs.mapTo(HashSet()) { it.videoId }
+        val shown = (page.songs as? UiState.Success)?.data ?: return
+        val left = shown.filterNot { it.videoId in ids }
+        scope.launch {
+            val emptied = UiState.Error(getString(Res.string.history_empty))
+            stack = stack.map { if (it === page) IosPage.History(if (left.isEmpty()) emptied else UiState.Success(left)) else it }
+            val removed = YtMusicRepository.removeFromHistory(ids).isSuccess
+            if (!removed) stack = stack.map { if (it is IosPage.History) page else it }
+            IosPlayerHost.messages.value =
+                getString(if (removed) Res.string.history_removed else Res.string.history_remove_failed)
+        }
     }
     fun openHistory() {
         val loading = IosPage.History(UiState.Loading)
@@ -756,7 +778,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     // Per-provider picker state, mirroring MainViewModel: hits are kept so choosing one is instant.
     var providerStates by remember(song?.videoId) { mutableStateOf(LyricsSource.entries.associateWith { LyricsProviderState.NOT_FETCHED }) }
     val providerHits = remember(song?.videoId) { mutableMapOf<LyricsSource, LyricsRepository.Result>() }
-    var selectedProvider by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
+    // A provider picked by hand for this track earlier, kept across leaving it and coming back.
+    var selectedProvider by remember(song?.videoId) { mutableStateOf(song?.let { LyricsPicks[it.videoId] }) }
     fun showLyrics(r: LyricsRepository.Result) { lyrics = r.lines; lyricsSource = r.source; lyricsChecked = true }
     fun fetchProvider(s: LyricsSource?) { // null = the automatic lookup across all enabled providers
         val sg = song ?: return
@@ -787,12 +810,25 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             }
         }
     }
+    // The lyrics settled on, handed to the lock-screen card so both show the same.
+    LaunchedEffect(song?.videoId, lyrics, lyricsChecked) {
+        val id = song?.videoId ?: return@LaunchedEffect
+        IosLyricsActivity.shown = if (lyricsChecked) id to lyrics else null
+    }
     LaunchedEffect(song?.videoId, durationKnown, syncedLyrics, lyricsSourceSet) {
         if (song == null || !durationKnown) return@LaunchedEffect
+        // The hand-picked provider alone, as MainViewModel.loadLyrics; the usual race only on a miss.
+        val pick = selectedProvider?.takeIf { syncedLyrics && it in lyricsSourceSet }
+        if (pick != null) {
+            fetchProvider(pick)
+            snapshotFlow { providerStates[pick] }.first { it == LyricsProviderState.FOUND || it == LyricsProviderState.NOT_FOUND }
+            if (providerStates[pick] == LyricsProviderState.FOUND) return@LaunchedEffect
+        }
         fetchProvider(null)
     }
     fun selectProvider(s: LyricsSource) {
         selectedProvider = s
+        song?.let { LyricsPicks[it.videoId] = s }
         when (providerStates[s]) {
             LyricsProviderState.FOUND -> providerHits[s]?.let(::showLyrics)
             LyricsProviderState.NOT_FETCHED, null -> fetchProvider(s)
@@ -1119,7 +1155,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         currentSong = song,
                                         isPlaying = player.isPlaying,
                                         onSongClick = { songs, i -> player.play(songs, i) },
-                                        onSongLongPress = { menuSong = it },
+                                        onSongLongPress = { menuSong = it; menuFromHistory = true },
                                         onSongSwipe = ::swipe,
                                         onRetry = { stack = stack.dropLast(1); openHistory() },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
@@ -1456,6 +1492,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             onToggleDislike = { toggleDislike(m.videoId) },
                             onAddToPlaylist = if (signedIn) ({ playlistTarget = m }) else null,
                             onSongInfo = { infoTarget = m },
+                            onRemoveFromHistory = if (menuFromHistory && YtMusicRepository.canRemoveFromHistory(m.videoId)) {
+                                { removeFromHistory(listOf(m)) }
+                            } else null,
                             // Android: sleep timer and Copy log are the player menu's own rows.
                             sleepStatus = player.sleepMinutes?.let { "$it min" } ?: if (player.sleepAfterTrack) "End of track" else null,
                             onSleepTimer = if (nowPlayingOpen) ({ sleepPicker = true }) else null,

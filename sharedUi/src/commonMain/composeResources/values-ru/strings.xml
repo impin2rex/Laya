@@ -909,4 +909,8 @@
     <string name="hide_ai_songs">Скрывать песни, созданные ИИ</string>
     <string name="hide_ai_songs_subtitle">Убирает из главной, поиска и радио песни каналов из чёрного списка AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
     <string name="lock_screen_player">Плеер на экране блокировки</string>
+    <string name="lock_screen_lyrics_ios_subtitle">Текущая строка текста на экране блокировки и в Dynamic Island</string>
+    <string name="remove_from_history">Удалить из истории</string>
+    <string name="history_removed">Удалено из истории</string>
+    <string name="history_remove_failed">Не удалось удалить из истории</string>
 </resources>

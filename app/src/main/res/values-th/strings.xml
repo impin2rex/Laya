@@ -1426,4 +1426,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">เลื่อนเนื้อเพลงและแตะบรรทัดเพื่อข้ามไปยังบรรทัดนั้น</string>
     <string name="lock_screen_progress">แถบความคืบหน้า</string>
     <string name="lock_screen_progress_subtitle">แสดงแถบเลื่อนพร้อมเวลาที่ผ่านไปและเวลาทั้งหมด</string>
+    <string name="remove_from_history">ลบออกจากประวัติ</string>
+    <string name="history_removed">ลบออกจากประวัติแล้ว</string>
+    <string name="history_remove_failed">ไม่สามารถลบออกจากประวัติได้</string>
+    <string name="lock_screen_art_transition">การเปลี่ยนภาพปก</string>
+    <string name="lock_screen_art_transition_subtitle">ผสานภาพปกเข้ากับภาพปกเพลงถัดไประหว่างที่ Automix มิกซ์เพลง</string>
 </resources>

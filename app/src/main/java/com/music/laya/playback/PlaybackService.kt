@@ -107,7 +107,9 @@ import com.music.laya.data.innertube.InnertubeParser
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.lyrics.EmbeddedLyrics
 import com.music.laya.data.lyrics.LyricLine
+import com.music.laya.data.lyrics.LyricsPicks
 import com.music.laya.data.lyrics.LyricsRepository
+import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.NOTIFICATION_ART_PX
 import com.music.laya.data.model.PlaybackSourceType
 import com.music.laya.data.model.SearchFilter
@@ -229,6 +231,14 @@ const val ACTION_TOGGLE_FAVORITE = "com.music.laya.action.TOGGLE_FAVORITE"
  */
 object ServiceLyrics {
     val lines = kotlinx.coroutines.flow.MutableStateFlow<List<LyricLine>?>(null)
+
+    /**
+     * What the app's own player settled on for a track — its automatic pick or the provider picked by
+     * hand — once its lookup has finished: the lock screen shows that rather than [lines], so the two
+     * never disagree (the service's lookup can land on another provider). Null lines: none found.
+     */
+    data class Shown(val videoId: String, val lines: List<LyricLine>?)
+    val shown = kotlinx.coroutines.flow.MutableStateFlow<Shown?>(null)
 }
 
 /** Session command used by the media notification's and the 4×1 widget's Shuffle button. */
@@ -1429,6 +1439,8 @@ class PlaybackService : MediaLibraryService() {
         }
 
         bluetoothTracker.start()
+        // A provider picked by hand mid-song: redo the lookup so the lock screen follows it.
+        scope.launch(Dispatchers.Main) { LyricsPicks.version.drop(1).collect { loadLyricsForCurrentTrack() } }
         androidx.core.content.ContextCompat.registerReceiver(
             this,
             screenOnReceiver,
@@ -7808,16 +7820,21 @@ class PlaybackService : MediaLibraryService() {
                 lines = EmbeddedLyrics.forUri(this@PlaybackService, localUri)
             }
             if (lines == null) {
-                val found = LyricsRepository.lyrics(
-                    videoId = currentSong.videoId,
-                    title = currentSong.title,
-                    artist = currentSong.artist,
-                    durationMs = trackDurationMs,
-                    album = currentSong.albumName,
-                    sources = AppSettings.lyricsSources.value,
-                    order = AppSettings.lyricsSourceOrder.value,
-                    prioritizeSyllableSync = AppSettings.prioritizeSyllableSync.value,
-                )
+                suspend fun ask(sources: Set<LyricsSource>, order: List<LyricsSource>, syllables: Boolean) =
+                    LyricsRepository.lyrics(
+                        videoId = currentSong.videoId,
+                        title = currentSong.title,
+                        artist = currentSong.artist,
+                        durationMs = trackDurationMs,
+                        album = currentSong.albumName,
+                        sources = sources,
+                        order = order,
+                        prioritizeSyllableSync = syllables,
+                    )
+                // The provider picked by hand in the player, so the lock screen shows the same lyrics.
+                val pick = LyricsPicks[currentSong.videoId]?.takeIf { it in AppSettings.lyricsSources.value }
+                val found = pick?.let { ask(setOf(it), listOf(it), false) }
+                    ?: ask(AppSettings.lyricsSources.value, AppSettings.lyricsSourceOrder.value, AppSettings.prioritizeSyllableSync.value)
                 lines = found?.lines
             }
             withContext(Dispatchers.Main) {

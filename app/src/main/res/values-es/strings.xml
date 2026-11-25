@@ -1415,4 +1415,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Desplaza la letra y toca una línea para saltar a ella</string>
     <string name="lock_screen_progress">Barra de progreso</string>
     <string name="lock_screen_progress_subtitle">Muestra una barra de búsqueda con el tiempo transcurrido y total</string>
+    <string name="remove_from_history">Quitar del historial</string>
+    <string name="history_removed">Quitado del historial</string>
+    <string name="history_remove_failed">No se pudo quitar del historial</string>
+    <string name="lock_screen_art_transition">Transición de portada</string>
+    <string name="lock_screen_art_transition_subtitle">Funde la portada con la de la siguiente canción mientras Automix las mezcla.</string>
 </resources>

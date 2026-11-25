@@ -840,8 +840,9 @@ fun NowPlayingScreen(
     // Under "Prefer music-only version" a video plays as a song until the listener switches to it.
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
     val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
+    val hidingVideo by MusicVideoChoice.hiding.collectAsStateWithLifecycle()
     val videoMode = PlayerPlatform.host.musicVideoSupported &&
-        MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
+        MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo, hidingVideo)
     // The lyrics and queue header is a small player of its own: it plays the video when the mini
     // player does (Settings), and is the still sleeve otherwise.
     val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
@@ -852,7 +853,7 @@ fun NowPlayingScreen(
     // A video with no audio version to swap to plays its own sound as music; the toggle then only
     // puts its picture up or away.
     val toggle = onToggleVideo
-        ?: song.takeIf { it.isVideo && preferMusicOnly }?.let { video -> { MusicVideoChoice.toggle(video.videoId) } }
+        ?: song.takeIf { it.isVideo }?.let { video -> { MusicVideoChoice.toggle(video) } }
     val videoToggle = toggle
         ?.takeIf { PlayerPlatform.host.musicVideoSupported }
         ?.let { VideoToggle(video = videoMode, switching = versionSwitching, onToggle = it) }
@@ -1048,6 +1049,10 @@ fun NowPlayingScreen(
         loadingText = lyricsLoadingText,
         haptics = haptics,
     )
+    // Handed to the lock screens, which show the same version under the same lines.
+    LaunchedEffect(song.videoId, lyricsTranslation.subLines) {
+        LyricsOnShow.subLines.value = lyricsTranslation.subLines?.let { song.videoId to it }
+    }
     // The drawer holding the finished card, set the moment Share is confirmed.
     // Nothing is drawn here: the picture is a bitmap and a canvas, which is the
     // phone's to make, so the request is handed down and the sheet comes back

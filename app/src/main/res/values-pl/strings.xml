@@ -1480,4 +1480,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Przewijaj tekst i dotknij wiersza, aby do niego przejść</string>
     <string name="lock_screen_progress">Pasek postępu</string>
     <string name="lock_screen_progress_subtitle">Pokazuj pasek przewijania z czasem odtworzonym i całkowitym</string>
+    <string name="remove_from_history">Usuń z historii</string>
+    <string name="history_removed">Usunięto z historii</string>
+    <string name="history_remove_failed">Nie udało się usunąć z historii</string>
+    <string name="lock_screen_art_transition">Przejście okładki</string>
+    <string name="lock_screen_art_transition_subtitle">Płynnie przechodzi w okładkę następnego utworu, gdy Automix je miksuje.</string>
 </resources>

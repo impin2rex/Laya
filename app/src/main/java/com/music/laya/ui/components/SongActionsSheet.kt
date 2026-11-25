@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.PlaylistRemove
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.ThumbDown
 import androidx.compose.material.icons.rounded.ThumbDownOffAlt
@@ -148,6 +149,8 @@ fun SongActionsSheet(
     onOpenArtist: (String) -> Unit,
     modifier: Modifier = Modifier,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    /** Takes this track off the account's history — offered on the history page only. */
+    onRemoveFromHistory: (() -> Unit)? = null,
     /**
      * Takes this track out of the song cache. Null hides the row — the caller
      * passes one only while the cache actually holds some of it.
@@ -300,6 +303,14 @@ fun SongActionsSheet(
                 ActionRow(
                     icon = Icons.Rounded.PlaylistRemove,
                     label = stringResource(R.string.remove_from_playlist),
+                    accent = palette.accent,
+                    onClick = it,
+                )
+            }
+            onRemoveFromHistory?.let {
+                ActionRow(
+                    icon = Icons.Rounded.History,
+                    label = stringResource(R.string.remove_from_history),
                     accent = palette.accent,
                     onClick = it,
                 )

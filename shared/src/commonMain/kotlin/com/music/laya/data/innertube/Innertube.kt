@@ -35,6 +35,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -1015,10 +1016,26 @@ object Innertube {
      * There is no video-id form of this call; the token *is* the request.
      */
     suspend fun sendFeedback(token: String) {
+        sendFeedback(listOf(token))
+    }
+
+    /**
+     * Several feedback tokens in one request — taking a selection off the history. Throws when
+     * YouTube says any of them was not processed.
+     */
+    suspend fun sendFeedback(tokens: List<String>) {
         requireSession()
-        postMusic("feedback") {
-            putJsonArray("feedbackTokens") { add(token) }
+        val response = postMusic("feedback") {
+            putJsonArray("feedbackTokens") { tokens.forEach { add(it) } }
         }
+        response["error"]?.let { error ->
+            val message = error.jsonObject["message"]?.jsonPrimitive?.contentOrNull
+            error("YouTube Music refused the change: ${message ?: error}")
+        }
+        val refused = response["feedbackResponses"]?.jsonArray.orEmpty().count {
+            it.jsonObject["isProcessed"]?.jsonPrimitive?.contentOrNull == "false"
+        }
+        if (refused > 0) error("YouTube Music did not take $refused of ${tokens.size} changes")
     }
 
     /**

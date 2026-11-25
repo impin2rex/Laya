@@ -16,6 +16,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -68,12 +77,15 @@ import coil3.compose.AsyncImage
 import com.music.laya.auth.SignedIn
 import com.music.laya.data.LikeState
 import com.music.laya.data.model.LikeStatus
+import com.music.laya.data.model.artworkAt
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.playback.ACTION_TOGGLE_FAVORITE
 import com.music.laya.playback.ServiceLyrics
 import com.music.laya.playback.rememberMediaController
 import com.music.laya.playback.rememberPlayerState
+import com.music.laya.ui.player.LyricsOnShow
 import com.music.laya.ui.player.SyncedLyricsPanel
+import com.music.laya.ui.player.rememberMiniAutoMixArtwork
 import com.music.laya.ui.player.ThinSlider
 import com.music.laya.ui.theme.LayaTheme
 import kotlinx.coroutines.delay
@@ -190,17 +202,40 @@ class LockScreenActivity : ComponentActivity() {
     }
 }
 
+/** Where the sharp cover's bottom edge sits, as a share of the screen's height: just above the controls. */
+private const val COVER_BOTTOM = 0.78f
+
+/** How much of the cover's height fades into the blur, at its top and again at its bottom. */
+private const val COVER_FEATHER = 0.2f
+
+/** How soft the mirror images are: enough to lose detail, not the shapes. */
+private val REFLECTION_BLUR = 7.dp
+
+/** How far past the screen the blurred layer reaches. */
+private val BLUR_MARGIN = 40.dp
+
+/** Sizes the two covers are fetched at: the sharp one fills a phone's width; the blurred one needs little. */
+private const val COVER_PX = 1080
+private const val BACKDROP_PX = 240
+
 @Composable
 private fun LockScreen(onClose: () -> Unit) {
     val controller = rememberMediaController()
     val state = rememberPlayerState(controller)
     val song = state.song
-    val lyrics by ServiceLyrics.lines.collectAsState()
+    val serviceLyrics by ServiceLyrics.lines.collectAsState()
+    val shownLyrics by ServiceLyrics.shown.collectAsState()
+    // The app's own choice for this track when it has made one; the service's lookup otherwise.
+    val lyrics = shownLyrics?.takeIf { it.videoId == song?.videoId }?.lines ?: serviceLyrics.takeIf { shownLyrics?.videoId != song?.videoId }
+    // The app's translation or romanization, line for line with its own lyrics — so only over those.
+    val onShow by LyricsOnShow.subLines.collectAsState()
+    val subLines = onShow?.takeIf { it.first == song?.videoId && shownLyrics?.videoId == song?.videoId }?.second
     val likes by LikeState.overrides.collectAsState()
     val context = LocalContext.current
     val signedIn by SignedIn.state(context).collectAsState()
     val lyricsInteractive by AppSettings.lockScreenLyricsInteractive.collectAsState()
     val showProgress by AppSettings.lockScreenProgress.collectAsState()
+    val artTransition by AppSettings.lockScreenArtTransition.collectAsState()
 
     Box(
         Modifier
@@ -216,30 +251,67 @@ private fun LockScreen(onClose: () -> Unit) {
                 )
             },
     ) {
+        // The cover blurred over the whole screen, as a wallpaper would be.
+        // The cover blurred over the whole screen, for any edge the reflections don't reach.
+        // Android 11 and older draw no blur, so there the backdrop is dimmed to stay behind the cover.
         AsyncImage(
-            model = song?.thumbnailUrl,
+            model = song?.thumbnailUrl.artworkAt(BACKDROP_PX),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-        Box(
-            Modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    // Dark only where the clock and lyrics sit and under the
-                    // controls; the artwork shows clear through the middle.
-                    Brush.verticalGradient(
-                        0f to Color.Black.copy(alpha = 0.85f),
-                        0.2f to Color.Black.copy(alpha = 0.6f),
-                        0.38f to Color.Black.copy(alpha = 0.15f),
-                        0.48f to Color.Transparent,
-                        0.6f to Color.Transparent,
-                        0.72f to Color.Black.copy(alpha = 0.55f),
-                        0.85f to Color.Black.copy(alpha = 0.85f),
-                        1f to Color.Black.copy(alpha = 0.95f),
-                    ),
-                ),
+                .blur(48.dp, BlurredEdgeTreatment.Rectangle)
+                .graphicsLayer { if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) alpha = 0.35f },
         )
+        // The cover itself, square and sharp, just above the controls, with a blurred mirror image of
+        // it above and below — as a reflection in glass — and its own top and bottom feathered into them.
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val side = minOf(maxWidth, maxHeight)
+            val top = (maxHeight * COVER_BOTTOM - side).coerceAtLeast(0.dp)
+            val cover = song?.thumbnailUrl.artworkAt(COVER_PX)
+            // AutoMix's artwork transition, under the lock screen's own switch: while two songs
+            // blend, every copy of the cover — the mirror images and the sharp one — dissolves to the next
+            // in step with the audio. Outside a mix (or with the switch off) it is a plain cover.
+            val artwork = rememberMiniAutoMixArtwork(song, state.queue, state.queueIndex, px = COVER_PX, ownSwitch = artTransition)
+            // One blurred layer — mirror image, the cover, mirror image — so the sharp cover's feathered
+            // edges fade into a blur of themselves with no seam. Drawn past the screen by [BLUR_MARGIN]
+            // so the blur has picture to take in at the screen's edges rather than darkening them.
+            Box(
+                Modifier
+                    .requiredSize(maxWidth + BLUR_MARGIN * 2, maxHeight + BLUR_MARGIN * 2)
+                    .graphicsLayer { if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) alpha = 0.35f }
+                    .blur(REFLECTION_BLUR, BlurredEdgeTreatment.Rectangle),
+            ) {
+                for ((y, mirrored) in listOf(top - side to true, top to false, top + side to true)) {
+                    artwork(
+                        cover,
+                        Modifier
+                            .offset(x = BLUR_MARGIN, y = y + BLUR_MARGIN)
+                            .size(side)
+                            .graphicsLayer { if (mirrored) scaleY = -1f },
+                    )
+                }
+            }
+            artwork(
+                cover,
+                Modifier
+                    .offset(y = top)
+                    .size(side)
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(
+                            Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                COVER_FEATHER to Color.Black,
+                                1f - COVER_FEATHER to Color.Black,
+                                1f to Color.Transparent,
+                            ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    },
+            )
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -249,7 +321,8 @@ private fun LockScreen(onClose: () -> Unit) {
             Clock()
             Box(Modifier.fillMaxWidth().height(260.dp).padding(top = 16.dp)) {
                 val lines = lyrics
-                if (song != null && !lines.isNullOrEmpty()) {
+                // Only timed lyrics: plain text can't follow the song, so none is shown rather than that.
+                if (song != null && lines != null && lines.any { it.timeMs > 0 }) {
                     SyncedLyricsPanel(
                         lines = lines,
                         trackKey = song.videoId,
@@ -258,6 +331,7 @@ private fun LockScreen(onClose: () -> Unit) {
                         isPlaying = state.isPlaying,
                         onSeekToLine = { if (lyricsInteractive) controller?.seekTo(it) },
                         centerFocus = true,
+                        subLines = subLines,
                         modifier = Modifier.fillMaxSize(),
                     )
                     // Read-only unless the setting says otherwise: this takes the

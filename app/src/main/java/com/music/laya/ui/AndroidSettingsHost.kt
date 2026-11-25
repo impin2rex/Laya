@@ -42,6 +42,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LinearScale
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -435,6 +436,14 @@ private fun LockScreenSetup(grants: LockScreenGrants, onClose: () -> Unit) {
             R.string.lock_screen_progress_subtitle,
             progress,
             AppSettings::setLockScreenProgress,
+        )
+        val artTransition by AppSettings.lockScreenArtTransition.collectAsState()
+        OptionRow(
+            Icons.Rounded.AutoAwesome,
+            R.string.lock_screen_art_transition,
+            R.string.lock_screen_art_transition_subtitle,
+            artTransition,
+            AppSettings::setLockScreenArtTransition,
         )
     }
 }

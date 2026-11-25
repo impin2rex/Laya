@@ -1420,4 +1420,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Gulir lirik dan ketuk baris untuk melompat ke sana</string>
     <string name="lock_screen_progress">Bilah progres</string>
     <string name="lock_screen_progress_subtitle">Tampilkan bilah geser dengan waktu berjalan dan total</string>
+    <string name="remove_from_history">Hapus dari riwayat</string>
+    <string name="history_removed">Dihapus dari riwayat</string>
+    <string name="history_remove_failed">Tidak dapat menghapus dari riwayat</string>
+    <string name="lock_screen_art_transition">Transisi sampul</string>
+    <string name="lock_screen_art_transition_subtitle">Memadukan sampul ke sampul lagu berikutnya saat Automix mencampurnya.</string>
 </resources>

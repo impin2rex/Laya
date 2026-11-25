@@ -383,7 +383,8 @@ object AppSettings {
     /**
      * Android: a full-screen player (artwork, clock, synced lyrics, controls)
      * over the lock screen when the screen is turned on while music plays.
-     * Needs "Display over other apps" to be started from the background.
+     * iOS: the playing lyric line as a Live Activity on the lock screen and in
+     * the Dynamic Island, beside the system's Now Playing card.
      */
     val lockScreenPlayer = MutableStateFlow(false)
 
@@ -392,6 +393,9 @@ object AppSettings {
 
     /** A seek bar with elapsed and total time on the lock-screen player. */
     val lockScreenProgress = MutableStateFlow(false)
+
+    /** The lock-screen player's cover dissolves into the next song's while Automix blends them. */
+    val lockScreenArtTransition = MutableStateFlow(true)
 
     /** Freezes the main player's mesh gradient instead of letting it drift/crossfade. */
     val reduceAnimation = MutableStateFlow(false)
@@ -942,6 +946,7 @@ object AppSettings {
         lockScreenPlayer.value = prefs.getBoolean(KEY_LOCK_SCREEN_PLAYER, false)
         lockScreenLyricsInteractive.value = prefs.getBoolean(KEY_LOCK_SCREEN_LYRICS_INTERACTIVE, false)
         lockScreenProgress.value = prefs.getBoolean(KEY_LOCK_SCREEN_PROGRESS, false)
+        lockScreenArtTransition.value = prefs.getBoolean(KEY_LOCK_SCREEN_ART_TRANSITION, true)
         reduceAnimation.value = prefs.getBoolean(KEY_REDUCE_ANIMATION, false)
         systemFont.value = prefs.getBoolean(KEY_SYSTEM_FONT, false)
         onboardingComplete.value = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
@@ -1325,6 +1330,11 @@ object AppSettings {
     fun setLockScreenProgress(value: Boolean) {
         lockScreenProgress.value = value
         prefs.edit().putBoolean(KEY_LOCK_SCREEN_PROGRESS, value).apply()
+    }
+
+    fun setLockScreenArtTransition(value: Boolean) {
+        lockScreenArtTransition.value = value
+        prefs.edit().putBoolean(KEY_LOCK_SCREEN_ART_TRANSITION, value).apply()
     }
 
     fun setThemeMode(value: ThemeMode) {
@@ -2180,6 +2190,7 @@ object AppSettings {
     private const val KEY_LOCK_SCREEN_PLAYER = "lock_screen_player"
     private const val KEY_LOCK_SCREEN_LYRICS_INTERACTIVE = "lock_screen_lyrics_interactive"
     private const val KEY_LOCK_SCREEN_PROGRESS = "lock_screen_progress"
+    private const val KEY_LOCK_SCREEN_ART_TRANSITION = "lock_screen_art_transition"
     private const val KEY_CACHE_LIMIT = "audio_cache_limit_bytes"
     private const val KEY_REDUCE_ANIMATION = "reduce_animation"
     private const val KEY_SYSTEM_FONT = "system_font"

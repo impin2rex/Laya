@@ -651,6 +651,8 @@ private fun LayaApp(
      * question has to be answered by whoever opened the menu.
      */
     var menuFromPlayer by remember { mutableStateOf(false) }
+    // The menu was opened on the account history page: it offers Remove from history.
+    var menuFromHistory by remember { mutableStateOf(false) }
     /**
      * The row or card that was held to open the track menu, or null when it
      * was opened any other way. Non-null lifts that item into
@@ -661,6 +663,7 @@ private fun LayaApp(
     /** Holding a row anywhere but the player — the menu without the player's rows. */
     val openSongMenu: (Song) -> Unit = { song ->
         menuFromPlayer = false
+        menuFromHistory = false
         songMenuOrigin = LongPressOrigin.consume()
         songActions = song
     }
@@ -988,6 +991,13 @@ private fun LayaApp(
     val showQueueNotice: (String) -> Unit = { message ->
         queueNoticeId += 1
         queueNotice = QueueActionNotice(queueNoticeId, message)
+    }
+    val removeFromHistory: (List<Song>) -> Unit = { songs ->
+        viewModel.removeFromHistory(songs) { removed ->
+            showQueueNotice(
+                context.getString(if (removed) R.string.history_removed else R.string.history_remove_failed),
+            )
+        }
     }
     LaunchedEffect(queueNotice?.id) {
         val shown = queueNotice ?: return@LaunchedEffect
@@ -1357,7 +1367,7 @@ private fun LayaApp(
             // The video found is this very upload: the track is its own music video, only not
             // marked as one. Nothing to swap — its own picture comes up, or goes again.
             if (video != null && video.videoId == song.videoId && stillCurrent) {
-                MusicVideoChoice.toggle(song.videoId)
+                MusicVideoChoice.toggle(song)
                 if (resumeAfterResolution) c.play()
                 return
             }
@@ -2620,6 +2630,7 @@ private fun LayaApp(
             // ids have been resolved.
             onOpenMenu = {
                 menuFromPlayer = true
+                menuFromHistory = false
                 songMenuOrigin = null
                 songActions = song
             },
@@ -2902,7 +2913,10 @@ private fun LayaApp(
                                 onSongClick = { songs, index ->
                                     playFrom(songs, index, QueueSource(historyLabel, PlaybackSourceType.HISTORY))
                                 },
-                                onSongLongPress = openSongMenu,
+                                onSongLongPress = { song ->
+                                    openSongMenu(song)
+                                    menuFromHistory = true
+                                },
                                 onSongSwipe = onSongSwipe,
                                 onRetry = viewModel::loadHistory,
                                 contentPadding = listPadding,
@@ -4438,6 +4452,15 @@ private fun LayaApp(
                         viewModel.removeFromPlaylist(it.browseId, song)
                     }
                 },
+                onRemoveFromHistory = if (menuFromHistory && YtMusicRepository.canRemoveFromHistory(song.videoId)) {
+                    {
+                        songActions = null
+                        removeFromHistory(listOf(song))
+                    }
+                } else {
+                    null
+                },
+
                 onRemoveFromCache = if (inCache) {
                     {
                         songActions = null

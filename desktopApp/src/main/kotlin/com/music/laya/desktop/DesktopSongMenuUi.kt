@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.ThumbDown
 import androidx.compose.material.icons.rounded.ThumbDownOffAlt
 import androidx.compose.material.icons.rounded.Translate
@@ -104,6 +105,8 @@ internal data class DesktopSongActions(
     val onSleepTimer: (Int?) -> Unit,
     val onSleepAfterTrack: () -> Unit,
     val onShare: (Song) -> Unit,
+    /** The account history page's own row: take a track off the history. */
+    val onRemoveFromHistory: ((Song) -> Unit)? = null,
 )
 
 /**
@@ -249,6 +252,7 @@ internal fun DesktopSongMenuFor(
         onSleepTimer = { actions.onSleepTimer(it); close() },
         onSleepAfterTrack = { actions.onSleepAfterTrack(); close() },
         onShare = { actions.onShare(menuSong); close() },
+        onRemoveFromHistory = actions.onRemoveFromHistory?.let { remove -> { remove(menuSong); close() } },
         onMore = onMore,
         onSwitchLyricsQueue = onSwitchLyricsQueue?.let { { it(); close() } },
         queueShowing = queueShowing,
@@ -293,6 +297,7 @@ internal fun DesktopSongMenu(
     onSleepTimer: (Int?) -> Unit,
     onSleepAfterTrack: () -> Unit,
     onShare: () -> Unit,
+    onRemoveFromHistory: (() -> Unit)? = null,
     /** Opens the player's own overflow; null on a menu raised from a list. */
     onMore: (() -> Unit)? = null,
     /** Switch the player between lyrics and queue; null when there is no player. */
@@ -540,6 +545,10 @@ internal fun DesktopSongMenu(
         ) { pickingSleepTimer = true }
         if (!isOffline) {
             DesktopMenuRow(Icons.Rounded.Share, DesktopStrings["share", "Share"], onClick = onShare)
+        }
+        if (onRemoveFromHistory != null) DesktopMenuDivider()
+        onRemoveFromHistory?.let {
+            DesktopMenuRow(Icons.Rounded.History, DesktopStrings["remove_from_history", "Remove from history"], onClick = it)
         }
         onMore?.let {
             DesktopMenuDivider()

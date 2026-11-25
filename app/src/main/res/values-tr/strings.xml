@@ -1400,4 +1400,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Sözleri kaydırın ve bir satıra dokunarak oraya atlayın</string>
     <string name="lock_screen_progress">İlerleme çubuğu</string>
     <string name="lock_screen_progress_subtitle">Geçen ve toplam süreyle bir arama çubuğu gösterir</string>
+    <string name="remove_from_history">Geçmişten kaldır</string>
+    <string name="history_removed">Geçmişten kaldırıldı</string>
+    <string name="history_remove_failed">Geçmişten kaldırılamadı</string>
+    <string name="lock_screen_art_transition">Kapak geçişi</string>
+    <string name="lock_screen_art_transition_subtitle">Automix şarkıları karıştırırken kapağı sonraki şarkınınkine geçirir.</string>
 </resources>

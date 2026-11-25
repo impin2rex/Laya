@@ -15,20 +15,35 @@ object MusicVideoChoice {
     val watching = MutableStateFlow<String?>(null)
 
     /**
-     * Whether [song]'s picture should be up, for the given preference and [watching]. A track not
-     * marked as a video still has one when the listener switched to it and the video found for it
-     * was the very same upload (a song whose id is its own music video).
+     * The video the listener put the picture of away, with the preference off: it plays on as music.
+     * [watching] outranks it, so a later switch back to the video by choice brings the picture up.
      */
-    fun pictureWanted(song: Song?, preferMusicOnly: Boolean, watching: String?): Boolean =
-        song != null && (watching == song.videoId || (song.isVideo && !preferMusicOnly))
+    val hiding = MutableStateFlow<String?>(null)
+
+    /**
+     * Whether [song]'s picture should be up, for the given preference, [watching] and [hiding]. A
+     * track not marked as a video still has one when the listener switched to it and the video found
+     * for it was the very same upload (a song whose id is its own music video).
+     */
+    fun pictureWanted(song: Song?, preferMusicOnly: Boolean, watching: String?, hiding: String?): Boolean =
+        song != null && (watching == song.videoId || (song.isVideo && !preferMusicOnly && hiding != song.videoId))
 
     /** As [pictureWanted], read off the current values — for code outside composition. */
     fun pictureWanted(song: Song?): Boolean =
-        pictureWanted(song, AppSettings.preferMusicOnly.value, watching.value)
+        pictureWanted(song, AppSettings.preferMusicOnly.value, watching.value, hiding.value)
 
-    /** Shows or hides [videoId]'s picture — the toggle when a video has no audio version to swap to. */
-    fun toggle(videoId: String) {
-        watching.value = if (watching.value == videoId) null else videoId
+    /**
+     * Shows or hides [song]'s picture — the toggle when a video has no audio version to swap to,
+     * with the preference on (a video starts as music) or off (it starts with its picture up).
+     */
+    fun toggle(song: Song) {
+        if (pictureWanted(song)) {
+            watching.value = null
+            hiding.value = song.videoId
+        } else {
+            hiding.value = null
+            watching.value = song.videoId
+        }
     }
 
     /**
@@ -54,5 +69,6 @@ object MusicVideoChoice {
     /** The track moved on to [videoId]: an ask for another video no longer stands. */
     fun onTrackChanged(videoId: String?) {
         if (watching.value != videoId) watching.value = null
+        if (hiding.value != videoId) hiding.value = null
     }
 }

@@ -1140,6 +1140,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         isLoading = isBuffering
         recordListening(isPlaying, durationMs)
         IosScrobbler.onTick(song, isPlaying, positionMs, durationMs)
+        IosLyricsActivity.onTick(song, positionMs, durationMs)
         if (isPlaying && AppSettings.smartFadeEnabled.value && pendingMs == null) syncTransition()
         // Position about every 5 s while playing, and straight away on pause.
         val now = NSDate().timeIntervalSinceReferenceDate.toLong()

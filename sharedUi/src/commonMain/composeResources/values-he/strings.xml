@@ -897,4 +897,8 @@
     <string name="hide_ai_songs">הסתרת שירים שנוצרו בבינה מלאכותית</string>
     <string name="hide_ai_songs_subtitle">מרחיק מהבית, מהחיפוש ומהרדיו שירים מערוצים שברשימת החסימה AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
     <string name="lock_screen_player">נגן במסך הנעילה</string>
+    <string name="lock_screen_lyrics_ios_subtitle">השורה המתנגנת במסך הנעילה וב-Dynamic Island</string>
+    <string name="remove_from_history">הסר מההיסטוריה</string>
+    <string name="history_removed">הוסר מההיסטוריה</string>
+    <string name="history_remove_failed">לא ניתן להסיר מההיסטוריה</string>
 </resources>

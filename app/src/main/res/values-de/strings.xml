@@ -1443,4 +1443,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Songtext scrollen und auf eine Zeile tippen, um dorthin zu springen</string>
     <string name="lock_screen_progress">Fortschrittsleiste</string>
     <string name="lock_screen_progress_subtitle">Eine Suchleiste mit verstrichener und gesamter Zeit anzeigen</string>
+    <string name="remove_from_history">Aus dem Verlauf entfernen</string>
+    <string name="history_removed">Aus dem Verlauf entfernt</string>
+    <string name="history_remove_failed">Konnte nicht aus dem Verlauf entfernt werden</string>
+    <string name="lock_screen_art_transition">Cover-Übergang</string>
+    <string name="lock_screen_art_transition_subtitle">Blendet das Cover in das des nächsten Songs über, während Automix sie mischt.</string>
 </resources>

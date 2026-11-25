@@ -51,6 +51,7 @@ import com.music.laya.playback.QueueTimeline.asQueueEntry
 import com.music.laya.data.listentogether.partyQueueIndexOf
 import com.music.laya.data.listentogether.partyUpcomingAfter
 import com.music.laya.ui.LyricsProviderState
+import com.music.laya.data.lyrics.LyricsPicks
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.ui.player.LyricsSidePanel
 import com.music.laya.ui.player.NowPlayingScreen
@@ -2176,7 +2177,15 @@ fun LayaDesktopApp() {
     // and a track half a minute in then showed a skeleton and arrived mid-song.
     var lyrics by remember { mutableStateOf<DesktopLyrics?>(null) }
     // The provider picked for this track in the player's lyrics drawer, if any.
-    var lyricsOnly by remember(selectedSong?.videoId) { mutableStateOf<String?>(null) }
+    // A provider picked by hand for this track earlier, kept across leaving it and coming back.
+    var lyricsOnly by remember(selectedSong?.videoId) {
+        mutableStateOf(selectedSong?.let { LyricsPicks[it.videoId]?.label })
+    }
+    fun pickLyrics(label: String) {
+        lyricsOnly = label
+        val id = selectedSong?.videoId ?: return
+        LyricsSource.entries.firstOrNull { it.label == label }?.let { LyricsPicks[id] = it }
+    }
     // A title and artist typed into the song menu's lyrics search, overriding the
     // track's own credits for the lookup — for a cover or a mislabelled upload.
     var lyricsQuery by remember(selectedSong?.videoId) { mutableStateOf<Pair<String, String>?>(null) }
@@ -2448,6 +2457,35 @@ fun LayaDesktopApp() {
         },
         onSleepAfterTrack = { DesktopSleepTimer.startAfterTrack() },
         onShare = ::shareSong,
+    )
+
+    /** As Android's MainViewModel.removeFromHistory: the row goes at once and comes back if YouTube refuses. */
+    fun removeFromHistory(songs: List<Song>) {
+        val before = remoteHistory
+        val ids = songs.mapTo(HashSet()) { it.videoId }
+        remoteHistory = before.filterNot { it.videoId in ids }
+        scope.launch {
+            val removed = YtMusicRepository.removeFromHistory(ids).isSuccess
+            if (!removed) remoteHistory = before
+            DesktopPlayerHost.showMessage(
+                if (removed) DesktopStrings["history_removed", "Removed from history"]
+                else DesktopStrings["history_remove_failed", "Couldn't remove from history"],
+            )
+        }
+    }
+
+    /** The account history page's menu: the usual one, plus Remove from history. */
+    @Composable
+    fun historySongMenu(song: Song) = DesktopSongMenuAnchor(
+        song = song,
+        liked = song.videoId in likedIds,
+        actions = songActionsFor(song).copy(
+            onRemoveFromHistory = { s: Song -> removeFromHistory(listOf(s)) }
+                .takeIf { YtMusicRepository.canRemoveFromHistory(song.videoId) },
+        ),
+        onToggleLike = { toggleLike(song) },
+        onRevertToOriginal = null,
+        onUpgradeQuality = null,
     )
 
     /** The "…" a song row hangs off, built the same way on every page that offers one. */
@@ -3881,7 +3919,7 @@ fun LayaDesktopApp() {
                                 lyrics = sharedLyrics,
                                 lyricsSource = sharedLyricsSource,
                                 lyricsProviderStates = providerStates,
-                                onSelectLyricsProvider = { source -> lyricsOnly = source.label },
+                                onSelectLyricsProvider = { source -> pickLyrics(source.label) },
                                 lyricsUnavailable = sharedLyricsUnavailable,
                                 onSeek = ::seekPlayer,
                                 modifier = Modifier.fillMaxSize(),
@@ -4027,7 +4065,7 @@ fun LayaDesktopApp() {
                             lyrics = sharedLyrics,
                             lyricsSource = sharedLyricsSource,
                             lyricsProviderStates = providerStates,
-                            onSelectLyricsProvider = { source -> lyricsOnly = source.label },
+                            onSelectLyricsProvider = { source -> pickLyrics(source.label) },
                             lyricsUnavailable = sharedLyricsUnavailable,
                             lyricsOffsetOpen = false,
                             onDismissLyricsOffset = {},
@@ -4104,7 +4142,7 @@ fun LayaDesktopApp() {
                                     showingTranslation = playerShowingTranslation.value,
                                     translateEnabled = !sharedLyrics.isNullOrEmpty(),
                                     lyricsProviders = menuLyricsProviders,
-                                    onSelectLyricsProvider = { label -> lyricsOnly = label },
+                                    onSelectLyricsProvider = { label -> pickLyrics(label) },
                                     onSearchLyrics = { title, artist -> searchLyrics(title, artist) },
                                     lyricsOffsetMs = lyricsOffsetMs,
                                     onSetLyricsOffset = { DesktopPlayerSettings.setLyricsOffsetMs(it) },
@@ -4928,7 +4966,7 @@ fun LayaDesktopApp() {
                             downloadedIds = downloads.map(Song::videoId).toSet(),
                             downloadInProgress = downloadInProgress,
                             contentPadding = contentPadding,
-                            menu = { song -> songMenu(song) },
+                            menu = { song -> historySongMenu(song) },
                         )
                         destination == DesktopDestination.DOWNLOADS -> Box(Modifier.fillMaxSize()) {
                             DesktopDownloadsPage(

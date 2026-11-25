@@ -3,6 +3,12 @@ package com.music.laya.ios
 import com.music.laya.data.settings.VideoScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.rounded.Lock
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.lock_screen_lyrics_ios_subtitle
+import com.music.laya.sharedui.resources.lock_screen_player
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.Modifier
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.canvas.CanvasRepository
@@ -45,9 +51,32 @@ internal object IosSettingsHost : SettingsHost {
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
     override val appIconRow: (@Composable () -> Unit)?
         get() = if (IosAppIcon.supported) ({ IosAppIconPicker() }) else null
+    override val lockScreenRow: (@Composable () -> Unit) = { IosLockScreenRow() }
     @Composable
     override fun versionName() =
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
+}
+
+/** The lock-screen lyrics Live Activity's switch (IosLyricsActivity): the same setting as Android's lock-screen player. */
+@Composable
+private fun IosLockScreenRow() {
+    val on by AppSettings.lockScreenPlayer.collectAsState()
+    com.music.laya.ui.screens.SettingsRow(
+        icon = androidx.compose.material.icons.Icons.Rounded.Lock,
+        title = stringResource(Res.string.lock_screen_player),
+        subtitle = stringResource(Res.string.lock_screen_lyrics_ios_subtitle),
+        trailing = {
+            androidx.compose.material3.Switch(
+                checked = on,
+                onCheckedChange = AppSettings::setLockScreenPlayer,
+                colors = androidx.compose.material3.SwitchDefaults.colors(
+                    checkedTrackColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                    checkedBorderColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                ),
+            )
+        },
+        onClick = { AppSettings.setLockScreenPlayer(!on) },
+    )
 }
 
 internal object IosAppUiHost : AppUiHost {

@@ -897,4 +897,8 @@
     <string name="hide_ai_songs">KI-generierte Songs ausblenden</string>
     <string name="hide_ai_songs_subtitle">Hält Songs von Kanälen auf der AiSList-Sperrliste (AiSList, aisloplist.com, CC BY-NC 4.0) aus Start, Suche und Radio fern</string>
     <string name="lock_screen_player">Sperrbildschirm-Player</string>
+    <string name="lock_screen_lyrics_ios_subtitle">Die gerade gesungene Zeile auf dem Sperrbildschirm und in der Dynamic Island</string>
+    <string name="remove_from_history">Aus dem Verlauf entfernen</string>
+    <string name="history_removed">Aus dem Verlauf entfernt</string>
+    <string name="history_remove_failed">Konnte nicht aus dem Verlauf entfernt werden</string>
 </resources>

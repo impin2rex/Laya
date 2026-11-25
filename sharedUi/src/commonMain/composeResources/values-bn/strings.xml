@@ -891,4 +891,8 @@
     <string name="hide_ai_songs">AI-তৈরি গান লুকান</string>
     <string name="hide_ai_songs_subtitle">AiSList ব্লকলিস্টের চ্যানেলের গান (AiSList, aisloplist.com, CC BY-NC 4.0) হোম, সার্চ ও রেডিও থেকে বাদ রাখে</string>
     <string name="lock_screen_player">লক স্ক্রিন প্লেয়ার</string>
+    <string name="lock_screen_lyrics_ios_subtitle">লক স্ক্রিন ও ডায়নামিক আইল্যান্ডে চলমান গানের লাইন</string>
+    <string name="remove_from_history">ইতিহাস থেকে সরান</string>
+    <string name="history_removed">ইতিহাস থেকে সরানো হয়েছে</string>
+    <string name="history_remove_failed">ইতিহাস থেকে সরানো যায়নি</string>
 </resources>

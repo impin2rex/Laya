@@ -1475,4 +1475,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Прокручивайте текст и нажимайте на строку, чтобы перейти к ней</string>
     <string name="lock_screen_progress">Полоса прогресса</string>
     <string name="lock_screen_progress_subtitle">Показывать полосу перемотки с прошедшим и общим временем</string>
+    <string name="remove_from_history">Удалить из истории</string>
+    <string name="history_removed">Удалено из истории</string>
+    <string name="history_remove_failed">Не удалось удалить из истории</string>
+    <string name="lock_screen_art_transition">Переход обложки</string>
+    <string name="lock_screen_art_transition_subtitle">Плавно сменяет обложку на обложку следующего трека, пока Automix их сводит.</string>
 </resources>

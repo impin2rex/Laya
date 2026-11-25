@@ -1295,4 +1295,9 @@
     <string name="lock_screen_lyrics_interactive_subtitle">Scroll the lyrics and tap a line to jump to it</string>
     <string name="lock_screen_progress">Progress bar</string>
     <string name="lock_screen_progress_subtitle">Show a seek bar with elapsed and total time</string>
+    <string name="remove_from_history">Remove from history</string>
+    <string name="history_removed">Removed from history</string>
+    <string name="history_remove_failed">Couldn\'t remove from history</string>
+    <string name="lock_screen_art_transition">Artwork transition</string>
+    <string name="lock_screen_art_transition_subtitle">Blends the cover into the next song\'s while Automix mixes them.</string>
 </resources>
