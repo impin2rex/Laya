@@ -101,6 +101,8 @@
     <string name="tv_lyrics">เนื้อเพลง</string>
     <string name="tv_lyrics_sources">แหล่งเนื้อเพลง</string>
     <string name="tv_lyrics_sources_message">เลือกเพื่อเปิดหรือปิดแหล่งข้อมูล กดซ้ายหรือขวาเพื่อเลื่อนขึ้นหรือลง แหล่งแรกจะถูกค้นหาก่อน</string>
+    <string name="tv_sources_message">เลือกแหล่งข้อมูลเพื่อเปิดหรือปิด หรือเลือกส่วนเสริมเพื่อแก้ไข กดซ้ายหรือขวาเพื่อเลื่อนส่วนเสริมขึ้นหรือลง ระบบจะลองแหล่งข้อมูลจากบนลงล่าง</string>
+    <string name="tv_blurb_sources">เลือกว่าจะสตรีมเพลงจากที่ใดและตามลำดับใด Tidal และ Qobuz เพิ่มเสียงแบบ Lossless</string>
     <string name="tv_maintainer">ผู้ดูแล</string>
     <string name="tv_minutes">%1$d นาที</string>
     <string name="tv_mono_toast">แทร็กนี้เป็นเสียงโมโน จึงไม่สามารถลบเสียงร้องได้</string>
@@ -267,4 +269,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">ซ่อนเพลงที่สร้างด้วย AI</string>
     <string name="tv_hide_ai_songs_subtitle">กันเพลงจากช่องในรายการบล็อก AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) ออกจากหน้าแรก การค้นหา และวิทยุ</string>
+    <string name="tv_color_background">พื้นหลังสี</string>
+    <string name="tv_blurb_color_background">สีอ่อนจากเพลงที่กำลังเล่นอยู่หลังทุกหน้า</string>
+    <string name="tv_splash_screen">หน้าจอเริ่มต้น</string>
+    <string name="tv_blurb_splash_screen">โลโก้เคลื่อนไหวเมื่อเปิดแอป</string>
+    <string name="tv_settings_section_look">รูปลักษณ์</string>
+    <string name="tv_settings_section_listening">การฟัง</string>
+    <string name="tv_settings_section_app">แอป</string>
+    <string name="tv_settings_home">หน้าหลัก</string>
+    <string name="tv_settings_home_speed_dial">สปีดไดอัล</string>
+    <string name="tv_settings_home_speed_dial_subtitle">หมุดและรายการโปรดเป็นไทล์ที่ด้านบนของหน้าหลัก</string>
+    <string name="tv_settings_home_artist_dial">หน้าศิลปิน</string>
+    <string name="tv_settings_home_mixes_dial">หน้ามิกซ์</string>
+    <string name="tv_settings_home_lucky_tile">ไทล์สุ่ม</string>
+    <string name="tv_settings_home_dial_source">แหล่งที่มาของไทล์</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">ประวัติการฟัง</string>
+    <string name="tv_settings_home_dial_rows">จำนวนแถวต่อหน้า</string>
+    <string name="tv_settings_home_dial_labels">แสดงชื่อไทล์</string>
+    <string name="tv_settings_home_dial_pin_icon">แสดงป้ายหมุด</string>
+    <string name="tv_settings_home_dial_new_tags">ทำเครื่องหมายเพลงใหม่</string>
+    <string name="tv_settings_home_restore_tiles">กู้คืนไทล์ที่นำออก (%1$d)</string>
+    <string name="tv_home_speed_dial">สปีดไดอัล</string>
+    <string name="tv_home_mixes_dial">มิกซ์</string>
+    <string name="tv_home_dial_new">ใหม่</string>
+    <string name="tv_home_dial_pin">ปักหมุด</string>
+    <string name="tv_home_dial_remove">นำออกจากไดอัล</string>
+    <string name="tv_home_dial_unpin">เลิกปักหมุด</string>
+    <string name="tv_home_dial_more">ตัวเลือกเพิ่มเติม</string>
 </resources>

@@ -101,6 +101,8 @@
     <string name="tv_lyrics">מילות שיר</string>
     <string name="tv_lyrics_sources">מקורות מילות שיר</string>
     <string name="tv_lyrics_sources_message">בחרו כדי להפעיל או לכבות מקור. לחצו שמאלה או ימינה כדי להזיז אותו למעלה או למטה; הראשון נבדק ראשון.</string>
+    <string name="tv_sources_message">בחרו מקור כדי להפעיל או לכבות אותו, או תוסף כדי לערוך אותו. לחצו שמאלה או ימינה כדי להזיז תוסף למעלה או למטה; המקורות נבדקים מלמעלה למטה.</string>
+    <string name="tv_blurb_sources">בחרו מאיפה המוזיקה מוזרמת ובאיזה סדר. Tidal ו-Qobuz מוסיפים איכות ללא אובדן.</string>
     <string name="tv_maintainer">מתחזק</string>
     <string name="tv_minutes">%1$d דקות</string>
     <string name="tv_mono_toast">הרצועה הזו במונו, ולכן אי אפשר להסיר ממנה את השירה</string>
@@ -269,4 +271,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">הסתרת שירים שנוצרו בבינה מלאכותית</string>
     <string name="tv_hide_ai_songs_subtitle">מרחיק מהבית, מהחיפוש ומהרדיו שירים מערוצים שברשימת החסימה AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="tv_color_background">רקע צבעוני</string>
+    <string name="tv_blurb_color_background">צבע רך מהשיר המתנגן מאחורי כל דף</string>
+    <string name="tv_splash_screen">מסך פתיחה</string>
+    <string name="tv_blurb_splash_screen">הלוגו המונפש בפתיחת האפליקציה</string>
+    <string name="tv_settings_section_look">מראה</string>
+    <string name="tv_settings_section_listening">האזנה</string>
+    <string name="tv_settings_section_app">אפליקציה</string>
+    <string name="tv_settings_home">בית</string>
+    <string name="tv_settings_home_speed_dial">Speed Dial</string>
+    <string name="tv_settings_home_speed_dial_subtitle">ההצמדות והמועדפים שלך כאריחים בראש מסך הבית</string>
+    <string name="tv_settings_home_artist_dial">דף אומנים</string>
+    <string name="tv_settings_home_mixes_dial">דף מיקסים</string>
+    <string name="tv_settings_home_lucky_tile">אריח אקראי</string>
+    <string name="tv_settings_home_dial_source">מקור האריחים</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">היסטוריית האזנה</string>
+    <string name="tv_settings_home_dial_rows">שורות בכל דף</string>
+    <string name="tv_settings_home_dial_labels">הצגת כותרות</string>
+    <string name="tv_settings_home_dial_pin_icon">הצגת תגי הצמדה</string>
+    <string name="tv_settings_home_dial_new_tags">סימון מהדורות חדשות</string>
+    <string name="tv_settings_home_restore_tiles">שחזור אריחים שהוסרו (%1$d)</string>
+    <string name="tv_home_speed_dial">Speed Dial</string>
+    <string name="tv_home_mixes_dial">מיקסים</string>
+    <string name="tv_home_dial_new">חדש</string>
+    <string name="tv_home_dial_pin">הצמדה</string>
+    <string name="tv_home_dial_remove">הסרה מהחיוג</string>
+    <string name="tv_home_dial_unpin">ביטול הצמדה</string>
+    <string name="tv_home_dial_more">אפשרויות נוספות</string>
 </resources>

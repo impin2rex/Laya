@@ -1,5 +1,14 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.Icons
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.res.stringResource
 import com.music.laya.R
 import androidx.compose.animation.AnimatedContent
@@ -35,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import com.music.laya.data.canvas.ArtistSignatureRepository
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.HomeDialSource
 import com.music.laya.data.settings.TvSettings
 import com.music.laya.ui.MainViewModel
 import com.music.laya.ui.tv.TvAppMark
@@ -58,7 +68,25 @@ import com.music.laya.ui.tv.theme.TvGlass
 import com.music.laya.ui.tv.theme.TvType
 
 // Discord Rich Presence is hidden on TV for now; TvDiscordDialog is kept for when it returns.
-private enum class SettingsSheet { Theme, RefreshRate, Equalizer, Reverb, Scrobbling, LyricsSources, SignatureApi, Update, About }
+private enum class TvSettingsPage(val title: Int) {
+    ACCOUNT(R.string.tv_account),
+    PLAYBACK(R.string.playback),
+    SOUND(R.string.tv_sound),
+    NOW_PLAYING(R.string.tv_now_playing),
+    DISPLAY(R.string.tv_display),
+    HOME(R.string.tv_settings_home),
+    CONNECTIONS(R.string.tv_connections),
+    GENERAL(R.string.tv_general),
+}
+
+/** The phone's sections, over TV's own groups. */
+private val TV_SETTINGS_SECTIONS = listOf(
+    R.string.tv_settings_section_look to listOf(TvSettingsPage.DISPLAY, TvSettingsPage.HOME),
+    R.string.tv_settings_section_listening to listOf(TvSettingsPage.PLAYBACK, TvSettingsPage.SOUND, TvSettingsPage.NOW_PLAYING),
+    R.string.tv_settings_section_app to listOf(TvSettingsPage.ACCOUNT, TvSettingsPage.CONNECTIONS, TvSettingsPage.GENERAL),
+)
+
+private enum class SettingsSheet { Theme, RefreshRate, Equalizer, Reverb, Scrobbling, LyricsSources, Sources, SignatureApi, Update, About }
 
 
 /**
@@ -80,6 +108,7 @@ fun TvSettingsScreen(
     val automix by AppSettings.smartFadeEnabled.collectAsState()
     val crossfade by AppSettings.crossfadeSeconds.collectAsState()
     val autoplay by AppSettings.autoplay.collectAsState()
+    val sourceConfigs by com.music.laya.data.sources.SourceRegistry.configs.collectAsState()
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsState()
     val hideAiSongs by AppSettings.hideAiSongs.collectAsState()
     val skipSilence by AppSettings.skipSilence.collectAsState()
@@ -104,12 +133,36 @@ fun TvSettingsScreen(
     val refreshRate by TvRefreshRateController.preference.collectAsState()
     val reduceMotion by AppSettings.reduceAnimation.collectAsState()
     val systemFont by AppSettings.systemFont.collectAsState()
+    val colorBackground by AppSettings.colorBackground.collectAsState()
+    val splashScreen by AppSettings.splashScreen.collectAsState()
     val reduceTransparency by AppSettings.reduceDynamicBlur.collectAsState()
+    val homeSpeedDial by AppSettings.homeSpeedDial.collectAsState()
+    val homeArtistDial by AppSettings.homeArtistDial.collectAsState()
+    val homeMixesDial by AppSettings.homeMixesDial.collectAsState()
+    val homeLuckyTile by AppSettings.homeLuckyTile.collectAsState()
+    val homeDialSource by AppSettings.homeDialSource.collectAsState()
+    val homeDialRows by AppSettings.homeDialRows.collectAsState()
+    val homeDialLabels by AppSettings.homeDialLabels.collectAsState()
+    val homeDialPinIcon by AppSettings.homeDialPinIcon.collectAsState()
+    val homeDialNewReleaseTags by AppSettings.homeDialNewReleaseTags.collectAsState()
+    val hiddenFromDial by AppSettings.hiddenFromDial.collectAsState()
 
     val context = LocalContext.current
     val defaultBlurb = stringResource(R.string.tv_blurb_default)
     var blurb by remember { mutableStateOf(defaultBlurb) }
     var sheet by remember { mutableStateOf<SettingsSheet?>(null) }
+    // The front page lists the categories; each opens its own rows, and back returns to the list.
+    var page by rememberSaveable { mutableStateOf<TvSettingsPage?>(null) }
+    val listState = rememberLazyListState()
+    val listFocus = remember { FocusRequester() }
+    var pageOpened by remember { mutableStateOf(false) }
+    LaunchedEffect(page) {
+        if (!pageOpened) { pageOpened = true; return@LaunchedEffect }
+        listState.scrollToItem(0)
+        withFrameNanos { }
+        runCatching { listFocus.requestFocus() }
+    }
+    BackHandler(enabled = page != null && sheet == null) { page = null }
     val update by AppUpdateChecker.available.collectAsState()
 
     Row(
@@ -143,12 +196,31 @@ fun TvSettingsScreen(
         }
 
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .weight(0.58f)
-                .fillMaxHeight(),
+                .fillMaxHeight()
+                .focusRequester(listFocus)
+                .focusGroup(),
             contentPadding = PaddingValues(end = TvDimensions.SafeMarginHorizontal, bottom = 38.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
+            if (page == null) {
+                for ((section, pages) in TV_SETTINGS_SECTIONS) {
+                    item { TvListHeader(stringResource(section)) }
+                    for (entry in pages) {
+                        item(key = entry.name) {
+                            TvListRow(
+                                title = stringResource(entry.title),
+                                onFocused = { blurb = defaultBlurb },
+                                onClick = { page = entry },
+                                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            )
+                        }
+                    }
+                }
+            }
+            if (page == TvSettingsPage.ACCOUNT) {
             item { TvListHeader(stringResource(R.string.tv_account)) }
             item {
                 TvListRow(
@@ -159,7 +231,17 @@ fun TvSettingsScreen(
                 )
             }
 
+            }
+            if (page == TvSettingsPage.PLAYBACK) {
             item { TvListHeader(stringResource(R.string.playback)) }
+            item {
+                TvListRow(
+                    title = stringResource(R.string.source),
+                    value = stringResource(R.string.tv_sources_on, sourceConfigs.count { it.enabled }),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_sources) },
+                    onClick = { sheet = SettingsSheet.Sources },
+                )
+            }
             item {
                 TvListRow(
                     title = stringResource(R.string.tv_automix),
@@ -219,6 +301,8 @@ fun TvSettingsScreen(
                 )
             }
 
+            }
+            if (page == TvSettingsPage.SOUND) {
             item { TvListHeader(stringResource(R.string.tv_sound)) }
             item {
                 TvListRow(
@@ -264,6 +348,8 @@ fun TvSettingsScreen(
                 )
             }
 
+            }
+            if (page == TvSettingsPage.NOW_PLAYING) {
             item { TvListHeader(stringResource(R.string.tv_now_playing)) }
             item {
                 TvListRow(
@@ -336,6 +422,8 @@ fun TvSettingsScreen(
                 )
             }
 
+            }
+            if (page == TvSettingsPage.DISPLAY) {
             item { TvListHeader(stringResource(R.string.tv_display)) }
             item {
                 TvListRow(
@@ -383,6 +471,22 @@ fun TvSettingsScreen(
             }
             item {
                 TvListRow(
+                    title = stringResource(R.string.tv_color_background),
+                    value = onOff(colorBackground),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_color_background) },
+                    onClick = { AppSettings.setColorBackground(!colorBackground) },
+                )
+            }
+            item {
+                TvListRow(
+                    title = stringResource(R.string.tv_splash_screen),
+                    value = onOff(splashScreen),
+                    onFocused = { blurb = context.getString(R.string.tv_blurb_splash_screen) },
+                    onClick = { AppSettings.setSplashScreen(!splashScreen) },
+                )
+            }
+            item {
+                TvListRow(
                     title = stringResource(R.string.tv_reduce_transparency),
                     value = onOff(reduceTransparency),
                     onFocused = { blurb = context.getString(R.string.tv_blurb_reduce_transparency) },
@@ -390,6 +494,75 @@ fun TvSettingsScreen(
                 )
             }
 
+            }
+            if (page == TvSettingsPage.HOME) {
+            item { TvListHeader(stringResource(R.string.tv_settings_home)) }
+            // Everything past the first row shapes the Speed Dial, so it goes with it while the dial is off.
+            val homeBlurb = { blurb = context.getString(R.string.tv_settings_home_speed_dial_subtitle) }
+            item {
+                TvListRow(
+                    title = stringResource(R.string.tv_settings_home_speed_dial),
+                    value = onOff(homeSpeedDial),
+                    onFocused = homeBlurb,
+                    onClick = { AppSettings.setHomeSpeedDial(!homeSpeedDial) },
+                )
+            }
+            if (homeSpeedDial) {
+                val toggles = listOf(
+                    Triple(R.string.tv_settings_home_artist_dial, homeArtistDial, AppSettings::setHomeArtistDial),
+                    Triple(R.string.tv_settings_home_mixes_dial, homeMixesDial, AppSettings::setHomeMixesDial),
+                    Triple(R.string.tv_settings_home_lucky_tile, homeLuckyTile, AppSettings::setHomeLuckyTile),
+                )
+                for ((title, on, set) in toggles) item(key = "home_$title") {
+                    TvListRow(title = stringResource(title), value = onOff(on), onFocused = homeBlurb, onClick = { set(!on) })
+                }
+                item {
+                    TvListRow(
+                        title = stringResource(R.string.tv_settings_home_dial_source),
+                        value = stringResource(
+                            if (homeDialSource == HomeDialSource.YOUTUBE) R.string.tv_settings_home_dial_source_youtube
+                            else R.string.tv_settings_home_dial_source_history,
+                        ),
+                        onFocused = homeBlurb,
+                        onClick = {
+                            AppSettings.setHomeDialSource(
+                                if (homeDialSource == HomeDialSource.YOUTUBE) HomeDialSource.HISTORY else HomeDialSource.YOUTUBE,
+                            )
+                        },
+                    )
+                }
+                item {
+                    TvListRow(
+                        title = stringResource(R.string.tv_settings_home_dial_rows),
+                        value = stringResource(R.string.tv_settings_home_dial_grid, homeDialRows),
+                        onFocused = homeBlurb,
+                        onClick = {
+                            val rows = AppSettings.HOME_DIAL_ROWS
+                            AppSettings.setHomeDialRows(if (homeDialRows >= rows.last) rows.first else homeDialRows + 1)
+                        },
+                    )
+                }
+                val shows = listOf(
+                    Triple(R.string.tv_settings_home_dial_labels, homeDialLabels, AppSettings::setHomeDialLabels),
+                    Triple(R.string.tv_settings_home_dial_pin_icon, homeDialPinIcon, AppSettings::setHomeDialPinIcon),
+                    Triple(R.string.tv_settings_home_dial_new_tags, homeDialNewReleaseTags, AppSettings::setHomeDialNewReleaseTags),
+                )
+                for ((title, on, set) in shows) item(key = "home_$title") {
+                    TvListRow(title = stringResource(title), value = onOff(on), onFocused = homeBlurb, onClick = { set(!on) })
+                }
+                if (hiddenFromDial.isNotEmpty()) {
+                    item {
+                        TvListRow(
+                            title = stringResource(R.string.tv_settings_home_restore_tiles, hiddenFromDial.size),
+                            onFocused = homeBlurb,
+                            onClick = { hiddenFromDial.forEach { AppSettings.setHiddenFromDial(it, false) } },
+                        )
+                    }
+                }
+            }
+
+            }
+            if (page == TvSettingsPage.CONNECTIONS) {
             item { TvListHeader(stringResource(R.string.tv_connections)) }
             item {
                 TvListRow(
@@ -399,6 +572,8 @@ fun TvSettingsScreen(
                 )
             }
 
+            }
+            if (page == TvSettingsPage.GENERAL) {
             item { TvListHeader(stringResource(R.string.tv_general)) }
             if (update != null) {
                 item {
@@ -425,6 +600,7 @@ fun TvSettingsScreen(
                     onClick = { sheet = SettingsSheet.About },
                 )
             }
+            }
         }
     }
 
@@ -435,6 +611,7 @@ fun TvSettingsScreen(
         SettingsSheet.Reverb -> TvReverbDialog(onDismiss = { sheet = null })
         SettingsSheet.Scrobbling -> TvScrobbleDialog(onDismiss = { sheet = null })
         SettingsSheet.LyricsSources -> TvLyricsSourcesDialog(onDismiss = { sheet = null })
+        SettingsSheet.Sources -> com.music.laya.ui.tv.dialogs.TvSourcesDialog(onDismiss = { sheet = null })
         SettingsSheet.SignatureApi -> TvSignatureApiDialog(onDismiss = { sheet = null })
         SettingsSheet.Update -> update?.let { TvUpdateDialog(update = it, onDismiss = { sheet = null }) }
         SettingsSheet.About -> TvAboutDialog(onDismiss = { sheet = null })

@@ -101,6 +101,8 @@
     <string name="tv_lyrics">歌詞</string>
     <string name="tv_lyrics_sources">歌詞來源</string>
     <string name="tv_lyrics_sources_message">選取可開啟或關閉來源。按左鍵或右鍵可上移或下移；排在第一位的最先查詢。</string>
+    <string name="tv_sources_message">選取來源可開啟或關閉，選取附加元件可編輯。按左鍵或右鍵可上移或下移附加元件；來源由上而下依序嘗試。</string>
+    <string name="tv_blurb_sources">選擇音樂從哪裡串流及其順序。Tidal 與 Qobuz 提供無損音質。</string>
     <string name="tv_maintainer">維護者</string>
     <string name="tv_minutes">%1$d 分鐘</string>
     <string name="tv_mono_toast">此曲目為單聲道，無法移除人聲</string>
@@ -267,4 +269,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">隱藏 AI 生成的歌曲</string>
     <string name="tv_hide_ai_songs_subtitle">將 AiSList 封鎖清單 (AiSList, aisloplist.com, CC BY-NC 4.0) 中頻道的歌曲排除在首頁、搜尋和電台之外</string>
+    <string name="tv_color_background">彩色背景</string>
+    <string name="tv_blurb_color_background">以正在播放歌曲的柔和色彩作為每個頁面的背景</string>
+    <string name="tv_splash_screen">啟動畫面</string>
+    <string name="tv_blurb_splash_screen">應用程式啟動時的動畫標誌</string>
+    <string name="tv_settings_section_look">外觀</string>
+    <string name="tv_settings_section_listening">聆聽</string>
+    <string name="tv_settings_section_app">應用程式</string>
+    <string name="tv_settings_home">首頁</string>
+    <string name="tv_settings_home_speed_dial">快速撥號</string>
+    <string name="tv_settings_home_speed_dial_subtitle">將釘選與收藏以方塊顯示在首頁頂部</string>
+    <string name="tv_settings_home_artist_dial">藝人頁面</string>
+    <string name="tv_settings_home_mixes_dial">合輯頁面</string>
+    <string name="tv_settings_home_lucky_tile">隨機方塊</string>
+    <string name="tv_settings_home_dial_source">方塊來源</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">收聽記錄</string>
+    <string name="tv_settings_home_dial_rows">每頁行數</string>
+    <string name="tv_settings_home_dial_labels">顯示方塊標題</string>
+    <string name="tv_settings_home_dial_pin_icon">顯示釘選標記</string>
+    <string name="tv_settings_home_dial_new_tags">標記新發行</string>
+    <string name="tv_settings_home_restore_tiles">還原已移除的方塊（%1$d）</string>
+    <string name="tv_home_speed_dial">快速撥號</string>
+    <string name="tv_home_mixes_dial">合輯</string>
+    <string name="tv_home_dial_new">新</string>
+    <string name="tv_home_dial_pin">置頂</string>
+    <string name="tv_home_dial_remove">從快速撥號移除</string>
+    <string name="tv_home_dial_unpin">取消置頂</string>
+    <string name="tv_home_dial_more">更多選項</string>
 </resources>

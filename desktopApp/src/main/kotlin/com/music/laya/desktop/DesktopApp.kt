@@ -1,5 +1,10 @@
 package com.music.laya.desktop
 
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.Brightness4
+import androidx.compose.material.icons.rounded.GridView
 import com.music.laya.data.settings.MusicVideoChoice
 import com.music.laya.data.aifilter.AiSongs
 import com.music.laya.ui.player.VideoKeys
@@ -332,6 +337,9 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.HomeDialSource
+import com.music.laya.data.settings.HomeDialTileStyle
 import dev.chrisbanes.haze.materials.HazeMaterials
 import java.util.UUID
 import kotlin.math.abs
@@ -3132,16 +3140,21 @@ fun LayaDesktopApp() {
         }
     }
 
+    // Home's Mixes page deals from Radio's cards, so Home asks for them too while that page is on.
+    val homeSpeedDial by AppSettings.homeSpeedDial.collectAsState()
+    val homeMixesDial by AppSettings.homeMixesDial.collectAsState()
+    val mixesWanted = destination == DesktopDestination.RADIO ||
+        (destination == DesktopDestination.LISTEN_NOW && homeSpeedDial && homeMixesDial)
     var moodStations by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
-    LaunchedEffect(destination, youtubeSignedIn) {
-        if (destination != DesktopDestination.RADIO || youtubeSignedIn || moodStations is UiState.Success) return@LaunchedEffect
+    LaunchedEffect(mixesWanted, youtubeSignedIn) {
+        if (!mixesWanted || youtubeSignedIn || moodStations is UiState.Success) return@LaunchedEffect
         moodStations = UiState.Loading
         moodStations = YtMusicRepository.moodStations().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Could not load stations") })
     }
 
     // Radio loads the first time it is opened, again for a different account, and on a retry.
-    LaunchedEffect(destination, youtubeSignedIn, activeAccountId, activeProfileId, sessionRevision, mixesReloads) {
-        if (destination != DesktopDestination.RADIO || !youtubeSignedIn) return@LaunchedEffect
+    LaunchedEffect(mixesWanted, youtubeSignedIn, activeAccountId, activeProfileId, sessionRevision, mixesReloads) {
+        if (!mixesWanted || !youtubeSignedIn) return@LaunchedEffect
         if (!youtubeSourceEnabled) {
             mixesState = UiState.Error("YouTube Music is disabled")
             mixesLoadedFor = null
@@ -3810,6 +3823,8 @@ fun LayaDesktopApp() {
                 }
             }
             SideEffect { DesktopShortcuts.handler = shortcuts }
+            val playingArt = playback.song?.thumbnailUrl
+            LaunchedEffect(playingArt) { com.music.laya.ui.theme.AmbientArtwork.url.value = playingArt }
             DesktopFrame(
                 // The phone's page is black, not the near-black of its cards.
                 containerColor = DesktopBackground,
@@ -4737,6 +4752,19 @@ fun LayaDesktopApp() {
                             loadingMore = homeLoadingMore,
                             recentlyPlayedLoading = homeRecentsLoading,
                             leadHero = false,
+                            dials = if (!homeSpeedDial) null else ({
+                                DesktopHomeDialsSection(
+                                    shelves = (homeState as? UiState.Success)?.data.orEmpty(),
+                                    mixes = (mixesState as? UiState.Success)?.data?.map { it.item }
+                                        ?: (moodStations as? UiState.Success)?.data?.flatMap { it.items }.orEmpty(),
+                                    library = (libraryState as? UiState.Success)?.data,
+                                    loading = homeState is UiState.Loading,
+                                    settled = homeState is UiState.Success && !homeRecentsLoading,
+                                    onOpen = { openShelfItem(it) },
+                                    onMore = { openMenu(it.toSong()) },
+                                    onHistory = if (youtubeSignedIn) ({ selectDestination(DesktopDestination.HISTORY) }) else null,
+                                )
+                            }),
                         )
                         destination == DesktopDestination.EXPLORE && selectedMoodGenre != null -> Column(Modifier.fillMaxSize()) {
                             MoodGenrePlaylistsScreen(
@@ -5173,7 +5201,11 @@ private fun DesktopTopBar(
                                 } else {
                                     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                                         Box(Modifier.size(44.dp).clip(RoundedCornerShape(3.dp))) {
-                                            DesktopArtwork(song.thumbnailUrl, Modifier.matchParentSize(), px = ROW_ART_PX)
+                                            // The mini player's cover: Automix's dissolve and the reveal on every change of song.
+                                            val miniQueue by DesktopMiniWindow.queue.collectAsState()
+                                            val miniIndex by DesktopMiniWindow.queueIndex.collectAsState()
+                                            val cover = com.music.laya.ui.player.rememberMiniAutoMixArtwork(song, miniQueue, miniIndex)
+                                            cover(song.thumbnailUrl.artworkAt(ROW_ART_PX), Modifier.matchParentSize())
                                             DesktopMiniPlayerVideo(videoId, Modifier.matchParentSize())
                                         }
                                         Column(
@@ -5870,6 +5902,15 @@ private fun DesktopFrame(
             // Both sources of the same state: the chrome blurs the backdrop behind it, and the
             // floating bottom bar blurs the page scrolling under it.
             if (!glass) Box(Modifier.fillMaxSize().hazeSource(haze)) { backdrop(false) }
+            // Over the system material the page's backdrop covers only the page: the colour
+            // background goes under the whole window here, so the sidebar's tint and the side
+            // panel take the song's colour as well.
+            if (glass) {
+                com.music.laya.ui.theme.AmbientBackgroundLayer(
+                    com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false)),
+                    Modifier.fillMaxSize(),
+                )
+            }
             Column(Modifier.fillMaxSize()) {
                 // Above everything, and outside the box the rest of the window is drawn in, because
                 // that is what a title bar is.
@@ -5947,7 +5988,16 @@ private fun DesktopPageBackdrop(artworkUrl: String?, transparentBase: Boolean) {
             .fillMaxSize()
             .then(if (transparentBase) Modifier else Modifier.background(DesktopBackground)),
     ) {
-        if (artworkUrl == null) return@Box
+        if (artworkUrl == null) {
+            // Melo's colour background, from the playing song, where a page brings no artwork of its own;
+            // over a see-through base the window's own layer under everything already draws it.
+            if (transparentBase) return@Box
+            com.music.laya.ui.theme.AmbientBackgroundLayer(
+                com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false)),
+                Modifier.fillMaxSize(),
+            )
+            return@Box
+        }
         DesktopMesh(artworkUrl)
         Box(
             Modifier.fillMaxSize().background(
@@ -6527,6 +6577,79 @@ private fun DesktopLibraryGroupingContent(
 }
 
 /** Mobile's section order, with desktop-only groups placed beside their closest mobile counterpart. */
+/** The settings' categories, in the phone's sections: each one a page of [sections]. */
+private enum class DesktopSettingsCategory(
+    val key: String,
+    val fallback: String,
+    val icon: ImageVector,
+    val sections: Set<DesktopSettingsSection>,
+) {
+    APPEARANCE("appearance", "Appearance", Icons.Rounded.Brightness4,
+        setOf(DesktopSettingsSection.APPEARANCE, DesktopSettingsSection.LANGUAGE)),
+    HOME("settings_home", "Home", Icons.Rounded.GridView, setOf(DesktopSettingsSection.HOME)),
+    PLAYBACK("playback", "Playback", Icons.Rounded.MusicNote, setOf(
+        DesktopSettingsSection.PLAYBACK, DesktopSettingsSection.DESKTOP_PLAYBACK, DesktopSettingsSection.AUDIO_QUALITY,
+        DesktopSettingsSection.SOURCES, DesktopSettingsSection.AUDIO_OUTPUT, DesktopSettingsSection.OUTPUT_PRECISION,
+        DesktopSettingsSection.LYRICS,
+    )),
+    STORAGE("storage", "Storage", Icons.Rounded.Storage,
+        setOf(DesktopSettingsSection.STORAGE, DesktopSettingsSection.DOWNLOADS, DesktopSettingsSection.LOCAL_MUSIC)),
+    GENERAL("settings_category_general", "General", Icons.Rounded.Tune, setOf(
+        DesktopSettingsSection.ACCOUNT, DesktopSettingsSection.LISTEN_TOGETHER, DesktopSettingsSection.MISCELLANEOUS,
+    )),
+    ADVANCED("advanced_options", "Advanced options", Icons.Rounded.BarChart, setOf(DesktopSettingsSection.ADVANCED)),
+}
+
+private val DESKTOP_SETTINGS_SECTIONS = listOf(
+    ("settings_section_look" to "Look") to listOf(DesktopSettingsCategory.APPEARANCE, DesktopSettingsCategory.HOME),
+    ("settings_section_listening" to "Listening") to listOf(DesktopSettingsCategory.PLAYBACK, DesktopSettingsCategory.STORAGE),
+    ("settings_section_app" to "App") to listOf(DesktopSettingsCategory.GENERAL),
+    ("settings_section_about" to "About") to listOf(DesktopSettingsCategory.ADVANCED),
+)
+
+/** The open category; kept for the session, so back from one of its pages returns to it. */
+private val desktopSettingsCategory = mutableStateOf(DesktopSettingsCategory.APPEARANCE)
+
+/** The categories down the side of Settings. */
+@Composable
+private fun DesktopSettingsCategoryList(selected: DesktopSettingsCategory, onSelect: (DesktopSettingsCategory) -> Unit) {
+    Column(Modifier.width(220.dp).padding(top = 12.dp, end = 20.dp)) {
+        for ((section, categories) in DESKTOP_SETTINGS_SECTIONS) {
+            Text(
+                DesktopStrings[section.first, section.second].uppercase(),
+                color = DesktopSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 12.dp, top = 10.dp, bottom = 4.dp),
+            )
+            for (category in categories) {
+                val isSelected = category == selected
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isSelected) Color.White.copy(alpha = 0.10f) else Color.Transparent)
+                        .clickable { onSelect(category) }
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        category.icon,
+                        contentDescription = null,
+                        tint = if (isSelected) Color.White else DesktopSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        DesktopStrings[category.key, category.fallback],
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+    }
+}
+
 private enum class DesktopSettingsSection {
     ACCOUNT,
     LISTEN_TOGETHER,
@@ -6538,6 +6661,7 @@ private enum class DesktopSettingsSection {
     PLAYBACK,
     DESKTOP_PLAYBACK,
     APPEARANCE,
+    HOME,
     LYRICS,
     LOCAL_MUSIC,
     STORAGE,
@@ -6719,7 +6843,8 @@ private fun DesktopSettingsScreen(
             .filter { it.kind.needsServer && it.isComplete }
             .forEach(onTestSource)
     }
-    DesktopSettingsPageFrame {
+    // Wider by the category list down its side.
+    DesktopSettingsPageFrame(maxWidth = DesktopSettingsPageWidth + 240.dp) {
             Column(Modifier.fillMaxSize()) {
                 val settingsQuery = query
                 Row(
@@ -6742,12 +6867,23 @@ private fun DesktopSettingsScreen(
                     )
                 }
                 CompositionLocalProvider(LocalSettingsQuery provides settingsQuery.trim()) {
+                // Settings in categories, as the phone groups them; a search looks through them all.
+                val searching = settingsQuery.isNotBlank()
+                var category by desktopSettingsCategory
+                val categoryScope = rememberCoroutineScope()
+                Row(Modifier.weight(1f)) {
+                if (!searching) {
+                    DesktopSettingsCategoryList(category) {
+                        category = it
+                        categoryScope.launch { listState.scrollToItem(0) }
+                    }
+                }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     state = listState,
                     contentPadding = PaddingValues(top = 12.dp, bottom = 28.dp),
                 ) {
-            DesktopSettingsSection.entries.forEach { section ->
+            DesktopSettingsSection.entries.filter { searching || it in category.sections }.forEach { section ->
             if (section == DesktopSettingsSection.PLAYBACK) item {
                     SettingsGroup(DesktopStrings["playback", "Playback"]) {
                     if (!automix) {
@@ -7170,6 +7306,20 @@ private fun DesktopSettingsScreen(
                         systemFont,
                         DesktopAppearanceSettings::setSystemFont,
                     )
+                    val colorBackground by AppSettings.colorBackground.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["color_background", "Colour background"],
+                        DesktopStrings["d_color_background_subtitle", "Soft colours from the playing song's artwork behind every page"],
+                        colorBackground,
+                        AppSettings::setColorBackground,
+                    )
+                    val splashScreen by AppSettings.splashScreen.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["splash_screen", "Splash screen"],
+                        DesktopStrings["d_splash_screen_subtitle", "Show the animated logo when the app starts"],
+                        splashScreen,
+                        AppSettings::setSplashScreen,
+                    )
                     SettingsToggle(
                         DesktopStrings["full_screen_cover_art", "Full-screen cover art"],
                         DesktopStrings["full_screen_cover_art_subtitle", "Runs the cover to the edges of the player instead of a square sleeve"],
@@ -7201,6 +7351,7 @@ private fun DesktopSettingsScreen(
                     }
                 }
             }
+            if (section == DesktopSettingsSection.HOME) item { DesktopHomeSettingsGroup() }
             if (section == DesktopSettingsSection.MISCELLANEOUS) item {
                 SettingsGroup(DesktopStrings["miscellaneous", "Miscellaneous"]) {
                     val hideAiSongs by AiSongs.hide.collectAsState()
@@ -7498,6 +7649,7 @@ private fun DesktopSettingsScreen(
                 DesktopSettingsFooter(onLicenses = onOpenLicenses)
             }
         }
+                }
         }
             }
     }
@@ -8921,6 +9073,89 @@ private fun SettingsToggle(title: String, subtitle: String, checked: Boolean, on
         }
         Spacer(Modifier.width(18.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange, colors = desktopSwitchColors())
+    }
+}
+
+/**
+ * The phone's Home settings: the dials, ported from Melo (GPL-3.0). Everything past the first
+ * switch shapes the Speed Dial, so it goes with it while the dial is off.
+ */
+@Composable
+private fun DesktopHomeSettingsGroup() {
+    val speedDial by AppSettings.homeSpeedDial.collectAsState()
+    val artistDial by AppSettings.homeArtistDial.collectAsState()
+    val mixesDial by AppSettings.homeMixesDial.collectAsState()
+    val luckyTile by AppSettings.homeLuckyTile.collectAsState()
+    val source by AppSettings.homeDialSource.collectAsState()
+    val rows by AppSettings.homeDialRows.collectAsState()
+    val tileStyle by AppSettings.homeDialTileStyle.collectAsState()
+    val labels by AppSettings.homeDialLabels.collectAsState()
+    val pinIcon by AppSettings.homeDialPinIcon.collectAsState()
+    val newTags by AppSettings.homeDialNewReleaseTags.collectAsState()
+    val hidden by AppSettings.hiddenFromDial.collectAsState()
+    SettingsGroup(DesktopStrings["settings_home", "Home"]) {
+        SettingsToggle(
+            DesktopStrings["settings_home_speed_dial", "Speed Dial"],
+            DesktopStrings["settings_home_speed_dial_subtitle", "Your pins and favourites as tiles at the top of Home"],
+            speedDial,
+            AppSettings::setHomeSpeedDial,
+        )
+        if (!speedDial) return@SettingsGroup
+        SettingsToggle(DesktopStrings["settings_home_artist_dial", "Artists page"], "", artistDial, AppSettings::setHomeArtistDial)
+        SettingsToggle(DesktopStrings["settings_home_mixes_dial", "Mixes page"], "", mixesDial, AppSettings::setHomeMixesDial)
+        SettingsToggle(DesktopStrings["settings_home_lucky_tile", "Feeling lucky tile"], "", luckyTile, AppSettings::setHomeLuckyTile)
+        SettingsChoiceRow(
+            DesktopStrings["settings_home_dial_source", "Tile source"],
+            listOf(
+                DesktopStrings["settings_home_dial_source_youtube", "YouTube Music"],
+                DesktopStrings["settings_home_dial_source_history", "Listening history"],
+            ),
+            HomeDialSource.entries.indexOf(source),
+        ) { AppSettings.setHomeDialSource(HomeDialSource.entries[it]) }
+        val rowChoices = AppSettings.HOME_DIAL_ROWS.toList()
+        SettingsChoiceRow(
+            DesktopStrings["settings_home_dial_rows", "Rows per page"],
+            rowChoices.map { "$it" },
+            rowChoices.indexOf(rows),
+        ) { AppSettings.setHomeDialRows(rowChoices[it]) }
+        SettingsChoiceRow(
+            DesktopStrings["settings_home_dial_tile_style", "Tile edge"],
+            listOf(
+                DesktopStrings["settings_home_dial_tile_style_plain", "Plain"],
+                DesktopStrings["settings_home_dial_tile_style_edge", "Edge"],
+                DesktopStrings["settings_home_dial_tile_style_glass", "Glass"],
+            ),
+            HomeDialTileStyle.entries.indexOf(tileStyle),
+        ) { AppSettings.setHomeDialTileStyle(HomeDialTileStyle.entries[it]) }
+        SettingsToggle(DesktopStrings["settings_home_dial_labels", "Show tile titles"], "", labels, AppSettings::setHomeDialLabels)
+        SettingsToggle(DesktopStrings["settings_home_dial_pin_icon", "Show pin badges"], "", pinIcon, AppSettings::setHomeDialPinIcon)
+        SettingsToggle(DesktopStrings["settings_home_dial_new_tags", "Mark new releases"], "", newTags, AppSettings::setHomeDialNewReleaseTags)
+        if (hidden.isNotEmpty()) {
+            SettingsNavigationRow(
+                DesktopStrings.format("settings_home_restore_tiles", hidden.size, fallback = "Restore removed tiles (%1\$d)"),
+                "",
+            ) { hidden.forEach { AppSettings.setHiddenFromDial(it, false) } }
+        }
+    }
+}
+
+/** A titled row of chips, one of [options] picked. */
+@Composable
+private fun SettingsChoiceRow(title: String, options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    if (!settingsRowVisible(title)) return
+    Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEachIndexed { index, label ->
+                FilterChip(
+                    colors = desktopChipColors(),
+                    selected = index == selected,
+                    onClick = { onSelect(index) },
+                    label = { Text(label) },
+                )
+            }
+        }
     }
 }
 

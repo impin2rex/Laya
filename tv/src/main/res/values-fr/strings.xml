@@ -101,6 +101,8 @@
     <string name="tv_lyrics">Paroles</string>
     <string name="tv_lyrics_sources">Sources de paroles</string>
     <string name="tv_lyrics_sources_message">Sélectionnez pour activer ou désactiver une source. Appuyez sur Gauche ou Droite pour la monter ou la descendre ; la première est interrogée en premier.</string>
+    <string name="tv_sources_message">Sélectionnez une source pour l’activer ou la désactiver, ou un addon pour le modifier. Appuyez sur Gauche ou Droite pour monter ou descendre un addon ; les sources sont essayées de haut en bas.</string>
+    <string name="tv_blurb_sources">Choisissez d’où la musique est diffusée, et dans quel ordre. Tidal et Qobuz ajoutent le lossless.</string>
     <string name="tv_maintainer">Mainteneur</string>
     <string name="tv_minutes">%1$d minutes</string>
     <string name="tv_mono_toast">Ce titre est en mono, ses voix ne peuvent donc pas être retirées</string>
@@ -269,4 +271,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">Masquer les titres générés par IA</string>
     <string name="tv_hide_ai_songs_subtitle">Écarte de l’accueil, de la recherche et de la radio les titres des chaînes de la liste de blocage AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="tv_color_background">Fond coloré</string>
+    <string name="tv_blurb_color_background">Couleur douce du titre en cours derrière chaque page</string>
+    <string name="tv_splash_screen">Écran de démarrage</string>
+    <string name="tv_blurb_splash_screen">Le logo animé au lancement de l\'app</string>
+    <string name="tv_settings_section_look">Apparence</string>
+    <string name="tv_settings_section_listening">Écoute</string>
+    <string name="tv_settings_section_app">Application</string>
+    <string name="tv_settings_home">Accueil</string>
+    <string name="tv_settings_home_speed_dial">Speed Dial</string>
+    <string name="tv_settings_home_speed_dial_subtitle">Vos épingles et favoris en tuiles en haut de l\'accueil</string>
+    <string name="tv_settings_home_artist_dial">Page Artistes</string>
+    <string name="tv_settings_home_mixes_dial">Page Mix</string>
+    <string name="tv_settings_home_lucky_tile">Tuile aléatoire</string>
+    <string name="tv_settings_home_dial_source">Source des tuiles</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">Historique d\'écoute</string>
+    <string name="tv_settings_home_dial_rows">Lignes par page</string>
+    <string name="tv_settings_home_dial_labels">Afficher les titres</string>
+    <string name="tv_settings_home_dial_pin_icon">Afficher les badges d\'épingle</string>
+    <string name="tv_settings_home_dial_new_tags">Marquer les nouveautés</string>
+    <string name="tv_settings_home_restore_tiles">Restaurer les tuiles retirées (%1$d)</string>
+    <string name="tv_home_speed_dial">Speed Dial</string>
+    <string name="tv_home_mixes_dial">Mix</string>
+    <string name="tv_home_dial_new">Nouveau</string>
+    <string name="tv_home_dial_pin">Épingler</string>
+    <string name="tv_home_dial_remove">Retirer du dial</string>
+    <string name="tv_home_dial_unpin">Désépingler</string>
+    <string name="tv_home_dial_more">Plus d\'options</string>
 </resources>

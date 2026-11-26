@@ -142,6 +142,8 @@ fun HomeScreen(
     leadHero: Boolean = true,
     currentSong: Song? = null,
     isPlaying: Boolean = false,
+    /** Home's dials (the desktop's Speed Dial), drawn above the feed; null for none. */
+    dials: (@Composable () -> Unit)? = null,
 ) {
     val recentsViewType by AppUi.host.homeRecentsViewType.collectAsStateWithLifecycle()
 
@@ -173,6 +175,7 @@ fun HomeScreen(
                     SignInBanner(onSignIn = onSignIn, modifier = Modifier.padding(bottom = 8.dp))
                 }
             }
+            if (dials != null) item(key = "home_dials") { dials() }
             when (state) {
                 is UiState.Loading -> {
                     if (recentlyPlayedLoading) {

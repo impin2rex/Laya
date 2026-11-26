@@ -581,6 +581,14 @@ private fun SongChangeReveal(
     }
 }
 
+/**
+ * The song-change dissolve for a cover drawn by its own surface (the TV player): [content] draws
+ * the cover of [model] (a Coil model) with the modifier it is given.
+ */
+@Composable
+fun SongChangeCover(model: Any?, modifier: Modifier, content: @Composable (Modifier) -> Unit) =
+    SongChangeReveal(model, modifier, blur = true, content)
+
 private class ShownCover {
     var key: Any? = null
 }

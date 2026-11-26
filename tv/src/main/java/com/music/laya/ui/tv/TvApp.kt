@@ -205,6 +205,13 @@ fun TvApp(
             .fillMaxSize()
             .tvCanvas(playerState.song?.thumbnailUrl),
     ) {
+        val playingArt = playerState.song?.thumbnailUrl
+        LaunchedEffect(playingArt) { com.music.laya.ui.theme.AmbientArtwork.url.value = playingArt }
+        // Melo's colour background, from the playing song, over the canvas and under every page.
+        com.music.laya.ui.theme.AmbientBackgroundLayer(
+            com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false)),
+            Modifier.fillMaxSize(),
+        )
         AnimatedContent(
             targetState = isRunningSetup,
             transitionSpec = { fadeIn(tween(220)).togetherWith(fadeOut(tween(160))) },
@@ -266,6 +273,7 @@ fun TvApp(
         if (pendingUpdate != null && !updateDismissed && !isRunningSetup && !showAccountDialog) {
             TvUpdateDialog(update = pendingUpdate, onDismiss = { updateDismissed = true })
         }
+        com.music.laya.ui.components.ColdStartSplash()
     }
 }
 

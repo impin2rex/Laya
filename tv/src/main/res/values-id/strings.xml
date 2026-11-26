@@ -101,6 +101,8 @@
     <string name="tv_lyrics">Lirik</string>
     <string name="tv_lyrics_sources">Sumber Lirik</string>
     <string name="tv_lyrics_sources_message">Pilih untuk mengaktifkan atau menonaktifkan sumber. Tekan Kiri atau Kanan untuk memindahkannya ke atas atau bawah; yang pertama ditanyai lebih dulu.</string>
+    <string name="tv_sources_message">Pilih sumber untuk mengaktifkan atau menonaktifkannya, atau addon untuk mengeditnya. Tekan Kiri atau Kanan untuk memindahkan addon ke atas atau bawah; sumber dicoba dari atas.</string>
+    <string name="tv_blurb_sources">Pilih dari mana musik di-streaming, dan urutannya. Tidal dan Qobuz menambahkan lossless.</string>
     <string name="tv_maintainer">Pengelola</string>
     <string name="tv_minutes">%1$d Menit</string>
     <string name="tv_mono_toast">Trek ini mono, sehingga vokalnya tidak dapat dihilangkan</string>
@@ -267,4 +269,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">Sembunyikan lagu buatan AI</string>
     <string name="tv_hide_ai_songs_subtitle">Menjauhkan lagu dari channel di daftar blokir AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) dari Beranda, penelusuran, dan radio</string>
+    <string name="tv_color_background">Latar berwarna</string>
+    <string name="tv_blurb_color_background">Warna lembut dari lagu yang diputar di balik setiap halaman</string>
+    <string name="tv_splash_screen">Layar pembuka</string>
+    <string name="tv_blurb_splash_screen">Logo animasi saat aplikasi dibuka</string>
+    <string name="tv_settings_section_look">Tampilan</string>
+    <string name="tv_settings_section_listening">Mendengarkan</string>
+    <string name="tv_settings_section_app">Aplikasi</string>
+    <string name="tv_settings_home">Beranda</string>
+    <string name="tv_settings_home_speed_dial">Speed Dial</string>
+    <string name="tv_settings_home_speed_dial_subtitle">Pin dan favoritmu sebagai ubin di atas Beranda</string>
+    <string name="tv_settings_home_artist_dial">Halaman artis</string>
+    <string name="tv_settings_home_mixes_dial">Halaman mix</string>
+    <string name="tv_settings_home_lucky_tile">Ubin acak</string>
+    <string name="tv_settings_home_dial_source">Sumber ubin</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">Riwayat dengar</string>
+    <string name="tv_settings_home_dial_rows">Baris per halaman</string>
+    <string name="tv_settings_home_dial_labels">Tampilkan judul</string>
+    <string name="tv_settings_home_dial_pin_icon">Tampilkan lencana pin</string>
+    <string name="tv_settings_home_dial_new_tags">Tandai rilisan baru</string>
+    <string name="tv_settings_home_restore_tiles">Pulihkan ubin yang dihapus (%1$d)</string>
+    <string name="tv_home_speed_dial">Speed Dial</string>
+    <string name="tv_home_mixes_dial">Mix</string>
+    <string name="tv_home_dial_new">Baru</string>
+    <string name="tv_home_dial_pin">Sematkan</string>
+    <string name="tv_home_dial_remove">Hapus dari dial</string>
+    <string name="tv_home_dial_unpin">Lepas sematan</string>
+    <string name="tv_home_dial_more">Opsi lainnya</string>
 </resources>

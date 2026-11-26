@@ -94,8 +94,9 @@ class AutoMixVisualFeedTest {
     @Test
     fun artworkPreferencesAreIndependentUnderTheAutoMixParent() {
         val defaults = AutoMixArtworkPreferences()
-        assertFalse(defaults.gate(automix = true).allows(1L))
-        assertFalse(defaults.gate(automix = true, mini = true).allows(1L))
+        // Both artwork transitions are always on now, under Automix.
+        assertTrue(defaults.gate(automix = true).allows(1L))
+        assertTrue(defaults.gate(automix = true, mini = true).allows(1L))
         for (autoMix in listOf(false, true)) for (art in listOf(false, true)) for (mini in listOf(false, true)) {
             val preferences = defaults.copy(artTransition = art, miniPlayerTransition = mini)
             assertEquals(autoMix && art, preferences.gate(automix = autoMix).allows(1L))

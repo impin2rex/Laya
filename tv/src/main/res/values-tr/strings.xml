@@ -101,6 +101,8 @@
     <string name="tv_lyrics">Şarkı Sözleri</string>
     <string name="tv_lyrics_sources">Söz Kaynakları</string>
     <string name="tv_lyrics_sources_message">Bir kaynağı açıp kapatmak için seçin. Yukarı veya aşağı taşımak için Sol veya Sağ’a basın; ilk sıradaki ilk sorulur.</string>
+    <string name="tv_sources_message">Bir kaynağı açıp kapatmak veya bir eklentiyi düzenlemek için seçin. Bir eklentiyi yukarı veya aşağı taşımak için Sol veya Sağ’a basın; kaynaklar yukarıdan aşağıya denenir.</string>
+    <string name="tv_blurb_sources">Müziğin nereden ve hangi sırayla akışa alınacağını seçin. Tidal ve Qobuz kayıpsız ses ekler.</string>
     <string name="tv_maintainer">Geliştirici</string>
     <string name="tv_minutes">%1$d Dakika</string>
     <string name="tv_mono_toast">Bu parça mono olduğundan vokalleri kaldırılamaz</string>
@@ -268,4 +270,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">Yapay zekâ ile üretilmiş şarkıları gizle</string>
     <string name="tv_hide_ai_songs_subtitle">AiSList engel listesindeki kanalların şarkılarını (AiSList, aisloplist.com, CC BY-NC 4.0) Ana Sayfa, arama ve radyodan uzak tutar</string>
+    <string name="tv_color_background">Renkli arka plan</string>
+    <string name="tv_blurb_color_background">Çalan şarkıdan gelen yumuşak renk her sayfanın arkasında</string>
+    <string name="tv_splash_screen">Açılış ekranı</string>
+    <string name="tv_blurb_splash_screen">Uygulama açılırken animasyonlu logo</string>
+    <string name="tv_settings_section_look">Görünüm</string>
+    <string name="tv_settings_section_listening">Dinleme</string>
+    <string name="tv_settings_section_app">Uygulama</string>
+    <string name="tv_settings_home">Ana sayfa</string>
+    <string name="tv_settings_home_speed_dial">Speed Dial</string>
+    <string name="tv_settings_home_speed_dial_subtitle">Sabitlediklerin ve favorilerin Ana sayfanın üstünde kutucuk olarak</string>
+    <string name="tv_settings_home_artist_dial">Sanatçılar sayfası</string>
+    <string name="tv_settings_home_mixes_dial">Mix sayfası</string>
+    <string name="tv_settings_home_lucky_tile">Rastgele kutucuk</string>
+    <string name="tv_settings_home_dial_source">Kutucuk kaynağı</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">Dinleme geçmişi</string>
+    <string name="tv_settings_home_dial_rows">Sayfa başına satır</string>
+    <string name="tv_settings_home_dial_labels">Başlıkları göster</string>
+    <string name="tv_settings_home_dial_pin_icon">Sabitleme rozetlerini göster</string>
+    <string name="tv_settings_home_dial_new_tags">Yeni çıkanları işaretle</string>
+    <string name="tv_settings_home_restore_tiles">Kaldırılan kutucukları geri getir (%1$d)</string>
+    <string name="tv_home_speed_dial">Speed Dial</string>
+    <string name="tv_home_mixes_dial">Mixler</string>
+    <string name="tv_home_dial_new">Yeni</string>
+    <string name="tv_home_dial_pin">Sabitle</string>
+    <string name="tv_home_dial_remove">Dial\'dan kaldır</string>
+    <string name="tv_home_dial_unpin">Sabitlemeyi kaldır</string>
+    <string name="tv_home_dial_more">Diğer seçenekler</string>
 </resources>

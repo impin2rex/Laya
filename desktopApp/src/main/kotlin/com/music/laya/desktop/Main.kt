@@ -35,6 +35,11 @@ fun main() {
     DesktopWebCookies.install()
     DesktopLossless.install()
     DesktopWindowVisibility.install()
+    // The shared settings the desktop reads (the Home dials, colour background, splash): without
+    // a store their setters threw. A node of their own, apart from the desktop's other preferences.
+    // A properties file, not java.util.prefs: Preferences refuses values over 8 KB, and the
+    // saved Home dial is longer than that.
+    com.music.laya.data.settings.AppSettings.init(desktopAppSettingsStore(), com.music.laya.data.settings.AppSettingsHost())
     // The player is the phone's, from the shared UI module; this is what it reads underneath.
     PlayerPlatform.install(DesktopPlayerHost)
     com.music.laya.ui.AppUi.install(DesktopAppUiHost)
@@ -207,3 +212,26 @@ private const val MIN_WINDOW_HEIGHT_DP = 400.0
 
 /** Desktop's own key for [AiSongs.hide], which the phone keeps in AppSettings. */
 internal const val KEY_HIDE_AI_SONGS = "hide_ai_songs"
+
+/** The shared settings, kept in `~/.config/laya/app-settings.properties` and written on each change. */
+private fun desktopAppSettingsStore(): com.russhwolf.settings.Settings {
+    val dir = java.nio.file.Path.of(
+        System.getenv("XDG_CONFIG_HOME")?.takeIf(String::isNotBlank) ?: "${System.getProperty("user.home")}/.config",
+        "laya",
+    )
+    val file = dir.resolve("app-settings.properties")
+    val properties = java.util.Properties()
+    runCatching { java.nio.file.Files.newInputStream(file).use(properties::load) }
+    return com.russhwolf.settings.PropertiesSettings(properties) { changed ->
+        // One writer at a time: settings change from more than one thread.
+        synchronized(properties) { runCatching {
+            java.nio.file.Files.createDirectories(dir)
+            val temp = dir.resolve("app-settings.properties.tmp")
+            java.nio.file.Files.newOutputStream(temp).use { changed.store(it, null) }
+            java.nio.file.Files.move(
+                temp, file,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+            )
+        } }
+    }
+}

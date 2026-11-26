@@ -1,5 +1,6 @@
 package com.music.laya.ui.tv.player
 
+import com.music.laya.data.model.artworkAt
 import androidx.compose.ui.res.stringResource
 import com.music.laya.R
 import android.view.KeyEvent
@@ -217,7 +218,9 @@ internal fun TvNowPlayingStage(
                     clip = true
                 },
         ) {
-            TvArtwork(url = song.thumbnailUrl, px = 720, shape = RectangleShape, modifier = Modifier.fillMaxSize())
+            com.music.laya.ui.player.SongChangeCover(song.thumbnailUrl.artworkAt(720) ?: song.thumbnailUrl, Modifier.fillMaxSize()) {
+                TvArtwork(url = song.thumbnailUrl, px = 720, shape = RectangleShape, modifier = it)
+            }
             AutoMixCanvasLayer(
                 song = song,
                 queue = queue,

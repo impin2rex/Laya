@@ -101,6 +101,8 @@
     <string name="tv_lyrics">Тексты песен</string>
     <string name="tv_lyrics_sources">Источники текстов</string>
     <string name="tv_lyrics_sources_message">Выберите, чтобы включить или выключить источник. Нажмите «Влево» или «Вправо», чтобы сдвинуть его вверх или вниз; первый источник опрашивается первым.</string>
+    <string name="tv_sources_message">Выберите источник, чтобы включить или выключить его, или аддон, чтобы изменить его. Нажмите «Влево» или «Вправо», чтобы сдвинуть аддон вверх или вниз; источники пробуются сверху вниз.</string>
+    <string name="tv_blurb_sources">Выберите, откуда транслируется музыка и в каком порядке. Tidal и Qobuz добавляют lossless.</string>
     <string name="tv_maintainer">Разработчик</string>
     <string name="tv_minutes">%1$d мин</string>
     <string name="tv_mono_toast">Этот трек моно, поэтому убрать вокал нельзя</string>
@@ -270,4 +272,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">Скрывать песни, созданные ИИ</string>
     <string name="tv_hide_ai_songs_subtitle">Убирает из главной, поиска и радио песни каналов из чёрного списка AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
+    <string name="tv_color_background">Цветной фон</string>
+    <string name="tv_blurb_color_background">Мягкий цвет текущего трека за каждой страницей</string>
+    <string name="tv_splash_screen">Заставка</string>
+    <string name="tv_blurb_splash_screen">Анимированный логотип при запуске</string>
+    <string name="tv_settings_section_look">Внешний вид</string>
+    <string name="tv_settings_section_listening">Прослушивание</string>
+    <string name="tv_settings_section_app">Приложение</string>
+    <string name="tv_settings_home">Главная</string>
+    <string name="tv_settings_home_speed_dial">Speed Dial</string>
+    <string name="tv_settings_home_speed_dial_subtitle">Закреплённое и избранное плитками вверху главной</string>
+    <string name="tv_settings_home_artist_dial">Страница исполнителей</string>
+    <string name="tv_settings_home_mixes_dial">Страница миксов</string>
+    <string name="tv_settings_home_lucky_tile">Случайная плитка</string>
+    <string name="tv_settings_home_dial_source">Источник плиток</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">История прослушивания</string>
+    <string name="tv_settings_home_dial_rows">Рядов на странице</string>
+    <string name="tv_settings_home_dial_labels">Показывать названия</string>
+    <string name="tv_settings_home_dial_pin_icon">Показывать значки закрепления</string>
+    <string name="tv_settings_home_dial_new_tags">Отмечать новинки</string>
+    <string name="tv_settings_home_restore_tiles">Вернуть удалённые плитки (%1$d)</string>
+    <string name="tv_home_speed_dial">Speed Dial</string>
+    <string name="tv_home_mixes_dial">Миксы</string>
+    <string name="tv_home_dial_new">Новое</string>
+    <string name="tv_home_dial_pin">Закрепить</string>
+    <string name="tv_home_dial_remove">Убрать с панели</string>
+    <string name="tv_home_dial_unpin">Открепить</string>
+    <string name="tv_home_dial_more">Другие действия</string>
 </resources>

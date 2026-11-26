@@ -101,6 +101,8 @@
     <string name="tv_lyrics">लिरिक्स</string>
     <string name="tv_lyrics_sources">लिरिक्स के स्रोत</string>
     <string name="tv_lyrics_sources_message">किसी स्रोत को चालू या बंद करने के लिए चुनें। ऊपर-नीचे ले जाने के लिए बाएं या दाएं दबाएं; पहले वाले से पहले पूछा जाता है।</string>
+    <string name="tv_sources_message">किसी स्रोत को चालू या बंद करने, या किसी ऐडऑन को संपादित करने के लिए चुनें। ऐडऑन को ऊपर-नीचे ले जाने के लिए बाएं या दाएं दबाएं; स्रोत ऊपर से क्रम में आज़माए जाते हैं।</string>
+    <string name="tv_blurb_sources">चुनें कि संगीत कहां से और किस क्रम में स्ट्रीम हो। Tidal और Qobuz लॉसलेस जोड़ते हैं।</string>
     <string name="tv_maintainer">मेंटेनर</string>
     <string name="tv_minutes">%1$d मिनट</string>
     <string name="tv_mono_toast">यह ट्रैक मोनो है, इसलिए इसके वोकल हटाए नहीं जा सकते</string>
@@ -268,4 +270,32 @@
     </plurals>
     <string name="tv_hide_ai_songs">AI से बने गाने छिपाएँ</string>
     <string name="tv_hide_ai_songs_subtitle">AiSList ब्लॉकलिस्ट के चैनलों के गाने (AiSList, aisloplist.com, CC BY-NC 4.0) होम, सर्च और रेडियो से बाहर रखता है</string>
+    <string name="tv_color_background">रंगीन बैकग्राउंड</string>
+    <string name="tv_blurb_color_background">हर पेज के पीछे चल रहे गाने का हल्का रंग</string>
+    <string name="tv_splash_screen">स्प्लैश स्क्रीन</string>
+    <string name="tv_blurb_splash_screen">ऐप शुरू होने पर एनिमेटेड लोगो</string>
+    <string name="tv_settings_section_look">रूप</string>
+    <string name="tv_settings_section_listening">सुनना</string>
+    <string name="tv_settings_section_app">ऐप</string>
+    <string name="tv_settings_home">होम</string>
+    <string name="tv_settings_home_speed_dial">स्पीड डायल</string>
+    <string name="tv_settings_home_speed_dial_subtitle">आपके पिन और पसंदीदा, होम के ऊपर टाइल के रूप में</string>
+    <string name="tv_settings_home_artist_dial">कलाकार पेज</string>
+    <string name="tv_settings_home_mixes_dial">मिक्स पेज</string>
+    <string name="tv_settings_home_lucky_tile">रैंडम टाइल</string>
+    <string name="tv_settings_home_dial_source">टाइल का स्रोत</string>
+    <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="tv_settings_home_dial_source_history">सुनने का इतिहास</string>
+    <string name="tv_settings_home_dial_rows">हर पेज पर पंक्तियाँ</string>
+    <string name="tv_settings_home_dial_labels">टाइल के शीर्षक दिखाएँ</string>
+    <string name="tv_settings_home_dial_pin_icon">पिन बैज दिखाएँ</string>
+    <string name="tv_settings_home_dial_new_tags">नई रिलीज़ चिह्नित करें</string>
+    <string name="tv_settings_home_restore_tiles">हटाई गई टाइलें वापस लाएँ (%1$d)</string>
+    <string name="tv_home_speed_dial">स्पीड डायल</string>
+    <string name="tv_home_mixes_dial">मिक्स</string>
+    <string name="tv_home_dial_new">नया</string>
+    <string name="tv_home_dial_pin">पिन करें</string>
+    <string name="tv_home_dial_remove">डायल से हटाएं</string>
+    <string name="tv_home_dial_unpin">अनपिन करें</string>
+    <string name="tv_home_dial_more">और विकल्प</string>
 </resources>
