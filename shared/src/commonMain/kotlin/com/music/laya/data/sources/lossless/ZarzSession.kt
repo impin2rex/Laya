@@ -112,6 +112,15 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
         if (!record.usable(Clock.System.now())) lose(record)
     }
 
+    /**
+     * Renews a session in its last hour (no captcha), then [check]s it. Called by the expiry watcher, so a session
+     * is extended even when nothing streams through it; requests alone would leave an idle one to run out.
+     */
+    suspend fun renewOrCheck() {
+        refreshIfDue()
+        check()
+    }
+
     /** Drops [stale] (if still the one held) and reports it lost. */
     private fun lose(stale: Record) {
         if (record != stale || stale.sessionId.isBlank()) return
@@ -261,6 +270,9 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
                         expiresAt = fields.str("expires_at").ifBlank { record.expiresAt },
                     ),
                 )
+                TrackLog.d(TAG, "$appVersion: session renewed until ${record.expiresAt}")
+            } else {
+                TrackLog.w(TAG, "$appVersion: session refresh returned HTTP ${response.code}")
             }
         }.onFailure { TrackLog.w(TAG, "$appVersion: session refresh failed: ${it.message}") }
     }

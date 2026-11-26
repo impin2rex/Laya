@@ -100,7 +100,7 @@ class LosslessSource(
         }
 
         /** How often a held session's end date is compared with the clock. */
-        const val CHECK_EVERY_MS = 60_000L
+        const val CHECK_EVERY_MS = 5 * 60_000L
 
         /**
          * A lost session ([com.music.laya.data.sources.lossless.ZarzSession.lost]) switches its source off at once,
@@ -121,7 +121,7 @@ class LosslessSource(
                 scope.launch { lossesOf(provider).collect { if (switchOff(provider)) owed.value = true } }
                 scope.launch {
                     while (true) {
-                        provider.session.check()
+                        provider.session.renewOrCheck()
                         delay(CHECK_EVERY_MS)
                     }
                 }
