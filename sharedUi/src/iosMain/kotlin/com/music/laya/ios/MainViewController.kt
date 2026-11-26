@@ -4,6 +4,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.window.ComposeUIViewController
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.lossless_verify_expired_notice
@@ -124,5 +125,10 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     )
     // Not opaque: an opaque Metal layer clears to white wherever nothing is drawn, which shows as a white band
     // while the canvas resizes on rotation. Transparent lets the host's black background show instead.
-    return ComposeUIViewController(configure = { opaque = false }) { LayaIosApp(engine, onStatusBarLight) }
+    return ComposeUIViewController(configure = { opaque = false }) {
+        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+            LayaIosApp(engine, onStatusBarLight)
+            com.music.laya.ui.components.ColdStartSplash()
+        }
+    }
 }

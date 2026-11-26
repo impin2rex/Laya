@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -189,7 +190,10 @@ private fun desktopMain() = application {
             LocalDesktopWindowActions provides actions,
             LocalDesktopWindowScope provides this,
         ) {
-            LayaDesktopApp()
+            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                LayaDesktopApp()
+                com.music.laya.ui.components.ColdStartSplash()
+            }
         }
     }
     DesktopPictureInPictureWindow()

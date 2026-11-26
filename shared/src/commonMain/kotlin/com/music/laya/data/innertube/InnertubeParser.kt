@@ -213,6 +213,22 @@ object InnertubeParser {
     }
 
     /**
+     * Home's chip cloud (Relax, Workout, Energise…). Each chip browses FEmusic_home again with its
+     * own params, which is Home filtered to that mood. The chip already selected has no endpoint.
+     */
+    fun parseHomeChips(response: JsonObject): List<MoodGenre> =
+        response.o("contents")
+            .o("singleColumnBrowseResultsRenderer").a("tabs")?.firstOrNull()
+            .o("tabRenderer").o("content").o("sectionListRenderer").o("header")
+            .o("chipCloudRenderer").a("chips").orEmpty()
+            .mapNotNull { chip ->
+                val renderer = chip.o("chipCloudChipRenderer") ?: return@mapNotNull null
+                val browse = renderer.o("navigationEndpoint").o("browseEndpoint") ?: return@mapNotNull null
+                val title = renderer.o("text").runs().ifBlank { return@mapNotNull null }
+                MoodGenre(title, browse.s("browseId") ?: "FEmusic_home", browse.s("params"))
+            }
+
+    /**
      * Seasonal mood pages (Hanukkah, Christmas) lay their playlists out as
      * grids — "Spotlight", "Featured playlists" — rather than carousels.
      */

@@ -289,6 +289,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     var homePaging by remember { mutableStateOf(false) }
     var homePending by remember { mutableIntStateOf(0) }
     var recentsLoading by remember { mutableStateOf(false) }
+    // Home's mood chips, as MainViewModel.selectHomeChip: the picked chip's feed loads beside Home's own.
+    var homeChips by remember { mutableStateOf<List<MoodGenre>>(emptyList()) }
+    var homeChip by remember { mutableStateOf<MoodGenre?>(null) }
+    var homeChipShelves by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
+    var homeChipJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     fun publishHome(shelves: List<HomeShelf>, prepend: Boolean = false) {
         if (prepend) {
             val titles = shelves.map { it.title.lowercase() }.toSet()
@@ -308,7 +313,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         homePending = 1 + YtMusicRepository.HOME_SUPPLEMENT_BROWSE_IDS.size
         launch {
             YtMusicRepository.home()
-                .onSuccess { homeContinuation = it.continuation; publishHome(it.shelves) }
+                .onSuccess { homeContinuation = it.continuation; homeChips = it.chips; publishHome(it.shelves) }
                 .onFailure { if (home !is UiState.Success) home = UiState.Error(friendly(it)) }
             homePending--
         }
@@ -361,6 +366,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     // Library: same calls MainViewModel.fetchLibrary makes (liked songs beyond page one are synced into LikeState).
     var library by remember { mutableStateOf<UiState<LibraryPage>>(UiState.Loading) }
     var libraryRefreshing by remember { mutableStateOf(false) }
+    var homeRefreshing by remember { mutableStateOf(false) }
     suspend fun loadLibrary() {
         library = YtMusicRepository.library().fold(
             onSuccess = { page ->
@@ -468,6 +474,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val downloaded by IosDownloads.savedIds.collectAsState()
     fun canLikeOnLockScreen(song: Song?) = signedIn && song != null && song.localUri == null &&
         song.videoId !in downloaded && SourceRegistry.parseTrackKey(song.videoId) == null
+    // The colour background behind every page follows the playing song's artwork.
+    LaunchedEffect(player.song?.thumbnailUrl) {
+        com.music.laya.ui.theme.AmbientArtwork.url.value =
+            player.song?.thumbnailUrl.artworkAt(com.music.laya.data.model.ROW_ART_PX)
+    }
     LaunchedEffect(player) {
         player.onRemoteLike = { player.song?.takeIf(::canLikeOnLockScreen)?.let { toggleLike(it.videoId) } }
         snapshotFlow { player.song.let { canLikeOnLockScreen(it) to (it != null && isLiked(it.videoId)) } }
@@ -999,6 +1010,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     LayaTheme(darkTheme = darkTheme, systemFont = systemFont) {
         // The glass samples this layer; opaque like Android's, so it has something to blur.
         val windowBackground = MaterialTheme.colorScheme.background
+        // Melo's colour background behind every page (drawn in its own layer below), inside the layer
+        // the glass samples. iOS's icons all draw the gradient logo.
+        val ambient = com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false))
         val appBackdrop = rememberLayerBackdrop(onDraw = remember(windowBackground) { { drawRect(windowBackground); drawContent() } })
         CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer, com.music.laya.ui.share.LocalVideoSharer provides IosVideoSharer) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -1006,6 +1020,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
                     val noPadding = PaddingValues(bottom = barHeight)
                     Box(Modifier.fillMaxSize().layerBackdrop(appBackdrop).nestedScroll(navBarScroll)) {
+                        // In a layer of its own, so its drift redraws only itself, not the pages over it.
+                        com.music.laya.ui.theme.AmbientBackgroundLayer(ambient, Modifier.matchParentSize())
                         // A detail page draws its own header up under the status bar (as Android's edge to edge does), so only the other pages are inset here.
                         // Pages that draw behind the status bar themselves (Android's edge-to-edge detail and Replay).
                         val onDetail = stack.lastOrNull() is IosPage.Detail || stack.lastOrNull() === IosPage.Replay
@@ -1196,8 +1212,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 },
                                 onItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onRetry = { scope.launch { home = UiState.Loading; loadHome() } },
-                                refreshing = false,
-                                onRefresh = { scope.launch { loadHome() } },
+                                refreshing = homeRefreshing,
+                                onRefresh = { scope.launch { homeRefreshing = true; loadHome(); homeRefreshing = false } },
                                 pullState = homePull,
                                 contentPadding = noPadding,
                                 title = stringResource(Res.string.listen_now),
@@ -1208,6 +1224,26 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 onLoadMore = ::loadMoreHome,
                                 loadingMore = homePaging || homePending > 0,
                                 recentlyPlayedLoading = recentsLoading,
+                                dials = com.music.laya.ui.home.HomeDialInputs(
+                                    chips = homeChips,
+                                    selectedChip = homeChip,
+                                    onSelectChip = { picked ->
+                                        homeChip = picked
+                                        homeChipJob?.cancel()
+                                        if (picked != null) {
+                                            homeChipShelves = UiState.Loading
+                                            homeChipJob = scope.launch {
+                                                YtMusicRepository.home(picked.params)
+                                                    .onSuccess { homeChipShelves = UiState.Success(it.shelves) }
+                                                    .onFailure { homeChipShelves = UiState.Error(friendly(it)) }
+                                            }
+                                        }
+                                    },
+                                    chipShelves = homeChipShelves,
+                                    mixes = (mixes as? UiState.Success)?.data?.map { it.item }.orEmpty(),
+                                    library = (library as? UiState.Success)?.data,
+                                    onHistory = if (signedIn) ({ openHistory() }) else null,
+                                ),
                             )
                             1 -> ExploreScreen(
                                 state = explore,
@@ -1418,7 +1454,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 }
                             } else {
                                 IconButton(
-                                    onClick = { stack = stack.dropLast(1) },
+                                    // A settings category closes before Settings itself does.
+                                    onClick = {
+                                        val onSettings = stack.lastOrNull() === IosPage.Settings
+                                        if (!(onSettings && com.music.laya.ui.screens.SettingsPages.closePage())) stack = stack.dropLast(1)
+                                    },
                                     modifier = Modifier.align(Alignment.TopStart).then(if (onDetail) Modifier.windowInsetsPadding(WindowInsets.statusBars) else Modifier).padding(8.dp)
                                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
                                 ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }

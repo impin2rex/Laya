@@ -3214,6 +3214,7 @@ fun NowPlayingScreen(
                                     .fillMaxSize()
                                     .drawWithContent { if (art.loaded || !canvasRendered) drawContent() },
                                 blur = true,
+                                revealKey = art.request,
                             ) { artworkModifier ->
                             AsyncImage(
                                 // Decode at the sleeve's *expanded* size, always.

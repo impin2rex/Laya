@@ -424,6 +424,22 @@ private fun GlassNowPlaying(
                     )
                 }
             }
+            // Previous, play, next, as Melo's mini player has them. Dropped inline with next.
+            if (!isInline) {
+                IconButton(
+                    onClick = {
+                        haptics.play(Haptic.SkipPrevious)
+                        onPrevious()
+                    },
+                    enabled = !controlsLocked,
+                    modifier = Modifier.size(glyphSlot),
+                ) {
+                    MiniPlayerPreviousGlyph(
+                        tint = contentColor.copy(alpha = if (controlsLocked) 0.3f else 1f),
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+            }
             if (isLoading) {
                 Box(Modifier.size(glyphSlot), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(

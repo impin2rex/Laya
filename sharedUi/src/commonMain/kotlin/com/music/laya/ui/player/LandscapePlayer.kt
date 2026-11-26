@@ -346,6 +346,7 @@ internal fun LandscapeArtwork(
                     .fillMaxSize()
                     .drawWithContent { if (artLoaded || !canvasRendered) drawContent() },
                 blur = true,
+                revealKey = artRequest,
             ) { artworkModifier ->
                 AsyncImage(
                     model = artRequest,

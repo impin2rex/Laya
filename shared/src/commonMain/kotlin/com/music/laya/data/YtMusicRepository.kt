@@ -64,9 +64,13 @@ object YtMusicRepository {
      * shelves the same way the official app does as you scroll; signed out
      * it's empty and there's nothing more to fetch.
      */
-    suspend fun home(): Result<HomeFeed> = call("home") {
-        val home = Innertube.browse("FEmusic_home")
-        HomeFeed(InnertubeParser.parseHome(home).withoutAi(), InnertubeParser.continuationToken(home))
+    suspend fun home(params: String? = null): Result<HomeFeed> = call("home") {
+        val home = Innertube.browse("FEmusic_home", params)
+        HomeFeed(
+            InnertubeParser.parseHome(home).withoutAi(),
+            InnertubeParser.continuationToken(home),
+            InnertubeParser.parseHomeChips(home),
+        )
     }
 
     /** Recently played is rendered independently, at the top of the Play page. */
@@ -278,7 +282,7 @@ object YtMusicRepository {
     }
 
     private const val HISTORY = "FEmusic_history"
-    private const val RECENT_TITLE = "Recents"
+    const val RECENT_TITLE = "Recents"
 
     /** Enough to scroll through, short of turning the shelf into the history page. */
     private const val RECENT_LIMIT = 20

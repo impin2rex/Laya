@@ -274,6 +274,21 @@ fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            // Previous, play, next, as Melo's mini player has them.
+            IconButton(
+                onClick = {
+                    haptics.play(Haptic.SkipPrevious)
+                    onPrevious()
+                },
+                enabled = !controlsLocked,
+                modifier = Modifier.size(GLYPH_SLOT),
+            ) {
+                MiniPlayerPreviousGlyph(
+                    tint = MaterialTheme.colorScheme.onBackground
+                        .copy(alpha = if (controlsLocked) 0.3f else 1f),
+                )
+            }
+            Spacer(Modifier.width(TRANSPORT_GAP))
             if (isLoading) {
                 Box(Modifier.size(GLYPH_SLOT), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(

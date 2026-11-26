@@ -437,14 +437,6 @@ private fun LockScreenSetup(grants: LockScreenGrants, onClose: () -> Unit) {
             progress,
             AppSettings::setLockScreenProgress,
         )
-        val artTransition by AppSettings.lockScreenArtTransition.collectAsState()
-        OptionRow(
-            Icons.Rounded.AutoAwesome,
-            R.string.lock_screen_art_transition,
-            R.string.lock_screen_art_transition_subtitle,
-            artTransition,
-            AppSettings::setLockScreenArtTransition,
-        )
     }
 }
 

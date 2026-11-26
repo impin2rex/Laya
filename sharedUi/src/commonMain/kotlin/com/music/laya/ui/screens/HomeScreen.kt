@@ -77,6 +77,29 @@ import com.music.laya.ui.components.PAGE_GUTTER
 import com.music.laya.ui.components.RowMoreButton
 import com.music.laya.ui.components.PlayingAccent
 import com.music.laya.ui.components.PullToRefresh
+import com.music.laya.ui.components.LayaMark
+import com.music.laya.ui.home.HomeDialInputs
+import com.music.laya.ui.home.HOME_CHIPS_KEY
+import com.music.laya.ui.components.TopBarContentGap
+import com.music.laya.ui.components.TopBarContentHeight
+import com.music.laya.ui.home.SPEED_DIAL_KEY
+import com.music.laya.ui.home.ARTIST_DIAL_KEY
+import com.music.laya.ui.home.showsArtistPage
+import com.music.laya.ui.home.rememberDialFling
+import com.music.laya.sharedui.resources.home_for_you
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import kotlinx.coroutines.launch
+import com.music.laya.ui.home.homeDialItems
+import com.music.laya.ui.home.rememberHomeDials
+import com.music.laya.data.home.HomeDialRounds
+import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.components.SHELF_CARD_WIDTH
 import com.music.laya.ui.components.SearchPlayingBars
 import com.music.laya.ui.components.SignInBanner
@@ -141,38 +164,114 @@ fun HomeScreen(
     leadHero: Boolean = true,
     currentSong: Song? = null,
     isPlaying: Boolean = false,
+    /** Home's dials and mood chips (ported from Melo); null draws Home without them. */
+    dials: HomeDialInputs? = null,
 ) {
     val recentsViewType by AppUi.host.homeRecentsViewType.collectAsStateWithLifecycle()
+    val speedDialOn by AppSettings.homeSpeedDial.collectAsStateWithLifecycle()
+    val chip = dials?.selectedChip
+    // A picked mood chip swaps the feed for that mood's; the dials deal from it too.
+    val feed = if (chip != null) dials.chipShelves else state
+    val dealt = if (dials != null && speedDialOn) {
+        rememberHomeDials(
+            shelves = (state as? UiState.Success)?.data.orEmpty(),
+            chipShelves = if (chip != null) (dials.chipShelves as? UiState.Success)?.data.orEmpty() else null,
+            mixes = dials.mixes,
+            library = dials.library,
+            settled = state is UiState.Success && !refreshing && !recentlyPlayedLoading,
+        )
+    } else null
+
+    // With the dials, Home's title is pinned as Melo's is: the logo over the Speed Dial,
+    // "Artists" over the Artists page, "For you" once the feed takes over.
+    val pinnedTitle = dials != null && title != null
+    val withArtists by AppSettings.homeArtistDial.collectAsStateWithLifecycle()
+    val showArtists = dials != null && dealt != null && showsArtistPage(dials, dealt, withArtists)
+    val hasChips = dials != null && dials.chips.isNotEmpty()
+    val page by remember(listState) { derivedStateOf { homeTitlePage(listState) } }
+    val chipsPx = { listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == HOME_CHIPS_KEY }?.size ?: 0 }
+    val fold = {
+        if (listState.firstVisibleItemIndex > 0) 1f
+        else (listState.firstVisibleItemScrollOffset / chipsPx().coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
+    }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val pageKeys = buildList { if (dealt != null) add(SPEED_DIAL_KEY); if (showArtists) add(ARTIST_DIAL_KEY) }
+    val dialFling = rememberDialFling(
+        listState = listState,
+        pageKeys = pageKeys,
+        restOffsetPx = { key -> listState.layoutInfo.mainAxisItemSpacing + if (key == SPEED_DIAL_KEY) chipsPx() else 0 },
+        nextOffsetPx = { with(density) { 8.dp.roundToPx() } },
+    )
+    // The feed's first item: what follows the banner, the chips and the dial pages.
+    val feedIndex = listOf(!signedIn && onSignIn != null, hasChips, dealt != null, showArtists).count { it }
 
     PullToRefresh(
         refreshing = refreshing,
-        onRefresh = onRefresh,
+        onRefresh = {
+            if (dials != null) HomeDialRounds.nextRound()
+            onRefresh()
+        },
         state = pullState,
         modifier = modifier,
     ) {
+      BoxWithConstraints(Modifier.fillMaxSize()) {
+        // Pinned, the title sits in the top bar's own row (level with the profile picture), as
+        // Melo's does: the content padding is the bar's inset + height + gap, so the row starts at the inset.
+        val titleTop = if (pinnedTitle) {
+            (contentPadding.calculateTopPadding() - TopBarContentGap - TopBarContentHeight).coerceAtLeast(0.dp)
+        } else {
+            (contentPadding.calculateTopPadding() - HOME_TITLE_LIFT).coerceAtLeast(0.dp)
+        }
+      Column(Modifier.fillMaxSize()) {
+        if (pinnedTitle) {
+            HomePinnedTitle(
+                page = page,
+                homeTitle = title,
+                refreshing = refreshing,
+                pullFraction = { pullState.distanceFraction },
+                fold = fold,
+                modifier = Modifier.padding(top = titleTop),
+            )
+        }
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            flingBehavior = if (pageKeys.isNotEmpty()) dialFling else androidx.compose.foundation.gestures.ScrollableDefaults.flingBehavior(),
             // The heading sits higher than the other tabs' first row: pull the
             // whole feed up by [HOME_TITLE_LIFT] with it.
-            contentPadding = if (title != null) {
-                PaddingValues(
-                    top = (contentPadding.calculateTopPadding() - HOME_TITLE_LIFT).coerceAtLeast(0.dp),
+            contentPadding = when {
+                pinnedTitle -> PaddingValues(top = 4.dp, bottom = contentPadding.calculateBottomPadding())
+                title != null -> PaddingValues(
+                    top = titleTop,
                     bottom = contentPadding.calculateBottomPadding(),
                 )
-            } else {
-                contentPadding
+                else -> contentPadding
             },
         ) {
-            if (title != null) {
-                item { HomeTitle(title) }
+            if (title != null && !pinnedTitle) {
+                item { HomeTitle(title, refreshing, { pullState.distanceFraction }) }
             }
             if (!signedIn && onSignIn != null) {
                 item {
                     SignInBanner(onSignIn = onSignIn, modifier = Modifier.padding(bottom = 8.dp))
                 }
             }
-            when (state) {
+            if (dials != null) {
+                homeDialItems(
+                    inputs = dials,
+                    dials = dealt,
+                    loading = feed is UiState.Loading || refreshing,
+                    onOpen = { onItemClick(it, "") },
+                    onMore = onItemLongPress,
+                    // Full-width tiles on the feed's 16dp gutters; squeezing a page into one
+                    // screen shrank them and centred them between wide side gaps.
+                    maxGridHeight = null,
+                    onScrollToFeed = { scope.launch { listState.animateScrollToItem(feedIndex) } },
+                    withArtists = withArtists,
+                )
+            }
+            when (val state = feed) {
                 is UiState.Loading -> {
                     if (recentlyPlayedLoading) {
                         recentlyPlayedSkeleton(listLayout = recentsViewType == LibraryViewType.LIST)
@@ -216,6 +315,8 @@ fun HomeScreen(
                 }
             }
         }
+      }
+      }
     }
 
     if (onLoadMore != null && state is UiState.Success) {
@@ -496,18 +597,18 @@ fun CompactTrackRow(
  * system font scale.
  */
 @Composable
-private fun HomeTitle(title: String, modifier: Modifier = Modifier) {
+private fun HomeTitle(title: String, refreshing: Boolean, pullFraction: () -> Float, modifier: Modifier = Modifier) {
     val style = MaterialTheme.typography.displayLarge
     val logoHeight = with(LocalDensity.current) { (style.fontSize * LOGO_TO_FONT).toDp() }
     Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp)) {
-        Icon(
-            painter = painterResource(Res.drawable.ic_logo),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .padding(bottom = 14.dp)
-                .height(logoHeight)
-                .aspectRatio(LOGO_ASPECT),
+        // The mark is the feed's pull-to-refresh indicator; the top bar draws no puck over Home.
+        LayaMark(
+            refreshing = refreshing,
+            pullFraction = pullFraction,
+            height = logoHeight,
+            color = MaterialTheme.colorScheme.onBackground,
+            shineColor = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
+            modifier = Modifier.padding(bottom = 14.dp),
         )
         Text(
             text = title,
@@ -517,11 +618,90 @@ private fun HomeTitle(title: String, modifier: Modifier = Modifier) {
     }
 }
 
+private enum class HomeTitlePage { HOME, ARTISTS, FOR_YOU }
+
+/** The page under the middle of the list: Home over the chips and Speed Dial, Artists over its page, else the feed. */
+private fun homeTitlePage(state: LazyListState): HomeTitlePage {
+    val info = state.layoutInfo
+    val middle = (info.viewportStartOffset + info.viewportEndOffset) / 2
+    val under = info.visibleItemsInfo.firstOrNull { it.offset <= middle && it.offset + it.size > middle }?.key
+    return when {
+        under == ARTIST_DIAL_KEY -> HomeTitlePage.ARTISTS
+        under == SPEED_DIAL_KEY || under == HOME_CHIPS_KEY -> HomeTitlePage.HOME
+        state.firstVisibleItemIndex == 0 && state.firstVisibleItemScrollOffset == 0 -> HomeTitlePage.HOME
+        else -> HomeTitlePage.FOR_YOU
+    }
+}
+
+/**
+ * Home's pinned title, as Melo's top bar draws it: the logo alone over the Speed Dial, the
+ * page's name with the logo small beside it elsewhere. The logo is the pull-to-refresh
+ * indicator in either. It shrinks a little into the bar as the chips scroll away ([fold]).
+ */
+@Composable
+private fun HomePinnedTitle(
+    page: HomeTitlePage,
+    homeTitle: String,
+    refreshing: Boolean,
+    pullFraction: () -> Float,
+    fold: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    val color = MaterialTheme.colorScheme.onBackground
+    val shine = MaterialTheme.colorScheme.background.copy(alpha = 0.55f)
+    val forYou = stringResource(Res.string.home_for_you)
+    val artists = stringResource(Res.string.artists)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(PINNED_TITLE_HEIGHT)
+            .padding(horizontal = PAGE_GUTTER)
+            .graphicsLayer {
+                val scale = 1f - 0.22f * fold()
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        androidx.compose.animation.AnimatedContent(
+            targetState = page,
+            transitionSpec = {
+                (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220, delayMillis = 60)) +
+                    androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(280)) { it / 3 }) togetherWith
+                    (androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(160)) +
+                        androidx.compose.animation.slideOutVertically(androidx.compose.animation.core.tween(220)) { -it / 3 })
+            },
+            label = "homePageTitle",
+        ) { shown ->
+            if (shown == HomeTitlePage.HOME) {
+                LayaMark(
+                    refreshing, pullFraction, 40.dp, color, shine,
+                    Modifier.semantics { heading(); contentDescription = homeTitle },
+                )
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = if (shown == HomeTitlePage.ARTISTS) artists else forYou,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = color,
+                        maxLines = 1,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    LayaMark(refreshing, pullFraction, 28.dp, color, shine)
+                }
+            }
+        }
+    }
+}
+
+/** The top bar's row, which the pinned title shares. */
+private val PINNED_TITLE_HEIGHT = TopBarContentHeight
+
 /** The wordmark's height against the heading's font size. */
 private const val LOGO_TO_FONT = 0.9f
 
-/** ic_logo's viewport, 219.55 x 281.52. */
-private const val LOGO_ASPECT = 219.55f / 281.52f
 
 /**
  * Shared by the home feed, Explore and Library so headings line up across tabs.

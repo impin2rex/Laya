@@ -51,6 +51,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import kotlin.math.sign
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -83,6 +86,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.ic_player_next
+import com.music.laya.sharedui.resources.widget_previous
+import com.music.laya.sharedui.resources.ic_player_previous
 import com.music.laya.sharedui.resources.widget_next
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -136,8 +141,14 @@ val TAB_VERTICAL_PADDING = 9.dp
 /** The gap between a tab's glyph and its label, in both bars. */
 val TAB_ICON_LABEL_GAP = 2.dp
 
-/** Distance that makes a horizontal drag an intentional track change. */
-val TRACK_SWIPE_THRESHOLD = 72.dp
+/** How far a sideways drag must carry (of the bar's width) to change the track, as Melo's. */
+private const val TRACK_SWIPE_FRACTION = 0.25f
+
+/** The finger travel a track swipe resists over before the bar breaks free and follows it. */
+private val TRACK_SWIPE_TENSION = 100.dp
+
+/** How far the bar moves across all of [TRACK_SWIPE_TENSION]. */
+private val TRACK_SWIPE_TENSION_TRAVEL = 30.dp
 
 /**
  * How much further a drag may go sideways than up and still be a pull. A
@@ -213,8 +224,12 @@ fun Modifier.miniPlayerGestures(
     // recomposing it.
     val lift = remember { mutableFloatStateOf(0f) }
     val settle = remember { arrayOfNulls<Job>(1) }
+    // The bar's sideways travel under a track swipe, as Melo's mini player moves (MiniPlayerDismissGestureHandler).
+    val slide = remember { Animatable(0f) }
+    val haptics = rememberHaptics()
     return pointerInput(Unit) {
-        val trackThreshold = TRACK_SWIPE_THRESHOLD.toPx()
+        val tension = TRACK_SWIPE_TENSION.toPx()
+        val tensionTravel = TRACK_SWIPE_TENSION_TRAVEL.toPx()
         val liftEase = PULL_LIFT_EASE.toPx()
         val maxVelocity = viewConfiguration.maximumFlingVelocity
         awaitEachGesture {
@@ -242,18 +257,51 @@ fun Modifier.miniPlayerGestures(
             val slopped = start
 
             if (!vertical) {
+                // Melo's swipe: the bar resists over the first [TRACK_SWIPE_TENSION] (showing at most
+                // [TRACK_SWIPE_TENSION_TRAVEL] of it), ticks as it breaks free, then follows the finger.
+                // Let go past a quarter of the bar's width and it flies out, the track changes, and it
+                // comes back in from the other side; short of that it springs home.
                 var dragged = slopped.position.x - down.position.x
+                var free = false
+                fun follow() {
+                    val target = if (free) dragged else {
+                        val pulled = (abs(dragged) / tension).coerceAtMost(1f)
+                        tensionTravel * pulled * sign(dragged)
+                    }
+                    scope.launch {
+                        slide.animateTo(
+                            target,
+                            if (free) spring(Spring.DampingRatioNoBouncy, Spring.StiffnessHigh) else snap(),
+                        )
+                    }
+                }
+                follow()
                 // Read before consuming: a consumed change reports no movement.
                 val finished = drag(pointer) { change ->
                     dragged += change.positionChange().x
                     change.consume()
+                    if (!free && abs(dragged) >= tension) {
+                        free = true
+                        haptics.play(Haptic.Tick)
+                        scope.launch { slide.animateTo(dragged, spring(0.8f, Spring.StiffnessLow)) }
+                    } else {
+                        follow()
+                    }
                 }
-                if (!finished) return@awaitEachGesture
-                val crossed = dragged <= -trackThreshold || dragged >= trackThreshold
-                when {
-                    currentLocked -> if (crossed) currentOnBlocked()
-                    dragged <= -trackThreshold -> currentOnNext()
-                    dragged >= trackThreshold -> currentOnPrevious()
+                val threshold = size.width * TRACK_SWIPE_FRACTION
+                val crossed = finished && abs(dragged) > threshold
+                if (!crossed || currentLocked) {
+                    if (crossed) currentOnBlocked()
+                    scope.launch { slide.animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium)) }
+                    return@awaitEachGesture
+                }
+                val next = dragged < 0f
+                val exit = if (next) -size.width.toFloat() else size.width.toFloat()
+                scope.launch {
+                    slide.animateTo(exit, tween(160, easing = FastOutSlowInEasing))
+                    if (next) currentOnNext() else currentOnPrevious()
+                    slide.snapTo(-exit * 0.6f)
+                    slide.animateTo(0f, spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow))
                 }
                 return@awaitEachGesture
             }
@@ -294,7 +342,10 @@ fun Modifier.miniPlayerGestures(
                 ) { value, _ -> lift.floatValue = value }
             }
         }
-    }.graphicsLayer { translationY = -lift.floatValue }
+    }.graphicsLayer {
+        translationY = -lift.floatValue
+        translationX = slide.value
+    }
 }
 
 /**
@@ -339,6 +390,19 @@ fun MiniPlayerNextGlyph(tint: Color) {
     Icon(
         painter = painterResource(Res.drawable.ic_player_next),
         contentDescription = stringResource(Res.string.widget_next),
+        tint = tint,
+        modifier = Modifier
+            .size(NEXT_GLYPH_SIZE)
+            .graphicsLayer { scaleY = 0.85f },
+    )
+}
+
+/** The mini player's previous-track glyph, the next one's mirror in weight and size. */
+@Composable
+fun MiniPlayerPreviousGlyph(tint: Color) {
+    Icon(
+        painter = painterResource(Res.drawable.ic_player_previous),
+        contentDescription = stringResource(Res.string.widget_previous),
         tint = tint,
         modifier = Modifier
             .size(NEXT_GLYPH_SIZE)

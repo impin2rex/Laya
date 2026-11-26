@@ -118,6 +118,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _home = MutableStateFlow<UiState<List<HomeShelf>>>(UiState.Loading)
     val home: StateFlow<UiState<List<HomeShelf>>> = _home.asStateFlow()
 
+    /** Home's mood chips (Relax, Workout…), from the first page of the feed. */
+    private val _homeChips = MutableStateFlow<List<MoodGenre>>(emptyList())
+    val homeChips: StateFlow<List<MoodGenre>> = _homeChips.asStateFlow()
+
+    /** The chip picked, or null for all of Home; its feed is [homeChipShelves], loaded beside Home's own. */
+    private val _homeChip = MutableStateFlow<MoodGenre?>(null)
+    val homeChip: StateFlow<MoodGenre?> = _homeChip.asStateFlow()
+    private val _homeChipShelves = MutableStateFlow<UiState<List<HomeShelf>>>(UiState.Loading)
+    val homeChipShelves: StateFlow<UiState<List<HomeShelf>>> = _homeChipShelves.asStateFlow()
+    private var homeChipJob: kotlinx.coroutines.Job? = null
+
+    /** Filters Home to [chip]'s mood, or back to all of Home with null. */
+    fun selectHomeChip(chip: MoodGenre?) {
+        _homeChip.value = chip
+        homeChipJob?.cancel()
+        if (chip == null) return
+        _homeChipShelves.value = UiState.Loading
+        homeChipJob = viewModelScope.launch {
+            YtMusicRepository.home(chip.params)
+                .onSuccess { _homeChipShelves.value = UiState.Success(it.shelves) }
+                .onFailure { _homeChipShelves.value = UiState.Error(it.friendly()) }
+        }
+    }
+
     /**
      * Token for the next page of Home shelves; null once there's nothing
      * more. Declared here rather than by [loadMoreHome] because [init] calls
@@ -1634,7 +1658,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _refreshing.value = _refreshing.value + feed
         viewModelScope.launch {
             when (feed) {
-                Feed.HOME -> refreshHome(identity)
+                Feed.HOME -> {
+                    refreshHome(identity)
+                    _homeChip.value?.let(::selectHomeChip)
+                }
                 Feed.EXPLORE -> fetchExplore()
                 Feed.LIBRARY -> fetchLibrary(identity)
                 Feed.MIXES -> fetchMixes(identity)
@@ -1773,6 +1800,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         .onSuccess { feed ->
                             if (!isCurrentHomeLoad(identity, generation)) return@onSuccess
                             homeContinuation = feed.continuation
+                            _homeChips.value = feed.chips
                             publishHomeShelves(feed.shelves)
                         }
                         .onFailure { failure ->
@@ -1847,6 +1875,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         YtMusicRepository.home().onSuccess { feed ->
             if (identity != listenerKey()) return@onSuccess
             homeContinuation = feed.continuation
+            _homeChips.value = feed.chips
             homeSeenTitles.clear()
             val shelves = feed.shelves.withoutRepeatsOf(emptyList())
                 .filter { homeSeenTitles.add(it.title.lowercase(Locale.ROOT)) }

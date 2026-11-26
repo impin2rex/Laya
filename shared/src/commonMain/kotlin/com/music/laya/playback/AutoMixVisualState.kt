@@ -117,9 +117,9 @@ data class AutoMixVisualState(
 
 /** Saved choices plus in-memory fences for mixes interrupted by a preference change. */
 data class AutoMixArtworkPreferences(
-    // Both off until the listener turns them on: AutoMix audio does not depend on them.
-    val artTransition: Boolean = false,
-    val miniPlayerTransition: Boolean = false,
+    // Always on: the artwork follows AutoMix's blend in the player and the mini player alike.
+    val artTransition: Boolean = true,
+    val miniPlayerTransition: Boolean = true,
     val skipArtworkThrough: Long = 0L,
     val skipMiniThrough: Long = 0L,
 ) {

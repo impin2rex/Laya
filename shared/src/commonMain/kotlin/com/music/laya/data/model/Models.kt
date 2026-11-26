@@ -518,6 +518,8 @@ private fun HomeShelf.browseKeys(): Set<String> = items.mapNotNullTo(HashSet()) 
 data class HomeFeed(
     val shelves: List<HomeShelf>,
     val continuation: String?,
+    /** Home's mood chips (Relax, Workout…): each reloads Home filtered, by its params. First page only. */
+    val chips: List<MoodGenre> = emptyList(),
 )
 
 /** One server-defined group of the buttons shown on Explore. */

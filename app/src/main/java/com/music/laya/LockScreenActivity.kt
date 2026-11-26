@@ -1,5 +1,6 @@
 package com.music.laya
 
+import androidx.compose.animation.core.tween
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -235,7 +236,6 @@ private fun LockScreen(onClose: () -> Unit) {
     val signedIn by SignedIn.state(context).collectAsState()
     val lyricsInteractive by AppSettings.lockScreenLyricsInteractive.collectAsState()
     val showProgress by AppSettings.lockScreenProgress.collectAsState()
-    val artTransition by AppSettings.lockScreenArtTransition.collectAsState()
 
     Box(
         Modifier
@@ -269,10 +269,10 @@ private fun LockScreen(onClose: () -> Unit) {
             val side = minOf(maxWidth, maxHeight)
             val top = (maxHeight * COVER_BOTTOM - side).coerceAtLeast(0.dp)
             val cover = song?.thumbnailUrl.artworkAt(COVER_PX)
-            // AutoMix's artwork transition, under the lock screen's own switch: while two songs
-            // blend, every copy of the cover — the mirror images and the sharp one — dissolves to the next
-            // in step with the audio. Outside a mix (or with the switch off) it is a plain cover.
-            val artwork = rememberMiniAutoMixArtwork(song, state.queue, state.queueIndex, px = COVER_PX, ownSwitch = artTransition)
+            // AutoMix's artwork transition, always on: while two songs blend, every copy of the cover —
+            // the mirror images and the sharp one — dissolves to the next in step with the audio. Any other
+            // song change (a skip, a plain next, Automix off) reveals the next cover over the last the same way.
+            val artwork = rememberMiniAutoMixArtwork(song, state.queue, state.queueIndex, px = COVER_PX, ownSwitch = true)
             // One blurred layer — mirror image, the cover, mirror image — so the sharp cover's feathered
             // edges fade into a blur of themselves with no seam. Drawn past the screen by [BLUR_MARGIN]
             // so the blur has picture to take in at the screen's edges rather than darkening them.

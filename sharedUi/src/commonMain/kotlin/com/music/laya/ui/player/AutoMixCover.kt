@@ -1,5 +1,14 @@
 package com.music.laya.ui.player
 
+import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -406,7 +415,7 @@ fun rememberMiniAutoMixArtwork(
 
     return remember(cover, occurrence, gate) {
         { model, modifier ->
-            AutoMixCover(cover.framesFor(occurrence, gate), modifier, blur = false) { artworkModifier ->
+            AutoMixCover(cover.framesFor(occurrence, gate), modifier, blur = false, revealKey = model, reveal = true) { artworkModifier ->
                 AsyncImage(
                     model = model,
                     contentDescription = null,
@@ -436,10 +445,18 @@ internal fun AutoMixCover(
     frames: AutoMixCoverFrames?,
     modifier: Modifier,
     blur: Boolean,
+    /**
+     * The artwork [fallback] draws (a Coil model), so a change of song outside an Automix blend
+     * dissolves too: the last cover stays underneath while the next is revealed over it
+     * ([SongChangeReveal]). Null while the next song's artwork is still being found.
+     */
+    revealKey: Any? = null,
+    /** Whether to reveal at all; a caller with no artwork model to give leaves it off. */
+    reveal: Boolean = revealKey != null,
     fallback: @Composable (Modifier) -> Unit,
 ) {
     if (frames == null) {
-        fallback(modifier)
+        if (!reveal) fallback(modifier) else SongChangeReveal(revealKey, modifier, blur, fallback)
         return
     }
     val incoming = frames.incoming
@@ -489,7 +506,7 @@ internal fun AutoMixPlayerCover(
     frames: AutoMixCoverFrames?,
     modifier: Modifier,
 ) {
-    AutoMixCover(frames, modifier, blur = true) { artworkModifier ->
+    AutoMixCover(frames, modifier, blur = true, revealKey = art.request) { artworkModifier ->
         AsyncImage(
             model = art.request,
             contentDescription = null,
@@ -499,3 +516,76 @@ internal fun AutoMixPlayerCover(
         )
     }
 }
+
+/**
+ * Automix's artwork dissolve for any other change of song (a skip, a plain next, Automix off), as
+ * Melo's cover mix: the last cover is kept underneath while the next is revealed over it, eased,
+ * sharpening out of a blur, over [SONG_CHANGE_REVEAL_MS]. Reduce animation makes it a cut.
+ *
+ * Nothing here writes state while composing: the player recomposes on every progress tick, and a
+ * write there would recompose it again each time.
+ */
+@Composable
+private fun SongChangeReveal(
+    key: Any?,
+    modifier: Modifier,
+    blur: Boolean,
+    content: @Composable (Modifier) -> Unit,
+) {
+    val reduced by PlayerSettings.reduceAnimation.collectAsStateWithLifecycle()
+    // The artwork last shown, kept as the model itself: a composable lambda is updated in place
+    // by Compose, so a kept one would draw the new song's cover, not the old. Never written while
+    // composing. A null key (the next song's artwork still being found) changes nothing.
+    val shown = remember { ShownCover() }
+    val outgoing = remember(key) {
+        val before = shown.key
+        if (key != null && before != null && before != key && !reduced) before else null
+    }
+    SideEffect { if (key != null) shown.key = key }
+    val reveal = remember(key) { Animatable(if (outgoing == null) 1f else 0f) }
+    var done by remember(key) { mutableStateOf(outgoing == null) }
+    LaunchedEffect(key) {
+        if (outgoing == null) return@LaunchedEffect
+        reveal.animateTo(1f, tween(SONG_CHANGE_REVEAL_MS, easing = LinearEasing))
+        done = true
+    }
+    val density = LocalDensity.current.density
+    val blurs = remember(density) { arrayOfNulls<androidx.compose.ui.graphics.RenderEffect>(REVEAL_BLUR_STEPS + 1) }
+    Box(modifier) {
+        if (!done && outgoing != null) {
+            // The last song's cover, from Coil's memory cache, under the next.
+            AsyncImage(
+                model = outgoing,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        content(
+            if (done) Modifier.fillMaxSize() else Modifier.fillMaxSize().graphicsLayer {
+                val p = reveal.value
+                val eased = p * p * (3f - 2f * p)
+                val revealed = eased + (p - eased) * 0.25f
+                alpha = revealed
+                renderEffect = if (!blur || revealed >= 0.85f) null else {
+                    // Melo's blur steps: a handful of radii, each made once and reused.
+                    val left = 1f - revealed / 0.85f
+                    val step = (left * left * REVEAL_BLUR_STEPS).roundToInt()
+                    if (step == 0) null else blurs[step] ?: run {
+                        val radius = 20f * density * step / REVEAL_BLUR_STEPS
+                        BlurEffect(radius, radius, TileMode.Clamp).also { blurs[step] = it }
+                    }
+                }
+            },
+        )
+    }
+}
+
+private class ShownCover {
+    var key: Any? = null
+}
+
+private const val REVEAL_BLUR_STEPS = 64
+
+/** Melo's cover-mix length. */
+private const val SONG_CHANGE_REVEAL_MS = 2_600
