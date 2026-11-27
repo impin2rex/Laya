@@ -71,11 +71,9 @@ internal fun DesktopCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
             val opened = withContext(Dispatchers.IO) {
                 var last: Result<Unit> = Result.failure(IllegalStateException("the clip could not be fetched"))
                 for (candidate in listOfNotNull(canvas.url, canvas.fallbackUrl)) {
-                    val source = if (isManifest(candidate)) {
-                        candidate
-                    } else {
-                        DesktopCanvasCache.fileFor(candidate)?.toAbsolutePath()?.toString() ?: continue
-                    }
+                    // A playlist that can't be flattened to one file is streamed as before.
+                    val source = DesktopCanvasCache.fileFor(candidate)?.toAbsolutePath()?.toString()
+                        ?: candidate.takeIf(::isManifest) ?: continue
                     last = decoder.open(source)
                     if (last.isSuccess) break
                 }

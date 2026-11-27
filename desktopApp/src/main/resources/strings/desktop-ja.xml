@@ -185,4 +185,6 @@
     <plurals name="d_add_n_songs">
         <item quantity="other">%1$d曲を追加</item>
     </plurals>
+    <string name="d_session_expired_banner">セッションの有効期限が切れました。もう一度ログインしてください</string>
+    <string name="d_session_expired_sign_in_again">セッション切れ · もう一度ログイン</string>
 </resources>

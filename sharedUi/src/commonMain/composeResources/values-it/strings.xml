@@ -905,7 +905,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">I tuoi fissati e preferiti come riquadri in cima alla Home</string>
     <string name="settings_home_artist_dial">Pagina artisti</string>
-    <string name="settings_home_mixes_dial">Pagina mix</string>
     <string name="settings_home_lucky_tile">Riquadro casuale</string>
     <string name="settings_home_dial_source">Fonte dei riquadri</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -921,7 +920,6 @@
     <string name="settings_home_restore_tiles">Ripristina riquadri rimossi (%1$d)</string>
     <string name="home_chip_all">Tutto</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mix</string>
     <string name="home_history_tile">Cronologia</string>
     <string name="home_dial_new">Nuovo</string>
     <string name="home_dial_remove">Rimuovi dal dial</string>
@@ -946,4 +944,16 @@
     <string name="color_background_subtitle">Colore tenue del brano in riproduzione dietro ogni pagina</string>
     <string name="splash_screen">Schermata iniziale</string>
     <string name="splash_screen_subtitle">Il logo animato all\'avvio dell\'app</string>
+    <string name="clear_all_cache">Svuota tutta la cache</string>
+    <string name="clear_all_cache_subtitle">Libera lo spazio usato da brani, video, copertine e file temporanei in cache</string>
+    <string name="clear_all_cache_title">Svuotare tutta la cache?</string>
+    <string name="clear_all_cache_warning">Brani, clip video, copertine e file temporanei in cache verranno eliminati. I download restano. Tutto verrà di nuovo trasmesso in streaming alla prossima riproduzione.</string>
+    <string name="all_cache_cleared">Tutta la cache è stata svuotata</string>
+    <string name="song_cache_cleared">Cache dei brani svuotata</string>
+    <string name="image_cache_cleared">Cache delle immagini svuotata</string>
+    <string name="lossless_expiring_title">La sessione %1$s sta per scadere</string>
+    <string name="lossless_expiring_body">Scade tra %1$d min. Tocca per rinnovarla.</string>
+    <string name="lossless_renew_failed_body">Impossibile rinnovarla automaticamente. Scade tra %1$d min; tocca per riprovare.</string>
+    <string name="lossless_renewed_until">%1$s rinnovato fino alle %2$s</string>
+    <string name="lossless_renew_failed">Impossibile rinnovare %1$s. Rinnovalo tu dal componente aggiuntivo.</string>
 </resources>

@@ -1,5 +1,5 @@
 /*
- * Home's dials (Speed Dial, Mixes, Artists) for the desktop: the phone's port of Melo
+ * Home's dials (Speed Dial, Artists) for the desktop: the phone's port of Melo
  * (github.com/aarush-io/melo, GPL-3.0), laid out for a wide window and a mouse. The dealing is
  * the shared data/home code; this is only how it is dealt into the window and drawn.
  */
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,12 +24,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.DropdownMenu
@@ -60,10 +59,10 @@ import com.music.laya.data.home.DealtDial
 import com.music.laya.data.home.DialEntry
 import com.music.laya.data.home.DialKind
 import com.music.laya.data.home.HomeDialRounds
-import com.music.laya.data.home.MixesDial
 import com.music.laya.data.home.SpeedDial
 import com.music.laya.data.home.dialId
 import com.music.laya.data.home.dialKind
+import com.music.laya.data.home.historyCovers
 import com.music.laya.data.home.toShelfItem
 import com.music.laya.data.model.CARD_ART_PX
 import com.music.laya.data.model.HomeShelf
@@ -76,14 +75,14 @@ import com.music.laya.data.stats.RankedEntry
 import com.music.laya.ui.components.PAGE_GUTTER
 import com.music.laya.ui.components.ShimmerBox
 import com.music.laya.ui.components.contextClick
-import java.time.LocalTime
 
 /** What Home's dial pages show this round. */
 private class DesktopHomeDials(
     val speedDial: List<DialEntry>,
-    val mixes: List<DialEntry>,
     val artists: List<DialEntry>,
     val luckyPool: List<ShelfItem>,
+    /** Covers for the History tile: what was played lately, then the most played. */
+    val historyCovers: List<String>,
 )
 
 /**
@@ -94,7 +93,6 @@ private class DesktopHomeDials(
 @Composable
 private fun rememberDesktopHomeDials(
     shelves: List<HomeShelf>,
-    mixes: List<ShelfItem>,
     library: LibraryPage?,
     settled: Boolean,
 ): DesktopHomeDials {
@@ -106,7 +104,6 @@ private fun rememberDesktopHomeDials(
     val rows by AppSettings.homeDialRows.collectAsState()
     val round by HomeDialRounds.round.collectAsState()
     val dealtSpeed by HomeDialRounds.speedDial.collectAsState()
-    val dealtMixes by HomeDialRounds.mixes.collectAsState()
 
     val stats = remember(round) { runCatching { DesktopListeningStats.summary() }.getOrNull() }
     val recents = remember(shelves) {
@@ -122,7 +119,6 @@ private fun rememberDesktopHomeDials(
         SpeedDial.pool(source, shelves, recents, mostPlayed, hidden, withArtists)
     }
     val saved = remember(key) { HomeDialRounds.saved(HomeDialRounds.SPEED_DIAL, key) }
-    var savedMixes by remember { mutableStateOf(HomeDialRounds.saved(HomeDialRounds.MIXES, "")) }
 
     LaunchedEffect(round, key, settled, live) {
         val dealt = HomeDialRounds.speedDial.value
@@ -136,15 +132,6 @@ private fun rememberDesktopHomeDials(
         HomeDialRounds.speedDial.value = DealtDial(round, key, items)
         HomeDialRounds.save(HomeDialRounds.SPEED_DIAL, key, items)
     }
-    LaunchedEffect(round, settled, mixes, shelves) {
-        if (!settled || HomeDialRounds.mixes.value?.round == round) return@LaunchedEffect
-        val now = LocalTime.now()
-        val items = MixesDial.deal(shelves, mixes, emptyList(), hidden, MixesDial.isSleepTime(now.hour * 60 + now.minute))
-        if (items.isEmpty()) return@LaunchedEffect
-        HomeDialRounds.mixes.value = DealtDial(round, "", items)
-        HomeDialRounds.save(HomeDialRounds.MIXES, "", items)
-        savedMixes = null
-    }
 
     val newReleases = remember(shelves) { SpeedDial.newReleaseIds(shelves) }
     val pageSize = rows * SpeedDial.COLUMNS
@@ -152,9 +139,6 @@ private fun rememberDesktopHomeDials(
         val dealt = dealtSpeed?.takeIf { it.key == key }?.items ?: saved ?: live
         val dialPins = if (withArtists) pins.filterNot { it.dialKind == DialKind.ARTIST } else pins
         SpeedDial.entries(dialPins, dealt.filterNot { it.dialId in hidden }, live, pageSize, newReleases)
-    }
-    val mixEntries = remember(dealtMixes, savedMixes, hidden) {
-        (dealtMixes?.items ?: savedMixes.orEmpty()).filterNot { it.dialId in hidden }.map { DialEntry(it) }
     }
     val artists = remember(stats, libraryItems, shelves, hidden, artistOrder) {
         val played = stats?.artists.orEmpty().map { RankedEntry(it.title, it.subtitle, it.artworkUrl, it.browseId, it.ms, it.plays) }
@@ -165,12 +149,12 @@ private fun rememberDesktopHomeDials(
             .filter { it.dialKind == DialKind.TRACK || it.dialKind == DialKind.PLAYLIST }
             .distinctBy { it.dialId }
     }
-    return DesktopHomeDials(speedDial, mixEntries, artists, lucky)
+    val historyCovers = remember(recents, mostPlayed) { historyCovers(recents + mostPlayed) }
+    return DesktopHomeDials(speedDial, artists, lucky, historyCovers)
 }
 
 private enum class DialPage(val key: String, val fallback: String) {
     SPEED("home_speed_dial", "Speed Dial"),
-    MIXES("home_mixes_dial", "Mixes"),
     ARTISTS("artists", "Artists"),
 }
 
@@ -189,7 +173,6 @@ private sealed interface DialSlot {
 @Composable
 internal fun DesktopHomeDialsSection(
     shelves: List<HomeShelf>,
-    mixes: List<ShelfItem>,
     library: LibraryPage?,
     loading: Boolean,
     settled: Boolean,
@@ -198,14 +181,13 @@ internal fun DesktopHomeDialsSection(
     onMore: ((ShelfItem) -> Unit)?,
     onHistory: (() -> Unit)?,
 ) {
-    val dials = rememberDesktopHomeDials(shelves, mixes, library, settled)
+    val dials = rememberDesktopHomeDials(shelves, library, settled)
     val rows by AppSettings.homeDialRows.collectAsState()
-    val withMixes by AppSettings.homeMixesDial.collectAsState()
     val withArtists by AppSettings.homeArtistDial.collectAsState()
     val luckyOn by AppSettings.homeLuckyTile.collectAsState()
+    val style by AppSettings.homeDialTileStyle.collectAsState()
     val pages = buildList {
         if (dials.speedDial.isNotEmpty()) add(DialPage.SPEED)
-        if (withMixes && dials.mixes.isNotEmpty()) add(DialPage.MIXES)
         if (withArtists && dials.artists.isNotEmpty()) add(DialPage.ARTISTS)
     }
     var picked by remember { mutableStateOf(DialPage.SPEED) }
@@ -218,7 +200,6 @@ internal fun DesktopHomeDialsSection(
         }
         val entries = when (page) {
             DialPage.SPEED -> dials.speedDial
-            DialPage.MIXES -> dials.mixes
             DialPage.ARTISTS -> dials.artists
         }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -250,14 +231,19 @@ internal fun DesktopHomeDialsSection(
                         row.forEach { slot ->
                             val tile = Modifier.size(side)
                             when (slot) {
-                                is DialSlot.Tile -> DialTile(slot.entry, page == DialPage.MIXES, tile, onOpen, onMore)
-                                DialSlot.Lucky -> ActionTile(Icons.Rounded.Casino, "", tile) {
-                                    dials.luckyPool.randomOrNull()?.let(onOpen)
-                                }
+                                is DialSlot.Tile -> DialTile(slot.entry, tile, onOpen, onMore)
+                                DialSlot.Lucky -> DesktopLuckyDiceTile(
+                                    tile.dialRim(style),
+                                    DIAL_SHAPE,
+                                    DesktopStrings["settings_home_lucky_tile", "Feeling lucky"],
+                                    onRoll = { dials.luckyPool.randomOrNull() },
+                                    onPick = onOpen,
+                                )
                                 DialSlot.History -> ActionTile(
                                     Icons.Rounded.History,
                                     DesktopStrings["home_history_tile", "History"],
                                     tile,
+                                    covers = dials.historyCovers,
                                 ) { onHistory?.invoke() }
                             }
                         }
@@ -319,7 +305,6 @@ private fun DialIconButton(icon: androidx.compose.ui.graphics.vector.ImageVector
 @Composable
 private fun DialTile(
     entry: DialEntry,
-    mixBadge: Boolean,
     modifier: Modifier,
     onOpen: (ShelfItem) -> Unit,
     onMore: ((ShelfItem) -> Unit)?,
@@ -361,14 +346,6 @@ private fun DialTile(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White,
                 )
-            } else if (mixBadge) {
-                Box(
-                    Modifier.align(Alignment.TopStart).padding(8.dp).size(22.dp).clip(CircleShape)
-                        .background(Color.Black.copy(alpha = SCRIM)).border(1.dp, Color.White.copy(alpha = 0.85f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Rounded.PlayArrow, null, Modifier.size(14.dp), tint = Color.White)
-                }
             }
         }
         DialEntryMenu(menu, entry, onMore) { menu = false }
@@ -406,9 +383,18 @@ private fun DialEntryMenu(expanded: Boolean, entry: DialEntry, onMore: ((ShelfIt
     }
 }
 
-/** The dice or History: a dark tile with its glyph in the middle. */
+/**
+ * History: a dark tile with its glyph in the middle. History lays its [covers] (up to
+ * four) under a dark scrim, the glyph smaller over them.
+ */
 @Composable
-private fun ActionTile(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, modifier: Modifier, onClick: () -> Unit) {
+private fun ActionTile(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    modifier: Modifier,
+    covers: List<String> = emptyList(),
+    onClick: () -> Unit,
+) {
     val style by AppSettings.homeDialTileStyle.collectAsState()
     val labels by AppSettings.homeDialLabels.collectAsState()
     Box(
@@ -419,8 +405,28 @@ private fun ActionTile(icon: androidx.compose.ui.graphics.vector.ImageVector, la
             .clickable(onClick = onClick)
             .dialRim(style),
     ) {
-        Icon(icon, label, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.align(Alignment.Center).fillMaxSize(0.36f))
+        if (covers.isNotEmpty()) {
+            CoverCollage(covers, Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = SCRIM)))
+        }
+        Icon(
+            icon, label, tint = Color.White.copy(alpha = 0.85f),
+            modifier = Modifier.align(Alignment.Center).fillMaxSize(if (covers.isEmpty()) 0.36f else 0.28f),
+        )
         if (labels && label.isNotEmpty()) TileLabel(label)
+    }
+}
+
+/** One cover fills the tile; two sit side by side; three are one tall and two stacked; four a 2×2. */
+@Composable
+private fun CoverCollage(covers: List<String>, modifier: Modifier) {
+    val columns = if (covers.size <= 2) covers.map { listOf(it) } else listOf(covers.take(covers.size - 2), covers.takeLast(2))
+    Row(modifier) {
+        columns.forEach { column ->
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                column.forEach { url -> DesktopArtwork(url, Modifier.weight(1f).fillMaxWidth(), px = CARD_ART_PX) }
+            }
+        }
     }
 }
 

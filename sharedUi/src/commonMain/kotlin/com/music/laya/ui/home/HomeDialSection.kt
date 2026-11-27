@@ -42,7 +42,6 @@ import com.music.laya.sharedui.resources.home_dial_remove
 import com.music.laya.sharedui.resources.home_dial_unpin
 import com.music.laya.sharedui.resources.home_for_you
 import com.music.laya.sharedui.resources.home_history_tile
-import com.music.laya.sharedui.resources.home_mixes_dial
 import com.music.laya.sharedui.resources.home_speed_dial
 import org.jetbrains.compose.resources.stringResource
 
@@ -53,13 +52,11 @@ data class HomeDialInputs(
     val onSelectChip: (MoodGenre?) -> Unit,
     /** The picked chip's feed. */
     val chipShelves: UiState<List<HomeShelf>>,
-    /** The Mixes tab's cards (Mixed for you, or the mood stations signed out). */
-    val mixes: List<ShelfItem>,
     val library: LibraryPage?,
     val onHistory: (() -> Unit)?,
 )
 
-/** The chips, then the Speed Dial (with Mixes beside it) and the Artists page, as Home's first items. */
+/** The chips, then the Speed Dial and the Artists page, as Home's first items. */
 @OptIn(ExperimentalFoundationApi::class)
 fun LazyListScope.homeDialItems(
     inputs: HomeDialInputs,
@@ -111,17 +108,14 @@ private fun DialPages(
     val newTags by AppSettings.homeDialNewReleaseTags.collectAsStateWithLifecycle()
     val style by AppSettings.homeDialTileStyle.collectAsStateWithLifecycle()
     val lucky by AppSettings.homeLuckyTile.collectAsStateWithLifecycle()
-    val withMixes by AppSettings.homeMixesDial.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf<DialEntry?>(null) }
 
     if (dials.speedDial.isEmpty() && loading) {
         SpeedDialSkeleton(rows, maxGridHeight = maxGridHeight)
     } else if (dials.speedDial.isNotEmpty()) {
-        val showMixes = withMixes && inputs.selectedChip == null && dials.mixes.isNotEmpty()
         HomeDialPager(
-            speedDialTitle = inputs.selectedChip?.title ?: stringResource(Res.string.home_speed_dial),
-            mixesTitle = if (showMixes) stringResource(Res.string.home_mixes_dial) else null,
-            speedDial = {
+            title = inputs.selectedChip?.title ?: stringResource(Res.string.home_speed_dial),
+            content = {
                 SpeedDialGrid(
                     entries = dials.speedDial,
                     rows = rows,
@@ -131,6 +125,7 @@ private fun DialPages(
                     tileStyle = style,
                     luckyTile = lucky && inputs.selectedChip == null && dials.luckyPool.isNotEmpty(),
                     historyTile = inputs.onHistory != null && inputs.selectedChip == null,
+                    historyCovers = dials.historyCovers,
                     onOpen = onOpen,
                     onLongPress = { menu = it },
                     onLucky = { dials.luckyPool.randomOrNull() },
@@ -142,15 +137,6 @@ private fun DialPages(
                     moreLabel = stringResource(Res.string.home_for_you),
                 )
             },
-            mixes = if (showMixes) {
-                {
-                    MixesDialGrid(
-                        dials.mixes, rows, labels, style, onOpen, { menu = it },
-                        maxGridHeight = maxGridHeight, onScrollToFeed = onScrollToFeed,
-                        moreLabel = stringResource(Res.string.home_for_you),
-                    )
-                }
-            } else null,
         )
     }
     menu?.let { entry -> DialEntryMenu(entry, onMore, onDismiss = { menu = null }) }
@@ -169,16 +155,14 @@ private fun ArtistPage(
     val style by AppSettings.homeDialTileStyle.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf<DialEntry?>(null) }
     HomeDialPager(
-        speedDialTitle = stringResource(Res.string.artists),
-        mixesTitle = null,
-        speedDial = {
+        title = stringResource(Res.string.artists),
+        content = {
             ArtistDialGrid(
                 artists, rows, labels, style, onOpen, { menu = it },
                 maxGridHeight = maxGridHeight, onScrollToFeed = onScrollToFeed,
                 moreLabel = stringResource(Res.string.home_for_you),
             )
         },
-        mixes = null,
     )
     menu?.let { entry -> DialEntryMenu(entry, onMore, onDismiss = { menu = null }) }
 }

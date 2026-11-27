@@ -7,8 +7,8 @@ import Foundation
 /// Addon CDNs (Cloudflare on tracks.monochrome.st) answer HTTP 429 to anything more.
 final class StreamCache {
     static let shared = StreamCache()
-    /// AppSettings.DEFAULT_CACHE_LIMIT_BYTES: Android's default audio cache size.
-    static let capBytes: Int64 = 512 << 20
+    /// The Song cache limit setting (AppSettings.audioCacheLimitBytes), pushed by Kotlin; its default until then.
+    private var capBytes: Int64 = 512 << 20
 
     /// All download state lives on this queue; readers on other threads go through the entry's lock.
     fileprivate let queue = DispatchQueue(label: "laya.stream-cache")
@@ -28,14 +28,36 @@ final class StreamCache {
         let entry: Entry
         if let have = entries[key] { entry = have } else {
             evict()
-            let name = SHA256.hash(data: Data(key.utf8)).prefix(12).map { String(format: "%02x", $0) }.joined()
-            entry = Entry(cache: self, url: url, headers: headers, path: dir.appendingPathComponent(name + ".bin"), id: String(name.prefix(6)))
+            let name = Self.name(key)
+            entry = Entry(cache: self, url: url, headers: headers, path: path(key), id: String(name.prefix(6)))
             entries[key] = entry
         }
         lock.unlock()
         entry.retain()
         return entry
     }
+
+    private static func name(_ key: String) -> String {
+        SHA256.hash(data: Data(key.utf8)).prefix(12).map { String(format: "%02x", $0) }.joined()
+    }
+    private func path(_ key: String) -> URL { dir.appendingPathComponent(Self.name(key) + ".bin") }
+
+    /// Applies a new limit at once, trimming the folder down to it.
+    func setCap(_ bytes: Int64) {
+        lock.lock(); capBytes = bytes; evict(); lock.unlock()
+    }
+
+    /// Everything nobody is reading; the playing track's file stays.
+    func clear() {
+        lock.lock(); defer { lock.unlock() }
+        let inUse = Set(entries.values.filter { $0.inUse }.map { $0.path })
+        let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+        for file in files where !inUse.contains(file) { try? FileManager.default.removeItem(at: file) }
+        entries = entries.filter { inUse.contains($0.value.path) }
+    }
+
+    /// Once a download is whole: evict() runs before a fetch starts, so without this the folder overshoots by every file in flight.
+    fileprivate func trim() { lock.lock(); evict(); lock.unlock() }
 
     /// Whether [url] is a FLAC this run has already fetched to its end.
     func isCompleteFlac(_ url: URL) -> Bool {
@@ -56,7 +78,7 @@ final class StreamCache {
         }.sorted { $0.date < $1.date }
         var total = info.reduce(0) { $0 + $1.size }
         let inUse = Set(entries.values.filter { $0.inUse }.map { $0.path })
-        while total > Self.capBytes, !info.isEmpty {
+        while total > capBytes, !info.isEmpty {
             let old = info.removeFirst()
             if inUse.contains(old.url) { continue }
             try? FileManager.default.removeItem(at: old.url)
@@ -191,6 +213,7 @@ final class StreamCache {
             task = nil
             session?.finishTasksAndInvalidate(); session = nil
             wake()
+            cache.trim()
         }
 
         private func fail(_ status: Int) {

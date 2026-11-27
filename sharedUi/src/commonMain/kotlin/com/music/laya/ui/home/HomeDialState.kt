@@ -7,10 +7,8 @@ package com.music.laya.ui.home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.home.ArtistDial
@@ -18,10 +16,10 @@ import com.music.laya.data.home.DealtDial
 import com.music.laya.data.home.DialEntry
 import com.music.laya.data.home.DialKind
 import com.music.laya.data.home.HomeDialRounds
-import com.music.laya.data.home.MixesDial
 import com.music.laya.data.home.SpeedDial
 import com.music.laya.data.home.dialId
 import com.music.laya.data.home.dialKind
+import com.music.laya.data.home.historyCovers
 import com.music.laya.data.home.toShelfItem
 import com.music.laya.data.model.HomeShelf
 import com.music.laya.data.model.LibraryPage
@@ -29,31 +27,29 @@ import com.music.laya.data.model.ShelfItem
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.stats.ListeningStats
 import com.music.laya.data.stats.ReplayPeriod
-import com.music.laya.platform.localOffsetMillis
-import kotlin.time.Clock
 
 /** What Home's dial pages show this round. */
 data class HomeDials(
     val speedDial: List<DialEntry>,
-    val mixes: List<DialEntry>,
     val artists: List<DialEntry>,
     /** The cards the dice picks from: tracks the listener played or YouTube picked for them. */
     val luckyPool: List<ShelfItem>,
+    /** Covers for the History tile: what was played lately, then the most played, newest first. */
+    val historyCovers: List<String>,
 )
 
 /**
  * Deals Home's dials from what is loaded: the Speed Dial from the feed (or, with a mood chip
- * picked, from that mood's feed), the Mixes page from Home's mixes and the Mixes tab's, the
- * Artists page from the device's most played and the library. Each is dealt once a round (launch,
- * or [HomeDialRounds.nextRound] on pull to refresh) once [settled], so a song starting never moves
- * a tile; until then the last launch's deal is shown.
+ * picked, from that mood's feed) and the Artists page from the device's most played and the
+ * library. The Speed Dial is dealt once a round (launch, or [HomeDialRounds.nextRound] on pull to
+ * refresh) once [settled], so a song starting never moves a tile; until then the last launch's
+ * deal is shown.
  */
 @Composable
 fun rememberHomeDials(
     shelves: List<HomeShelf>,
     /** The picked mood's shelves, or null for all of Home. */
     chipShelves: List<HomeShelf>?,
-    mixes: List<ShelfItem>,
     library: LibraryPage?,
     /** The feed has arrived and nothing is still refreshing it. */
     settled: Boolean,
@@ -66,7 +62,6 @@ fun rememberHomeDials(
     val rows by AppSettings.homeDialRows.collectAsStateWithLifecycle()
     val round by HomeDialRounds.round.collectAsStateWithLifecycle()
     val dealtSpeed by HomeDialRounds.speedDial.collectAsStateWithLifecycle()
-    val dealtMixes by HomeDialRounds.mixes.collectAsStateWithLifecycle()
 
     // The device's own listening, read once a round.
     val stats by produceState<com.music.laya.data.stats.ReplaySummary?>(null, round) {
@@ -85,7 +80,6 @@ fun rememberHomeDials(
         SpeedDial.pool(source, shelves, recents, mostPlayed, hidden, withArtists)
     }
     val saved = remember(key) { HomeDialRounds.saved(HomeDialRounds.SPEED_DIAL, key) }
-    var savedMixes by remember { mutableStateOf(HomeDialRounds.saved(HomeDialRounds.MIXES, "")) }
 
     LaunchedEffect(round, key, settled, live) {
         val dealt = HomeDialRounds.speedDial.value
@@ -99,17 +93,6 @@ fun rememberHomeDials(
         HomeDialRounds.speedDial.value = DealtDial(round, key, items)
         HomeDialRounds.save(HomeDialRounds.SPEED_DIAL, key, items)
     }
-    LaunchedEffect(round, settled, mixes, shelves) {
-        if (!settled || HomeDialRounds.mixes.value?.round == round) return@LaunchedEffect
-        val minute = Clock.System.now().toEpochMilliseconds().let { ms ->
-            (((ms + localOffsetMillis(ms)) / 60_000L) % (24 * 60)).toInt()
-        }
-        val items = MixesDial.deal(shelves, mixes, emptyList(), hidden, MixesDial.isSleepTime(minute))
-        if (items.isEmpty()) return@LaunchedEffect
-        HomeDialRounds.mixes.value = DealtDial(round, "", items)
-        HomeDialRounds.save(HomeDialRounds.MIXES, "", items)
-        savedMixes = null
-    }
 
     val newReleases = remember(shelves) { SpeedDial.newReleaseIds(shelves) }
     val pageSize = rows * SpeedDial.COLUMNS
@@ -122,9 +105,6 @@ fun rememberHomeDials(
             SpeedDial.entries(dialPins, round.filterNot { it.dialId in hidden }, live, pageSize, newReleases)
         }
     }
-    val mixEntries = remember(dealtMixes, savedMixes, hidden) {
-        (dealtMixes?.items ?: savedMixes.orEmpty()).filterNot { it.dialId in hidden }.map { DialEntry(it) }
-    }
     val artists = remember(stats, libraryItems, shelves, hidden, artistOrder) {
         ArtistDial.tiles(stats?.artists.orEmpty(), libraryItems, shelves.flatMap { it.items }, hidden, artistOrder)
             .map { DialEntry(it) }
@@ -134,5 +114,6 @@ fun rememberHomeDials(
             .filter { it.dialKind == DialKind.TRACK || it.dialKind == DialKind.PLAYLIST }
             .distinctBy { it.dialId }
     }
-    return HomeDials(speedDial, mixEntries, artists, lucky)
+    val historyCovers = remember(recents, mostPlayed) { historyCovers(recents + mostPlayed) }
+    return HomeDials(speedDial, artists, lucky, historyCovers)
 }

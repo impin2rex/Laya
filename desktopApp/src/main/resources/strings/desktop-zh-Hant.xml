@@ -185,4 +185,6 @@
     <plurals name="d_add_n_songs">
         <item quantity="other">新增 %1$d 首歌曲</item>
     </plurals>
+    <string name="d_session_expired_banner">你的工作階段已過期。請重新登入</string>
+    <string name="d_session_expired_sign_in_again">工作階段已過期 · 重新登入</string>
 </resources>

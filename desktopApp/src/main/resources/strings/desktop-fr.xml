@@ -187,4 +187,6 @@
         <item quantity="one">Ajouter %1$d titre</item>
         <item quantity="other">Ajouter %1$d titres</item>
     </plurals>
+    <string name="d_session_expired_banner">Votre session a expiré. Reconnectez-vous</string>
+    <string name="d_session_expired_sign_in_again">Session expirée · Se reconnecter</string>
 </resources>

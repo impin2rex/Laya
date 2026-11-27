@@ -97,15 +97,11 @@ fun TvHomeScreen(
     val speedDialOn by AppSettings.homeSpeedDial.collectAsState()
     val refreshing by viewModel.refreshing.collectAsState()
     val recentsLoading by viewModel.homeRecentlyPlayedLoading.collectAsState()
-    val mixesState by viewModel.mixes.collectAsState()
-    val moodStations by viewModel.moodStations.collectAsState()
     val library by viewModel.library.collectAsState()
     val dials = if (speedDialOn) {
         rememberHomeDials(
             shelves = (homeState as? UiState.Success)?.data.orEmpty(),
             chipShelves = if (chip != null) (chipShelves as? UiState.Success)?.data.orEmpty() else null,
-            mixes = (mixesState as? UiState.Success)?.data?.map { it.item }
-                ?: (moodStations as? UiState.Success)?.data?.flatMap { it.items }.orEmpty(),
             library = (library as? UiState.Success)?.data,
             settled = homeState is UiState.Success && MainViewModel.Feed.HOME !in refreshing && !recentsLoading,
         )
@@ -195,7 +191,7 @@ private fun TvHomeChips(chips: List<MoodGenre>, selected: MoodGenre?, onSelect: 
 
 /**
  * Home's dials as remote-friendly shelves: the Speed Dial (the picked mood's title while one is
- * picked), then Mixes and Artists. Long press a tile to take it off the dial or pin a playlist.
+ * picked), then Artists. Long press a tile to take it off the dial or pin a playlist.
  */
 @Composable
 private fun TvHomeDials(
@@ -204,12 +200,10 @@ private fun TvHomeDials(
     onOpen: (ShelfItem) -> Unit,
     onSongMenu: (Song) -> Unit,
 ) {
-    val rows by AppSettings.homeDialRows.collectAsState()
     val labels by AppSettings.homeDialLabels.collectAsState()
     val pinIcon by AppSettings.homeDialPinIcon.collectAsState()
     val newTags by AppSettings.homeDialNewReleaseTags.collectAsState()
     val lucky by AppSettings.homeLuckyTile.collectAsState()
-    val withMixes by AppSettings.homeMixesDial.collectAsState()
     val withArtists by AppSettings.homeArtistDial.collectAsState()
     var menu by remember { mutableStateOf<DialEntry?>(null) }
     // null stands for the dice: a random pick from what was played and what YouTube picked.
@@ -240,13 +234,6 @@ private fun TvHomeDials(
                     TvDialTile(entry, labels, pinIcon, newTags, onOpen) { menu = entry }
                 }
             }
-        }
-        if (withMixes && chipTitle == null && dials.mixes.isNotEmpty()) {
-            TvShelf(
-                title = stringResource(R.string.tv_home_mixes_dial),
-                items = dials.mixes.take(rows * 3),
-                key = { it.item.dialId },
-            ) { entry -> TvDialTile(entry, labels, pinIcon, newTags, onOpen) { menu = entry } }
         }
         if (withArtists && chipTitle == null && dials.artists.isNotEmpty()) {
             TvShelf(

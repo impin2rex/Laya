@@ -905,7 +905,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Vos épingles et favoris en tuiles en haut de l\'accueil</string>
     <string name="settings_home_artist_dial">Page Artistes</string>
-    <string name="settings_home_mixes_dial">Page Mix</string>
     <string name="settings_home_lucky_tile">Tuile aléatoire</string>
     <string name="settings_home_dial_source">Source des tuiles</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -921,7 +920,6 @@
     <string name="settings_home_restore_tiles">Restaurer les tuiles retirées (%1$d)</string>
     <string name="home_chip_all">Tout</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mix</string>
     <string name="home_history_tile">Historique</string>
     <string name="home_dial_new">Nouveau</string>
     <string name="home_dial_remove">Retirer du dial</string>
@@ -946,4 +944,16 @@
     <string name="color_background_subtitle">Couleur douce du titre en cours derrière chaque page</string>
     <string name="splash_screen">Écran de démarrage</string>
     <string name="splash_screen_subtitle">Le logo animé au lancement de l\'app</string>
+    <string name="clear_all_cache">Vider tout le cache</string>
+    <string name="clear_all_cache_subtitle">Libère l’espace occupé par les titres, vidéos, pochettes et fichiers temporaires en cache</string>
+    <string name="clear_all_cache_title">Vider tout le cache ?</string>
+    <string name="clear_all_cache_warning">Les titres, clips vidéo, pochettes et fichiers temporaires en cache seront supprimés. Les téléchargements sont conservés. Tout sera de nouveau diffusé à la prochaine lecture.</string>
+    <string name="all_cache_cleared">Tout le cache a été vidé</string>
+    <string name="song_cache_cleared">Cache des chansons vidé</string>
+    <string name="image_cache_cleared">Cache des images vidé</string>
+    <string name="lossless_expiring_title">La session %1$s se termine bientôt</string>
+    <string name="lossless_expiring_body">Se termine dans %1$d min. Touchez pour la renouveler.</string>
+    <string name="lossless_renew_failed_body">Renouvellement automatique impossible. Se termine dans %1$d min ; touchez pour réessayer.</string>
+    <string name="lossless_renewed_until">%1$s renouvelé jusqu’à %2$s</string>
+    <string name="lossless_renew_failed">Impossible de renouveler %1$s. Renouvelez-le vous-même depuis le module.</string>
 </resources>

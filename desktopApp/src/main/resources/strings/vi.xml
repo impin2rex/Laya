@@ -868,7 +868,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Mục đã ghim và yêu thích dạng ô ở đầu Trang chủ</string>
     <string name="settings_home_artist_dial">Trang nghệ sĩ</string>
-    <string name="settings_home_mixes_dial">Trang mix</string>
     <string name="settings_home_lucky_tile">Ô ngẫu nhiên</string>
     <string name="settings_home_dial_source">Nguồn ô</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -884,7 +883,6 @@
     <string name="settings_home_restore_tiles">Khôi phục ô đã xóa (%1$d)</string>
     <string name="home_chip_all">Tất cả</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Bản phối</string>
     <string name="home_history_tile">Lịch sử</string>
     <string name="home_dial_new">Mới</string>
     <string name="home_dial_remove">Xóa khỏi dial</string>

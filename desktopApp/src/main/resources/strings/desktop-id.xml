@@ -185,4 +185,6 @@
     <plurals name="d_add_n_songs">
         <item quantity="other">Tambahkan %1$d lagu</item>
     </plurals>
+    <string name="d_session_expired_banner">Sesi Anda berakhir. Masuk lagi</string>
+    <string name="d_session_expired_sign_in_again">Sesi berakhir · Masuk lagi</string>
 </resources>

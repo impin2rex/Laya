@@ -187,4 +187,6 @@
         <item quantity="one">%1$d Song hinzufügen</item>
         <item quantity="other">%1$d Songs hinzufügen</item>
     </plurals>
+    <string name="d_session_expired_banner">Deine Sitzung ist abgelaufen. Melde dich erneut an</string>
+    <string name="d_session_expired_sign_in_again">Sitzung abgelaufen · Erneut anmelden</string>
 </resources>

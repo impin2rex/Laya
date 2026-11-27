@@ -117,8 +117,18 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
      * is extended even when nothing streams through it; requests alone would leave an idle one to run out.
      */
     suspend fun renewOrCheck() {
-        refreshIfDue()
+        refresh(onlyIfDue = true)
         check()
+    }
+
+    /**
+     * Renews now, whatever time is left (an expiry reminder was tapped): the new end (epoch ms), or null when there
+     * was no session to renew or the broker refused, which leaves verifying again by hand.
+     */
+    suspend fun renewNow(): Long? {
+        val renewed = refresh(onlyIfDue = false)
+        check()
+        return if (renewed) _expiresAt.value else null
     }
 
     /** Drops [stale] (if still the one held) and reports it lost. */
@@ -218,7 +228,7 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
     suspend fun get(path: String): JsonObject = call("GET", path, null, emptyMap())
 
     private suspend fun call(method: String, path: String, text: String?, headers: Map<String, String>): JsonObject {
-        refreshIfDue()
+        refresh(onlyIfDue = true)
         var providerRetries = 0
         while (true) {
             val current = record
@@ -253,10 +263,10 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
     }
 
     /** Mornye refreshes within the last hour of a session's life; a failure leaves the old one in use. */
-    private suspend fun refreshIfDue() = mutex.withLock {
+    private suspend fun refresh(onlyIfDue: Boolean): Boolean = mutex.withLock {
         val now = Clock.System.now()
-        val expiry = record.expiry() ?: return@withLock
-        if (!record.usable(now) || expiry - now > 1.hours) return@withLock
+        val expiry = record.expiry() ?: return@withLock false
+        if (!record.usable(now) || (onlyIfDue && expiry - now > 1.hours)) return@withLock false
         val text = buildJsonObject { put("install_id", record.installId) }.toString()
         runCatching {
             val signed = signedHeaders(record, "POST", "/v2/session/refresh", text, now.toEpochMilliseconds(), randomHex(12))
@@ -271,10 +281,12 @@ class ZarzSession(val appVersion: String, private val userAgent: () -> String) {
                     ),
                 )
                 TrackLog.d(TAG, "$appVersion: session renewed until ${record.expiresAt}")
+                true
             } else {
                 TrackLog.w(TAG, "$appVersion: session refresh returned HTTP ${response.code}")
+                false
             }
-        }.onFailure { TrackLog.w(TAG, "$appVersion: session refresh failed: ${it.message}") }
+        }.onFailure { TrackLog.w(TAG, "$appVersion: session refresh failed: ${it.message}") }.getOrDefault(false)
     }
 
     private suspend fun send(method: String, url: String, body: String?, headers: Map<String, String>): HttpResponse =

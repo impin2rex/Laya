@@ -27,6 +27,7 @@ import kotlin.math.roundToInt
  * [aspect] is width over height, for sizing without decoding; [format] is the lowercased asset
  * format (`svg`, `png`, …), or "" when unknown.
  */
+@kotlinx.serialization.Serializable
 internal data class DesktopArtistSignature(
     val imageUrl: String,
     val aspect: Float,
@@ -139,19 +140,28 @@ internal object DesktopArtistSignatures {
         return normalizeBaseUrl(baseUrl).takeIf(::isValidBaseUrl)
     }
 
+    /** Answers an earlier run settled, so a restart doesn't ask the server again for every header. */
+    private val disk = com.music.laya.data.canvas.LookupStore("desktop_artist_signatures", DesktopArtistSignature.serializer())
+
+    /** Memory first, then disk (moved into memory). */
+    private fun known(key: String): Entry? =
+        synchronized(cache) { cache[key] }
+            ?: disk.get(key)?.let { Entry(it.getOrNull()) }?.also { synchronized(cache) { cache[key] = it } }
+
     fun cached(artistName: String, baseUrl: String?): DesktopArtistSignature? {
         if (baseUrl.isNullOrEmpty()) return null
         val key = cacheKey(artistName, baseUrl) ?: return null
-        return synchronized(cache) { cache[key] }?.signature
+        return known(key)?.signature
     }
 
     /** The best signature for [artistName], or null. Never throws; runs its request on IO. */
     suspend fun signatureFor(artistName: String, baseUrl: String?): DesktopArtistSignature? {
         if (baseUrl.isNullOrEmpty()) return null
         val key = cacheKey(artistName, baseUrl) ?: return null
-        synchronized(cache) { cache[key] }?.let { return it.signature }
-        val entry = withContext(Dispatchers.IO) { runCatching { lookup(artistName, baseUrl) }.getOrNull() }
-            ?: return null // A failed lookup is not cached: the next visit may well succeed.
+        known(key)?.let { return it.signature }
+        val entry = withContext(Dispatchers.IO) {
+            runCatching { lookup(artistName, baseUrl) }.getOrNull()?.also { disk.put(key, it.signature) }
+        } ?: return null // A failed lookup is not cached: the next visit may well succeed.
         synchronized(cache) { cache[key] = entry }
         _updates.value++
         return entry.signature
@@ -160,6 +170,7 @@ internal object DesktopArtistSignatures {
     /** Forgets everything, e.g. after the base URL changes. */
     fun clear() {
         synchronized(cache) { cache.clear() }
+        disk.clear()
         _updates.value++
     }
 

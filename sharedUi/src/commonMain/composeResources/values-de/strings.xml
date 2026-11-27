@@ -905,7 +905,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Deine Pins und Favoriten als Kacheln oben auf der Startseite</string>
     <string name="settings_home_artist_dial">Künstlerseite</string>
-    <string name="settings_home_mixes_dial">Mixes-Seite</string>
     <string name="settings_home_lucky_tile">Zufallskachel</string>
     <string name="settings_home_dial_source">Kachelquelle</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -921,7 +920,6 @@
     <string name="settings_home_restore_tiles">Entfernte Kacheln wiederherstellen (%1$d)</string>
     <string name="home_chip_all">Alle</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mixe</string>
     <string name="home_history_tile">Verlauf</string>
     <string name="home_dial_new">Neu</string>
     <string name="home_dial_remove">Vom Dial entfernen</string>
@@ -946,4 +944,16 @@
     <string name="color_background_subtitle">Sanfte Farbe des laufenden Songs hinter jeder Seite</string>
     <string name="splash_screen">Startbildschirm</string>
     <string name="splash_screen_subtitle">Das animierte Logo beim App-Start</string>
+    <string name="clear_all_cache">Gesamten Cache leeren</string>
+    <string name="clear_all_cache_subtitle">Gibt Speicher frei, den zwischengespeicherte Songs, Videos, Cover und temporäre Dateien belegen</string>
+    <string name="clear_all_cache_title">Gesamten Cache leeren?</string>
+    <string name="clear_all_cache_warning">Zwischengespeicherte Songs, Videoclips, Cover und temporäre Dateien werden gelöscht. Downloads bleiben erhalten. Beim nächsten Abspielen wird alles wieder gestreamt.</string>
+    <string name="all_cache_cleared">Gesamter Cache geleert</string>
+    <string name="song_cache_cleared">Song-Cache geleert</string>
+    <string name="image_cache_cleared">Bild-Cache geleert</string>
+    <string name="lossless_expiring_title">%1$s-Sitzung endet bald</string>
+    <string name="lossless_expiring_body">Endet in %1$d Min. Zum Verlängern tippen.</string>
+    <string name="lossless_renew_failed_body">Konnte nicht automatisch verlängert werden. Endet in %1$d Min.; zum erneuten Versuch tippen.</string>
+    <string name="lossless_renewed_until">%1$s verlängert bis %2$s</string>
+    <string name="lossless_renew_failed">%1$s konnte nicht verlängert werden. Verlängere es selbst im Add-on.</string>
 </resources>

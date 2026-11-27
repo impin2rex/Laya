@@ -191,4 +191,6 @@
         <item quantity="many">Dodaj %1$d utworów</item>
         <item quantity="other">Dodaj %1$d utworu</item>
     </plurals>
+    <string name="d_session_expired_banner">Sesja wygasła. Zaloguj się ponownie</string>
+    <string name="d_session_expired_sign_in_again">Sesja wygasła · Zaloguj się ponownie</string>
 </resources>

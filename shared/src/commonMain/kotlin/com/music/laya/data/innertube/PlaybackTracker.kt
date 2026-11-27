@@ -1,5 +1,6 @@
 package com.music.laya.data.innertube
 
+import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.TrackLog
 import com.music.laya.data.model.Song
 import com.music.laya.data.stats.ListenIdentity
@@ -118,13 +119,14 @@ object PlaybackTracker {
         // — not whichever version of it is playing. Settled before anything is registered.
         val known = ListenIdentity.known(played)
         if (known == null) {
-            scope.launch(TrackLog.about(played.videoId)) { register(ListenIdentity.resolve(played).videoId) }
+            scope.launch(TrackLog.about(played.videoId)) { register(ListenIdentity.resolve(played)) }
         } else {
-            register(known.videoId)
+            register(known)
         }
     }
 
-    private fun register(videoId: String) {
+    private fun register(song: Song) {
+        val videoId = song.videoId
         if (!VIDEO_ID.matches(videoId)) return
         if (Innertube.cookie == null) return
         // A downloaded track plays perfectly well with the radio off — the
@@ -140,7 +142,7 @@ object PlaybackTracker {
         opening = videoId
         scope.launch(TrackLog.about(videoId)) {
             try {
-                openWithRetries(videoId)
+                openWithRetries(song)
             } finally {
                 if (opening == videoId) opening = null
             }
@@ -155,7 +157,8 @@ object PlaybackTracker {
      */
     fun onVersionSwapped(from: Song, to: Song) {
         val before = ListenIdentity.of(from).videoId
-        val listen = ListenIdentity.onVersionSwapped(from, to).videoId
+        val listenSong = ListenIdentity.onVersionSwapped(from, to)
+        val listen = listenSong.videoId
         if (listen == before) return
         if (opening == before) opening = null
         val closing = session?.takeIf { it.videoId == before }
@@ -165,7 +168,7 @@ object PlaybackTracker {
                 runCatching { flush(closing, maxOf(closing.reportedSeconds, closing.flushingTo), final = true) }
             }
         }
-        register(listen)
+        register(listenSong)
     }
 
     /**
@@ -244,11 +247,12 @@ object PlaybackTracker {
      * YouTube declining to issue a tracking block for this track at all. Only
      * genuine failures are repeated.
      */
-    private suspend fun openWithRetries(videoId: String) {
+    private suspend fun openWithRetries(song: Song) {
+        val videoId = song.videoId
         repeat(OPEN_ATTEMPTS) { attempt ->
             if (opening != videoId) return
             val settled = try {
-                open(videoId)
+                open(song)
             } catch (e: CancellationException) {
                 // Not a failure, and not ours to swallow: the only thing that
                 // cancels this is the tracker's own scope going away.
@@ -270,7 +274,8 @@ object PlaybackTracker {
      * @return whether there is anything left to try. False means the attempt is
      *   worth repeating — the answer was a failure, not a verdict.
      */
-    private suspend fun open(videoId: String): Boolean = lock.withLock {
+    private suspend fun open(song: Song): Boolean = lock.withLock {
+        val videoId = song.videoId
         // The one thing the tracking request cannot be answered without. Fetched
         // through [StreamResolver] so it is shared with — and usually already
         // warmed by — the resolve that is starting this very track.
@@ -290,6 +295,7 @@ object PlaybackTracker {
         val status = Innertube.pingPlayback(tracking.playbackUrl, fresh.cpn)
         session = fresh
         _registeredPlays.value++
+        YtMusicRepository.notePlayed(song)
         TrackLog.d(TAG, "history entry created for $videoId (HTTP $status)")
         true
     }

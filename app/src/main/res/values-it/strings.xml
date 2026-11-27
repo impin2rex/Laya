@@ -1387,4 +1387,11 @@
     <string name="history_remove_failed">Impossibile rimuovere dalla cronologia</string>
     <string name="lock_screen_art_transition">Transizione copertina</string>
     <string name="lock_screen_art_transition_subtitle">Sfuma la copertina in quella del brano successivo mentre Automix li mixa.</string>
+    <string name="all_cache_cleared">Tutta la cache è stata svuotata</string>
+    <string name="lossless_expiring_title">La sessione %1$s sta per scadere</string>
+    <string name="lossless_expiring_body">Scade tra %1$d min. Tocca per rinnovarla.</string>
+    <string name="lossless_renew_failed_body">Impossibile rinnovarla automaticamente. Scade tra %1$d min; tocca per riprovare.</string>
+    <string name="lossless_renewed_until">%1$s rinnovato fino alle %2$s</string>
+    <string name="lossless_renew_failed">Impossibile rinnovare %1$s. Rinnovalo tu dal componente aggiuntivo.</string>
+    <string name="lossless_channel">Sessioni lossless</string>
 </resources>

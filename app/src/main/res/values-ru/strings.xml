@@ -1480,4 +1480,11 @@
     <string name="history_remove_failed">Не удалось удалить из истории</string>
     <string name="lock_screen_art_transition">Переход обложки</string>
     <string name="lock_screen_art_transition_subtitle">Плавно сменяет обложку на обложку следующего трека, пока Automix их сводит.</string>
+    <string name="all_cache_cleared">Весь кеш очищен</string>
+    <string name="lossless_expiring_title">Сессия %1$s скоро закончится</string>
+    <string name="lossless_expiring_body">Закончится через %1$d мин. Нажмите, чтобы продлить.</string>
+    <string name="lossless_renew_failed_body">Не удалось продлить автоматически. Закончится через %1$d мин; нажмите, чтобы повторить.</string>
+    <string name="lossless_renewed_until">%1$s продлён до %2$s</string>
+    <string name="lossless_renew_failed">Не удалось продлить %1$s. Продлите вручную в дополнении.</string>
+    <string name="lossless_channel">Сессии lossless</string>
 </resources>

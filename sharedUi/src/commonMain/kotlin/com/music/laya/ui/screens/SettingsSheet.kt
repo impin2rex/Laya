@@ -283,6 +283,7 @@ fun SettingsScreen(
     var importStatus by remember { mutableStateOf<String?>(null) }
     var confirmImport by remember { mutableStateOf(false) }
     var confirmClearSongCache by remember { mutableStateOf(false) }
+    var confirmClearAllCache by remember { mutableStateOf(false) }
     val backup = host.rememberBackup(onExported = { exportStatus = it }, onImported = { importStatus = it })
     val version = host.versionName()
 
@@ -1160,7 +1161,6 @@ fun SettingsScreen(
         // with it while the dial is off.
         val homeSpeedDial by AppSettings.homeSpeedDial.collectAsStateWithLifecycle()
         val homeArtistDial by AppSettings.homeArtistDial.collectAsStateWithLifecycle()
-        val homeMixesDial by AppSettings.homeMixesDial.collectAsStateWithLifecycle()
         val homeLuckyTile by AppSettings.homeLuckyTile.collectAsStateWithLifecycle()
         val homeDialSource by AppSettings.homeDialSource.collectAsStateWithLifecycle()
         val homeDialRows by AppSettings.homeDialRows.collectAsStateWithLifecycle()
@@ -1172,7 +1172,7 @@ fun SettingsScreen(
         SearchableSettingsGroup(search, SettingsCategory.HOME, header = stringResource(Res.string.settings_home)) {
             val speedDialTitle = stringResource(Res.string.settings_home_speed_dial)
             // Carries the keywords of the rows that only appear once it is on.
-            row(speedDialTitle, "tiles", "pins", "artists", "mixes", "lucky", "random", "dice") {
+            row(speedDialTitle, "tiles", "pins", "artists", "lucky", "random", "dice") {
                 SettingsRow(
                     icon = Icons.Rounded.Apps,
                     title = speedDialTitle,
@@ -1197,14 +1197,6 @@ fun SettingsScreen(
                         title = artistDialTitle,
                         checked = homeArtistDial,
                         onCheckedChange = AppSettings::setHomeArtistDial,
-                    )
-                }
-                val mixesDialTitle = stringResource(Res.string.settings_home_mixes_dial)
-                row(mixesDialTitle, "mixes", divided = false) {
-                    SettingsSubRow(
-                        title = mixesDialTitle,
-                        checked = homeMixesDial,
-                        onCheckedChange = AppSettings::setHomeMixesDial,
                     )
                 }
                 val luckyTileTitle = stringResource(Res.string.settings_home_lucky_tile)
@@ -1399,7 +1391,7 @@ fun SettingsScreen(
         val cacheLimitLabel = if (cacheUnlimited) unlimitedLabel else formatCacheSize(cacheLimitMb)
         if (host.hasSongCache) SearchableSettingsGroup(search, SettingsCategory.STORAGE, header = stringResource(Res.string.storage)) {
             val showCacheFolderTitle = stringResource(Res.string.show_cache_folder)
-            row(showCacheFolderTitle, "cache", "cached songs", "library", "folder") {
+            if (host.hasCacheFolder) row(showCacheFolderTitle, "cache", "cached songs", "library", "folder") {
                 SettingsRow(
                     icon = Icons.Rounded.Cached,
                     title = showCacheFolderTitle,
@@ -1454,6 +1446,15 @@ fun SettingsScreen(
                     title = clearImageCacheTitle,
                     subtitle = stringResource(Res.string.clear_image_cache_subtitle),
                     onClick = host::clearImageCache,
+                )
+            }
+            val clearAllCacheTitle = stringResource(Res.string.clear_all_cache)
+            row(clearAllCacheTitle, "cache", "video", "audio", "storage", "free space") {
+                SettingsRow(
+                    icon = Icons.Rounded.DeleteSweep,
+                    title = clearAllCacheTitle,
+                    subtitle = stringResource(Res.string.clear_all_cache_subtitle),
+                    onClick = { confirmClearAllCache = true },
                 )
             }
         }
@@ -1880,6 +1881,27 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { confirmClearSongCache = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (confirmClearAllCache) {
+        AlertDialog(
+            onDismissRequest = { confirmClearAllCache = false },
+            title = { Text(stringResource(Res.string.clear_all_cache_title)) },
+            text = { Text(stringResource(Res.string.clear_all_cache_warning)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClearAllCache = false
+                    host.clearAllCache()
+                }) {
+                    Text(stringResource(Res.string.clear))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearAllCache = false }) {
                     Text(stringResource(Res.string.cancel))
                 }
             },

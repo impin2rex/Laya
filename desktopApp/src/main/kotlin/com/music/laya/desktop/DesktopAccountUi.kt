@@ -110,6 +110,8 @@ internal fun DesktopAccountSelector(
     busy: Boolean,
     onSelect: (DesktopGoogleAccount, DesktopYouTubeProfile) -> Unit,
     onAddAccount: () -> Unit,
+    /** An expired account's "Sign in again": the sign-in window, which saves back under the same account. */
+    onSignInAgain: (DesktopGoogleAccount) -> Unit,
     onRemoveAccount: (DesktopGoogleAccount) -> Unit,
     onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
@@ -175,6 +177,20 @@ internal fun DesktopAccountSelector(
                             color = DesktopSecondary,
                             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
                         )
+                    }
+                    if (account.expired) {
+                        item(key = "expired-${account.accountId}") {
+                            Text(
+                                DesktopStrings["d_session_expired_sign_in_again", "Session expired · Sign in again"],
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFFFF8A80),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSignInAgain(account) }
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                            )
+                        }
                     }
                     items(account.profiles.size, key = { "p-${account.accountId}-$it" }) { index ->
                         val profile = account.profiles[index]

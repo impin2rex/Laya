@@ -53,10 +53,47 @@ internal object DesktopRecognitionNotifier {
         }
     }
 
-    /** For the tray's activation: true (once) when it was a click on our message. */
-    fun consumeTrayClick(): Boolean {
+    /** What a click on the last notice does when it wasn't a recognition result (a lossless reminder). */
+    @Volatile private var otherClick: (() -> Unit)? = null
+
+    /** A click on our notice: the other kind's handler, once, else a recognition request. */
+    private fun clicked(retry: Boolean) {
+        val other = otherClick
+        otherClick = null
+        if (other != null) {
+            DesktopWindowVisibility.show()
+            other()
+        } else {
+            _requests.tryEmit(retry)
+        }
+    }
+
+    /**
+     * A notice other than a recognition result, through the same channels: clicking it raises the window and runs
+     * [onClick] instead of opening the Recognize page.
+     */
+    fun post(title: String, body: String, onClick: () -> Unit) {
+        otherClick = onClick
+        runCatching {
+            when {
+                native != null -> native?.laya_notify_post(title, body, null, nativeCallback)
+                DesktopPlatform.isLinux -> linux(title, body, null)
+                DesktopPlatform.isWindows -> if (DesktopAwtTray.notify(title, body)) trayMessageAt = System.currentTimeMillis()
+            }
+        }.onFailure { DesktopTrackLog.log("notification: ${it.message}") }
+    }
+
+    /**
+     * For the tray's activation: true (once) when it was a click on a recognition message, false when it was a plain
+     * activation, null when it was a click on another kind of notice, which has been answered here.
+     */
+    fun consumeTrayClick(): Boolean? {
         val recent = System.currentTimeMillis() - trayMessageAt < TRAY_CLICK_WINDOW_MS
         trayMessageAt = 0L
+        if (recent && otherClick != null) {
+            clicked(retry = false)
+            return null
+        }
         return recent
     }
 
@@ -78,6 +115,7 @@ internal object DesktopRecognitionNotifier {
             else -> return
         }
         val retry = if (state is RecognitionState.Recognized) null else getString(Res.string.recognize_try_again)
+        otherClick = null
         when {
             native != null -> native?.laya_notify_post(title, body, retry, nativeCallback)
             DesktopPlatform.isLinux -> linux(title, body, retry)
@@ -97,7 +135,7 @@ internal object DesktopRecognitionNotifier {
     }
 
     /** Held for good: native code calls it whenever a notification is clicked. */
-    private val nativeCallback = NotifyCallback { action -> _requests.tryEmit(action == 1) }
+    private val nativeCallback = NotifyCallback { action -> clicked(retry = action == 1) }
 
     /** Null on Linux, and where the library can't notify (outside Laya.app; a Windows copy with no shortcut). */
     private val native: NativeNotify? by lazy {
@@ -124,7 +162,7 @@ internal object DesktopRecognitionNotifier {
     private fun linux(title: String, body: String, retry: String?) {
         val connection = bus ?: DBusConnectionBuilder.forSessionBus().withShared(false).build().also { connection ->
             connection.addSigHandler(Notifications.ActionInvoked::class.java) { signal ->
-                if (signal.id == shown) _requests.tryEmit(signal.actionKey == ACTION_RETRY)
+                if (signal.id == shown) clicked(retry = signal.actionKey == ACTION_RETRY)
             }
             bus = connection
         }

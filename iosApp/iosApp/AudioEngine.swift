@@ -429,6 +429,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                 String(Int(session.ioBufferDuration * 1000))]
     }
 
+    func setCacheLimit(bytes: Int64) { StreamCache.shared.setCap(bytes) }
+    func clearCache() {
+        StreamCache.shared.clear()
+        HlsAssembly.clearAll()
+    }
+
     /// The app's own level ("In-app volume"): each deck's volume is this times its own swap fade. Crossfades run in the taps.
     private var appGain: Float = 1
 

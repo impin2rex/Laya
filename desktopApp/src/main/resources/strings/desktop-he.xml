@@ -189,4 +189,6 @@
         <item quantity="two">הוספת %1$d שירים</item>
         <item quantity="other">הוספת %1$d שירים</item>
     </plurals>
+    <string name="d_session_expired_banner">פג תוקף ההתחברות. התחברו שוב</string>
+    <string name="d_session_expired_sign_in_again">פג תוקף ההתחברות · התחברות מחדש</string>
 </resources>

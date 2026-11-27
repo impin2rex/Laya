@@ -283,7 +283,6 @@
     <string name="tv_settings_home_speed_dial">Speed Dial</string>
     <string name="tv_settings_home_speed_dial_subtitle">Закреплённое и избранное плитками вверху главной</string>
     <string name="tv_settings_home_artist_dial">Страница исполнителей</string>
-    <string name="tv_settings_home_mixes_dial">Страница миксов</string>
     <string name="tv_settings_home_lucky_tile">Случайная плитка</string>
     <string name="tv_settings_home_dial_source">Источник плиток</string>
     <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
@@ -294,7 +293,6 @@
     <string name="tv_settings_home_dial_new_tags">Отмечать новинки</string>
     <string name="tv_settings_home_restore_tiles">Вернуть удалённые плитки (%1$d)</string>
     <string name="tv_home_speed_dial">Speed Dial</string>
-    <string name="tv_home_mixes_dial">Миксы</string>
     <string name="tv_home_dial_new">Новое</string>
     <string name="tv_home_dial_pin">Закрепить</string>
     <string name="tv_home_dial_remove">Убрать с панели</string>

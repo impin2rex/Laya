@@ -522,6 +522,11 @@
             </intent-filter>
         </service>
 
+        <!-- Lossless session reminders: set by the app's own alarms only. -->
+        <receiver
+            android:name=".data.sources.LosslessReminderReceiver"
+            android:exported="false" />
+
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"
             android:exported="true">

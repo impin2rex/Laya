@@ -890,7 +890,6 @@
     <string name="settings_home_speed_dial">स्पीड डायल</string>
     <string name="settings_home_speed_dial_subtitle">आपके पिन और पसंदीदा, होम के ऊपर टाइल के रूप में</string>
     <string name="settings_home_artist_dial">कलाकार पेज</string>
-    <string name="settings_home_mixes_dial">मिक्स पेज</string>
     <string name="settings_home_lucky_tile">रैंडम टाइल</string>
     <string name="settings_home_dial_source">टाइल का स्रोत</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -906,7 +905,6 @@
     <string name="settings_home_restore_tiles">हटाई गई टाइलें वापस लाएँ (%1$d)</string>
     <string name="home_chip_all">सभी</string>
     <string name="home_speed_dial">स्पीड डायल</string>
-    <string name="home_mixes_dial">मिक्स</string>
     <string name="home_history_tile">इतिहास</string>
     <string name="home_dial_new">नया</string>
     <string name="home_dial_remove">डायल से हटाएं</string>

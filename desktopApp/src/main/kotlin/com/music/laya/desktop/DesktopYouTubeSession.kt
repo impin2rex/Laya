@@ -55,7 +55,23 @@ internal object DesktopYouTubeSession {
      * Reads who the stored cookie actually acts as out of the signed-in music.youtube.com shell,
      * and adopts its visitor id.
      */
-    suspend fun adoptSessionScope(cookie: String): DesktopYouTubeAuth.Session? {
+    suspend fun adoptSessionScope(cookie: String): DesktopYouTubeAuth.Session? =
+        (checkSessionScope(cookie) as? ScopeCheck.Live)?.session
+
+    /** What the shell said about a cookie: who it acts as, that it is signed out, or nothing (unreachable). */
+    sealed interface ScopeCheck {
+        data class Live(val session: DesktopYouTubeAuth.Session) : ScopeCheck
+        /** music.youtube.com answered, signed out: the cookie no longer works. */
+        data object SignedOut : ScopeCheck
+        /** No answer (offline, a timeout, an error page): says nothing about the cookie. */
+        data object Unreachable : ScopeCheck
+    }
+
+    /**
+     * [adoptSessionScope], telling a cookie Google turned down apart from a request that never got an
+     * answer: only the first means the sign-in is gone.
+     */
+    suspend fun checkSessionScope(cookie: String): ScopeCheck {
         val html = runCatching {
             client.get("https://music.youtube.com/") {
                 header("User-Agent", WEB_USER_AGENT)
@@ -66,21 +82,24 @@ internal object DesktopYouTubeSession {
             }.bodyAsText()
         }.getOrElse {
             DesktopTrackLog.log("could not read the session scope: ${it.message}")
-            return null
+            return ScopeCheck.Unreachable
         }
 
-        // The one value that must not be guessed.
-        val signedIn = CONFIG_LOGGED_IN.find(html)?.groupValues?.get(1) == "true"
-        if (!signedIn) {
+        // The one value that must not be guessed; a page without it is not the shell at all.
+        val loggedIn = CONFIG_LOGGED_IN.find(html)?.groupValues?.get(1) ?: run {
+            DesktopTrackLog.log("music.youtube.com answered without its shell config; treating the sign-in as unchecked")
+            return ScopeCheck.Unreachable
+        }
+        if (loggedIn != "true") {
             DesktopTrackLog.log("music.youtube.com served a signed-out shell; not scoping requests")
-            return null
+            return ScopeCheck.SignedOut
         }
         // The shell's own visitor id, bound to this session — see [sessionBound].
         CONFIG_VISITOR_DATA.find(html)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }?.let {
             visitorData.set(it)
             sessionBound = true
         }
-        return DesktopYouTubeAuth.Session(
+        return ScopeCheck.Live(DesktopYouTubeAuth.Session(
             cookie = cookie,
             authUser = CONFIG_SESSION_INDEX.find(html)?.groupValues?.get(1)?.takeIf { it.isNotBlank() } ?: "0",
             pageId = CONFIG_PAGE_ID.find(html)?.groupValues?.get(1)?.takeIf { it.isNotBlank() },
@@ -89,7 +108,7 @@ internal object DesktopYouTubeSession {
             dataSyncId = CONFIG_DATASYNC_ID.find(html)?.groupValues?.get(1)
                 ?.substringBefore("||")
                 ?.takeIf { it.isNotBlank() },
-        )
+        ))
     }
 
     private val CONFIG_LOGGED_IN = Regex(""""LOGGED_IN"\s*:\s*(true|false)""")

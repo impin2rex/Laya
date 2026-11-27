@@ -56,6 +56,11 @@ interface AudioEngine {
 
     /** [portName, portType, sampleRateHz, outputChannels, ioBufferMs] of the audio session's current output route. */
     fun outputRoute(): List<String>
+
+    /** The Song cache limit (AppSettings.audioCacheLimitBytes); the folder is trimmed to it at once. */
+    fun setCacheLimit(bytes: Long)
+    /** Every cached stream and assembled track nothing is playing. */
+    fun clearCache()
 }
 
 interface AudioEngineListener {

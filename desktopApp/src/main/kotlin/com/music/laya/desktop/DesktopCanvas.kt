@@ -218,12 +218,17 @@ internal object DesktopCanvasCache {
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build()
 
+    /**
+     * The clip at [url] on disk, kept under [url] itself. An Apple playlist is flattened to its one MP4
+     * ([AppleClip]) first, so artist clips are fetched once rather than streamed on every loop pass.
+     */
     fun fileFor(url: String): java.nio.file.Path? {
         DesktopMediaCache.existing(url, "mp4")?.let { return it }
+        val source = com.music.laya.data.canvas.AppleClip.directUrl(url) ?: return null
         return runCatching {
             val target = DesktopMediaCache.pathFor(url, "mp4")
             val response = client.send(
-                HttpRequest.newBuilder(URI.create(url))
+                HttpRequest.newBuilder(URI.create(source))
                     .timeout(Duration.ofSeconds(30))
                     .header("User-Agent", DESKTOP_CANVAS_UA)
                     .header("Accept", "*/*")

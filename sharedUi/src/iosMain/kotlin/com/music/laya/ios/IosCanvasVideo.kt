@@ -241,7 +241,9 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     // server, and a busy one held the main thread until the watchdog killed the app (0x8BADF00D). Not cancellable
     // while it is built, so a clip made for a song already gone is still released, not leaked with its connection.
     val clip by produceState<CanvasPlayer?>(null, spec.canvas.url) {
-        val made = withContext(NonCancellable + Dispatchers.Default) { CanvasPlayer(spec.canvas.url) }
+        // From disk when this clip was shown before; fetched once otherwise, streamed only when it can't be.
+        val source = withContext(Dispatchers.Default) { IosClipCache.fileFor(spec.canvas.url) } ?: spec.canvas.url
+        val made = withContext(NonCancellable + Dispatchers.Default) { CanvasPlayer(source) }
         value = made
         awaitDispose { made.release() }
     }

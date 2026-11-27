@@ -122,6 +122,13 @@ internal object IosDownloads {
             fs.createDirectories(it)
             // A transfer cut off by the app being killed leaves its .part behind.
             fs.list(it).filter { f -> f.name.endsWith(".part") }.forEach { f -> fs.delete(f) }
+            // A file the index no longer names: a song saved again in another format (m4a, then flac) left
+            // the old one behind, kept for good. Skipped when the index can't be read, so nothing saved is lost.
+            val index = it / "index.json"
+            runCatching { json.decodeFromString(ListSerializer(Entry.serializer()), fs.read(index) { readUtf8() }) }.getOrNull()?.let { entries ->
+                val named = entries.flatMapTo(hashSetOf("index.json")) { e -> listOfNotNull(e.file, e.artwork) }
+                fs.list(it).filter { f -> f.name !in named && !f.name.startsWith("index.json") }.forEach { f -> fs.delete(f) }
+            }
             NSURL.fileURLWithPath(it.toString()).setResourceValue(true, NSURLIsExcludedFromBackupKey, null)
         }
     }

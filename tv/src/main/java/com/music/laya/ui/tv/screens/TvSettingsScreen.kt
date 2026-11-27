@@ -138,7 +138,6 @@ fun TvSettingsScreen(
     val reduceTransparency by AppSettings.reduceDynamicBlur.collectAsState()
     val homeSpeedDial by AppSettings.homeSpeedDial.collectAsState()
     val homeArtistDial by AppSettings.homeArtistDial.collectAsState()
-    val homeMixesDial by AppSettings.homeMixesDial.collectAsState()
     val homeLuckyTile by AppSettings.homeLuckyTile.collectAsState()
     val homeDialSource by AppSettings.homeDialSource.collectAsState()
     val homeDialRows by AppSettings.homeDialRows.collectAsState()
@@ -510,7 +509,6 @@ fun TvSettingsScreen(
             if (homeSpeedDial) {
                 val toggles = listOf(
                     Triple(R.string.tv_settings_home_artist_dial, homeArtistDial, AppSettings::setHomeArtistDial),
-                    Triple(R.string.tv_settings_home_mixes_dial, homeMixesDial, AppSettings::setHomeMixesDial),
                     Triple(R.string.tv_settings_home_lucky_tile, homeLuckyTile, AppSettings::setHomeLuckyTile),
                 )
                 for ((title, on, set) in toggles) item(key = "home_$title") {

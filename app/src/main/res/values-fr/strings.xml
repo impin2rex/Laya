@@ -1449,4 +1449,11 @@
     <string name="history_remove_failed">Impossible de retirer de l\'historique</string>
     <string name="lock_screen_art_transition">Transition de pochette</string>
     <string name="lock_screen_art_transition_subtitle">Fond la pochette dans celle du titre suivant pendant que Automix les mixe.</string>
+    <string name="all_cache_cleared">Tout le cache a été vidé</string>
+    <string name="lossless_expiring_title">La session %1$s se termine bientôt</string>
+    <string name="lossless_expiring_body">Se termine dans %1$d min. Touchez pour la renouveler.</string>
+    <string name="lossless_renew_failed_body">Renouvellement automatique impossible. Se termine dans %1$d min ; touchez pour réessayer.</string>
+    <string name="lossless_renewed_until">%1$s renouvelé jusqu’à %2$s</string>
+    <string name="lossless_renew_failed">Impossible de renouveler %1$s. Renouvelez-le vous-même depuis le module.</string>
+    <string name="lossless_channel">Sessions sans perte</string>
 </resources>

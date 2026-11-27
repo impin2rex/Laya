@@ -384,6 +384,7 @@ class MainActivity : AppCompatActivity() {
         // Likewise for a link tapped or shared from another app — see [MusicLink].
         MusicLink.consume(intent)
         com.music.laya.recognition.RecognitionLink.consume(intent)
+        com.music.laya.data.sources.LosslessRenewLink.consume(this, intent)
         setContent {
             val theme by AppSettings.themeMode.collectAsStateWithLifecycle()
             val systemFont by AppSettings.systemFont.collectAsStateWithLifecycle()
@@ -513,6 +514,7 @@ class MainActivity : AppCompatActivity() {
         JamInviteLink.consume(intent)
         MusicLink.consume(intent)
         com.music.laya.recognition.RecognitionLink.consume(intent)
+        com.music.laya.data.sources.LosslessRenewLink.consume(this, intent)
     }
 }
 
@@ -3359,10 +3361,8 @@ private fun LayaApp(
                                         selectedChip = homeChip,
                                         onSelectChip = viewModel::selectHomeChip,
                                         chipShelves = homeChipShelves,
-                                        mixes = (mixesState as? UiState.Success)?.data?.map { it.item }
-                                            ?: (moodStationsState as? UiState.Success)?.data?.flatMap { it.items }.orEmpty(),
                                         library = (libraryState as? UiState.Success)?.data,
-                                        onHistory = if (signedIn) ({ navigator.push(AppRoute.History) }) else null,
+                                        onHistory = if (signedIn) ({ navigator.push(AppRoute.History); viewModel.loadHistory() }) else null,
                                     ),
                                 )
                                 TAB_EXPLORE -> selectedMoodGenre?.let { category ->

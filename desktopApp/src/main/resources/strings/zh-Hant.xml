@@ -873,7 +873,6 @@
     <string name="settings_home_speed_dial">快速撥號</string>
     <string name="settings_home_speed_dial_subtitle">將釘選與收藏以磚塊顯示在首頁頂端</string>
     <string name="settings_home_artist_dial">藝人頁面</string>
-    <string name="settings_home_mixes_dial">合輯頁面</string>
     <string name="settings_home_lucky_tile">隨機磚塊</string>
     <string name="settings_home_dial_source">磚塊來源</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -889,7 +888,6 @@
     <string name="settings_home_restore_tiles">還原已移除的磚塊（%1$d）</string>
     <string name="home_chip_all">全部</string>
     <string name="home_speed_dial">快速撥號</string>
-    <string name="home_mixes_dial">合輯</string>
     <string name="home_history_tile">歷史紀錄</string>
     <string name="home_dial_new">新</string>
     <string name="home_dial_remove">從快速撥號移除</string>

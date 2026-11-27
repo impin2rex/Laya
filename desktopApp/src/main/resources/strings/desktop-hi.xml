@@ -187,4 +187,6 @@
         <item quantity="one">%1$d गाना जोड़ें</item>
         <item quantity="other">%1$d गाने जोड़ें</item>
     </plurals>
+    <string name="d_session_expired_banner">आपका सत्र समाप्त हो गया। फिर से साइन इन करें</string>
+    <string name="d_session_expired_sign_in_again">सत्र समाप्त · फिर से साइन इन करें</string>
 </resources>

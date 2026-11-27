@@ -836,8 +836,22 @@ fun LayaDesktopApp() {
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) { DesktopAccounts.activate() }
         youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+        // The account may have been marked expired, or cleared of it.
+        accounts = withContext(Dispatchers.IO) { DesktopAccounts.accounts() }
         sessionSettled = true
         sessionRevision++
+        // Google's rotating cookies, renewed while the app runs so the saved sign-in never goes stale; a
+        // sign-in that couldn't be checked at launch (offline) is checked again within the minute.
+        while (true) {
+            delay(if (DesktopAccounts.unverified) UNVERIFIED_RECHECK_MS else DesktopCookieRotation.INTERVAL_MS)
+            val wasSignedIn = DesktopYouTubeAuth.isSignedIn
+            withContext(Dispatchers.IO) { DesktopAccounts.keepAlive() }
+            accounts = withContext(Dispatchers.IO) { DesktopAccounts.accounts() }
+            if (DesktopYouTubeAuth.isSignedIn != wasSignedIn) {
+                youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+                sessionRevision++
+            }
+        }
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
     var sourceConfigs by remember { mutableStateOf(persistence.sourceConfigs()) }
@@ -865,6 +879,8 @@ fun LayaDesktopApp() {
                 ),
             )
         }
+        // Renews each session before it ends; a failure is a system notification.
+        DesktopLosslessReminders.install(this)
     }
     var sourceStatus by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     val youtubeSourceEnabled = sourceConfigs.any {
@@ -1015,6 +1031,10 @@ fun LayaDesktopApp() {
             accounts = withContext(Dispatchers.IO) { DesktopAccounts.accounts() }
             activeAccountId = DesktopAccounts.activeAccountId()
             activeProfileId = DesktopAccounts.activeProfileId()
+            // Signing the same account in again (an expired one) changes neither id above, so the session
+            // is announced outright: the avatar, Home and the library would otherwise wait for a restart.
+            youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+            sessionRevision++
             overlays.signIn = false
             overlays.accounts = false
         } finally {
@@ -2943,10 +2963,10 @@ fun LayaDesktopApp() {
             onActivate = {
                 DesktopWindowVisibility.show()
                 // A click on a recognition result's tray message (Windows) goes to that result.
-                if (DesktopRecognitionNotifier.consumeTrayClick()) {
-                    selectDestination(DesktopDestination.RECOGNIZE)
-                } else {
-                    overlays.nowPlaying = true
+                when (DesktopRecognitionNotifier.consumeTrayClick()) {
+                    true -> selectDestination(DesktopDestination.RECOGNIZE)
+                    false -> overlays.nowPlaying = true
+                    null -> Unit // a lossless reminder, answered by its own handler
                 }
             },
             onPlayPause = { if (selectedSong != null) togglePlayPauseFromUser() },
@@ -3140,21 +3160,17 @@ fun LayaDesktopApp() {
         }
     }
 
-    // Home's Mixes page deals from Radio's cards, so Home asks for them too while that page is on.
     val homeSpeedDial by AppSettings.homeSpeedDial.collectAsState()
-    val homeMixesDial by AppSettings.homeMixesDial.collectAsState()
-    val mixesWanted = destination == DesktopDestination.RADIO ||
-        (destination == DesktopDestination.LISTEN_NOW && homeSpeedDial && homeMixesDial)
     var moodStations by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
-    LaunchedEffect(mixesWanted, youtubeSignedIn) {
-        if (!mixesWanted || youtubeSignedIn || moodStations is UiState.Success) return@LaunchedEffect
+    LaunchedEffect(destination, youtubeSignedIn) {
+        if (destination != DesktopDestination.RADIO || youtubeSignedIn || moodStations is UiState.Success) return@LaunchedEffect
         moodStations = UiState.Loading
         moodStations = YtMusicRepository.moodStations().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Could not load stations") })
     }
 
     // Radio loads the first time it is opened, again for a different account, and on a retry.
-    LaunchedEffect(mixesWanted, youtubeSignedIn, activeAccountId, activeProfileId, sessionRevision, mixesReloads) {
-        if (!mixesWanted || !youtubeSignedIn) return@LaunchedEffect
+    LaunchedEffect(destination, youtubeSignedIn, activeAccountId, activeProfileId, sessionRevision, mixesReloads) {
+        if (destination != DesktopDestination.RADIO || !youtubeSignedIn) return@LaunchedEffect
         if (!youtubeSourceEnabled) {
             mixesState = UiState.Error("YouTube Music is disabled")
             mixesLoadedFor = null
@@ -3873,7 +3889,9 @@ fun LayaDesktopApp() {
                         onOpenLyrics = { overlays.toggleSidePanel(DesktopSidePanel.LYRICS) },
                         onOpenQueue = { overlays.toggleSidePanel(DesktopSidePanel.QUEUE) },
                         sidePanel = overlays.sidePanel,
-                        accountAvatar = activeAccount?.profiles?.firstOrNull { it.profileId == activeProfileId }?.avatar?.takeIf { it.isNotBlank() }
+                        // Only while the session works: a stored account whose sign-in has lapsed is not signed in,
+                        // and its photo beside the "Sign in" card said otherwise.
+                        accountAvatar = if (!youtubeSignedIn) null else activeAccount?.profiles?.firstOrNull { it.profileId == activeProfileId }?.avatar?.takeIf { it.isNotBlank() }
                             ?: activeAccount?.avatar?.takeIf { it.isNotBlank() }
                             ?: activeAccount?.profiles?.firstOrNull()?.avatar?.takeIf { it.isNotBlank() },
                         onOpenAccounts = { DesktopTrackLog.log("accounts: opening the switcher"); overlays.accounts = true },
@@ -4196,6 +4214,8 @@ fun LayaDesktopApp() {
                                 activeProfileId = profile.profileId
                             },
                             onAddAccount = { overlays.accounts = false; overlays.signIn = true },
+                            // The sign-in window saves under the same account, so its channel choice comes back with it.
+                            onSignInAgain = { overlays.accounts = false; overlays.signIn = true },
                             onRemoveAccount = { account ->
                                 scope.launch {
                                     accounts = withContext(Dispatchers.IO) {
@@ -4746,7 +4766,11 @@ fun LayaDesktopApp() {
                             contentPadding = sharedPagePadding,
                             title = null,
                             signedIn = youtubeSignedIn || !sessionSettled,
-                            onSignIn = { overlays.accounts = true },
+                            // An expired account goes straight back to the sign-in window; nobody saved, to the switcher.
+                            onSignIn = { if (activeAccount?.expired == true) overlays.signIn = true else overlays.accounts = true },
+                            signInTitle = if (activeAccount?.expired == true) {
+                                DesktopStrings["d_session_expired_banner", "Your session expired. Sign in again"]
+                            } else null,
                             onItemLongPress = { item -> if (item.videoId != null) openMenu(item.toSong()) },
                             onLoadMore = ::loadMoreHome,
                             loadingMore = homeLoadingMore,
@@ -4755,8 +4779,6 @@ fun LayaDesktopApp() {
                             dials = if (!homeSpeedDial) null else ({
                                 DesktopHomeDialsSection(
                                     shelves = (homeState as? UiState.Success)?.data.orEmpty(),
-                                    mixes = (mixesState as? UiState.Success)?.data?.map { it.item }
-                                        ?: (moodStations as? UiState.Success)?.data?.flatMap { it.items }.orEmpty(),
                                     library = (libraryState as? UiState.Success)?.data,
                                     loading = homeState is UiState.Loading,
                                     settled = homeState is UiState.Success && !homeRecentsLoading,
@@ -5069,7 +5091,7 @@ private fun DesktopTopBar(
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             // The window's own buttons live at the head of the sidebar; a compact window has no
             // sidebar, so there they lead this bar instead.
-            if (compact && inlineCaption) {
+            if (compact && inlineCaption && DesktopPlatform.windowsCaption == 0) {
                 Box(
                     Modifier
                         .fillMaxHeight()
@@ -5307,6 +5329,15 @@ private fun DesktopTopBar(
                         )
                     }
                     DesktopAccountButton(avatar = accountAvatar, onClick = onOpenAccounts)
+                }
+            }
+            // Windows keeps its caption buttons where every other window has them: the top right.
+            if (inlineCaption && DesktopPlatform.windowsCaption != 0) {
+                Box(
+                    Modifier.fillMaxHeight().desktopWindowGlass(DesktopChromeEdge.BOTTOM),
+                    contentAlignment = Alignment.TopEnd,
+                ) {
+                    DesktopWindowsCaptionButtons()
                 }
             }
             }
@@ -7177,6 +7208,9 @@ private fun DesktopSettingsScreen(
                     ) {
                         DesktopArtworkCache.clear()
                         DesktopSignatureImages.clear()
+                        // The artist pages' Apple art and signature answers, so they are looked up afresh.
+                        com.music.laya.data.canvas.AppleArtistArtRepository.clear()
+                        DesktopArtistSignatures.clear()
                         imagesCleared = true
                     }
                 }
@@ -9084,7 +9118,6 @@ private fun SettingsToggle(title: String, subtitle: String, checked: Boolean, on
 private fun DesktopHomeSettingsGroup() {
     val speedDial by AppSettings.homeSpeedDial.collectAsState()
     val artistDial by AppSettings.homeArtistDial.collectAsState()
-    val mixesDial by AppSettings.homeMixesDial.collectAsState()
     val luckyTile by AppSettings.homeLuckyTile.collectAsState()
     val source by AppSettings.homeDialSource.collectAsState()
     val rows by AppSettings.homeDialRows.collectAsState()
@@ -9102,7 +9135,6 @@ private fun DesktopHomeSettingsGroup() {
         )
         if (!speedDial) return@SettingsGroup
         SettingsToggle(DesktopStrings["settings_home_artist_dial", "Artists page"], "", artistDial, AppSettings::setHomeArtistDial)
-        SettingsToggle(DesktopStrings["settings_home_mixes_dial", "Mixes page"], "", mixesDial, AppSettings::setHomeMixesDial)
         SettingsToggle(DesktopStrings["settings_home_lucky_tile", "Feeling lucky tile"], "", luckyTile, AppSettings::setHomeLuckyTile)
         SettingsChoiceRow(
             DesktopStrings["settings_home_dial_source", "Tile source"],
@@ -9282,3 +9314,6 @@ internal object DesktopShortcuts {
     @Volatile
     var handler: ((androidx.compose.ui.input.key.KeyEvent) -> Boolean)? = null
 }
+
+/** How soon a sign-in that couldn't be checked (offline at launch) is checked again. */
+private const val UNVERIFIED_RECHECK_MS = 60_000L

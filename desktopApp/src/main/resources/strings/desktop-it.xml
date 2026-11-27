@@ -187,4 +187,6 @@
         <item quantity="one">Aggiungi %1$d brano</item>
         <item quantity="other">Aggiungi %1$d brani</item>
     </plurals>
+    <string name="d_session_expired_banner">La sessione è scaduta. Accedi di nuovo</string>
+    <string name="d_session_expired_sign_in_again">Sessione scaduta · Accedi di nuovo</string>
 </resources>

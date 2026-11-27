@@ -891,7 +891,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Seus fixados e favoritos como blocos no topo do Início</string>
     <string name="settings_home_artist_dial">Página de artistas</string>
-    <string name="settings_home_mixes_dial">Página de mixes</string>
     <string name="settings_home_lucky_tile">Bloco aleatório</string>
     <string name="settings_home_dial_source">Origem dos blocos</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -907,7 +906,6 @@
     <string name="settings_home_restore_tiles">Restaurar blocos removidos (%1$d)</string>
     <string name="home_chip_all">Tudo</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mixes</string>
     <string name="home_history_tile">Histórico</string>
     <string name="home_dial_new">Novo</string>
     <string name="home_dial_remove">Remover do dial</string>

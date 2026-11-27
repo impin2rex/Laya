@@ -123,6 +123,19 @@ enum HlsAssembly {
         return String(hash, radix: 16)
     }
 
+    /// Clear all cache: every assembled track but the last couple of minutes' (the playing and queued ones).
+    static func clearAll() {
+        let directory = FileManager.default.temporaryDirectory
+        let recent = Date().addingTimeInterval(-120)
+        let entries = (try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        for entry in entries where entry.lastPathComponent.hasPrefix("laya-analysis-") {
+            let touched = (try? entry.resourceValues(forKeys: [.contentModificationDateKey]))?
+                .contentModificationDate ?? .distantPast
+            if touched < recent { try? FileManager.default.removeItem(at: entry) }
+        }
+    }
+
     /// Clears assembled tracks nothing is reading any more. Anything recent is left alone: the track
     /// playing and the one queued after it are wanted at the same time, each with its own file.
     private static func sweep(keeping file: URL) {

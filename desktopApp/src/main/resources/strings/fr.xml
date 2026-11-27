@@ -890,7 +890,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Vos épingles et favoris en tuiles en haut de l\'accueil</string>
     <string name="settings_home_artist_dial">Page Artistes</string>
-    <string name="settings_home_mixes_dial">Page Mix</string>
     <string name="settings_home_lucky_tile">Tuile aléatoire</string>
     <string name="settings_home_dial_source">Source des tuiles</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -906,7 +905,6 @@
     <string name="settings_home_restore_tiles">Restaurer les tuiles retirées (%1$d)</string>
     <string name="home_chip_all">Tout</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mix</string>
     <string name="home_history_tile">Historique</string>
     <string name="home_dial_new">Nouveau</string>
     <string name="home_dial_remove">Retirer du dial</string>

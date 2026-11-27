@@ -897,7 +897,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Pin dan favoritmu sebagai ubin di atas Beranda</string>
     <string name="settings_home_artist_dial">Halaman artis</string>
-    <string name="settings_home_mixes_dial">Halaman mix</string>
     <string name="settings_home_lucky_tile">Ubin acak</string>
     <string name="settings_home_dial_source">Sumber ubin</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -913,7 +912,6 @@
     <string name="settings_home_restore_tiles">Pulihkan ubin yang dihapus (%1$d)</string>
     <string name="home_chip_all">Semua</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mix</string>
     <string name="home_history_tile">Riwayat</string>
     <string name="home_dial_new">Baru</string>
     <string name="home_dial_remove">Hapus dari dial</string>
@@ -938,4 +936,16 @@
     <string name="color_background_subtitle">Warna lembut dari lagu yang diputar di balik setiap halaman</string>
     <string name="splash_screen">Layar pembuka</string>
     <string name="splash_screen_subtitle">Logo animasi saat aplikasi dibuka</string>
+    <string name="clear_all_cache">Bersihkan semua cache</string>
+    <string name="clear_all_cache_subtitle">Mengosongkan ruang yang dipakai lagu, video, artwork, dan file sementara dalam cache</string>
+    <string name="clear_all_cache_title">Bersihkan semua cache?</string>
+    <string name="clear_all_cache_warning">Lagu, klip video, artwork, dan file sementara dalam cache akan dihapus. Unduhan tetap disimpan. Semuanya akan di-stream lagi saat diputar berikutnya.</string>
+    <string name="all_cache_cleared">Semua cache dibersihkan</string>
+    <string name="song_cache_cleared">Cache lagu dibersihkan</string>
+    <string name="image_cache_cleared">Cache gambar dibersihkan</string>
+    <string name="lossless_expiring_title">Sesi %1$s segera berakhir</string>
+    <string name="lossless_expiring_body">Berakhir dalam %1$d mnt. Ketuk untuk memperpanjang.</string>
+    <string name="lossless_renew_failed_body">Tidak bisa diperpanjang otomatis. Berakhir dalam %1$d mnt; ketuk untuk mencoba lagi.</string>
+    <string name="lossless_renewed_until">%1$s diperpanjang hingga %2$s</string>
+    <string name="lossless_renew_failed">Tidak bisa memperpanjang %1$s. Perpanjang sendiri dari addon.</string>
 </resources>

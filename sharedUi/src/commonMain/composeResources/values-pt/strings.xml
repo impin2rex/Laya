@@ -905,7 +905,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Seus fixados e favoritos como blocos no topo do Início</string>
     <string name="settings_home_artist_dial">Página de artistas</string>
-    <string name="settings_home_mixes_dial">Página de mixes</string>
     <string name="settings_home_lucky_tile">Bloco aleatório</string>
     <string name="settings_home_dial_source">Origem dos blocos</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -921,7 +920,6 @@
     <string name="settings_home_restore_tiles">Restaurar blocos removidos (%1$d)</string>
     <string name="home_chip_all">Tudo</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mixes</string>
     <string name="home_history_tile">Histórico</string>
     <string name="home_dial_new">Novo</string>
     <string name="home_dial_remove">Remover do dial</string>
@@ -946,4 +944,16 @@
     <string name="color_background_subtitle">Cor suave da música tocando atrás de cada página</string>
     <string name="splash_screen">Tela de abertura</string>
     <string name="splash_screen_subtitle">O logo animado ao abrir o app</string>
+    <string name="clear_all_cache">Limpar todo o cache</string>
+    <string name="clear_all_cache_subtitle">Libera o espaço usado por músicas, vídeos, capas e arquivos temporários em cache</string>
+    <string name="clear_all_cache_title">Limpar todo o cache?</string>
+    <string name="clear_all_cache_warning">Músicas, clipes de vídeo, capas e arquivos temporários em cache serão apagados. Os downloads são mantidos. Tudo será transmitido de novo na próxima vez que você reproduzir.</string>
+    <string name="all_cache_cleared">Todo o cache foi limpo</string>
+    <string name="song_cache_cleared">Cache de músicas limpo</string>
+    <string name="image_cache_cleared">Cache de imagens limpo</string>
+    <string name="lossless_expiring_title">A sessão do %1$s termina em breve</string>
+    <string name="lossless_expiring_body">Termina em %1$d min. Toque para renovar.</string>
+    <string name="lossless_renew_failed_body">Não foi possível renovar automaticamente. Termina em %1$d min; toque para tentar de novo.</string>
+    <string name="lossless_renewed_until">%1$s renovado até %2$s</string>
+    <string name="lossless_renew_failed">Não foi possível renovar o %1$s. Renove você mesmo pelo complemento.</string>
 </resources>

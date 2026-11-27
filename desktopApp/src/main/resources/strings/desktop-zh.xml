@@ -185,4 +185,6 @@
     <plurals name="d_add_n_songs">
         <item quantity="other">添加 %1$d 首歌曲</item>
     </plurals>
+    <string name="d_session_expired_banner">你的会话已过期。请重新登录</string>
+    <string name="d_session_expired_sign_in_again">会话已过期 · 重新登录</string>
 </resources>

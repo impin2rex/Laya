@@ -1365,4 +1365,11 @@
     <string name="history_remove_failed">Không thể xóa khỏi lịch sử</string>
     <string name="lock_screen_art_transition">Chuyển ảnh bìa</string>
     <string name="lock_screen_art_transition_subtitle">Hòa ảnh bìa sang ảnh bìa bài tiếp theo khi Automix trộn hai bài.</string>
+    <string name="all_cache_cleared">Đã xóa toàn bộ bộ nhớ đệm</string>
+    <string name="lossless_expiring_title">Phiên %1$s sắp hết hạn</string>
+    <string name="lossless_expiring_body">Hết hạn sau %1$d phút. Nhấn để gia hạn.</string>
+    <string name="lossless_renew_failed_body">Không thể tự gia hạn. Hết hạn sau %1$d phút; nhấn để thử lại.</string>
+    <string name="lossless_renewed_until">Đã gia hạn %1$s đến %2$s</string>
+    <string name="lossless_renew_failed">Không thể gia hạn %1$s. Hãy tự gia hạn trong tiện ích.</string>
+    <string name="lossless_channel">Phiên lossless</string>
 </resources>

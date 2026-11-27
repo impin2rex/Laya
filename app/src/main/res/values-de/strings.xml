@@ -1448,4 +1448,11 @@
     <string name="history_remove_failed">Konnte nicht aus dem Verlauf entfernt werden</string>
     <string name="lock_screen_art_transition">Cover-Übergang</string>
     <string name="lock_screen_art_transition_subtitle">Blendet das Cover in das des nächsten Songs über, während Automix sie mischt.</string>
+    <string name="all_cache_cleared">Gesamter Cache geleert</string>
+    <string name="lossless_expiring_title">%1$s-Sitzung endet bald</string>
+    <string name="lossless_expiring_body">Endet in %1$d Min. Zum Verlängern tippen.</string>
+    <string name="lossless_renew_failed_body">Konnte nicht automatisch verlängert werden. Endet in %1$d Min.; zum erneuten Versuch tippen.</string>
+    <string name="lossless_renewed_until">%1$s verlängert bis %2$s</string>
+    <string name="lossless_renew_failed">%1$s konnte nicht verlängert werden. Verlängere es selbst im Add-on.</string>
+    <string name="lossless_channel">Lossless-Sitzungen</string>
 </resources>

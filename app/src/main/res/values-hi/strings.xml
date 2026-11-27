@@ -1448,4 +1448,11 @@
     <string name="history_remove_failed">इतिहास से हटाया नहीं जा सका</string>
     <string name="lock_screen_art_transition">आर्टवर्क ट्रांज़िशन</string>
     <string name="lock_screen_art_transition_subtitle">Automix के गाने मिलाते समय कवर अगले गाने के कवर में घुल जाता है।</string>
+    <string name="all_cache_cleared">सारा कैश साफ़ किया गया</string>
+    <string name="lossless_expiring_title">%1$s सत्र जल्द खत्म होगा</string>
+    <string name="lossless_expiring_body">%1$d मिनट में खत्म होगा। नवीनीकरण के लिए टैप करें।</string>
+    <string name="lossless_renew_failed_body">अपने आप नवीनीकरण नहीं हो सका। %1$d मिनट में खत्म होगा; फिर कोशिश करने के लिए टैप करें।</string>
+    <string name="lossless_renewed_until">%1$s का %2$s तक नवीनीकरण हुआ</string>
+    <string name="lossless_renew_failed">%1$s का नवीनीकरण नहीं हो सका। ऐडऑन से खुद नवीनीकरण करें।</string>
+    <string name="lossless_channel">लॉसलेस सत्र</string>
 </resources>

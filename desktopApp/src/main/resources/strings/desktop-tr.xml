@@ -187,4 +187,6 @@
         <item quantity="one">%1$d şarkı ekle</item>
         <item quantity="other">%1$d şarkı ekle</item>
     </plurals>
+    <string name="d_session_expired_banner">Oturumunuzun süresi doldu. Yeniden oturum açın</string>
+    <string name="d_session_expired_sign_in_again">Oturum süresi doldu · Yeniden oturum aç</string>
 </resources>

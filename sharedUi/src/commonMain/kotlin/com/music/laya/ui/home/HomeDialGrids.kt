@@ -1,5 +1,5 @@
 /*
- * Home's dial grids (Speed Dial, Mixes, Artists): ported from Melo (github.com/aarush-io/melo,
+ * Home's dial grids (Speed Dial, Artists): ported from Melo (github.com/aarush-io/melo,
  * GPL-3.0) HomeSpeedDial.kt, reworked for Laya's cards, haptics and settings.
  */
 package com.music.laya.ui.home
@@ -22,7 +22,6 @@ import androidx.compose.animation.slideIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -34,6 +33,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -47,7 +47,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -131,6 +130,8 @@ fun SpeedDialGrid(
     tileStyle: HomeDialTileStyle,
     luckyTile: Boolean,
     historyTile: Boolean,
+    /** Recently played covers for the History tile's collage; empty leaves the plain clock. */
+    historyCovers: List<String>,
     onOpen: (ShelfItem) -> Unit,
     onLongPress: (DialEntry) -> Unit,
     /** Dice roll: returns the pick to play (null = nothing to pick); the tile animates while it runs, then lands. */
@@ -150,29 +151,9 @@ fun SpeedDialGrid(
     entries, rows, labels, pinIcon, newTags, tileStyle,
     lucky = if (luckyTile) onLucky else null,
     history = if (historyTile) onHistory else null,
-    historyLabel = historyLabel, newLabel = newLabel, maxPages = SPEED_DIAL_MAX_PAGES, mixBadges = false,
+    historyLabel = historyLabel, newLabel = newLabel, maxPages = SPEED_DIAL_MAX_PAGES, historyCovers = historyCovers,
     onOpen = onOpen, onLongPress = onLongPress, modifier = modifier, entering = entering,
     maxGridHeight = maxGridHeight, onScrollToFeed = onScrollToFeed, moreLabel = moreLabel, luckyLabel = luckyLabel,
-)
-
-/** The Mixes page: one page of mixes, each with a small round play badge. */
-@Composable
-fun MixesDialGrid(
-    entries: List<DialEntry>,
-    rows: Int,
-    labels: Boolean,
-    tileStyle: HomeDialTileStyle,
-    onOpen: (ShelfItem) -> Unit,
-    onLongPress: (DialEntry) -> Unit,
-    modifier: Modifier = Modifier,
-    maxGridHeight: Dp? = null,
-    onScrollToFeed: (() -> Unit)? = null,
-    moreLabel: String = "",
-) = DialGrid(
-    entries, rows, labels, pinIcon = false, newTags = false, tileStyle = tileStyle, lucky = null, history = null,
-    historyLabel = "", newLabel = "", maxPages = 1, mixBadges = true, onOpen = onOpen, onLongPress = onLongPress,
-    modifier = modifier, entering = false, maxGridHeight = maxGridHeight, onScrollToFeed = onScrollToFeed,
-    moreLabel = moreLabel, luckyLabel = "",
 )
 
 /** The Artists page: the same rounded tiles as Speed Dial (as melo draws it), paged with dots. */
@@ -191,7 +172,7 @@ fun ArtistDialGrid(
     moreLabel: String = "",
 ) = DialGrid(
     entries, rows, labels, pinIcon = pinIcon, newTags = false, tileStyle = tileStyle, lucky = null, history = null,
-    historyLabel = "", newLabel = "", maxPages = null, mixBadges = false, onOpen = onOpen, onLongPress = onLongPress,
+    historyLabel = "", newLabel = "", maxPages = null, onOpen = onOpen, onLongPress = onLongPress,
     modifier = modifier, entering = false, maxGridHeight = maxGridHeight, onScrollToFeed = onScrollToFeed,
     moreLabel = moreLabel, luckyLabel = "",
 )
@@ -294,9 +275,9 @@ private fun DialGrid(
     lucky: (suspend () -> ShelfItem?)?,
     history: (() -> Unit)?,
     historyLabel: String,
+    historyCovers: List<String> = emptyList(),
     newLabel: String,
     maxPages: Int?,
-    mixBadges: Boolean,
     onOpen: (ShelfItem) -> Unit,
     onLongPress: (DialEntry) -> Unit,
     modifier: Modifier,
@@ -342,7 +323,7 @@ private fun DialGrid(
                                     slot >= 0 -> {
                                         val entry = entries[slot]
                                         DialTile(
-                                            entry, labels, pinIcon, newTags, newLabel, mixBadges, tileStyle,
+                                            entry, labels, pinIcon, newTags, newLabel, tileStyle,
                                             stagger = rowIndex + columnIndex, reduced = reduced, modifier = tile,
                                             onClick = { onOpen(entry.item) }, onLongPress = { onLongPress(entry) },
                                         )
@@ -350,7 +331,7 @@ private fun DialGrid(
                                     slot == SLOT_LUCKY && lucky != null ->
                                         LuckyDiceTile(tile, tileStyle, luckyLabel, reduced, lucky, onOpen)
                                     slot == SLOT_HISTORY && history != null ->
-                                        HistoryDialTile(tile, tileStyle, labels, historyLabel, history)
+                                        HistoryDialTile(tile, tileStyle, labels, historyLabel, historyCovers, history)
                                     else -> Spacer(tile)
                                 }
                             }
@@ -430,7 +411,6 @@ private fun DialTile(
     showPinIcon: Boolean,
     showNewTag: Boolean,
     newLabel: String,
-    mixBadge: Boolean,
     tileStyle: HomeDialTileStyle,
     /** The tile's diagonal (row + column), so new art sweeps across the grid corner to corner. */
     stagger: Int,
@@ -502,16 +482,6 @@ private fun DialTile(
                         tint = Color.White,
                     )
                 }
-                if (mixBadge && !isNew) {
-                    Box(
-                        Modifier.align(Alignment.TopStart).padding(8.dp).size(22.dp).clip(CircleShape)
-                            .background(Color.Black.copy(alpha = SCRIM))
-                            .border(1.dp, Color.White.copy(alpha = 0.85f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Rounded.PlayArrow, null, Modifier.size(14.dp), tint = Color.White)
-                    }
-                }
                 if (isNew) {
                     Text(
                         newLabel,
@@ -531,9 +501,20 @@ private fun DialTile(
 
 private const val SCRIM = 0.55f
 
-/** A dark see-through tile with the history clock in the middle and, with labels on, its name at the bottom. */
+/**
+ * The History tile: the latest [covers] (up to four) as a collage under a dark scrim, the history
+ * clock in the middle and, with labels on, its name at the bottom. No covers: a dark see-through
+ * tile with a larger clock.
+ */
 @Composable
-private fun HistoryDialTile(modifier: Modifier, tileStyle: HomeDialTileStyle, showLabel: Boolean, label: String, onClick: () -> Unit) {
+private fun HistoryDialTile(
+    modifier: Modifier,
+    tileStyle: HomeDialTileStyle,
+    showLabel: Boolean,
+    label: String,
+    covers: List<String>,
+    onClick: () -> Unit,
+) {
     val reduced by AppSettings.reduceAnimation.collectAsState()
     Box(
         modifier
@@ -543,9 +524,13 @@ private fun HistoryDialTile(modifier: Modifier, tileStyle: HomeDialTileStyle, sh
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
     ) {
+        if (covers.isNotEmpty()) {
+            CoverCollage(covers, Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = SCRIM)))
+        }
         Icon(
             Icons.Rounded.History, null,
-            modifier = Modifier.align(Alignment.Center).fillMaxSize(0.36f),
+            modifier = Modifier.align(Alignment.Center).fillMaxSize(if (covers.isEmpty()) 0.36f else 0.28f),
             tint = Color.White.copy(alpha = 0.85f),
         )
         if (showLabel) {
@@ -559,6 +544,26 @@ private fun HistoryDialTile(modifier: Modifier, tileStyle: HomeDialTileStyle, sh
             )
         }
         Box(Modifier.fillMaxSize().dialRim(tileStyle))
+    }
+}
+
+/** One cover fills the tile; two sit side by side; three are one tall and two stacked; four a 2×2. */
+@Composable
+private fun CoverCollage(covers: List<String>, modifier: Modifier) {
+    val columns = if (covers.size <= 2) covers.map { listOf(it) } else listOf(covers.take(covers.size - 2), covers.takeLast(2))
+    Row(modifier) {
+        columns.forEach { column ->
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                column.forEach { url ->
+                    AsyncImage(
+                        model = url.artworkAt(CARD_ART_PX),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    )
+                }
+            }
+        }
     }
 }
 

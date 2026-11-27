@@ -187,4 +187,6 @@
         <item quantity="one">Añadir %1$d canción</item>
         <item quantity="other">Añadir %1$d canciones</item>
     </plurals>
+    <string name="d_session_expired_banner">Tu sesión ha caducado. Vuelve a iniciar sesión</string>
+    <string name="d_session_expired_sign_in_again">Sesión caducada · Volver a iniciar sesión</string>
 </resources>

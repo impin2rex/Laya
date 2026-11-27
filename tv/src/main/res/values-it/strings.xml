@@ -282,7 +282,6 @@
     <string name="tv_settings_home_speed_dial">Speed Dial</string>
     <string name="tv_settings_home_speed_dial_subtitle">I tuoi fissati e preferiti come riquadri in cima alla Home</string>
     <string name="tv_settings_home_artist_dial">Pagina artisti</string>
-    <string name="tv_settings_home_mixes_dial">Pagina mix</string>
     <string name="tv_settings_home_lucky_tile">Riquadro casuale</string>
     <string name="tv_settings_home_dial_source">Fonte dei riquadri</string>
     <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
@@ -293,7 +292,6 @@
     <string name="tv_settings_home_dial_new_tags">Segna nuove uscite</string>
     <string name="tv_settings_home_restore_tiles">Ripristina riquadri rimossi (%1$d)</string>
     <string name="tv_home_speed_dial">Speed Dial</string>
-    <string name="tv_home_mixes_dial">Mix</string>
     <string name="tv_home_dial_new">Nuovo</string>
     <string name="tv_home_dial_pin">Fissa</string>
     <string name="tv_home_dial_remove">Rimuovi dal dial</string>

@@ -189,4 +189,6 @@
         <item quantity="one">Add %1$d song</item>
         <item quantity="other">Add %1$d songs</item>
     </plurals>
+    <string name="d_session_expired_banner">Your session expired. Sign in again</string>
+    <string name="d_session_expired_sign_in_again">Session expired · Sign in again</string>
 </resources>

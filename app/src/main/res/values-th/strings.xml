@@ -1431,4 +1431,11 @@
     <string name="history_remove_failed">ไม่สามารถลบออกจากประวัติได้</string>
     <string name="lock_screen_art_transition">การเปลี่ยนภาพปก</string>
     <string name="lock_screen_art_transition_subtitle">ผสานภาพปกเข้ากับภาพปกเพลงถัดไประหว่างที่ Automix มิกซ์เพลง</string>
+    <string name="all_cache_cleared">ล้างแคชทั้งหมดแล้ว</string>
+    <string name="lossless_expiring_title">เซสชัน %1$s ใกล้หมดอายุ</string>
+    <string name="lossless_expiring_body">หมดอายุในอีก %1$d นาที แตะเพื่อต่ออายุ</string>
+    <string name="lossless_renew_failed_body">ต่ออายุอัตโนมัติไม่สำเร็จ หมดอายุในอีก %1$d นาที แตะเพื่อลองอีกครั้ง</string>
+    <string name="lossless_renewed_until">ต่ออายุ %1$s ถึง %2$s แล้ว</string>
+    <string name="lossless_renew_failed">ต่ออายุ %1$s ไม่สำเร็จ โปรดต่ออายุเองจากส่วนเสริม</string>
+    <string name="lossless_channel">เซสชันแบบไม่สูญเสีย</string>
 </resources>

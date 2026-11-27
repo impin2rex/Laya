@@ -919,7 +919,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Przypięte i ulubione jako kafelki u góry strony głównej</string>
     <string name="settings_home_artist_dial">Strona wykonawców</string>
-    <string name="settings_home_mixes_dial">Strona miksów</string>
     <string name="settings_home_lucky_tile">Kafelek losowy</string>
     <string name="settings_home_dial_source">Źródło kafelków</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -935,7 +934,6 @@
     <string name="settings_home_restore_tiles">Przywróć usunięte kafelki (%1$d)</string>
     <string name="home_chip_all">Wszystko</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Miksy</string>
     <string name="home_history_tile">Historia</string>
     <string name="home_dial_new">Nowość</string>
     <string name="home_dial_remove">Usuń z dialu</string>
@@ -960,4 +958,16 @@
     <string name="color_background_subtitle">Delikatny kolor odtwarzanego utworu za każdą stroną</string>
     <string name="splash_screen">Ekran powitalny</string>
     <string name="splash_screen_subtitle">Animowane logo przy uruchamianiu aplikacji</string>
+    <string name="clear_all_cache">Wyczyść całą pamięć podręczną</string>
+    <string name="clear_all_cache_subtitle">Zwalnia miejsce zajmowane przez utwory, wideo, okładki i pliki tymczasowe w pamięci podręcznej</string>
+    <string name="clear_all_cache_title">Wyczyścić całą pamięć podręczną?</string>
+    <string name="clear_all_cache_warning">Utwory, klipy wideo, okładki i pliki tymczasowe w pamięci podręcznej zostaną usunięte. Pobrane pliki zostaną zachowane. Przy następnym odtworzeniu wszystko zostanie ponownie przesłane strumieniowo.</string>
+    <string name="all_cache_cleared">Cała pamięć podręczna została wyczyszczona</string>
+    <string name="song_cache_cleared">Piosenki w pamięci podręcznej zostały usunięte</string>
+    <string name="image_cache_cleared">Obrazy w pamięci podręcznej zostały usunięte</string>
+    <string name="lossless_expiring_title">Sesja %1$s wkrótce wygaśnie</string>
+    <string name="lossless_expiring_body">Wygaśnie za %1$d min. Dotknij, aby odnowić.</string>
+    <string name="lossless_renew_failed_body">Nie udało się odnowić automatycznie. Wygaśnie za %1$d min; dotknij, aby spróbować ponownie.</string>
+    <string name="lossless_renewed_until">Odnowiono %1$s do %2$s</string>
+    <string name="lossless_renew_failed">Nie udało się odnowić %1$s. Odnów ręcznie w dodatku.</string>
 </resources>

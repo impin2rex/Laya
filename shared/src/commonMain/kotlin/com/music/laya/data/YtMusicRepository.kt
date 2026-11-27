@@ -148,8 +148,24 @@ object YtMusicRepository {
      */
     private suspend fun fetchHistory(): List<Song> {
         val page = Innertube.browse(HISTORY)
-        synchronized(historyLock) { historyTokens = InnertubeParser.historyRemovalTokens(page) }
-        return InnertubeParser.collectSongsDeep(page).distinctBy { it.videoId }
+        val songs = InnertubeParser.collectSongsDeep(page).distinctBy { it.videoId }
+        synchronized(historyLock) {
+            historyTokens = InnertubeParser.historyRemovalTokens(page)
+            lastHistory = Innertube.cookie to songs
+        }
+        return songs
+    }
+
+    /** The last history fetched for the signed-in account (Home's Recents fetches it too), to show while [history] refreshes. */
+    private var lastHistory: Pair<String?, List<Song>>? = null
+
+    fun cachedHistory(): List<Song>? =
+        synchronized(historyLock) { lastHistory }?.takeIf { it.first == Innertube.cookie }?.second
+
+    /** A play just landed in the account's history ([com.music.laya.data.innertube.PlaybackTracker]): it leads the cached copy too. */
+    fun notePlayed(song: Song) = synchronized(historyLock) {
+        val (key, songs) = lastHistory?.takeIf { it.first == Innertube.cookie } ?: return@synchronized
+        lastHistory = key to (listOf(song) + songs.filterNot { it.videoId == song.videoId })
     }
 
     private val historyLock = SynchronizedObject()
@@ -169,7 +185,10 @@ object YtMusicRepository {
         val tokens = synchronized(historyLock) { videoIds.flatMap { historyTokens[it].orEmpty() } }
         require(tokens.isNotEmpty()) { "Nothing to remove from history" }
         Innertube.sendFeedback(tokens)
-        synchronized(historyLock) { historyTokens = historyTokens - videoIds.toSet() }
+        synchronized(historyLock) {
+            historyTokens = historyTokens - videoIds.toSet()
+            lastHistory = lastHistory?.let { (key, songs) -> key to songs.filterNot { it.videoId in videoIds } }
+        }
     }
 
     /**

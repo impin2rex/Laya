@@ -711,8 +711,6 @@ object AppSettings {
     val colorBackground = MutableStateFlow(true)
     /** The animated logo on a cold start. */
     val splashScreen = MutableStateFlow(true)
-    /** Whether the Mixes page sits beside the Speed Dial. */
-    val homeMixesDial = MutableStateFlow(true)
     /** Whether the Artists page sits below the Speed Dial. */
     val homeArtistDial = MutableStateFlow(true)
     /** Whether the Speed Dial carries the dice tile that plays something at random. */
@@ -1080,7 +1078,6 @@ object AppSettings {
         homeSpeedDial.value = prefs.getBoolean(KEY_HOME_SPEED_DIAL, true)
         colorBackground.value = prefs.getBoolean(KEY_COLOR_BACKGROUND, true)
         splashScreen.value = prefs.getBoolean(KEY_SPLASH_SCREEN, true)
-        homeMixesDial.value = prefs.getBoolean(KEY_HOME_MIXES_DIAL, true)
         homeArtistDial.value = prefs.getBoolean(KEY_HOME_ARTIST_DIAL, true)
         homeLuckyTile.value = prefs.getBoolean(KEY_HOME_LUCKY_TILE, true)
         homeDialSource.value = HomeDialSource.entries.firstOrNull { it.name == prefs.getString(KEY_HOME_DIAL_SOURCE, null) }
@@ -2065,7 +2062,6 @@ object AppSettings {
     fun setSplashScreen(value: Boolean) { splashScreen.value = value; prefs.edit().putBoolean(KEY_SPLASH_SCREEN, value).apply() }
     fun setColorBackground(value: Boolean) { colorBackground.value = value; prefs.edit().putBoolean(KEY_COLOR_BACKGROUND, value).apply() }
     fun setHomeSpeedDial(value: Boolean) { homeSpeedDial.value = value; prefs.edit().putBoolean(KEY_HOME_SPEED_DIAL, value).apply() }
-    fun setHomeMixesDial(value: Boolean) { homeMixesDial.value = value; prefs.edit().putBoolean(KEY_HOME_MIXES_DIAL, value).apply() }
     fun setHomeArtistDial(value: Boolean) { homeArtistDial.value = value; prefs.edit().putBoolean(KEY_HOME_ARTIST_DIAL, value).apply() }
     fun setHomeLuckyTile(value: Boolean) { homeLuckyTile.value = value; prefs.edit().putBoolean(KEY_HOME_LUCKY_TILE, value).apply() }
     fun setHomeDialSource(value: HomeDialSource) { homeDialSource.value = value; prefs.edit().putString(KEY_HOME_DIAL_SOURCE, value.name).apply() }
@@ -2308,7 +2304,6 @@ object AppSettings {
     private const val KEY_HOME_SPEED_DIAL = "home_speed_dial"
     private const val KEY_COLOR_BACKGROUND = "color_background"
     private const val KEY_SPLASH_SCREEN = "splash_screen"
-    private const val KEY_HOME_MIXES_DIAL = "home_mixes_dial"
     private const val KEY_HOME_ARTIST_DIAL = "home_artist_dial"
     private const val KEY_HOME_LUCKY_TILE = "home_lucky_tile"
     private const val KEY_HOME_DIAL_SOURCE = "home_dial_source"

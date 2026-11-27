@@ -905,7 +905,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">ההצמדות והמועדפים שלך כאריחים בראש מסך הבית</string>
     <string name="settings_home_artist_dial">דף אומנים</string>
-    <string name="settings_home_mixes_dial">דף מיקסים</string>
     <string name="settings_home_lucky_tile">אריח אקראי</string>
     <string name="settings_home_dial_source">מקור האריחים</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -921,7 +920,6 @@
     <string name="settings_home_restore_tiles">שחזור אריחים שהוסרו (%1$d)</string>
     <string name="home_chip_all">הכול</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">מיקסים</string>
     <string name="home_history_tile">היסטוריה</string>
     <string name="home_dial_new">חדש</string>
     <string name="home_dial_remove">הסרה מהחיוג</string>
@@ -946,4 +944,16 @@
     <string name="color_background_subtitle">צבע רך מהשיר המתנגן מאחורי כל דף</string>
     <string name="splash_screen">מסך פתיחה</string>
     <string name="splash_screen_subtitle">הלוגו המונפש בפתיחת האפליקציה</string>
+    <string name="clear_all_cache">ניקוי כל המטמון</string>
+    <string name="clear_all_cache_subtitle">מפנה מקום שתופסים שירים, סרטונים, עטיפות וקבצים זמניים במטמון</string>
+    <string name="clear_all_cache_title">לנקות את כל המטמון?</string>
+    <string name="clear_all_cache_warning">שירים, קטעי וידאו, עטיפות וקבצים זמניים במטמון יימחקו. ההורדות יישמרו. הכול יוזרם שוב בפעם הבאה שתנגנו.</string>
+    <string name="all_cache_cleared">כל המטמון נוקה</string>
+    <string name="song_cache_cleared">מטמון השירים נוקה</string>
+    <string name="image_cache_cleared">מטמון התמונות נוקה</string>
+    <string name="lossless_expiring_title">הסשן של %1$s מסתיים בקרוב</string>
+    <string name="lossless_expiring_body">מסתיים בעוד %1$d דק׳. הקישו לחידוש.</string>
+    <string name="lossless_renew_failed_body">לא ניתן היה לחדש אוטומטית. מסתיים בעוד %1$d דק׳; הקישו כדי לנסות שוב.</string>
+    <string name="lossless_renewed_until">%1$s חודש עד %2$s</string>
+    <string name="lossless_renew_failed">לא ניתן היה לחדש את %1$s. חדשו בעצמכם מהתוסף.</string>
 </resources>

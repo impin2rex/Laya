@@ -38,6 +38,11 @@ data class DesktopGoogleAccount(
     val activeProfileId: String? = null,
     /** The browser profile this session was taken from, as the path of its cookie store. */
     val sourceProfile: String? = null,
+    /**
+     * Google stopped accepting this login (it served the signed-out shell, and no fresh copy could be had).
+     * The account stays, with its channel choice, until it is signed in again or removed by hand.
+     */
+    val expired: Boolean = false,
 )
 
 /** Every Google login this app is holding, and which channel it is acting as. */
@@ -80,6 +85,14 @@ internal object DesktopAccounts {
         )
     }
 
+    /**
+     * The saved login is in force but was never confirmed this run: YouTube couldn't be reached when it
+     * was checked. [keepAlive] checks again, sooner than its usual round.
+     */
+    @Volatile
+    var unverified = false
+        private set
+
     /** Puts the chosen account into force, renewing it first if it has gone flat. */
     suspend fun activate(): DesktopYouTubeAuth.Session? {
         val account = active() ?: run {
@@ -93,20 +106,49 @@ internal object DesktopAccounts {
             DesktopYouTubeAuth.adopt(null)
             return null
         }
-        DesktopYouTubeSession.adoptSessionScope(stored.cookie)?.let { live ->
-            val session = healedIdentity(account, profile, stored, live)
-            DesktopYouTubeAuth.adopt(session)
-            return session
+        // Rotated first: a jar that sat unused since the last run has short-lived halves the shell
+        // would no longer accept, and a rotation is what renews them.
+        val cookie = DesktopCookieRotation.rotate(stored.cookie)?.also { rotated ->
+            if (rotated != stored.cookie) writeCookie(account.accountId, rotated)
+        } ?: stored.cookie
+        when (val check = DesktopYouTubeSession.checkSessionScope(cookie)) {
+            is DesktopYouTubeSession.ScopeCheck.Live -> {
+                unverified = false
+                markExpired(account.accountId, false)
+                val session = healedIdentity(account, profile, stored, check.session)
+                DesktopYouTubeAuth.adopt(session)
+                return session
+            }
+            // No answer says nothing about the login: keep it in force and look again shortly, rather than
+            // dropping to a guest because the network was not up yet.
+            DesktopYouTubeSession.ScopeCheck.Unreachable -> {
+                DesktopTrackLog.log("couldn't reach YouTube to check the sign-in; keeping the saved one and checking again soon")
+                unverified = true
+                val session = stored.copy(cookie = cookie)
+                DesktopYouTubeAuth.adopt(session)
+                return session
+            }
+            DesktopYouTubeSession.ScopeCheck.SignedOut -> Unit
         }
+        unverified = false
 
         DesktopTrackLog.log("the stored session has expired; looking for a fresh one in the browser it came from")
         val renewed = renewFromBrowser(account)
         if (renewed == null) {
-            // Anonymous rather than broken.
+            // Anonymous rather than broken; the account stays, marked, so signing in again is one step.
             DesktopTrackLog.log("could not renew the session; browsing as a guest until it is signed in again")
+            markExpired(account.accountId, true)
             DesktopYouTubeAuth.adopt(null)
+        } else {
+            markExpired(account.accountId, false)
         }
         return renewed
+    }
+
+    private fun markExpired(accountId: String, value: Boolean) {
+        val current = accounts()
+        if (current.none { it.accountId == accountId && it.expired != value }) return
+        write(current.map { if (it.accountId == accountId) it.copy(expired = value) else it })
     }
 
     /**
@@ -182,6 +224,24 @@ internal object DesktopAccounts {
         // Brand channel: keep what the listener picked, but take the live
         // session's fresh cookie context for everything else.
         return stored
+    }
+
+    /**
+     * Rotates the session in force and saves the result, as an open browser tab does every few minutes.
+     * Called on a timer while the app runs ([DesktopCookieRotation.INTERVAL_MS]).
+     */
+    suspend fun keepAlive() {
+        // A login only assumed at launch is checked properly now that the network may be back.
+        if (unverified) {
+            activate()
+            return
+        }
+        val session = DesktopYouTubeAuth.session ?: return
+        val account = active() ?: return
+        val rotated = DesktopCookieRotation.rotate(session.cookie) ?: return
+        if (rotated == session.cookie) return
+        writeCookie(account.accountId, rotated)
+        DesktopYouTubeAuth.refreshCookie(rotated)
     }
 
     /** Reads the source browser's cookies again and saves them if they are live. */
@@ -263,7 +323,11 @@ internal object DesktopAccounts {
                 ),
             )
         }
+        // Signing in again (an expired account) comes back on the channel that was chosen before, when it
+        // is still there; the sign-in window itself always lands on the personal one.
+        val previous = accounts().firstOrNull { it.accountId == accountId }?.activeProfileId
         val chosen = profiles.firstOrNull { it.pageId != null && it.pageId == scope.pageId }
+            ?: profiles.firstOrNull { it.profileId == previous }
             ?: profiles.firstOrNull { it.dataSyncId != null && it.dataSyncId == scope.dataSyncId }
             ?: profiles.first()
         val account = DesktopGoogleAccount(

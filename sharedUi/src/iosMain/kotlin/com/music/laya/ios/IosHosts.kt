@@ -6,6 +6,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.material.icons.rounded.Lock
 import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.all_cache_cleared
+import com.music.laya.sharedui.resources.image_cache_cleared
+import com.music.laya.sharedui.resources.song_cache_cleared
 import com.music.laya.sharedui.resources.lock_screen_lyrics_ios_subtitle
 import com.music.laya.sharedui.resources.lock_screen_player
 import org.jetbrains.compose.resources.stringResource
@@ -46,6 +49,7 @@ internal object IosSettingsHost : SettingsHost {
     override val hasLiquidGlassOption = false
     override val party = IosParty.info
     override val hasDownloads = true
+    override val hasSongCache = true
     override val hasExportDownloads = false // no shared Music folder on iOS; downloads stay in the app
     override val musicVideoInMiniPlayer = true
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
@@ -55,6 +59,35 @@ internal object IosSettingsHost : SettingsHost {
     @Composable
     override fun versionName() =
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
+
+    override fun clearSongCache() {
+        IosSongCache.clear()
+        IosPlayerHost.showMessage(Res.string.song_cache_cleared)
+    }
+
+    override fun clearImageCache() {
+        clearImages()
+        IosPlayerHost.showMessage(Res.string.image_cache_cleared)
+    }
+
+    /** Songs, assembled analysis tracks, canvas and artist clips, artwork, artist art and signature answers, HTTP responses; downloads stay. */
+    override fun clearAllCache() {
+        IosSongCache.clear()
+        clearImages()
+        MainScope().launch(kotlinx.coroutines.Dispatchers.Default) {
+            IosClipCache.clear()
+            com.music.laya.data.canvas.AppleArtistArtRepository.clear()
+            com.music.laya.data.canvas.ArtistSignatureRepository.clear()
+        }
+        platform.Foundation.NSURLCache.sharedURLCache.removeAllCachedResponses()
+        IosPlayerHost.showMessage(Res.string.all_cache_cleared)
+    }
+
+    private fun clearImages() {
+        val loader = coil3.SingletonImageLoader.get(coil3.PlatformContext.INSTANCE)
+        loader.memoryCache?.clear()
+        MainScope().launch(kotlinx.coroutines.Dispatchers.Default) { loader.diskCache?.clear() }
+    }
 }
 
 /** The lock-screen lyrics Live Activity's switch (IosLyricsActivity): the same setting as Android's lock-screen player. */

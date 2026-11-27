@@ -897,7 +897,6 @@
     <string name="settings_home_speed_dial">スピードダイヤル</string>
     <string name="settings_home_speed_dial_subtitle">ピン留めとお気に入りをホーム上部にタイルで表示</string>
     <string name="settings_home_artist_dial">アーティストページ</string>
-    <string name="settings_home_mixes_dial">ミックスページ</string>
     <string name="settings_home_lucky_tile">ランダムタイル</string>
     <string name="settings_home_dial_source">タイルのソース</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -913,7 +912,6 @@
     <string name="settings_home_restore_tiles">削除したタイルを戻す（%1$d）</string>
     <string name="home_chip_all">すべて</string>
     <string name="home_speed_dial">スピードダイヤル</string>
-    <string name="home_mixes_dial">ミックス</string>
     <string name="home_history_tile">履歴</string>
     <string name="home_dial_new">新着</string>
     <string name="home_dial_remove">ダイヤルから削除</string>
@@ -938,4 +936,16 @@
     <string name="color_background_subtitle">再生中の曲の色を各ページの背景にやわらかく表示</string>
     <string name="splash_screen">スプラッシュ画面</string>
     <string name="splash_screen_subtitle">アプリ起動時のアニメーションロゴ</string>
+    <string name="clear_all_cache">すべてのキャッシュを削除</string>
+    <string name="clear_all_cache_subtitle">キャッシュされた曲、動画、アートワーク、一時ファイルの容量を空けます</string>
+    <string name="clear_all_cache_title">すべてのキャッシュを削除しますか？</string>
+    <string name="clear_all_cache_warning">キャッシュされた曲、動画クリップ、アートワーク、一時ファイルが削除されます。ダウンロードは残ります。次に再生するときは再びストリーミングされます。</string>
+    <string name="all_cache_cleared">すべてのキャッシュを削除しました</string>
+    <string name="song_cache_cleared">曲のキャッシュを削除しました</string>
+    <string name="image_cache_cleared">画像のキャッシュを削除しました</string>
+    <string name="lossless_expiring_title">%1$s のセッションがまもなく終了</string>
+    <string name="lossless_expiring_body">あと %1$d 分で終了します。タップして更新。</string>
+    <string name="lossless_renew_failed_body">自動で更新できませんでした。あと %1$d 分で終了します。タップして再試行。</string>
+    <string name="lossless_renewed_until">%1$s を %2$s まで更新しました</string>
+    <string name="lossless_renew_failed">%1$s を更新できませんでした。アドオンから自分で更新してください。</string>
 </resources>

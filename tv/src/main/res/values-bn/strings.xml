@@ -281,7 +281,6 @@
     <string name="tv_settings_home_speed_dial">স্পিড ডায়াল</string>
     <string name="tv_settings_home_speed_dial_subtitle">আপনার পিন ও প্রিয়গুলো হোমের উপরে টাইল হিসেবে</string>
     <string name="tv_settings_home_artist_dial">শিল্পী পাতা</string>
-    <string name="tv_settings_home_mixes_dial">মিক্স পাতা</string>
     <string name="tv_settings_home_lucky_tile">এলোমেলো টাইল</string>
     <string name="tv_settings_home_dial_source">টাইলের উৎস</string>
     <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
@@ -292,7 +291,6 @@
     <string name="tv_settings_home_dial_new_tags">নতুন রিলিজ চিহ্নিত করুন</string>
     <string name="tv_settings_home_restore_tiles">সরানো টাইল ফিরিয়ে আনুন (%1$d)</string>
     <string name="tv_home_speed_dial">স্পিড ডায়াল</string>
-    <string name="tv_home_mixes_dial">মিক্স</string>
     <string name="tv_home_dial_new">নতুন</string>
     <string name="tv_home_dial_pin">পিন করুন</string>
     <string name="tv_home_dial_remove">ডায়াল থেকে সরান</string>

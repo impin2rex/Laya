@@ -280,7 +280,6 @@
     <string name="tv_settings_home_speed_dial">Speed Dial</string>
     <string name="tv_settings_home_speed_dial_subtitle">Pin dan favoritmu sebagai ubin di atas Beranda</string>
     <string name="tv_settings_home_artist_dial">Halaman artis</string>
-    <string name="tv_settings_home_mixes_dial">Halaman mix</string>
     <string name="tv_settings_home_lucky_tile">Ubin acak</string>
     <string name="tv_settings_home_dial_source">Sumber ubin</string>
     <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
@@ -291,7 +290,6 @@
     <string name="tv_settings_home_dial_new_tags">Tandai rilisan baru</string>
     <string name="tv_settings_home_restore_tiles">Pulihkan ubin yang dihapus (%1$d)</string>
     <string name="tv_home_speed_dial">Speed Dial</string>
-    <string name="tv_home_mixes_dial">Mix</string>
     <string name="tv_home_dial_new">Baru</string>
     <string name="tv_home_dial_pin">Sematkan</string>
     <string name="tv_home_dial_remove">Hapus dari dial</string>

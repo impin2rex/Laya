@@ -890,7 +890,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Sabitlediklerin ve favorilerin Ana sayfanın üstünde kutucuk olarak</string>
     <string name="settings_home_artist_dial">Sanatçılar sayfası</string>
-    <string name="settings_home_mixes_dial">Mix sayfası</string>
     <string name="settings_home_lucky_tile">Rastgele kutucuk</string>
     <string name="settings_home_dial_source">Kutucuk kaynağı</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -906,7 +905,6 @@
     <string name="settings_home_restore_tiles">Kaldırılan kutucukları geri getir (%1$d)</string>
     <string name="home_chip_all">Tümü</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mixler</string>
     <string name="home_history_tile">Geçmiş</string>
     <string name="home_dial_new">Yeni</string>
     <string name="home_dial_remove">Dial\'dan kaldır</string>

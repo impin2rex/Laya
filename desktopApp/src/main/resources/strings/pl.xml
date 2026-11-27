@@ -921,7 +921,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Przypięte i ulubione jako kafelki u góry strony głównej</string>
     <string name="settings_home_artist_dial">Strona wykonawców</string>
-    <string name="settings_home_mixes_dial">Strona miksów</string>
     <string name="settings_home_lucky_tile">Kafelek losowy</string>
     <string name="settings_home_dial_source">Źródło kafelków</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -937,7 +936,6 @@
     <string name="settings_home_restore_tiles">Przywróć usunięte kafelki (%1$d)</string>
     <string name="home_chip_all">Wszystko</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Miksy</string>
     <string name="home_history_tile">Historia</string>
     <string name="home_dial_new">Nowość</string>
     <string name="home_dial_remove">Usuń z dialu</string>

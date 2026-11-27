@@ -5,6 +5,14 @@ import LayaKit
 /// The app icon's long-press menu (Home Screen quick actions); Kotlin publishes the items (LayaIosApp). A tap
 /// goes to the same command queue as the widgets', which holds it until the app is ready on a cold launch.
 final class QuickActionsAppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        // Set before launch ends, or a notification tap that cold-starts the app (a lossless reminder) is dropped.
+        RecognitionNotifier.shared.installDelegate()
+        // Registered before launch ends, as BGTaskScheduler requires: renews lossless sessions in the background.
+        IosLosslessBackground.shared.register()
+        return true
+    }
+
     func application(
         _ application: UIApplication,
         configurationForConnecting session: UISceneSession,

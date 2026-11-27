@@ -423,12 +423,14 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
     fun openHistory() {
-        val loading = IosPage.History(UiState.Loading)
+        // The last fetch shows at once; the fresh one replaces it.
+        val cached = YtMusicRepository.cachedHistory()?.takeIf { it.isNotEmpty() }
+        val loading = IosPage.History(cached?.let { UiState.Success(it) } ?: UiState.Loading)
         stack = stack + loading
         scope.launch {
             val songs = YtMusicRepository.history().fold(
                 { if (it.isEmpty()) UiState.Error(getString(Res.string.history_empty)) else UiState.Success(it) },
-                { UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
+                { if (cached != null) UiState.Success(cached) else UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
             )
             stack = stack.map { if (it === loading) IosPage.History(songs) else it }
         }
@@ -1240,7 +1242,6 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         }
                                     },
                                     chipShelves = homeChipShelves,
-                                    mixes = (mixes as? UiState.Success)?.data?.map { it.item }.orEmpty(),
                                     library = (library as? UiState.Success)?.data,
                                     onHistory = if (signedIn) ({ openHistory() }) else null,
                                 ),

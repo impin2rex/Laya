@@ -897,7 +897,6 @@
     <string name="settings_home_speed_dial">สปีดไดอัล</string>
     <string name="settings_home_speed_dial_subtitle">หมุดและรายการโปรดเป็นไทล์ที่ด้านบนของหน้าหลัก</string>
     <string name="settings_home_artist_dial">หน้าศิลปิน</string>
-    <string name="settings_home_mixes_dial">หน้ามิกซ์</string>
     <string name="settings_home_lucky_tile">ไทล์สุ่ม</string>
     <string name="settings_home_dial_source">แหล่งที่มาของไทล์</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -913,7 +912,6 @@
     <string name="settings_home_restore_tiles">กู้คืนไทล์ที่นำออก (%1$d)</string>
     <string name="home_chip_all">ทั้งหมด</string>
     <string name="home_speed_dial">สปีดไดอัล</string>
-    <string name="home_mixes_dial">มิกซ์</string>
     <string name="home_history_tile">ประวัติ</string>
     <string name="home_dial_new">ใหม่</string>
     <string name="home_dial_remove">นำออกจากไดอัล</string>
@@ -938,4 +936,16 @@
     <string name="color_background_subtitle">สีอ่อนจากเพลงที่กำลังเล่นอยู่หลังทุกหน้า</string>
     <string name="splash_screen">หน้าจอเริ่มต้น</string>
     <string name="splash_screen_subtitle">โลโก้เคลื่อนไหวเมื่อเปิดแอป</string>
+    <string name="clear_all_cache">ล้างแคชทั้งหมด</string>
+    <string name="clear_all_cache_subtitle">คืนพื้นที่ที่ใช้โดยเพลง วิดีโอ ภาพปก และไฟล์ชั่วคราวในแคช</string>
+    <string name="clear_all_cache_title">ล้างแคชทั้งหมดไหม</string>
+    <string name="clear_all_cache_warning">เพลง คลิปวิดีโอ ภาพปก และไฟล์ชั่วคราวในแคชจะถูกลบ เพลงที่ดาวน์โหลดไว้ยังอยู่ ทุกอย่างจะสตรีมใหม่เมื่อเล่นครั้งถัดไป</string>
+    <string name="all_cache_cleared">ล้างแคชทั้งหมดแล้ว</string>
+    <string name="song_cache_cleared">ล้างแคชเพลงแล้ว</string>
+    <string name="image_cache_cleared">ล้างแคชรูปภาพแล้ว</string>
+    <string name="lossless_expiring_title">เซสชัน %1$s ใกล้หมดอายุ</string>
+    <string name="lossless_expiring_body">หมดอายุในอีก %1$d นาที แตะเพื่อต่ออายุ</string>
+    <string name="lossless_renew_failed_body">ต่ออายุอัตโนมัติไม่สำเร็จ หมดอายุในอีก %1$d นาที แตะเพื่อลองอีกครั้ง</string>
+    <string name="lossless_renewed_until">ต่ออายุ %1$s ถึง %2$s แล้ว</string>
+    <string name="lossless_renew_failed">ต่ออายุ %1$s ไม่สำเร็จ โปรดต่ออายุเองจากส่วนเสริม</string>
 </resources>

@@ -897,7 +897,6 @@
     <string name="settings_home_speed_dial">快速撥號</string>
     <string name="settings_home_speed_dial_subtitle">將釘選與收藏以方塊顯示在首頁頂部</string>
     <string name="settings_home_artist_dial">藝人頁面</string>
-    <string name="settings_home_mixes_dial">合輯頁面</string>
     <string name="settings_home_lucky_tile">隨機方塊</string>
     <string name="settings_home_dial_source">方塊來源</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -913,7 +912,6 @@
     <string name="settings_home_restore_tiles">還原已移除的方塊（%1$d）</string>
     <string name="home_chip_all">全部</string>
     <string name="home_speed_dial">快速撥號</string>
-    <string name="home_mixes_dial">合輯</string>
     <string name="home_history_tile">歷史記錄</string>
     <string name="home_dial_new">新</string>
     <string name="home_dial_remove">從快速撥號移除</string>
@@ -938,4 +936,16 @@
     <string name="color_background_subtitle">以正在播放歌曲的柔和色彩作為每個頁面的背景</string>
     <string name="splash_screen">啟動畫面</string>
     <string name="splash_screen_subtitle">應用程式啟動時的動畫標誌</string>
+    <string name="clear_all_cache">清除所有快取</string>
+    <string name="clear_all_cache_subtitle">釋放快取歌曲、影片、封面和暫存檔案佔用的空間</string>
+    <string name="clear_all_cache_title">要清除所有快取嗎？</string>
+    <string name="clear_all_cache_warning">快取的歌曲、影片片段、封面和暫存檔案將被刪除。下載內容會保留。下次播放時會重新串流。</string>
+    <string name="all_cache_cleared">已清除所有快取</string>
+    <string name="song_cache_cleared">歌曲快取已清除</string>
+    <string name="image_cache_cleared">圖片快取已清除</string>
+    <string name="lossless_expiring_title">%1$s 工作階段即將到期</string>
+    <string name="lossless_expiring_body">%1$d 分鐘後到期。輕按以續期。</string>
+    <string name="lossless_renew_failed_body">無法自動續期。%1$d 分鐘後到期；輕按重試。</string>
+    <string name="lossless_renewed_until">%1$s 已續期至 %2$s</string>
+    <string name="lossless_renew_failed">無法續期 %1$s。請在附加元件中自行續期。</string>
 </resources>

@@ -1961,9 +1961,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * The account's listening history.
      *
-     * Loaded on each visit rather than cached: it is a page whose whole subject
-     * is what happened most recently, and one that opened showing the state it
-     * was in last time would be answering a different question. Guests get the
+     * Fetched on each visit: its whole subject is what happened most recently.
+     * The last fetch (Home's Recents makes one at launch) shows meanwhile, so
+     * the page opens at once and the fresh copy replaces it. Guests get the
      * signed-out message straight away, since there is no account to have a
      * history on.
      */
@@ -1973,14 +1973,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val identity = listenerKey()
-        _history.value = UiState.Loading
+        val cached = YtMusicRepository.cachedHistory()?.takeIf { it.isNotEmpty() }
+        _history.value = cached?.let { UiState.Success(it) } ?: UiState.Loading
         viewModelScope.launch {
             val next = YtMusicRepository.history().fold(
                 onSuccess = { songs ->
                     if (songs.isEmpty()) UiState.Error(text(R.string.history_empty))
                     else UiState.Success(songs)
                 },
-                onFailure = { UiState.Error(it.friendly()) },
+                // A failed refresh keeps the copy already on screen.
+                onFailure = { if (cached != null) UiState.Success(cached) else UiState.Error(it.friendly()) },
             )
             if (identity == listenerKey()) _history.value = next
         }

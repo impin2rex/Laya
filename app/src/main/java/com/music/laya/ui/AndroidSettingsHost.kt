@@ -156,6 +156,7 @@ object AndroidSettingsHost : SettingsHost {
 
     override val hasDownloads get() = true
     override val hasSongCache get() = true
+    override val hasCacheFolder get() = true
     override val hasBackgroundService get() = true
 
     override val appIconRow: (@Composable () -> Unit) = { AppIconPicker() }
@@ -281,6 +282,24 @@ object AndroidSettingsHost : SettingsHost {
         loader.memoryCache?.clear()
         loader.diskCache?.clear()
         Toast.makeText(context, context.getString(R.string.image_cache_cleared), Toast.LENGTH_SHORT).show()
+    }
+
+    /** Songs, canvas clips, artwork, and the share and remote-artwork leftovers; downloads stay. */
+    override fun clearAllCache() {
+        val context = appContext ?: return
+        val loader = SingletonImageLoader.get(context)
+        loader.memoryCache?.clear()
+        AudioCache.clear {
+            Thread {
+                com.music.laya.data.canvas.CanvasCache.clear()
+                loader.diskCache?.clear()
+                // Artist pages' Apple art (and its video's address) and signatures: looked up afresh next visit.
+                com.music.laya.data.canvas.AppleArtistArtRepository.clear()
+                com.music.laya.data.canvas.ArtistSignatureRepository.clear()
+                listOf("remote_art", "shared").forEach { java.io.File(context.cacheDir, it).deleteRecursively() }
+            }.start()
+            Toast.makeText(context, context.getString(R.string.all_cache_cleared), Toast.LENGTH_SHORT).show()
+        }
     }
 }
 

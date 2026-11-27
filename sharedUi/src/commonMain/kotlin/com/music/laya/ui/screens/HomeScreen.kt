@@ -176,7 +176,6 @@ fun HomeScreen(
         rememberHomeDials(
             shelves = (state as? UiState.Success)?.data.orEmpty(),
             chipShelves = if (chip != null) (dials.chipShelves as? UiState.Success)?.data.orEmpty() else null,
-            mixes = dials.mixes,
             library = dials.library,
             settled = state is UiState.Success && !refreshing && !recentlyPlayedLoading,
         )

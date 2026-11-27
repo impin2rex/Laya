@@ -1450,4 +1450,11 @@
     <string name="history_remove_failed">לא ניתן להסיר מההיסטוריה</string>
     <string name="lock_screen_art_transition">מעבר עטיפה</string>
     <string name="lock_screen_art_transition_subtitle">ממזג את העטיפה בזו של השיר הבא בזמן ש-Automix ממזג אותם.</string>
+    <string name="all_cache_cleared">כל המטמון נוקה</string>
+    <string name="lossless_expiring_title">הסשן של %1$s מסתיים בקרוב</string>
+    <string name="lossless_expiring_body">מסתיים בעוד %1$d דק׳. הקישו לחידוש.</string>
+    <string name="lossless_renew_failed_body">לא ניתן היה לחדש אוטומטית. מסתיים בעוד %1$d דק׳; הקישו כדי לנסות שוב.</string>
+    <string name="lossless_renewed_until">%1$s חודש עד %2$s</string>
+    <string name="lossless_renew_failed">לא ניתן היה לחדש את %1$s. חדשו בעצמכם מהתוסף.</string>
+    <string name="lossless_channel">סשנים ללא אובדן</string>
 </resources>

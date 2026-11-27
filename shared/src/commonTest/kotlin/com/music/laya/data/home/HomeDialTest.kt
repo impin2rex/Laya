@@ -3,7 +3,6 @@ package com.music.laya.data.home
 import com.music.laya.data.model.HomeShelf
 import com.music.laya.data.model.ShelfItem
 import com.music.laya.data.settings.HomeDialSource
-import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -43,12 +42,8 @@ class HomeDialTest {
     }
 
     @Test
-    fun mixesDealtOneOfAKindAndSleepOnlyAtNight() {
-        val home = listOf(HomeShelf("Mixed", listOf(card("VLRDTMAKa", "Chill Mix 1"), card("VLRDTMAKb", "Chill Mix 2"), card("VLRDTMAKc", "Sleep Mix"))))
-        val day = MixesDial.deal(home, emptyList(), emptyList(), emptySet(), sleepTime = false, random = Random(1))
-        assertEquals(1, day.size)
-        val night = MixesDial.deal(home, emptyList(), emptyList(), emptySet(), sleepTime = true, random = Random(1))
-        assertEquals(2, night.size)
-        assertTrue(MixesDial.isSleepTime(23 * 60) && !MixesDial.isSleepTime(12 * 60))
+    fun historyCoversAreDistinctAndAtMostFour() {
+        val played = listOf("a", "a", null, "b", "c", "d", "e").map { ShelfItem(it ?: "x", "", it, it, null) }
+        assertEquals(listOf("a", "b", "c", "d"), historyCovers(played))
     }
 }

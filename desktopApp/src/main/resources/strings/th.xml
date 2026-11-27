@@ -871,7 +871,6 @@
     <string name="settings_home_speed_dial">สปีดไดอัล</string>
     <string name="settings_home_speed_dial_subtitle">หมุดและรายการโปรดเป็นไทล์ที่ด้านบนของหน้าหลัก</string>
     <string name="settings_home_artist_dial">หน้าศิลปิน</string>
-    <string name="settings_home_mixes_dial">หน้ามิกซ์</string>
     <string name="settings_home_lucky_tile">ไทล์สุ่ม</string>
     <string name="settings_home_dial_source">แหล่งที่มาของไทล์</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -887,7 +886,6 @@
     <string name="settings_home_restore_tiles">กู้คืนไทล์ที่นำออก (%1$d)</string>
     <string name="home_chip_all">ทั้งหมด</string>
     <string name="home_speed_dial">สปีดไดอัล</string>
-    <string name="home_mixes_dial">มิกซ์</string>
     <string name="home_history_tile">ประวัติ</string>
     <string name="home_dial_new">ใหม่</string>
     <string name="home_dial_remove">นำออกจากไดอัล</string>

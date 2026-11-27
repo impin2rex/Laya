@@ -1216,4 +1216,11 @@
     <string name="history_remove_failed">ইতিহাস থেকে সরানো যায়নি</string>
     <string name="lock_screen_art_transition">আর্টওয়ার্ক ট্রানজিশন</string>
     <string name="lock_screen_art_transition_subtitle">Automix গান মেশানোর সময় কভার পরের গানের কভারে মিশে যায়।</string>
+    <string name="all_cache_cleared">সব ক্যাশ মুছে ফেলা হয়েছে</string>
+    <string name="lossless_expiring_title">%1$s সেশন শীঘ্রই শেষ হবে</string>
+    <string name="lossless_expiring_body">%1$d মিনিটে শেষ হবে। নবায়ন করতে ট্যাপ করুন।</string>
+    <string name="lossless_renew_failed_body">নিজে থেকে নবায়ন করা যায়নি। %1$d মিনিটে শেষ হবে; আবার চেষ্টা করতে ট্যাপ করুন।</string>
+    <string name="lossless_renewed_until">%1$s %2$s পর্যন্ত নবায়ন হয়েছে</string>
+    <string name="lossless_renew_failed">%1$s নবায়ন করা যায়নি। অ্যাডঅন থেকে নিজে নবায়ন করুন।</string>
+    <string name="lossless_channel">লসলেস সেশন</string>
 </resources>

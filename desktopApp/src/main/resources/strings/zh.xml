@@ -871,7 +871,6 @@
     <string name="settings_home_speed_dial">快速拨号</string>
     <string name="settings_home_speed_dial_subtitle">将置顶和收藏以磁贴形式显示在首页顶部</string>
     <string name="settings_home_artist_dial">艺人页面</string>
-    <string name="settings_home_mixes_dial">合辑页面</string>
     <string name="settings_home_lucky_tile">随机磁贴</string>
     <string name="settings_home_dial_source">磁贴来源</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -887,7 +886,6 @@
     <string name="settings_home_restore_tiles">恢复已移除的磁贴（%1$d）</string>
     <string name="home_chip_all">全部</string>
     <string name="home_speed_dial">快速拨号</string>
-    <string name="home_mixes_dial">合辑</string>
     <string name="home_history_tile">历史记录</string>
     <string name="home_dial_new">新</string>
     <string name="home_dial_remove">从快速拨号移除</string>

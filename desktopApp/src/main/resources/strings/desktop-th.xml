@@ -185,4 +185,6 @@
     <plurals name="d_add_n_songs">
         <item quantity="other">เพิ่ม %1$d เพลง</item>
     </plurals>
+    <string name="d_session_expired_banner">เซสชันหมดอายุแล้ว ลงชื่อเข้าใช้อีกครั้ง</string>
+    <string name="d_session_expired_sign_in_again">เซสชันหมดอายุ · ลงชื่อเข้าใช้อีกครั้ง</string>
 </resources>

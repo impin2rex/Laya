@@ -905,7 +905,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Sabitlediklerin ve favorilerin Ana sayfanın üstünde kutucuk olarak</string>
     <string name="settings_home_artist_dial">Sanatçılar sayfası</string>
-    <string name="settings_home_mixes_dial">Mix sayfası</string>
     <string name="settings_home_lucky_tile">Rastgele kutucuk</string>
     <string name="settings_home_dial_source">Kutucuk kaynağı</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -921,7 +920,6 @@
     <string name="settings_home_restore_tiles">Kaldırılan kutucukları geri getir (%1$d)</string>
     <string name="home_chip_all">Tümü</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mixler</string>
     <string name="home_history_tile">Geçmiş</string>
     <string name="home_dial_new">Yeni</string>
     <string name="home_dial_remove">Dial\'dan kaldır</string>
@@ -946,4 +944,16 @@
     <string name="color_background_subtitle">Çalan şarkıdan gelen yumuşak renk her sayfanın arkasında</string>
     <string name="splash_screen">Açılış ekranı</string>
     <string name="splash_screen_subtitle">Uygulama açılırken animasyonlu logo</string>
+    <string name="clear_all_cache">Tüm önbelleği temizle</string>
+    <string name="clear_all_cache_subtitle">Önbellekteki şarkıların, videoların, kapakların ve geçici dosyaların kapladığı alanı boşaltır</string>
+    <string name="clear_all_cache_title">Tüm önbellek temizlensin mi?</string>
+    <string name="clear_all_cache_warning">Önbellekteki şarkılar, video klipler, kapaklar ve geçici dosyalar silinecek. İndirmeler korunur. Bir sonraki çalışta her şey yeniden akışla gelir.</string>
+    <string name="all_cache_cleared">Tüm önbellek temizlendi</string>
+    <string name="song_cache_cleared">Şarkı önbelleği temizlendi</string>
+    <string name="image_cache_cleared">Resim önbelleği temizlendi</string>
+    <string name="lossless_expiring_title">%1$s oturumu yakında bitiyor</string>
+    <string name="lossless_expiring_body">%1$d dk içinde bitecek. Yenilemek için dokunun.</string>
+    <string name="lossless_renew_failed_body">Otomatik yenilenemedi. %1$d dk içinde bitecek; tekrar denemek için dokunun.</string>
+    <string name="lossless_renewed_until">%1$s, %2$s saatine kadar yenilendi</string>
+    <string name="lossless_renew_failed">%1$s yenilenemedi. Eklentiden kendiniz yenileyin.</string>
 </resources>

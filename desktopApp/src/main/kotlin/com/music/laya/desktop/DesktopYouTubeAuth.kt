@@ -54,6 +54,17 @@ internal object DesktopYouTubeAuth {
         )
     }
 
+    /**
+     * The same session with Google's rotated cookies ([DesktopCookieRotation]): the jar every request
+     * carries changes, and nothing else does, so no player config or token is thrown away.
+     */
+    fun refreshCookie(cookie: String) {
+        val current = session ?: return
+        if (current.cookie == cookie) return
+        session = current.copy(cookie = cookie)
+        Innertube.cookie = cookie
+    }
+
     /** The headers an authenticated request carries, or nothing when signed out. */
     fun headers(origin: String = MUSIC_ORIGIN): Map<String, String> {
         val current = session ?: return emptyMap()

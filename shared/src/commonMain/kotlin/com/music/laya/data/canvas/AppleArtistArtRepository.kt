@@ -49,8 +49,25 @@ object AppleArtistArtRepository {
     private val cache = LinkedHashMap<String, Entry>()
     private val guard = SynchronizedObject()
 
+    private val disk = LookupStore("apple_artist_art", AppleArtistArt.serializer())
+
+    /** Memory first, then what an earlier run kept on disk (moved into memory). */
     private fun lookupCached(key: String): Entry? =
         synchronized(guard) { cache.remove(key)?.also { cache[key] = it } }
+            ?: disk.get(key)?.let { Entry(it.getOrNull()) }?.also { remember(key, it) }
+
+    private fun remember(key: String, entry: Entry) = synchronized(guard) {
+        cache.remove(key)
+        cache[key] = entry
+        if (cache.size > CACHE_SIZE) cache.remove(cache.keys.first())
+    }
+
+    /** Clear all cache: memory and disk, so the next visit asks Apple again. */
+    fun clear() {
+        synchronized(guard) { cache.clear() }
+        disk.clear()
+        _updates.value++
+    }
 
     private val _updates = MutableStateFlow(0)
 
@@ -80,11 +97,9 @@ object AppleArtistArtRepository {
             runCatching { lookup(artistName, key) }
                 .onFailure { Log.d(TAG, "lookup failed for $artistName: $it") }
                 .getOrNull()
+                ?.also { disk.put(key, it.art) }
         } ?: return null
-        synchronized(guard) {
-            cache[key] = entry
-            if (cache.size > CACHE_SIZE) cache.remove(cache.keys.first())
-        }
+        remember(key, entry)
         _updates.value++
         return entry.art
     }

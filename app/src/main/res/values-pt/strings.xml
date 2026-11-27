@@ -1450,4 +1450,11 @@
     <string name="history_remove_failed">Não foi possível remover do histórico</string>
     <string name="lock_screen_art_transition">Transição de capa</string>
     <string name="lock_screen_art_transition_subtitle">Mescla a capa com a da próxima música enquanto o Automix as mixa.</string>
+    <string name="all_cache_cleared">Todo o cache foi limpo</string>
+    <string name="lossless_expiring_title">A sessão do %1$s termina em breve</string>
+    <string name="lossless_expiring_body">Termina em %1$d min. Toque para renovar.</string>
+    <string name="lossless_renew_failed_body">Não foi possível renovar automaticamente. Termina em %1$d min; toque para tentar de novo.</string>
+    <string name="lossless_renewed_until">%1$s renovado até %2$s</string>
+    <string name="lossless_renew_failed">Não foi possível renovar o %1$s. Renove você mesmo pelo complemento.</string>
+    <string name="lossless_channel">Sessões sem perdas</string>
 </resources>

@@ -281,7 +281,6 @@
     <string name="tv_settings_home_speed_dial">Speed Dial</string>
     <string name="tv_settings_home_speed_dial_subtitle">Your pins and favourites as tiles at the top of Home</string>
     <string name="tv_settings_home_artist_dial">Artists page</string>
-    <string name="tv_settings_home_mixes_dial">Mixes page</string>
     <string name="tv_settings_home_lucky_tile">Feeling lucky tile</string>
     <string name="tv_settings_home_dial_source">Tile source</string>
     <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
@@ -293,7 +292,6 @@
     <string name="tv_settings_home_dial_new_tags">Mark new releases</string>
     <string name="tv_settings_home_restore_tiles">Restore removed tiles (%1$d)</string>
     <string name="tv_home_speed_dial">Speed Dial</string>
-    <string name="tv_home_mixes_dial">Mixes</string>
     <string name="tv_home_dial_new">New</string>
     <string name="tv_home_dial_pin">Pin</string>
     <string name="tv_home_dial_remove">Remove from dial</string>

@@ -825,7 +825,7 @@ fun PullToRefresh(
  * mesh is the card, and white type is what sits on colour.
  */
 @Composable
-fun SignInBanner(onSignIn: () -> Unit, modifier: Modifier = Modifier) {
+fun SignInBanner(onSignIn: () -> Unit, modifier: Modifier = Modifier, title: String? = null) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.98f else 1f, spring(stiffness = 900f), label = "signInScale")
@@ -852,7 +852,7 @@ fun SignInBanner(onSignIn: () -> Unit, modifier: Modifier = Modifier) {
         )
         Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 18.dp)) {
             Text(
-                text = stringResource(Res.string.sign_in_youtube_music),
+                text = title ?: stringResource(Res.string.sign_in_youtube_music),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.W800,
                 color = Color.White,

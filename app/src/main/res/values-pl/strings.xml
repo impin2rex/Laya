@@ -1485,4 +1485,11 @@
     <string name="history_remove_failed">Nie udało się usunąć z historii</string>
     <string name="lock_screen_art_transition">Przejście okładki</string>
     <string name="lock_screen_art_transition_subtitle">Płynnie przechodzi w okładkę następnego utworu, gdy Automix je miksuje.</string>
+    <string name="all_cache_cleared">Cała pamięć podręczna została wyczyszczona</string>
+    <string name="lossless_expiring_title">Sesja %1$s wkrótce wygaśnie</string>
+    <string name="lossless_expiring_body">Wygaśnie za %1$d min. Dotknij, aby odnowić.</string>
+    <string name="lossless_renew_failed_body">Nie udało się odnowić automatycznie. Wygaśnie za %1$d min; dotknij, aby spróbować ponownie.</string>
+    <string name="lossless_renewed_until">Odnowiono %1$s do %2$s</string>
+    <string name="lossless_renew_failed">Nie udało się odnowić %1$s. Odnów ręcznie w dodatku.</string>
+    <string name="lossless_channel">Sesje bezstratne</string>
 </resources>

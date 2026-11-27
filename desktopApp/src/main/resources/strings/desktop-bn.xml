@@ -187,4 +187,6 @@
         <item quantity="one">%1$dটি গান যোগ করুন</item>
         <item quantity="other">%1$dটি গান যোগ করুন</item>
     </plurals>
+    <string name="d_session_expired_banner">আপনার সেশনের মেয়াদ শেষ। আবার সাইন ইন করুন</string>
+    <string name="d_session_expired_sign_in_again">সেশনের মেয়াদ শেষ · আবার সাইন ইন করুন</string>
 </resources>

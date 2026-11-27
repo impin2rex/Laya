@@ -89,6 +89,11 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.music.laya.lossless-renew</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>

@@ -185,4 +185,6 @@
     <plurals name="d_add_n_songs">
         <item quantity="other">Thêm %1$d bài hát</item>
     </plurals>
+    <string name="d_session_expired_banner">Phiên của bạn đã hết hạn. Hãy đăng nhập lại</string>
+    <string name="d_session_expired_sign_in_again">Phiên đã hết hạn · Đăng nhập lại</string>
 </resources>

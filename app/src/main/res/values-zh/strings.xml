@@ -1425,4 +1425,11 @@
     <string name="history_remove_failed">无法从历史记录中移除</string>
     <string name="lock_screen_art_transition">封面过渡</string>
     <string name="lock_screen_art_transition_subtitle">Automix 混音时，封面会渐变为下一首歌的封面。</string>
+    <string name="all_cache_cleared">已清除全部缓存</string>
+    <string name="lossless_expiring_title">%1$s 会话即将到期</string>
+    <string name="lossless_expiring_body">%1$d 分钟后到期。轻点以续期。</string>
+    <string name="lossless_renew_failed_body">无法自动续期。%1$d 分钟后到期；轻点重试。</string>
+    <string name="lossless_renewed_until">%1$s 已续期至 %2$s</string>
+    <string name="lossless_renew_failed">无法续期 %1$s。请在插件中手动续期。</string>
+    <string name="lossless_channel">无损会话</string>
 </resources>

@@ -1426,4 +1426,11 @@
     <string name="history_remove_failed">履歴から削除できませんでした</string>
     <string name="lock_screen_art_transition">アートワークの切り替え</string>
     <string name="lock_screen_art_transition_subtitle">Automix で曲をつなぐ間、ジャケットを次の曲のものへなめらかに切り替えます。</string>
+    <string name="all_cache_cleared">すべてのキャッシュを削除しました</string>
+    <string name="lossless_expiring_title">%1$s のセッションがまもなく終了</string>
+    <string name="lossless_expiring_body">あと %1$d 分で終了します。タップして更新。</string>
+    <string name="lossless_renew_failed_body">自動で更新できませんでした。あと %1$d 分で終了します。タップして再試行。</string>
+    <string name="lossless_renewed_until">%1$s を %2$s まで更新しました</string>
+    <string name="lossless_renew_failed">%1$s を更新できませんでした。アドオンから自分で更新してください。</string>
+    <string name="lossless_channel">ロスレスのセッション</string>
 </resources>

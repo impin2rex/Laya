@@ -1425,4 +1425,11 @@
     <string name="history_remove_failed">Tidak dapat menghapus dari riwayat</string>
     <string name="lock_screen_art_transition">Transisi sampul</string>
     <string name="lock_screen_art_transition_subtitle">Memadukan sampul ke sampul lagu berikutnya saat Automix mencampurnya.</string>
+    <string name="all_cache_cleared">Semua cache dibersihkan</string>
+    <string name="lossless_expiring_title">Sesi %1$s segera berakhir</string>
+    <string name="lossless_expiring_body">Berakhir dalam %1$d mnt. Ketuk untuk memperpanjang.</string>
+    <string name="lossless_renew_failed_body">Tidak bisa diperpanjang otomatis. Berakhir dalam %1$d mnt; ketuk untuk mencoba lagi.</string>
+    <string name="lossless_renewed_until">%1$s diperpanjang hingga %2$s</string>
+    <string name="lossless_renew_failed">Tidak bisa memperpanjang %1$s. Perpanjang sendiri dari addon.</string>
+    <string name="lossless_channel">Sesi lossless</string>
 </resources>

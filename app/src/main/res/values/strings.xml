@@ -1300,4 +1300,11 @@
     <string name="history_remove_failed">Couldn\'t remove from history</string>
     <string name="lock_screen_art_transition">Artwork transition</string>
     <string name="lock_screen_art_transition_subtitle">Blends the cover into the next song\'s while Automix mixes them.</string>
+    <string name="all_cache_cleared">All cache cleared</string>
+    <string name="lossless_expiring_title">%1$s session ending soon</string>
+    <string name="lossless_expiring_body">Ends in %1$d min. Tap to renew it.</string>
+    <string name="lossless_renew_failed_body">Couldn’t renew it automatically. It ends in %1$d min; tap to try again.</string>
+    <string name="lossless_renewed_until">%1$s renewed until %2$s</string>
+    <string name="lossless_renew_failed">Couldn’t renew %1$s. Renew it yourself from the addon.</string>
+    <string name="lossless_channel">Lossless sessions</string>
 </resources>

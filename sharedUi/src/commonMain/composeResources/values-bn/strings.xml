@@ -899,7 +899,6 @@
     <string name="settings_home_speed_dial">স্পিড ডায়াল</string>
     <string name="settings_home_speed_dial_subtitle">আপনার পিন ও প্রিয়গুলো হোমের উপরে টাইল হিসেবে</string>
     <string name="settings_home_artist_dial">শিল্পী পাতা</string>
-    <string name="settings_home_mixes_dial">মিক্স পাতা</string>
     <string name="settings_home_lucky_tile">এলোমেলো টাইল</string>
     <string name="settings_home_dial_source">টাইলের উৎস</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -915,7 +914,6 @@
     <string name="settings_home_restore_tiles">সরানো টাইল ফিরিয়ে আনুন (%1$d)</string>
     <string name="home_chip_all">সব</string>
     <string name="home_speed_dial">স্পিড ডায়াল</string>
-    <string name="home_mixes_dial">মিক্স</string>
     <string name="home_history_tile">ইতিহাস</string>
     <string name="home_dial_new">নতুন</string>
     <string name="home_dial_remove">ডায়াল থেকে সরান</string>
@@ -940,4 +938,16 @@
     <string name="color_background_subtitle">প্রতিটি পেজের পেছনে বাজতে থাকা গানের হালকা রঙ</string>
     <string name="splash_screen">স্প্ল্যাশ স্ক্রিন</string>
     <string name="splash_screen_subtitle">অ্যাপ চালু হলে অ্যানিমেটেড লোগো</string>
+    <string name="clear_all_cache">সব ক্যাশ মুছুন</string>
+    <string name="clear_all_cache_subtitle">ক্যাশ করা গান, ভিডিও, ছবি ও অস্থায়ী ফাইলের জায়গা খালি করে</string>
+    <string name="clear_all_cache_title">সব ক্যাশ মুছবেন?</string>
+    <string name="clear_all_cache_warning">ক্যাশ করা গান, ভিডিও ক্লিপ, ছবি ও অস্থায়ী ফাইল মুছে যাবে। ডাউনলোড থাকবে। পরের বার চালালে সব আবার স্ট্রিম হবে।</string>
+    <string name="all_cache_cleared">সব ক্যাশ মুছে ফেলা হয়েছে</string>
+    <string name="song_cache_cleared">গানের ক্যাশ মুছে ফেলা হয়েছে</string>
+    <string name="image_cache_cleared">ছবির ক্যাশ মুছে ফেলা হয়েছে</string>
+    <string name="lossless_expiring_title">%1$s সেশন শীঘ্রই শেষ হবে</string>
+    <string name="lossless_expiring_body">%1$d মিনিটে শেষ হবে। নবায়ন করতে ট্যাপ করুন।</string>
+    <string name="lossless_renew_failed_body">নিজে থেকে নবায়ন করা যায়নি। %1$d মিনিটে শেষ হবে; আবার চেষ্টা করতে ট্যাপ করুন।</string>
+    <string name="lossless_renewed_until">%1$s %2$s পর্যন্ত নবায়ন হয়েছে</string>
+    <string name="lossless_renew_failed">%1$s নবায়ন করা যায়নি। অ্যাডঅন থেকে নিজে নবায়ন করুন।</string>
 </resources>

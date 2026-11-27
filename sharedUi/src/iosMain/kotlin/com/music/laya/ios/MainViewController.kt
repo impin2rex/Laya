@@ -40,17 +40,27 @@ import com.music.laya.data.settings.AppSettingsHost
 import com.russhwolf.settings.NSUserDefaultsSettings
 import kotlinx.coroutines.launch
 
+private const val IMAGE_CACHE_BYTES = 100L * 1024 * 1024
+
 /** Entry point called from Swift: hosts the UI with the Swift-side AVFoundation [engine]; [onStatusBarLight] tells the host VC which status bar icon colour the screen needs. */
 @OptIn(ExperimentalComposeUiApi::class)
 fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: (Boolean) -> Unit): UIViewController {
     // Not NSLog: Kotlin strings passed through its C varargs crash (EXC_BAD_ACCESS).
     DebugLog.sink = DebugLog.Sink { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
     TrackLog.echo = { level, tag, message, error -> println("$tag/$level: $message ${error ?: ""}") }
-    SingletonImageLoader.setSafe { ctx -> ImageLoader.Builder(ctx).components { add(KtorNetworkFetcherFactory()); add(SvgDecoder.Factory()) }.build() }
     val dir = NSFileManager.defaultManager
         .URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }
-    LyricsTranslation.cacheDir = NSFileManager.defaultManager
+    val caches = NSFileManager.defaultManager
         .URLsForDirectory(NSCachesDirectory, NSUserDomainMask).first().let { (it as platform.Foundation.NSURL).path!! }.toPath()
+    // Android's image cache, sized as Android's. Coil's own default sat in tmp/ at up to 2% of the disk.
+    SingletonImageLoader.setSafe { ctx ->
+        ImageLoader.Builder(ctx).components { add(KtorNetworkFetcherFactory()); add(SvgDecoder.Factory()) }
+            .diskCache { coil3.disk.DiskCache.Builder().directory(caches / "image_cache").maxSizeBytes(IMAGE_CACHE_BYTES).build() }
+            .build()
+    }
+    runCatching { okio.FileSystem.SYSTEM.deleteRecursively(okio.FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "coil3_disk_cache") }
+    LyricsTranslation.cacheDir = caches
+    IosSongCache.install(engine, kotlinx.coroutines.MainScope())
     com.music.laya.data.aifilter.AiSongs.warmUp()
     InnerTubeXResolver.init(
         filesDir = dir.toPath(),
@@ -83,11 +93,12 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
     watchIosConnection()
     IosParty.install()
     com.music.laya.ui.screens.PartyPlatform.host = IosPartyPlatform
-    com.music.laya.data.sources.lossless.LosslessStore.read = { Keychain.get(it) }
-    com.music.laya.data.sources.lossless.LosslessStore.write = { key, value -> Keychain.set(key, value) }
+    IosLosslessBackground.startSessions()
     // AVPlayer has no DASH engine; DashToHls rewrites the manifest into an HLS playlist of the
     // same segments, which it reads natively. Null here (encrypted/multi-period/unrecognised
     // manifest) falls back to Tidal's own "can't open this" skip.
+    // One per Tidal track played, so cleared each launch as Android does; nothing outlives the session that wrote it.
+    runCatching { okio.FileSystem.SYSTEM.deleteRecursively(dir.toPath() / "lossless-manifests") }
     com.music.laya.data.sources.lossless.LosslessStore.manifestFile = { name, mpd ->
         com.music.laya.data.sources.lossless.DashToHls.convert(mpd)?.let { playlist ->
             val manifestsDir = dir.toPath() / "lossless-manifests"
@@ -97,8 +108,6 @@ fun MainViewController(engine: AudioEngine, cast: CastNative, onStatusBarLight: 
             "file://$file"
         }
     }
-    // A session that ran out while the app was closed is reported (and its source switched off) like any other.
-    com.music.laya.data.sources.lossless.LosslessProvider.all.forEach { it.session.reload() }
     SourceRegistry.init(IosSourcesHost)
     com.music.laya.data.sources.LosslessSource.watchExpiry(kotlinx.coroutines.MainScope()) { provider ->
         IosPlayerHost.showMessage(org.jetbrains.compose.resources.getString(Res.string.lossless_verify_expired_notice, provider.label))

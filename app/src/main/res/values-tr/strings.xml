@@ -1405,4 +1405,11 @@
     <string name="history_remove_failed">Geçmişten kaldırılamadı</string>
     <string name="lock_screen_art_transition">Kapak geçişi</string>
     <string name="lock_screen_art_transition_subtitle">Automix şarkıları karıştırırken kapağı sonraki şarkınınkine geçirir.</string>
+    <string name="all_cache_cleared">Tüm önbellek temizlendi</string>
+    <string name="lossless_expiring_title">%1$s oturumu yakında bitiyor</string>
+    <string name="lossless_expiring_body">%1$d dk içinde bitecek. Yenilemek için dokunun.</string>
+    <string name="lossless_renew_failed_body">Otomatik yenilenemedi. %1$d dk içinde bitecek; tekrar denemek için dokunun.</string>
+    <string name="lossless_renewed_until">%1$s, %2$s saatine kadar yenilendi</string>
+    <string name="lossless_renew_failed">%1$s yenilenemedi. Eklentiden kendiniz yenileyin.</string>
+    <string name="lossless_channel">Kayıpsız oturumlar</string>
 </resources>

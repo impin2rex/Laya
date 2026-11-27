@@ -36,6 +36,8 @@ interface SettingsHost {
     /** false hides "Export compatible downloads" (the Music/Laya folder), which only Android has. */
     val hasExportDownloads: Boolean get() = true
     val hasSongCache: Boolean get() = false
+    /** false hides "Show cache folder": only Android lists cached songs as a library folder. */
+    val hasCacheFolder: Boolean get() = false
     val hasBackgroundService: Boolean get() = false
     /**
      * false hides the rows that only drive Android's playback service: streaming quality ceilings,
@@ -64,6 +66,8 @@ interface SettingsHost {
 
     fun clearSongCache() {}
     fun clearImageCache() {}
+    /** Song, video and image caches and leftover temporary files: everything the app can fetch again. */
+    fun clearAllCache() {}
 }
 
 private val NO_PARTY = MutableStateFlow(PartyInfo(null, 0))

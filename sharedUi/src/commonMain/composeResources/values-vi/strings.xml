@@ -897,7 +897,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Mục đã ghim và yêu thích dạng ô ở đầu Trang chủ</string>
     <string name="settings_home_artist_dial">Trang nghệ sĩ</string>
-    <string name="settings_home_mixes_dial">Trang mix</string>
     <string name="settings_home_lucky_tile">Ô ngẫu nhiên</string>
     <string name="settings_home_dial_source">Nguồn ô</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -913,7 +912,6 @@
     <string name="settings_home_restore_tiles">Khôi phục ô đã xóa (%1$d)</string>
     <string name="home_chip_all">Tất cả</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Bản phối</string>
     <string name="home_history_tile">Lịch sử</string>
     <string name="home_dial_new">Mới</string>
     <string name="home_dial_remove">Xóa khỏi dial</string>
@@ -938,4 +936,16 @@
     <string name="color_background_subtitle">Màu dịu từ bài hát đang phát phía sau mọi trang</string>
     <string name="splash_screen">Màn hình khởi động</string>
     <string name="splash_screen_subtitle">Logo động khi mở ứng dụng</string>
+    <string name="clear_all_cache">Xóa toàn bộ bộ nhớ đệm</string>
+    <string name="clear_all_cache_subtitle">Giải phóng dung lượng của bài hát, video, ảnh bìa và tệp tạm trong bộ nhớ đệm</string>
+    <string name="clear_all_cache_title">Xóa toàn bộ bộ nhớ đệm?</string>
+    <string name="clear_all_cache_warning">Bài hát, đoạn video, ảnh bìa và tệp tạm trong bộ nhớ đệm sẽ bị xóa. Nội dung đã tải xuống vẫn được giữ. Mọi thứ sẽ được phát trực tuyến lại vào lần phát tiếp theo.</string>
+    <string name="all_cache_cleared">Đã xóa toàn bộ bộ nhớ đệm</string>
+    <string name="song_cache_cleared">Đã xóa bộ nhớ đệm bài hát</string>
+    <string name="image_cache_cleared">Đã xóa bộ nhớ đệm hình ảnh</string>
+    <string name="lossless_expiring_title">Phiên %1$s sắp hết hạn</string>
+    <string name="lossless_expiring_body">Hết hạn sau %1$d phút. Nhấn để gia hạn.</string>
+    <string name="lossless_renew_failed_body">Không thể tự gia hạn. Hết hạn sau %1$d phút; nhấn để thử lại.</string>
+    <string name="lossless_renewed_until">Đã gia hạn %1$s đến %2$s</string>
+    <string name="lossless_renew_failed">Không thể gia hạn %1$s. Hãy tự gia hạn trong tiện ích.</string>
 </resources>

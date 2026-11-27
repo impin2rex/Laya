@@ -905,7 +905,6 @@
     <string name="settings_home_speed_dial">स्पीड डायल</string>
     <string name="settings_home_speed_dial_subtitle">आपके पिन और पसंदीदा, होम के ऊपर टाइल के रूप में</string>
     <string name="settings_home_artist_dial">कलाकार पेज</string>
-    <string name="settings_home_mixes_dial">मिक्स पेज</string>
     <string name="settings_home_lucky_tile">रैंडम टाइल</string>
     <string name="settings_home_dial_source">टाइल का स्रोत</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -921,7 +920,6 @@
     <string name="settings_home_restore_tiles">हटाई गई टाइलें वापस लाएँ (%1$d)</string>
     <string name="home_chip_all">सभी</string>
     <string name="home_speed_dial">स्पीड डायल</string>
-    <string name="home_mixes_dial">मिक्स</string>
     <string name="home_history_tile">इतिहास</string>
     <string name="home_dial_new">नया</string>
     <string name="home_dial_remove">डायल से हटाएं</string>
@@ -946,4 +944,16 @@
     <string name="color_background_subtitle">हर पेज के पीछे चल रहे गाने का हल्का रंग</string>
     <string name="splash_screen">स्प्लैश स्क्रीन</string>
     <string name="splash_screen_subtitle">ऐप शुरू होने पर एनिमेटेड लोगो</string>
+    <string name="clear_all_cache">सारा कैश साफ़ करें</string>
+    <string name="clear_all_cache_subtitle">कैश किए गए गानों, वीडियो, आर्टवर्क और अस्थायी फ़ाइलों की जगह खाली करता है</string>
+    <string name="clear_all_cache_title">सारा कैश साफ़ करें?</string>
+    <string name="clear_all_cache_warning">कैश किए गए गाने, वीडियो क्लिप, आर्टवर्क और अस्थायी फ़ाइलें हटा दी जाएँगी। डाउनलोड बने रहेंगे। अगली बार चलाने पर सब फिर से स्ट्रीम होगा।</string>
+    <string name="all_cache_cleared">सारा कैश साफ़ किया गया</string>
+    <string name="song_cache_cleared">गाना कैश साफ़ किया गया</string>
+    <string name="image_cache_cleared">इमेज कैश साफ़ किया गया</string>
+    <string name="lossless_expiring_title">%1$s सत्र जल्द खत्म होगा</string>
+    <string name="lossless_expiring_body">%1$d मिनट में खत्म होगा। नवीनीकरण के लिए टैप करें।</string>
+    <string name="lossless_renew_failed_body">अपने आप नवीनीकरण नहीं हो सका। %1$d मिनट में खत्म होगा; फिर कोशिश करने के लिए टैप करें।</string>
+    <string name="lossless_renewed_until">%1$s का %2$s तक नवीनीकरण हुआ</string>
+    <string name="lossless_renew_failed">%1$s का नवीनीकरण नहीं हो सका। ऐडऑन से खुद नवीनीकरण करें।</string>
 </resources>

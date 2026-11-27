@@ -890,7 +890,6 @@
     <string name="settings_home_speed_dial">Speed Dial</string>
     <string name="settings_home_speed_dial_subtitle">Tus fijados y favoritos como mosaicos arriba en Inicio</string>
     <string name="settings_home_artist_dial">Página de artistas</string>
-    <string name="settings_home_mixes_dial">Página de mixes</string>
     <string name="settings_home_lucky_tile">Mosaico aleatorio</string>
     <string name="settings_home_dial_source">Origen de los mosaicos</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -906,7 +905,6 @@
     <string name="settings_home_restore_tiles">Restaurar mosaicos quitados (%1$d)</string>
     <string name="home_chip_all">Todo</string>
     <string name="home_speed_dial">Speed Dial</string>
-    <string name="home_mixes_dial">Mixes</string>
     <string name="home_history_tile">Historial</string>
     <string name="home_dial_new">Nuevo</string>
     <string name="home_dial_remove">Quitar del dial</string>

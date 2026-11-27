@@ -897,7 +897,6 @@
     <string name="settings_home_speed_dial">快速拨号</string>
     <string name="settings_home_speed_dial_subtitle">将置顶和收藏以磁贴形式显示在首页顶部</string>
     <string name="settings_home_artist_dial">艺人页面</string>
-    <string name="settings_home_mixes_dial">合辑页面</string>
     <string name="settings_home_lucky_tile">随机磁贴</string>
     <string name="settings_home_dial_source">磁贴来源</string>
     <string name="settings_home_dial_source_youtube">YouTube Music</string>
@@ -913,7 +912,6 @@
     <string name="settings_home_restore_tiles">恢复已移除的磁贴（%1$d）</string>
     <string name="home_chip_all">全部</string>
     <string name="home_speed_dial">快速拨号</string>
-    <string name="home_mixes_dial">合辑</string>
     <string name="home_history_tile">历史记录</string>
     <string name="home_dial_new">新</string>
     <string name="home_dial_remove">从快速拨号移除</string>
@@ -938,4 +936,16 @@
     <string name="color_background_subtitle">以正在播放歌曲的柔和色彩作为每个页面的背景</string>
     <string name="splash_screen">启动画面</string>
     <string name="splash_screen_subtitle">应用启动时的动画标志</string>
+    <string name="clear_all_cache">清除全部缓存</string>
+    <string name="clear_all_cache_subtitle">释放缓存的歌曲、视频、封面和临时文件所占用的空间</string>
+    <string name="clear_all_cache_title">清除全部缓存？</string>
+    <string name="clear_all_cache_warning">缓存的歌曲、视频片段、封面和临时文件将被删除。下载内容会保留。下次播放时会重新在线播放。</string>
+    <string name="all_cache_cleared">已清除全部缓存</string>
+    <string name="song_cache_cleared">歌曲缓存已清除</string>
+    <string name="image_cache_cleared">图片缓存已清除</string>
+    <string name="lossless_expiring_title">%1$s 会话即将到期</string>
+    <string name="lossless_expiring_body">%1$d 分钟后到期。轻点以续期。</string>
+    <string name="lossless_renew_failed_body">无法自动续期。%1$d 分钟后到期；轻点重试。</string>
+    <string name="lossless_renewed_until">%1$s 已续期至 %2$s</string>
+    <string name="lossless_renew_failed">无法续期 %1$s。请在插件中手动续期。</string>
 </resources>

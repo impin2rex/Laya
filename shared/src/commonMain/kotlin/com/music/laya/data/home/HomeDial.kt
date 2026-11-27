@@ -1,5 +1,5 @@
 /*
- * The Home dials (Speed Dial, Mixes, Artists): ported from Melo (github.com/aarush-io/melo,
+ * The Home dials (Speed Dial, Artists): ported from Melo (github.com/aarush-io/melo,
  * GPL-3.0), reworked for Laya's YouTube Music shelves and on-device listening stats.
  */
 package com.music.laya.data.home
@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlin.random.Random
 import kotlin.time.Clock
 
 /** What a dial tile opens. */
@@ -117,50 +116,9 @@ object SpeedDial {
     }
 }
 
-/**
- * The Mixes page: mixes dealt at random once a round, one of a kind, from Home's mixes,
- * "Mixed for you" and the mood stations. Sleep mixes only at night.
- */
-object MixesDial {
-    /** One page at its largest (3 × 4). */
-    const val SIZE = 12
-
-    fun isSleepMix(item: ShelfItem) = item.title.contains("sleep", ignoreCase = true)
-
-    /** 9:30pm to 4:00am, by the device's clock. */
-    fun isSleepTime(minuteOfDay: Int): Boolean = minuteOfDay >= 21 * 60 + 30 || minuteOfDay <= 4 * 60
-
-    /** A YouTube Music mix: the account's own (`RDTMAK…`) or a playlist that calls itself one. */
-    fun isMix(item: ShelfItem): Boolean {
-        val id = item.browseId?.removePrefix("VL") ?: return false
-        if (id.startsWith("RDTMAK")) return true
-        return (id.startsWith("PL") || id.startsWith("RD")) && item.title.contains("mix", ignoreCase = true)
-    }
-
-    /** "Chill Mix 01" and "Chill Mix 02" are one kind, as are "My Mix 1" and "My Mix 4". */
-    fun mixType(title: String): String {
-        val words = title.lowercase().split(NOT_A_WORD).filter { it.isNotEmpty() }
-        return words.dropLastWhile { word -> word.all(Char::isDigit) }.joinToString("")
-            .ifEmpty { words.joinToString("").ifEmpty { title.trim().lowercase() } }
-    }
-    private val NOT_A_WORD = Regex("[^\\p{L}\\p{N}]+")
-
-    fun deal(
-        home: List<HomeShelf>,
-        mixedForYou: List<ShelfItem>,
-        stations: List<ShelfItem>,
-        hidden: Set<String>,
-        sleepTime: Boolean,
-        random: Random = Random.Default,
-    ): List<ShelfItem> {
-        val pool = (home.flatMap { it.items }.filter(::isMix) + mixedForYou + stations)
-            .filter { it.dialKind == DialKind.PLAYLIST && it.dialId !in hidden && (sleepTime || !isSleepMix(it)) }
-            .distinctBy { it.dialId }
-            .shuffled(random)
-        val types = HashSet<String>()
-        return pool.filter { types.add(mixType(it.title)) }.take(SIZE)
-    }
-}
+/** The History tile's collage: the first four distinct covers of [played], newest first. */
+fun historyCovers(played: List<ShelfItem>): List<String> =
+    played.mapNotNull { it.thumbnailUrl?.takeIf(String::isNotBlank) }.distinct().take(4)
 
 /** The Artists page: the most played artists here, then the library's, then Home's. */
 object ArtistDial {
@@ -206,7 +164,6 @@ object HomeDialRounds {
     var roundStartedAt = 0L
         private set
     val speedDial = MutableStateFlow<DealtDial?>(null)
-    val mixes = MutableStateFlow<DealtDial?>(null)
 
     fun nextRound() {
         roundStartedAt = Clock.System.now().toEpochMilliseconds()
@@ -233,5 +190,4 @@ object HomeDialRounds {
     }
 
     const val SPEED_DIAL = "speed"
-    const val MIXES = "mixes"
 }

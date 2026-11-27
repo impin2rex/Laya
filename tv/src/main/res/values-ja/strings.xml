@@ -280,7 +280,6 @@
     <string name="tv_settings_home_speed_dial">スピードダイヤル</string>
     <string name="tv_settings_home_speed_dial_subtitle">ピン留めとお気に入りをホーム上部にタイルで表示</string>
     <string name="tv_settings_home_artist_dial">アーティストページ</string>
-    <string name="tv_settings_home_mixes_dial">ミックスページ</string>
     <string name="tv_settings_home_lucky_tile">ランダムタイル</string>
     <string name="tv_settings_home_dial_source">タイルのソース</string>
     <string name="tv_settings_home_dial_source_youtube">YouTube Music</string>
@@ -291,7 +290,6 @@
     <string name="tv_settings_home_dial_new_tags">新作をマーク</string>
     <string name="tv_settings_home_restore_tiles">削除したタイルを戻す（%1$d）</string>
     <string name="tv_home_speed_dial">スピードダイヤル</string>
-    <string name="tv_home_mixes_dial">ミックス</string>
     <string name="tv_home_dial_new">新着</string>
     <string name="tv_home_dial_pin">固定</string>
     <string name="tv_home_dial_remove">ダイヤルから削除</string>

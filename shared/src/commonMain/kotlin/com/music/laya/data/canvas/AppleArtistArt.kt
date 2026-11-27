@@ -12,6 +12,7 @@ package com.music.laya.data.canvas
  * [background] and [accent] are Apple's own colours for the photograph (as
  * ARGB), so the page can be tinted without decoding the image to find them.
  */
+@kotlinx.serialization.Serializable
 data class AppleArtistArt(
     val heroUrl: String,
     val logoUrl: String?,
