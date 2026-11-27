@@ -193,4 +193,10 @@
     </plurals>
     <string name="d_session_expired_banner">Sesja wygasła. Zaloguj się ponownie</string>
     <string name="d_session_expired_sign_in_again">Sesja wygasła · Zaloguj się ponownie</string>
+    <string name="direct_source_stream">Strumień prosto ze źródła</string>
+    <string name="direct_source_stream_subtitle">Odtwarzaj ze źródeł powyżej YouTube od pierwszej nuty, bez zmiany w trakcie utworu</string>
+    <string name="direct_source_stream_in_party">Wyłączone podczas imprezy Słuchajcie razem</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Dodatki</string>
+    <string name="search_addons_none">Brak włączonych dodatków. Dodaj jeden w Ustawienia → Źródła.</string>
 </resources>

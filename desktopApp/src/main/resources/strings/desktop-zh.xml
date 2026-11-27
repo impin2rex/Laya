@@ -187,4 +187,10 @@
     </plurals>
     <string name="d_session_expired_banner">你的会话已过期。请重新登录</string>
     <string name="d_session_expired_sign_in_again">会话已过期 · 重新登录</string>
+    <string name="direct_source_stream">直接从音源播放</string>
+    <string name="direct_source_stream_subtitle">从第一个音符起就用排在 YouTube 之上的音源播放，不在歌曲中途切换</string>
+    <string name="direct_source_stream_in_party">加入“一起听”派对时关闭</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">插件</string>
+    <string name="search_addons_none">未启用任何插件。请在“设置 → 音源”中添加。</string>
 </resources>

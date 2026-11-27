@@ -1438,4 +1438,7 @@
     <string name="lossless_renewed_until">ต่ออายุ %1$s ถึง %2$s แล้ว</string>
     <string name="lossless_renew_failed">ต่ออายุ %1$s ไม่สำเร็จ โปรดต่ออายุเองจากส่วนเสริม</string>
     <string name="lossless_channel">เซสชันแบบไม่สูญเสีย</string>
+    <string name="direct_source_stream">สตรีมตรงจากแหล่งที่มา</string>
+    <string name="direct_source_stream_subtitle">เล่นจากแหล่งที่อยู่เหนือ YouTube ตั้งแต่โน้ตแรก ไม่สลับกลางเพลง</string>
+    <string name="direct_source_stream_in_party">ปิดอยู่ขณะอยู่ในปาร์ตี้ฟังด้วยกัน</string>
 </resources>

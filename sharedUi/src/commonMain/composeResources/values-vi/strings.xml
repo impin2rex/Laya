@@ -948,4 +948,7 @@
     <string name="lossless_renew_failed_body">Không thể tự gia hạn. Hết hạn sau %1$d phút; nhấn để thử lại.</string>
     <string name="lossless_renewed_until">Đã gia hạn %1$s đến %2$s</string>
     <string name="lossless_renew_failed">Không thể gia hạn %1$s. Hãy tự gia hạn trong tiện ích.</string>
+    <string name="direct_source_stream">Phát trực tiếp từ nguồn</string>
+    <string name="direct_source_stream_subtitle">Phát từ các nguồn xếp trên YouTube ngay từ nốt đầu, không đổi giữa bài</string>
+    <string name="direct_source_stream_in_party">Tắt khi bạn đang trong phòng Nghe cùng nhau</string>
 </resources>

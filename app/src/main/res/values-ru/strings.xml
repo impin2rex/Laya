@@ -1487,4 +1487,7 @@
     <string name="lossless_renewed_until">%1$s продлён до %2$s</string>
     <string name="lossless_renew_failed">Не удалось продлить %1$s. Продлите вручную в дополнении.</string>
     <string name="lossless_channel">Сессии lossless</string>
+    <string name="direct_source_stream">Прямой поток из источника</string>
+    <string name="direct_source_stream_subtitle">Воспроизводить из источников выше YouTube с первой ноты, без смены посреди трека</string>
+    <string name="direct_source_stream_in_party">Выключено, пока вы в комнате «Слушать вместе»</string>
 </resources>

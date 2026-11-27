@@ -189,4 +189,10 @@
     </plurals>
     <string name="d_session_expired_banner">Votre session a expiré. Reconnectez-vous</string>
     <string name="d_session_expired_sign_in_again">Session expirée · Se reconnecter</string>
+    <string name="direct_source_stream">Lecture directe depuis la source</string>
+    <string name="direct_source_stream_subtitle">Lit depuis les sources au-dessus de YouTube dès la première note, sans changement en cours de morceau</string>
+    <string name="direct_source_stream_in_party">Désactivé pendant une session Écouter ensemble</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Modules complémentaires</string>
+    <string name="search_addons_none">Aucun addon n\'est activé. Ajoutez-en un dans Réglages → Sources.</string>
 </resources>

@@ -189,4 +189,10 @@
     </plurals>
     <string name="d_session_expired_banner">Tu sesión ha caducado. Vuelve a iniciar sesión</string>
     <string name="d_session_expired_sign_in_again">Sesión caducada · Volver a iniciar sesión</string>
+    <string name="direct_source_stream">Transmisión directa de la fuente</string>
+    <string name="direct_source_stream_subtitle">Reproduce desde las fuentes por encima de YouTube desde la primera nota, sin cambios a mitad de canción</string>
+    <string name="direct_source_stream_in_party">Desactivado mientras estés en una fiesta de Escuchar juntos</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Complementos</string>
+    <string name="search_addons_none">No hay addons activados. Añade uno en Ajustes → Fuentes.</string>
 </resources>

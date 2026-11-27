@@ -20,6 +20,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Turns a queued track into an openable stream, using whichever source can
@@ -278,6 +279,76 @@ object SourceResolver {
                 " at ${stream.format.summary}" + if (stream.belowRequest) " (below request)" else "",
         )
         return stream
+    }
+
+    /**
+     * The sources Direct Source Stream plays from: enabled, inside the
+     * connection's ceiling, and ranked above YouTube — in rank order. Ranked
+     * above, not merely enabled, because that is what keys a YouTube id's cache
+     * entry apart from YouTube's own Opus (`#alt`).
+     */
+    fun directSources(): List<MusicSource> {
+        val active = SourceRegistry.activeForPlayback()
+        val youtube = active.firstOrNull { it.kind == SourceKind.YOUTUBE } ?: return emptyList()
+        return rankedAbove(youtube.configId, active)
+    }
+
+    /**
+     * The higher-ranked copy of a YouTube-queued track, for Direct Source
+     * Stream — or null when none of [directSources] has it.
+     *
+     * [substituteForYouTube] without the race, held to the upgrade path's bar
+     * up front: this answer plays from the first note with no audition behind
+     * it, so the runtime has to agree (when one is known) and an artist has to
+     * be shared, or a same-titled different song would play.
+     *
+     * @param rejects refuses an answer that can't be the recording (a preview
+     *   under a full-length row); the other sources' answers are still weighed.
+     */
+    suspend fun directStream(
+        target: TrackMatcher.Target,
+        rejects: suspend (SourceStream) -> Boolean = { false },
+    ): DirectAnswer {
+        if (target.title.isBlank() || target.isVideo) return DirectAnswer(null, errored = false)
+        val sources = directSources()
+        if (sources.isEmpty()) return DirectAnswer(null, errored = false)
+        val failures = SourceFailures()
+        val request = requestForNow()
+        var everyoneAnswered = false
+        // In the listener's rank order, not the order they answer in: a quick JioSaavn 320 must
+        // not end the search while a Tidal or Qobuz ranked above it is still looking — taking the
+        // first answer did exactly that, and the lossless copy was cancelled mid-search. Each is
+        // waited on in turn for up to [DIRECT_BUDGET_MS]; past that the best-ranked answer already
+        // in hand plays rather than YouTube.
+        val found = coroutineScope {
+            val running = sources.map { source ->
+                async(failures) {
+                    matchAndStream(
+                        source,
+                        target,
+                        request,
+                        strictLength = target.durationSec != null,
+                        requireSharedArtist = target.artist.isNotBlank(),
+                    )?.takeUnless { rejects(it) }?.let { source to it }
+                }
+            }
+            try {
+                withTimeoutOrNull(DIRECT_BUDGET_MS) {
+                    running.firstNotNullOfOrNull { it.await() }.also { everyoneAnswered = it == null }
+                } ?: running.firstNotNullOfOrNull { if (it.isCompleted && !it.isCancelled) it.await() else null }
+            } finally {
+                running.forEach { it.cancel() }
+            }
+        }
+        // A source still searching when the budget ran out may have it: not a clean miss.
+        val errored = failures.any || (found == null && !everyoneAnswered)
+        val (source, stream) = found ?: return DirectAnswer(null, errored = errored)
+        TrackLog.d(
+            TAG,
+            "direct: '${target.title}' from ${source.displayName} at ${stream.format.summary}" +
+                if (stream.belowRequest) " (below request)" else "",
+        )
+        return DirectAnswer(stream, errored = failures.any)
     }
 
     /**
@@ -912,7 +983,7 @@ object SourceResolver {
         strictLength: Boolean = false,
         requireSharedArtist: Boolean = false,
         late: CompletableDeferred<SourceStream?>? = null,
-        accept: (MusicSource, SourceStream) -> Boolean = { _, _ -> true },
+        accept: suspend (MusicSource, SourceStream) -> Boolean = { _, _ -> true },
     ): Pair<MusicSource, SourceStream>? {
         // The searches run under their own job rather than this call's, so the
         // ones still going when a lossy answer is taken can outlive it — see
@@ -992,7 +1063,7 @@ object SourceResolver {
     /** The first of [running] to answer lossless (or Atmos), or null once none has. */
     private suspend fun firstLossless(
         running: MutableList<Deferred<Pair<MusicSource, SourceStream?>>>,
-        accept: (MusicSource, SourceStream) -> Boolean,
+        accept: suspend (MusicSource, SourceStream) -> Boolean,
     ): SourceStream? {
         while (running.isNotEmpty()) {
             val done = select { running.forEach { candidate -> candidate.onAwait { candidate } } }
@@ -1279,8 +1350,24 @@ object SourceResolver {
         throw e
     } catch (e: Exception) {
         TrackLog.w(TAG, "${source.displayName} failed: ${e::class.simpleName}: ${e.message}")
+        currentCoroutineContext()[SourceFailures]?.any = true
         null
     }
+
+    /**
+     * Marks a search that a source *failed* rather than answered, so a caller
+     * can tell "nobody has this" from "somebody errored" — see [directStream].
+     * Rides in the coroutine context, which [bestAcross]'s searches inherit.
+     */
+    class SourceFailures : kotlin.coroutines.AbstractCoroutineContextElement(SourceFailures) {
+        companion object Key : kotlin.coroutines.CoroutineContext.Key<SourceFailures>
+
+        @kotlin.concurrent.Volatile
+        var any = false
+    }
+
+    /** [directStream]'s answer: the stream, or null with whether any source errored on the way. */
+    data class DirectAnswer(val stream: SourceStream?, val errored: Boolean)
 
     /**
      * How many answers per query are worth weighing.
@@ -1313,6 +1400,9 @@ object SourceResolver {
      * rounding a runtime differently and nothing else.
      */
     private const val UPGRADE_DRIFT_SEC = 2
+
+    /** How long a direct lookup waits on higher-ranked sources; inside the phone's 15s wait. */
+    private const val DIRECT_BUDGET_MS = 12_000L
 
     /**
      * How close two runtimes have to be to be the same cut of a song.

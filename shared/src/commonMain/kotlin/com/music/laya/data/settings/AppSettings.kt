@@ -709,6 +709,14 @@ object AppSettings {
     val homeSpeedDial = MutableStateFlow(true)
     /** Melo's colour background: a soft colour from the playing song's artwork behind every page. */
     val colorBackground = MutableStateFlow(true)
+
+    /**
+     * Direct Source Stream: a YouTube-queued track plays straight from a source ranked
+     * above YouTube (an addon, Tidal, Qobuz…) from its first note, rather than starting
+     * on YouTube and swapping up mid-song; and nothing is fetched for the next track
+     * until the playing one nears its end. Android only — see DirectSourceGate.
+     */
+    val directSourceStream = MutableStateFlow(false)
     /** The animated logo on a cold start. */
     val splashScreen = MutableStateFlow(true)
     /** Whether the Artists page sits below the Speed Dial. */
@@ -1077,6 +1085,7 @@ object AppSettings {
         pinnedPlaylists.value = readPinnedPlaylists()
         homeSpeedDial.value = prefs.getBoolean(KEY_HOME_SPEED_DIAL, true)
         colorBackground.value = prefs.getBoolean(KEY_COLOR_BACKGROUND, true)
+        directSourceStream.value = prefs.getBoolean(KEY_DIRECT_SOURCE_STREAM, false)
         splashScreen.value = prefs.getBoolean(KEY_SPLASH_SCREEN, true)
         homeArtistDial.value = prefs.getBoolean(KEY_HOME_ARTIST_DIAL, true)
         homeLuckyTile.value = prefs.getBoolean(KEY_HOME_LUCKY_TILE, true)
@@ -2061,6 +2070,7 @@ object AppSettings {
 
     fun setSplashScreen(value: Boolean) { splashScreen.value = value; prefs.edit().putBoolean(KEY_SPLASH_SCREEN, value).apply() }
     fun setColorBackground(value: Boolean) { colorBackground.value = value; prefs.edit().putBoolean(KEY_COLOR_BACKGROUND, value).apply() }
+    fun setDirectSourceStream(value: Boolean) { directSourceStream.value = value; prefs.edit().putBoolean(KEY_DIRECT_SOURCE_STREAM, value).apply() }
     fun setHomeSpeedDial(value: Boolean) { homeSpeedDial.value = value; prefs.edit().putBoolean(KEY_HOME_SPEED_DIAL, value).apply() }
     fun setHomeArtistDial(value: Boolean) { homeArtistDial.value = value; prefs.edit().putBoolean(KEY_HOME_ARTIST_DIAL, value).apply() }
     fun setHomeLuckyTile(value: Boolean) { homeLuckyTile.value = value; prefs.edit().putBoolean(KEY_HOME_LUCKY_TILE, value).apply() }
@@ -2303,6 +2313,7 @@ object AppSettings {
     private const val KEY_PINNED_PLAYLISTS = "pinned_playlists"
     private const val KEY_HOME_SPEED_DIAL = "home_speed_dial"
     private const val KEY_COLOR_BACKGROUND = "color_background"
+    private const val KEY_DIRECT_SOURCE_STREAM = "direct_source_stream"
     private const val KEY_SPLASH_SCREEN = "splash_screen"
     private const val KEY_HOME_ARTIST_DIAL = "home_artist_dial"
     private const val KEY_HOME_LUCKY_TILE = "home_lucky_tile"

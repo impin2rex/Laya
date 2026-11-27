@@ -189,4 +189,10 @@
     </plurals>
     <string name="d_session_expired_banner">Sua sessão expirou. Entre novamente</string>
     <string name="d_session_expired_sign_in_again">Sessão expirada · Entrar novamente</string>
+    <string name="direct_source_stream">Transmissão direta da fonte</string>
+    <string name="direct_source_stream_subtitle">Toca das fontes acima do YouTube desde a primeira nota, sem troca no meio da música</string>
+    <string name="direct_source_stream_in_party">Desativado enquanto você estiver numa festa Ouvir junto</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Complementos</string>
+    <string name="search_addons_none">Nenhum addon ativado. Adicione um em Configurações → Fontes.</string>
 </resources>

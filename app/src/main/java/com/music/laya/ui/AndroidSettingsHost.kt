@@ -118,6 +118,8 @@ object AndroidSettingsHost : SettingsHost {
         .map { PartyInfo(it.code, if (it.inParty) it.members.size else 0) }
         .stateIn(scope, SharingStarted.Eagerly, PartyInfo(null, 0))
 
+    override val hasDirectSourceStream: Boolean get() = true
+
     override val audioOutput: StateFlow<AudioOutputInfo?> = AudioOutputStatus.current
         .map(::outputInfo)
         .stateIn(scope, SharingStarted.Eagerly, outputInfo(AudioOutputStatus.current.value))

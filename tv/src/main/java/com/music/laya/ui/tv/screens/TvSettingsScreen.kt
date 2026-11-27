@@ -134,6 +134,8 @@ fun TvSettingsScreen(
     val reduceMotion by AppSettings.reduceAnimation.collectAsState()
     val systemFont by AppSettings.systemFont.collectAsState()
     val colorBackground by AppSettings.colorBackground.collectAsState()
+    val directSourceStream by AppSettings.directSourceStream.collectAsState()
+    val party by com.music.laya.data.listentogether.ListenTogether.state.collectAsState()
     val splashScreen by AppSettings.splashScreen.collectAsState()
     val reduceTransparency by AppSettings.reduceDynamicBlur.collectAsState()
     val homeSpeedDial by AppSettings.homeSpeedDial.collectAsState()
@@ -239,6 +241,18 @@ fun TvSettingsScreen(
                     value = stringResource(R.string.tv_sources_on, sourceConfigs.count { it.enabled }),
                     onFocused = { blurb = context.getString(R.string.tv_blurb_sources) },
                     onClick = { sheet = SettingsSheet.Sources },
+                )
+            }
+            item {
+                TvListRow(
+                    title = stringResource(R.string.direct_source_stream),
+                    value = onOff(directSourceStream && !party.inParty),
+                    onFocused = {
+                        blurb = context.getString(
+                            if (party.inParty) R.string.direct_source_stream_in_party else R.string.direct_source_stream_subtitle,
+                        )
+                    },
+                    onClick = { if (!party.inParty) AppSettings.setDirectSourceStream(!directSourceStream) },
                 )
             }
             item {

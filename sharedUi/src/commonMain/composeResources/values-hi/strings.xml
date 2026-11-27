@@ -956,4 +956,7 @@
     <string name="lossless_renew_failed_body">अपने आप नवीनीकरण नहीं हो सका। %1$d मिनट में खत्म होगा; फिर कोशिश करने के लिए टैप करें।</string>
     <string name="lossless_renewed_until">%1$s का %2$s तक नवीनीकरण हुआ</string>
     <string name="lossless_renew_failed">%1$s का नवीनीकरण नहीं हो सका। ऐडऑन से खुद नवीनीकरण करें।</string>
+    <string name="direct_source_stream">सीधे सोर्स से स्ट्रीम</string>
+    <string name="direct_source_stream_subtitle">पहले सुर से ही YouTube से ऊपर के सोर्स से चलाएं, गाने के बीच में बदलाव नहीं</string>
+    <string name="direct_source_stream_in_party">साथ में सुनें पार्टी में रहते समय बंद</string>
 </resources>

@@ -1927,7 +1927,10 @@ class DesktopPlaybackEngine(
         } else {
             duration - transitionSecondsFor(song) * 1_000L
         }
-        if (startMs - positionMs > ADDON_ARM_LEAD_MS) return
+        // Direct Source Stream waits up to 15s for the sources with no race behind it, so it arms
+        // with the phone's 25s window rather than the addon lead.
+        val lead = if (DesktopSourceRegistry.directActive()) DIRECT_ARM_LEAD_MS else ADDON_ARM_LEAD_MS
+        if (startMs - positionMs > lead) return
         // Whichever of this thread and a newer [prepareNext] gets there first owns it.
         if (!awaitingArm.compareAndSet(song, null)) return
         DesktopTrackLog.log(
@@ -2140,6 +2143,7 @@ class DesktopPlaybackEngine(
          * stream to open, and an incoming track that is not ready by the transition misses it.
          */
         private const val ADDON_ARM_LEAD_MS = 15_000L
+        private const val DIRECT_ARM_LEAD_MS = 25_000L
 
         /** How long a better copy waits for the blend into its track to finish: up to a minute. */
         private const val BLEND_WAIT_POLLS = 300

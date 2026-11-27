@@ -542,6 +542,20 @@ object AudioCache {
         origin == Origin.YOUTUBE.name || origin == Origin.JIOSAAVN.name
     }.getOrDefault(false)
 
+    /**
+     * Whether [key] already holds bytes of YouTube's own stream. Such an entry
+     * may only be finished by YouTube: [CacheDataSource] serves what is on disk
+     * without a resolve, so any other source answering where the bytes run out
+     * would stream a different file into the middle of a WebM.
+     */
+    fun heldByYouTube(key: String?): Boolean {
+        if (key == null || !::cache.isInitialized) return false
+        return runCatching {
+            cache.getCachedSpans(key).isNotEmpty() &&
+                cache.getContentMetadata(key).get(META_ORIGIN, null as String?) == Origin.YOUTUBE.name
+        }.getOrDefault(false)
+    }
+
     /** Whether every byte of the entry [key] is on disk. */
     private fun isComplete(key: String): Boolean = runCatching {
         val length = ContentMetadata.getContentLength(cache.getContentMetadata(key))
@@ -1105,6 +1119,37 @@ object AudioCache {
     private const val ALT_SUFFIX = "#alt"
 
     /**
+     * Direct Source Stream's half of [heldByYouTube]: whether this open skips
+     * the cache because the entry holds YouTube's Opus from an earlier play.
+     *
+     * [CacheDataSource] serves bytes on disk without asking the resolver, so the
+     * Opus would play in place of the source's copy and nothing would say so.
+     * Reading past the cache instead sends the open to the resolver, which
+     * plays the source; the YouTube copy is left untouched for when the setting
+     * is off (or offline). The source's bytes aren't cached for that track:
+     * writing them into an entry YouTube started would mix two files.
+     * A track pinned to YouTube ([StreamChoice] without a substitute) keeps
+     * reading its own entry.
+     */
+    private fun skipsCacheForDirect(uri: Uri): Boolean {
+        if (uri.scheme != "laya" || uri.authority != "watch") return false
+        val videoId = uri.getQueryParameter("v") ?: return false
+        // A rendition of its own (an upgrade, a revert), the watch's copy and
+        // Automix's Opus each have their own entry.
+        if (QualityUpgrade.cacheTag(uri) != null ||
+            uri.getQueryParameter(WATCH_READ_PARAM) != null ||
+            AutomixAnalysisSource.requestsYouTubeOpus(
+                uri.getQueryParameter(AutomixAnalysisSource.OPUS_QUERY_PARAMETER),
+            )
+        ) {
+            return false
+        }
+        if (!DirectSourceGate.isActive()) return false
+        if (StreamChoice.of(videoId) != null && !StreamChoice.isSubstitute(videoId)) return false
+        return heldByYouTube(cacheKeyOf(uri)) && !isOffline()
+    }
+
+    /**
      * Wraps [upstream] so everything played is written to disk on the way
      * through, and anything already there is served without a request.
      * Local file and content URIs bypass disk caching to prevent redundant writes.
@@ -1129,6 +1174,8 @@ object AudioCache {
                 // Its segments are plain https URLs and still cache under their own keys.
                 val manifestOpen = dataSpec.uri.getQueryParameter("manifest_reopen") != null
                 activeDs = if (scheme == "file" || scheme == "content" || manifestOpen) {
+                    upstreamDs
+                } else if (skipsCacheForDirect(dataSpec.uri)) {
                     upstreamDs
                 } else {
                     cacheDs
@@ -1327,7 +1374,15 @@ object AudioCache {
                 val warmed = if (existing != null) {
                     existing.takeIf { StreamChoice.isSubstitute(next) }
                 } else if (substitutable && target != null && !pinnedToYouTube) {
-                    runCatching { SourceResolver.prefetchSubstitute(target, patient = true) }
+                    runCatching {
+                        // Direct Source Stream's lookup is the one the player's
+                        // own resolve joins, held to its stricter match.
+                        if (DirectSourceGate.isActive()) {
+                            DirectSourceGate.lookup(next, target)
+                        } else {
+                            SourceResolver.prefetchSubstitute(target, patient = true)
+                        }
+                    }
                         .onFailure { TrackLog.d(TAG, "warm-up substitute failed for $next: ${it.message}", about = next) }
                         .getOrNull()
                         // Only if playback has not opened the track meanwhile: see
@@ -1349,7 +1404,11 @@ object AudioCache {
                 // Never a manifest's bytes: a progressive fetch would cache the
                 // XML as if it were audio, and DASH caches its own segments.
                 val cacheBytes = (!substitutable || warmed != null) && !pinnedToYouTube &&
-                    warmed?.let { StreamContainer.isManifest(it.url) } != true
+                    warmed?.let { StreamContainer.isManifest(it.url) } != true &&
+                    // Direct Source Stream plays a YouTube-filled entry past the
+                    // cache (see [skipsCacheForDirect]); a source's bytes written
+                    // after that head would mix two files.
+                    !(DirectSourceGate.isActive() && heldByYouTube(cacheKeyOf(Uri.parse("laya://watch?v=$next"))))
                 if (cacheBytes) {
                     launch(TrackLog.about(next)) {
                         delay(PREFETCH_DELAY_MS)

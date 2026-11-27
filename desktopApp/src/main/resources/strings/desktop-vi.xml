@@ -187,4 +187,10 @@
     </plurals>
     <string name="d_session_expired_banner">Phiên của bạn đã hết hạn. Hãy đăng nhập lại</string>
     <string name="d_session_expired_sign_in_again">Phiên đã hết hạn · Đăng nhập lại</string>
+    <string name="direct_source_stream">Phát trực tiếp từ nguồn</string>
+    <string name="direct_source_stream_subtitle">Phát từ các nguồn xếp trên YouTube ngay từ nốt đầu, không đổi giữa bài</string>
+    <string name="direct_source_stream_in_party">Tắt khi bạn đang trong phòng Nghe cùng nhau</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Addon</string>
+    <string name="search_addons_none">Chưa bật addon nào. Hãy thêm một addon trong Cài đặt → Nguồn.</string>
 </resources>

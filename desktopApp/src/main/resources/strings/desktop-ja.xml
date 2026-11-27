@@ -187,4 +187,10 @@
     </plurals>
     <string name="d_session_expired_banner">セッションの有効期限が切れました。もう一度ログインしてください</string>
     <string name="d_session_expired_sign_in_again">セッション切れ · もう一度ログイン</string>
+    <string name="direct_source_stream">ソースから直接ストリーミング</string>
+    <string name="direct_source_stream_subtitle">YouTube より上位のソースから最初の一音で再生し、曲の途中で切り替えません</string>
+    <string name="direct_source_stream_in_party">「一緒に聴く」パーティー中はオフ</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">アドオン</string>
+    <string name="search_addons_none">有効なアドオンがありません。設定 → ソースで追加してください。</string>
 </resources>

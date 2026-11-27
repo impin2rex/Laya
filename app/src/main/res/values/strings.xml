@@ -1307,4 +1307,7 @@
     <string name="lossless_renewed_until">%1$s renewed until %2$s</string>
     <string name="lossless_renew_failed">Couldn’t renew %1$s. Renew it yourself from the addon.</string>
     <string name="lossless_channel">Lossless sessions</string>
+    <string name="direct_source_stream">Direct Source Stream</string>
+    <string name="direct_source_stream_subtitle">Play from sources above YouTube from the first note, no mid-song swap</string>
+    <string name="direct_source_stream_in_party">Off while you\'re in a Listen Together party</string>
 </resources>

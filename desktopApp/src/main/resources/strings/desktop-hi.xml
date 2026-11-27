@@ -189,4 +189,10 @@
     </plurals>
     <string name="d_session_expired_banner">आपका सत्र समाप्त हो गया। फिर से साइन इन करें</string>
     <string name="d_session_expired_sign_in_again">सत्र समाप्त · फिर से साइन इन करें</string>
+    <string name="direct_source_stream">सीधे सोर्स से स्ट्रीम</string>
+    <string name="direct_source_stream_subtitle">पहले सुर से ही YouTube से ऊपर के सोर्स से चलाएं, गाने के बीच में बदलाव नहीं</string>
+    <string name="direct_source_stream_in_party">साथ में सुनें पार्टी में रहते समय बंद</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">ऐडऑन</string>
+    <string name="search_addons_none">कोई ऐडऑन चालू नहीं है। सेटिंग → स्रोत में जाकर एक जोड़ें।</string>
 </resources>

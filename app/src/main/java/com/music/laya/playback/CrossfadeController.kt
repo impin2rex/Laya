@@ -723,7 +723,19 @@ class CrossfadeController(
         if (!holdWanted && phase == Phase.IDLE) releaseHold()
     }
 
+    /**
+     * Where the standby starts opening the next track, in media ms, as the
+     * last idle tick planned it — or null when the track just runs to its end.
+     * Read by [DirectSourceGate]'s window, which opens the next track's resolve
+     * a fixed time before that rather than before the file end.
+     */
+    fun plannedTransitionFor(mediaId: String): Long? =
+        plannedTransition?.takeIf { it.first == mediaId }?.second
+
+    private var plannedTransition: Pair<String, Long>? = null
+
     private fun planAutoTransition(player: ExoPlayer) {
+        plannedTransition = null
         // Not while a version swap owns the standby player — see
         // [versionSwapActive]. Nothing to clean up on the way out unlike the
         // party case below: a version swap is a between-tracks affair on the
@@ -810,6 +822,7 @@ class CrossfadeController(
             beginSleepFadeOut(fade)
             return
         }
+        player.currentMediaItem?.let { plannedTransition = it.mediaId to duration - fade - ARM_LEAD_MS }
         holdAhead(player, duration)
         // Arm early: the standby has to open the incoming track and buffer to
         // its cue point, and that work has to be finished by the time the fade
@@ -965,6 +978,7 @@ class CrossfadeController(
         // starts that much earlier, from arming.
         val beatMs = (plan.beatSeconds * 1000).roundToLong()
         val rampMs = if (beatMs > 0L) rampStepsFor(plan.outgoingPlaybackRate) * beatMs else 0L
+        plannedTransition = currentItem.mediaId to transitionStartMs - ARM_LEAD_MS - rampMs
         if (remaining > ARM_LEAD_MS + rampMs) return
 
         begin(

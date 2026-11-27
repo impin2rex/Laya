@@ -189,4 +189,10 @@
     </plurals>
     <string name="d_session_expired_banner">La sessione è scaduta. Accedi di nuovo</string>
     <string name="d_session_expired_sign_in_again">Sessione scaduta · Accedi di nuovo</string>
+    <string name="direct_source_stream">Streaming diretto dalla fonte</string>
+    <string name="direct_source_stream_subtitle">Riproduci dalle fonti sopra YouTube dalla prima nota, senza cambi a metà brano</string>
+    <string name="direct_source_stream_in_party">Disattivato mentre sei in una sessione Ascoltare insieme</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Addon</string>
+    <string name="search_addons_none">Nessun addon attivo. Aggiungine uno in Impostazioni → Fonti.</string>
 </resources>

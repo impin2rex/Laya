@@ -189,4 +189,10 @@
     </plurals>
     <string name="d_session_expired_banner">Deine Sitzung ist abgelaufen. Melde dich erneut an</string>
     <string name="d_session_expired_sign_in_again">Sitzung abgelaufen · Erneut anmelden</string>
+    <string name="direct_source_stream">Direkt von der Quelle streamen</string>
+    <string name="direct_source_stream_subtitle">Ab dem ersten Ton von Quellen über YouTube abspielen, ohne Wechsel mitten im Song</string>
+    <string name="direct_source_stream_in_party">Aus, solange du in einer „Gemeinsam hören“-Party bist</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Add-ons</string>
+    <string name="search_addons_none">Es sind keine Addons aktiviert. Füge eines unter Einstellungen → Quellen hinzu.</string>
 </resources>

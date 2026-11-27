@@ -35,6 +35,8 @@ interface SettingsHost {
     val hasDownloads: Boolean get() = false
     /** false hides "Export compatible downloads" (the Music/Laya folder), which only Android has. */
     val hasExportDownloads: Boolean get() = true
+    /** Whether this platform's player implements Direct Source Stream (Android only). */
+    val hasDirectSourceStream: Boolean get() = false
     val hasSongCache: Boolean get() = false
     /** false hides "Show cache folder": only Android lists cached songs as a library folder. */
     val hasCacheFolder: Boolean get() = false

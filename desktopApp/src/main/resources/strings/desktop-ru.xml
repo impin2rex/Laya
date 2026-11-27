@@ -193,4 +193,10 @@
     </plurals>
     <string name="d_session_expired_banner">Сеанс истёк. Войдите снова</string>
     <string name="d_session_expired_sign_in_again">Сеанс истёк · Войти снова</string>
+    <string name="direct_source_stream">Прямой поток из источника</string>
+    <string name="direct_source_stream_subtitle">Воспроизводить из источников выше YouTube с первой ноты, без смены посреди трека</string>
+    <string name="direct_source_stream_in_party">Выключено, пока вы в комнате «Слушать вместе»</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Аддоны</string>
+    <string name="search_addons_none">Нет включённых аддонов. Добавьте аддон в Настройки → Источники.</string>
 </resources>

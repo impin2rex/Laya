@@ -1457,4 +1457,7 @@
     <string name="lossless_renewed_until">%1$s חודש עד %2$s</string>
     <string name="lossless_renew_failed">לא ניתן היה לחדש את %1$s. חדשו בעצמכם מהתוסף.</string>
     <string name="lossless_channel">סשנים ללא אובדן</string>
+    <string name="direct_source_stream">הזרמה ישירה מהמקור</string>
+    <string name="direct_source_stream_subtitle">ניגון ממקורות שמעל YouTube מהצליל הראשון, בלי החלפה באמצע השיר</string>
+    <string name="direct_source_stream_in_party">כבוי בזמן שאתה במסיבת להאזין ביחד</string>
 </resources>

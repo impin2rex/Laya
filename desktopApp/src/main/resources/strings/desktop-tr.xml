@@ -189,4 +189,10 @@
     </plurals>
     <string name="d_session_expired_banner">Oturumunuzun süresi doldu. Yeniden oturum açın</string>
     <string name="d_session_expired_sign_in_again">Oturum süresi doldu · Yeniden oturum aç</string>
+    <string name="direct_source_stream">Doğrudan kaynaktan akış</string>
+    <string name="direct_source_stream_subtitle">YouTube\'un üstündeki kaynaklardan ilk notadan itibaren çal, şarkı ortasında geçiş yok</string>
+    <string name="direct_source_stream_in_party">Birlikte dinle partisindeyken kapalı</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Eklentiler</string>
+    <string name="search_addons_none">Etkin eklenti yok. Ayarlar → Kaynaklar bölümünden bir tane ekleyin.</string>
 </resources>

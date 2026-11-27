@@ -187,4 +187,10 @@
     </plurals>
     <string name="d_session_expired_banner">你的工作階段已過期。請重新登入</string>
     <string name="d_session_expired_sign_in_again">工作階段已過期 · 重新登入</string>
+    <string name="direct_source_stream">直接從音源播放</string>
+    <string name="direct_source_stream_subtitle">從第一個音符起就用排在 YouTube 之上的音源播放，不會在歌曲中途切換</string>
+    <string name="direct_source_stream_in_party">加入「一起聽」派對時關閉</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">外掛</string>
+    <string name="search_addons_none">尚未啟用任何外掛。請在「設定 → 來源」中新增。</string>
 </resources>

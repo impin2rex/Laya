@@ -948,4 +948,7 @@
     <string name="lossless_renew_failed_body">無法自動續期。%1$d 分鐘後到期；輕按重試。</string>
     <string name="lossless_renewed_until">%1$s 已續期至 %2$s</string>
     <string name="lossless_renew_failed">無法續期 %1$s。請在附加元件中自行續期。</string>
+    <string name="direct_source_stream">直接從音源播放</string>
+    <string name="direct_source_stream_subtitle">由第一個音符起就用排喺 YouTube 之上嘅音源播放，唔會喺歌曲中途切換</string>
+    <string name="direct_source_stream_in_party">加入「一起聽」派對時關閉</string>
 </resources>

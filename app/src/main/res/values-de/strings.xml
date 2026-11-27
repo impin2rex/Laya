@@ -1455,4 +1455,7 @@
     <string name="lossless_renewed_until">%1$s verlängert bis %2$s</string>
     <string name="lossless_renew_failed">%1$s konnte nicht verlängert werden. Verlängere es selbst im Add-on.</string>
     <string name="lossless_channel">Lossless-Sitzungen</string>
+    <string name="direct_source_stream">Direkt von der Quelle streamen</string>
+    <string name="direct_source_stream_subtitle">Ab dem ersten Ton von Quellen über YouTube abspielen, ohne Wechsel mitten im Song</string>
+    <string name="direct_source_stream_in_party">Aus, solange du in einer „Gemeinsam hören“-Party bist</string>
 </resources>

@@ -615,7 +615,10 @@ internal object DesktopAddonSource {
         refreshPolicy(config)
         val tracks = client(config)
             .search(query, DesktopAddonClient.TIER_LOSSLESS)
-            .getOrElse { return@runCatching emptyList() }
+            .getOrElse {
+                noteSourceFailure()
+                return@runCatching emptyList()
+            }
         tracks.asSequence()
             .filter { it.id.isNotBlank() && it.title.isNotBlank() }
             .take(limit)

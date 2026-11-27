@@ -86,7 +86,21 @@ fun TvSearchScreen(
     modifier: Modifier = Modifier,
 ) {
     val query by viewModel.query.collectAsState()
-    val resultsState by viewModel.results.collectAsState()
+    val youTubeResults by viewModel.results.collectAsState()
+    // The Addons tab answers from every enabled addon and Tidal/Qobuz instead of YouTube Music.
+    val searchSource by viewModel.searchSource.collectAsState()
+    val addonResults by viewModel.addonResults.collectAsState()
+    val searchingAddons = searchSource == com.music.laya.ui.SearchSource.ADDONS
+    val resultsState: UiState<List<SearchResult>>? = if (searchingAddons) {
+        when (val state = addonResults) {
+            null -> null
+            UiState.Loading -> UiState.Loading
+            is UiState.Error -> UiState.Error(state.message)
+            is UiState.Success -> UiState.Success(state.data.map { SearchResult.Track(it) })
+        }
+    } else {
+        youTubeResults
+    }
     val filter by viewModel.filter.collectAsState()
     val history by viewModel.searchHistory.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
@@ -219,7 +233,20 @@ fun TvSearchScreen(
                         }
                     }
                 }
-                if (resultsState != null) {
+                Spacer(modifier = Modifier.height(14.dp))
+                TvSegmented(
+                    options = listOf(
+                        stringResource(R.string.search_source_youtube),
+                        stringResource(R.string.search_source_addons),
+                    ),
+                    selectedIndex = if (searchingAddons) 1 else 0,
+                    onSelect = {
+                        viewModel.setSearchSource(
+                            if (it == 1) com.music.laya.ui.SearchSource.ADDONS else com.music.laya.ui.SearchSource.YOUTUBE,
+                        )
+                    },
+                )
+                if (resultsState != null && !searchingAddons) {
                     Spacer(modifier = Modifier.height(14.dp))
                     TvSegmented(
                         options = SearchFilters.map { it.label },
@@ -290,7 +317,7 @@ fun TvSearchScreen(
                         modifier = Modifier.height(256.dp),
                     )
                 }
-            } else if (filter == SearchFilter.ALL) {
+            } else if (filter == SearchFilter.ALL && !searchingAddons) {
                 groupedResults(deduped, playResult, openBrowse, onSongMenu = { menuSong = it })
             } else {
                 filteredResults(deduped, playResult, openBrowse, onSongMenu = { menuSong = it })

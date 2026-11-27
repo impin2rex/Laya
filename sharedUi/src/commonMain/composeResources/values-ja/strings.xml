@@ -948,4 +948,7 @@
     <string name="lossless_renew_failed_body">自動で更新できませんでした。あと %1$d 分で終了します。タップして再試行。</string>
     <string name="lossless_renewed_until">%1$s を %2$s まで更新しました</string>
     <string name="lossless_renew_failed">%1$s を更新できませんでした。アドオンから自分で更新してください。</string>
+    <string name="direct_source_stream">ソースから直接ストリーミング</string>
+    <string name="direct_source_stream_subtitle">YouTube より上位のソースから最初の一音で再生し、曲の途中で切り替えません</string>
+    <string name="direct_source_stream_in_party">「一緒に聴く」パーティー中はオフ</string>
 </resources>

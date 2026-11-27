@@ -119,6 +119,12 @@ class LosslessSource(
             LosslessProvider.all.forEach { provider ->
                 val owed = MutableStateFlow(false)
                 scope.launch { lossesOf(provider).collect { if (switchOff(provider)) owed.value = true } }
+                // Belt and braces for the report above, which fires once: a session already gone
+                // before this run (cleared in an earlier one, the switch left on) is never reported
+                // again, and the row sat "on" with nothing behind it. No session, no switch — at
+                // startup and whenever it drops. Silent: the notice stays with a real loss. Turning
+                // the switch on by hand doesn't change [verified], so it doesn't fight the verify flow.
+                scope.launch { provider.session.verified.collect { if (!it) switchOff(provider) } }
                 scope.launch {
                     while (true) {
                         provider.session.renewOrCheck()

@@ -303,8 +303,10 @@ fun SongRow(
      * It has to be the colour of the page the row is *on*, not the theme's
      * background — an album page tinted from its sleeve would otherwise drag a
      * black band across itself on every swipe.
+     * The reveal is clipped to the strip the row has slid off, so transparent
+     * (the default) is right for any page over the colour background.
      */
-    rowBackground: Color = MaterialTheme.colorScheme.background,
+    rowBackground: Color = Color.Transparent,
     /**
      * Drawn in place of the artwork, for lists where every row would otherwise
      * repeat the same cover — an album's own track listing.

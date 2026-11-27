@@ -609,6 +609,11 @@ fun LayaDesktopApp() {
     var searchTyping by remember { mutableStateOf(false) }
     var searchLoading by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
+    // The Addons tab: every enabled addon's and Tidal/Qobuz catalogue's rows instead of YouTube's.
+    var searchAddons by remember { mutableStateOf(false) }
+    var addonResults by remember { mutableStateOf<UiState<List<Song>>?>(null) }
+    var addonSearchJob by remember { mutableStateOf<Job?>(null) }
+    val addonSearchHistory by DesktopAddonSearchHistory.recent.collectAsState()
     var homeState by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
     // The home feed is paged: `FEmusic_home` answers with a couple of shelves and a token, and
     // everything else arrives by following it.
@@ -2633,10 +2638,37 @@ fun LayaDesktopApp() {
             searchCommitted = false
             searchRows = emptyList()
             searchError = null
+            addonSearchJob?.cancel()
+            addonResults = null
+        }
+    }
+
+    /** Asks every addon and lossless catalogue at once — see [DesktopSourceRegistry.searchAddons]. */
+    fun searchAddonSources() {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        overlays.settingsPage = null
+        destination = DesktopDestination.SEARCH
+        searchTyping = false
+        searchSuggestions = emptyList()
+        searchScrollReset++
+        addonSearchJob?.cancel()
+        if (!DesktopSourceRegistry.hasAddonSearch()) {
+            addonResults = UiState.Error(
+                DesktopStrings["search_addons_none", "No addons are enabled. Add one in Settings → Sources."],
+            )
+            return
+        }
+        DesktopAddonSearchHistory.record(q)
+        addonResults = UiState.Loading
+        addonSearchJob = scope.launch {
+            addonResults = runCatching { DesktopSourceRegistry.searchAddons(q) }
+                .fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Search failed") })
         }
     }
 
     fun search() {
+        if (searchAddons) return searchAddonSources()
         if (query.isBlank() || searchLoading) return
         overlays.settingsPage = null
         destination = DesktopDestination.SEARCH
@@ -4916,6 +4948,32 @@ fun LayaDesktopApp() {
                             contentPadding = sharedPagePadding,
                             topPadding = 0.dp,
                             showField = false,
+                            searchingAddons = searchAddons,
+                            addonResults = addonResults,
+                            addonHistory = addonSearchHistory,
+                            onAddonHistoryClick = { term ->
+                                editQuery(term)
+                                search()
+                            },
+                            onAddonHistoryRemove = DesktopAddonSearchHistory::remove,
+                            onAddonHistoryClear = DesktopAddonSearchHistory::clear,
+                            sourceSwitcher = {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf(
+                                        DesktopStrings["search_source_youtube", "YouTube"] to false,
+                                        DesktopStrings["search_source_addons", "Addons"] to true,
+                                    ).forEach { (label, addons) ->
+                                        androidx.compose.material3.FilterChip(
+                                            selected = searchAddons == addons,
+                                            onClick = {
+                                                searchAddons = addons
+                                                if (query.isNotBlank()) search()
+                                            },
+                                            label = { Text(label) },
+                                        )
+                                    }
+                                }
+                            },
                         )
                         destination == DesktopDestination.LIBRARY && libraryShowAll != null -> Column(Modifier.fillMaxSize()) {
                             // The phone keeps the grid's sort beside it, in the bar above; here it sits
@@ -7647,6 +7705,13 @@ private fun DesktopSettingsScreen(
                             kind = DesktopSourceKind.ADDON,
                         )
                     }
+                    val directSourceStream by AppSettings.directSourceStream.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["direct_source_stream", "Direct Source Stream"],
+                        DesktopStrings["direct_source_stream_subtitle", "Play from sources above YouTube from the first note, no mid-song swap"],
+                        directSourceStream,
+                        AppSettings::setDirectSourceStream,
+                    )
                 }
             }
             if (section == DesktopSettingsSection.ACCOUNT) item {

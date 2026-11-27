@@ -2161,7 +2161,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         SearchHistory.recordAddonQuery(q)
         addonSearchJob?.cancel()
         _searchScrollReset.value += 1
-        val addons = SourceRegistry.active().filterIsInstance<AddonSource>()
+        val addons = SourceRegistry.activeForAddonSearch()
         if (addons.isEmpty()) {
             _addonResults.value = UiState.Error(text(R.string.search_addons_none))
             return
@@ -2522,6 +2522,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 is SearchResult.Browse -> null
             }
         } ?: return
+        // Direct Source Stream fetches nothing before it is played; warming here
+        // would also pin a quick answer ahead of the stricter direct match.
+        if (com.music.laya.playback.DirectSourceGate.isActive()) return
         viewModelScope.launch {
             runCatching {
                 val audio = song

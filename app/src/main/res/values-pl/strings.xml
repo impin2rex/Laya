@@ -1492,4 +1492,7 @@
     <string name="lossless_renewed_until">Odnowiono %1$s do %2$s</string>
     <string name="lossless_renew_failed">Nie udało się odnowić %1$s. Odnów ręcznie w dodatku.</string>
     <string name="lossless_channel">Sesje bezstratne</string>
+    <string name="direct_source_stream">Strumień prosto ze źródła</string>
+    <string name="direct_source_stream_subtitle">Odtwarzaj ze źródeł powyżej YouTube od pierwszej nuty, bez zmiany w trakcie utworu</string>
+    <string name="direct_source_stream_in_party">Wyłączone podczas imprezy Słuchajcie razem</string>
 </resources>

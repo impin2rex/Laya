@@ -1432,4 +1432,7 @@
     <string name="lossless_renewed_until">%1$s diperpanjang hingga %2$s</string>
     <string name="lossless_renew_failed">Tidak bisa memperpanjang %1$s. Perpanjang sendiri dari addon.</string>
     <string name="lossless_channel">Sesi lossless</string>
+    <string name="direct_source_stream">Streaming langsung dari sumber</string>
+    <string name="direct_source_stream_subtitle">Putar dari sumber di atas YouTube sejak nada pertama, tanpa beralih di tengah lagu</string>
+    <string name="direct_source_stream_in_party">Nonaktif selama kamu di pesta Dengar bersama</string>
 </resources>

@@ -233,6 +233,7 @@ fun SettingsScreen(
     val downloadQuality by AppSettings.downloadQuality.collectAsStateWithLifecycle()
     val wifiOnlyDownloads by AppSettings.wifiOnlyDownloads.collectAsStateWithLifecycle()
     val exportDownloads by AppSettings.exportDownloads.collectAsStateWithLifecycle()
+    val directSourceStream by AppSettings.directSourceStream.collectAsStateWithLifecycle()
     val stopOnTaskRemoved by AppSettings.stopOnTaskRemoved.collectAsStateWithLifecycle()
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
     val hideStatusBarInPlayer by AppSettings.hideStatusBarInPlayer.collectAsStateWithLifecycle()
@@ -407,6 +408,20 @@ fun SettingsScreen(
                         title = sourceTitle,
                         subtitle = sourceSubtitle,
                         onClick = onSources,
+                    )
+                }
+                // One line: it qualifies the Sources row rather than being a
+                // setting of its own. Off for a party — holding each fetch until
+                // a track is about to play would leave this phone behind.
+                val directSourceTitle = stringResource(Res.string.direct_source_stream)
+                row(directSourceTitle, "addon", "direct", "prefetch", "read-ahead", divided = false, available = host.hasDirectSourceStream) {
+                    SettingsSubRow(
+                        title = directSourceTitle,
+                        checked = directSourceStream && !(party.code != null),
+                        onCheckedChange = { if (!(party.code != null)) AppSettings.setDirectSourceStream(it) },
+                        subtitle = stringResource(
+                            if ((party.code != null)) Res.string.direct_source_stream_in_party else Res.string.direct_source_stream_subtitle,
+                        ),
                     )
                 }
             }

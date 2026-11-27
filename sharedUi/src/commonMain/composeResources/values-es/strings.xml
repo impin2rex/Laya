@@ -956,4 +956,7 @@
     <string name="lossless_renew_failed_body">No se pudo renovar automáticamente. Termina en %1$d min; toca para reintentar.</string>
     <string name="lossless_renewed_until">%1$s renovado hasta las %2$s</string>
     <string name="lossless_renew_failed">No se pudo renovar %1$s. Renuévalo tú mismo desde el complemento.</string>
+    <string name="direct_source_stream">Transmisión directa de la fuente</string>
+    <string name="direct_source_stream_subtitle">Reproduce desde las fuentes por encima de YouTube desde la primera nota, sin cambios a mitad de canción</string>
+    <string name="direct_source_stream_in_party">Desactivado mientras estés en una fiesta de Escuchar juntos</string>
 </resources>

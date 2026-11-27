@@ -1394,4 +1394,7 @@
     <string name="lossless_renewed_until">%1$s rinnovato fino alle %2$s</string>
     <string name="lossless_renew_failed">Impossibile rinnovare %1$s. Rinnovalo tu dal componente aggiuntivo.</string>
     <string name="lossless_channel">Sessioni lossless</string>
+    <string name="direct_source_stream">Streaming diretto dalla fonte</string>
+    <string name="direct_source_stream_subtitle">Riproduci dalle fonti sopra YouTube dalla prima nota, senza cambi a metà brano</string>
+    <string name="direct_source_stream_in_party">Disattivato mentre sei in una sessione Ascoltare insieme</string>
 </resources>

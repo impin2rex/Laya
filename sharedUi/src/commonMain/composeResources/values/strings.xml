@@ -442,6 +442,9 @@
     <string name="song_cache_unlimited_subtitle">No limit. Cached audio can keep growing until your storage is full.</string>
     <string name="source">Sources</string>
     <string name="sources_subtitle">Where audio comes from and the order used</string>
+    <string name="direct_source_stream">Direct Source Stream</string>
+    <string name="direct_source_stream_subtitle">Play from sources above YouTube from the first note, no mid-song swap</string>
+    <string name="direct_source_stream_in_party">Off while you\'re in a Listen Together party</string>
     <string name="spatial_audio">Spatial audio</string>
     <string name="spatial_audio_atmos_subtitle">Paused for this track — Dolby Atmos is already spatial</string>
     <string name="spatial_audio_subtitle">Widens stereo tracks for a more immersive feel</string>

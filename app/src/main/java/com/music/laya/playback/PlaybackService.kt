@@ -215,6 +215,12 @@ const val EXTRA_SWAP_MEDIA_ITEM = "laya.swap.media_item"
 
 /** How long a preload of the next track waits for read-ahead's lossless lookup before racing. */
 private const val PRELOAD_WARM_UP_WAIT_MS = 20_000L
+/** How often [PlaybackService.driveDirectWindow] checks whether the next track's window has opened. */
+private const val DIRECT_WINDOW_STEP_MS = 500L
+/** How long the playhead must run on its own after a seek before the direct window may open. */
+private const val DIRECT_SEEK_SETTLE_MS = 2_000L
+/** Closer than this to the blend, the direct window opens without waiting for a seek to settle. */
+private const val DIRECT_URGENT_MS = 10_000L
 
 /** Start playing once the swapped-in version is in place: the caller paused while it resolved. */
 const val EXTRA_SWAP_PLAY = "laya.swap.play"
@@ -1036,6 +1042,7 @@ class PlaybackService : MediaLibraryService() {
         ) {
             val exoPlayer = player ?: return
             if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                lastSeekAt = SystemClock.elapsedRealtime()
                 if (exoPlayer.isPlaying) pushDiscordPresence(exoPlayer)
                 updateLyricSubtitle()
                 // The watch extrapolates its progress ring from the last
@@ -1472,6 +1479,9 @@ class PlaybackService : MediaLibraryService() {
                 val directYouTube =
                     dataSpec.uri.getQueryParameter(DIRECT_YOUTUBE_PARAMETER) == "1"
                 val sourceMediaId = mediaIdIn(dataSpec.uri)
+                // Direct Source Stream: held until it is about to play, the
+                // same as a YouTube row — see [DirectSourceGate].
+                sourceMediaId?.let { id -> runBlocking(about) { DirectSourceGate.awaitOpen(id) } }
                 // A swapped-in upgrade, exactly as for a YouTube row below:
                 // this URL is what the player agreed to when it took the swap,
                 // and every re-open has to arrive at the same bytes.
@@ -1583,6 +1593,16 @@ class PlaybackService : MediaLibraryService() {
             }
             val videoId = dataSpec.uri.getQueryParameter("v")
                 ?: return@Resolver dataSpec
+            // Direct Source Stream holds every open of a track neither playing
+            // nor next inside the window: read-ahead and ExoPlayer's early
+            // preparation alike. Not Automix's Opus reads, which measure the
+            // next track ahead on purpose and never touch a source.
+            if (!AutomixAnalysisSource.requestsYouTubeOpus(
+                    dataSpec.uri.getQueryParameter(AutomixAnalysisSource.OPUS_QUERY_PARAMETER),
+                )
+            ) {
+                runBlocking(about) { DirectSourceGate.awaitOpen(videoId) }
+            }
             // An explicit rollback is not a preference for a different
             // candidate: it means this exact YouTube rendition, immediately.
             // Answer it before StreamChoice, the module race and a pending
@@ -1962,6 +1982,7 @@ class PlaybackService : MediaLibraryService() {
         exoPlayer.addAnalyticsListener(formatListener)
 
         reportProgress()
+        watchDirectWindow()
 
         val controller = createCrossfadeController()
         crossfade = controller
@@ -2008,7 +2029,7 @@ class PlaybackService : MediaLibraryService() {
     private suspend fun resolveForCast(item: MediaItem): CastStream? = withContext(Dispatchers.IO) {
         val uri = item.localConfiguration?.uri ?: return@withContext null
         val resolver = streamResolver ?: return@withContext null
-        val resolved = resolver.resolveDataSpec(DataSpec(uri)).uri
+        val resolved = DirectSourceGate.ungated { resolver.resolveDataSpec(DataSpec(uri)) }.uri
         if (resolved.scheme != "http" && resolved.scheme != "https") {
             null
         } else {
@@ -5491,6 +5512,39 @@ class PlaybackService : MediaLibraryService() {
     }
 
     /** What [resolveWithModulePriority] settled on. */
+    /**
+     * Direct Source Stream's resolve: the higher-ranked sources first and alone,
+     * YouTube only when none of them answers in time — see [DirectSourceGate].
+     * Nothing races; a source's answer plays to the end. A YouTube start is the
+     * one case handed to [QualityUpgrade].
+     */
+    private suspend fun resolveDirect(videoId: String, target: TrackMatcher.Target): Resolved {
+        val direct = runCatching { DirectSourceGate.lookup(videoId, target) }
+            .onFailure { if (it is CancellationException) throw it }
+            .getOrNull()
+        if (direct != null) return Resolved.Module(direct)
+        val running = DirectSourceGate.stillLooking(videoId)
+        TrackLog.d(
+            "Laya",
+            if (running != null) {
+                "no source answered for '${target.title}' within " +
+                    "${DirectSourceGate.LOOKUP_TIMEOUT_MS / 1000}s; starting it on YouTube and still looking"
+            } else {
+                "no source served '${target.title}' directly; playing it from YouTube"
+            },
+            about = videoId,
+        )
+        val url = try {
+            StreamResolver.resolve(videoId)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            // YouTube can't serve it either: a lookup still running is all that's left.
+            return Resolved.Module(running?.await() ?: throw e)
+        }
+        DirectSourceGate.startedOnYouTube(videoId, target)
+        return Resolved.YouTube(url)
+    }
+
     private sealed interface Resolved {
         data class Module(val stream: SourceStream) : Resolved
         data class YouTube(val url: String) : Resolved
@@ -5552,6 +5606,7 @@ class PlaybackService : MediaLibraryService() {
         if (StreamChoice.substitutesRefused(videoId)) {
             return Resolved.YouTube(StreamResolver.resolve(videoId))
         }
+        if (DirectSourceGate.isActive()) return resolveDirect(videoId, target)
         NerdStats.onLosslessRaceStart(videoId)
         // Both legs are parented to the service's scope rather than to the
         // caller, so neither inherits whose track this is — see
@@ -6346,11 +6401,81 @@ class PlaybackService : MediaLibraryService() {
         }
     }
 
+    /** When the listener last seeked, so [driveDirectWindow] can tell a scrub from playback. */
+    private var lastSeekAt = 0L
+
+    /** The last reason [driveDirectWindow] held back, logged once per change. */
+    private var lastWindowReason: String? = null
+
+    /** Ticks [driveDirectWindow] for as long as the service runs. */
+    private fun watchDirectWindow() {
+        scope.launch {
+            while (isActive) {
+                driveDirectWindow()
+                delay(DIRECT_WINDOW_STEP_MS)
+            }
+        }
+    }
+
+    /**
+     * Direct Source Stream's read-ahead, and the only one it has.
+     *
+     * Tells [DirectSourceGate] what is audible, then opens the next track once
+     * the playing one is within [DirectSourceGate.WINDOW_MS] of its transition
+     * (the planned crossfade/Automix start, else the file end). Opening it
+     * releases ExoPlayer's own preparation of the next item and reads it ahead.
+     * Only while playing, and only once the playhead has run on its own for
+     * [DIRECT_SEEK_SETTLE_MS] since the last seek.
+     */
+    private fun driveDirectWindow() {
+        val exoPlayer = player ?: return
+        DirectSourceGate.onPlaying(
+            buildSet {
+                exoPlayer.currentMediaItem?.mediaId?.let(::add)
+                if (crossfade?.isTransitioning() == true) spare?.currentMediaItem?.mediaId?.let(::add)
+            },
+        )
+        fun why(reason: String) {
+            if (reason != lastWindowReason) TrackLog.d("Laya", "direct window: $reason")
+            lastWindowReason = reason
+        }
+        if (!DirectSourceGate.isActive()) return why("inactive")
+        if (!exoPlayer.isPlaying) return why("not playing")
+        val current = exoPlayer.currentMediaItem ?: return why("no current item")
+        val nextIndex = exoPlayer.nextMediaItemIndex
+        if (nextIndex == C.INDEX_UNSET) return why("no next item")
+        val next = exoPlayer.getMediaItemAt(nextIndex)
+        val duration = exoPlayer.duration
+        if (duration == C.TIME_UNSET || duration <= 0L) return why("no duration")
+        val boundary = crossfade?.plannedTransitionFor(current.mediaId) ?: duration
+        val speed = exoPlayer.playbackParameters.speed.coerceAtLeast(0.25f)
+        val remaining = ((boundary - exoPlayer.currentPosition) / speed).toLong()
+        if (remaining > DirectSourceGate.WINDOW_MS) return why("waiting for the window")
+        // A scrub through the last stretch shouldn't fetch every track it passes, so a seek
+        // settles first — except when the blend is this close: a resume or a jump that lands
+        // there needs the next track now, or Automix runs out of time and cuts instead.
+        if (remaining > DIRECT_URGENT_MS && SystemClock.elapsedRealtime() - lastSeekAt < DIRECT_SEEK_SETTLE_MS) {
+            return why("settling after seek")
+        }
+        if (!DirectSourceGate.openNext(next.mediaId)) return why("already open for ${next.mediaId}")
+        TrackLog.d("Laya", "direct window open: ${next.mediaId} with ${remaining}ms to the transition", about = next.mediaId)
+        val song = next.toSong()
+        AudioCache.noteSongs(listOf(song))
+        AudioCache.prefetchQueue(listOf(AudioCache.Upcoming(song.videoId, TrackMatcher.targetOf(song))))
+    }
+
     /**
      * Hands the cache the queue ahead of the one playing: [AudioCache.QUEUE_DEPTH]
      * tracks is more than it does anything with, but it decides that, not this.
      */
     private fun prefetchAround(player: ExoPlayer) {
+        // Direct Source Stream reads ahead from its own window instead — see
+        // [driveDirectWindow]. Whatever ordinary read-ahead had running goes.
+        if (DirectSourceGate.isActive()) {
+            driveDirectWindow()
+            if (preferredPrefetchRequest != null) cancelPrefetch()
+            return
+        }
         val nextIndex = player.nextMediaItemIndex
         val upcomingSongs = if (nextIndex != C.INDEX_UNSET) {
             val end = (nextIndex + AudioCache.QUEUE_DEPTH - 1).coerceAtMost(player.mediaItemCount - 1)

@@ -1412,4 +1412,7 @@
     <string name="lossless_renewed_until">%1$s, %2$s saatine kadar yenilendi</string>
     <string name="lossless_renew_failed">%1$s yenilenemedi. Eklentiden kendiniz yenileyin.</string>
     <string name="lossless_channel">Kayıpsız oturumlar</string>
+    <string name="direct_source_stream">Doğrudan kaynaktan akış</string>
+    <string name="direct_source_stream_subtitle">YouTube\'un üstündeki kaynaklardan ilk notadan itibaren çal, şarkı ortasında geçiş yok</string>
+    <string name="direct_source_stream_in_party">Birlikte dinle partisindeyken kapalı</string>
 </resources>

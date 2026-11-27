@@ -191,4 +191,10 @@
     </plurals>
     <string name="d_session_expired_banner">פג תוקף ההתחברות. התחברו שוב</string>
     <string name="d_session_expired_sign_in_again">פג תוקף ההתחברות · התחברות מחדש</string>
+    <string name="direct_source_stream">הזרמה ישירה מהמקור</string>
+    <string name="direct_source_stream_subtitle">ניגון ממקורות שמעל YouTube מהצליל הראשון, בלי החלפה באמצע השיר</string>
+    <string name="direct_source_stream_in_party">כבוי בזמן שאתה במסיבת להאזין ביחד</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">תוספים</string>
+    <string name="search_addons_none">אין תוספים מופעלים. אפשר להוסיף אחד בהגדרות ← מקורות.</string>
 </resources>

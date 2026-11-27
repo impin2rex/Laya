@@ -187,4 +187,10 @@
     </plurals>
     <string name="d_session_expired_banner">เซสชันหมดอายุแล้ว ลงชื่อเข้าใช้อีกครั้ง</string>
     <string name="d_session_expired_sign_in_again">เซสชันหมดอายุ · ลงชื่อเข้าใช้อีกครั้ง</string>
+    <string name="direct_source_stream">สตรีมตรงจากแหล่งที่มา</string>
+    <string name="direct_source_stream_subtitle">เล่นจากแหล่งที่อยู่เหนือ YouTube ตั้งแต่โน้ตแรก ไม่สลับกลางเพลง</string>
+    <string name="direct_source_stream_in_party">ปิดอยู่ขณะอยู่ในปาร์ตี้ฟังด้วยกัน</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">แอดออน</string>
+    <string name="search_addons_none">ยังไม่ได้เปิดใช้แอดออน เพิ่มได้ที่ การตั้งค่า → แหล่งที่มา</string>
 </resources>

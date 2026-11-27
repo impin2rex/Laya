@@ -950,4 +950,7 @@
     <string name="lossless_renew_failed_body">নিজে থেকে নবায়ন করা যায়নি। %1$d মিনিটে শেষ হবে; আবার চেষ্টা করতে ট্যাপ করুন।</string>
     <string name="lossless_renewed_until">%1$s %2$s পর্যন্ত নবায়ন হয়েছে</string>
     <string name="lossless_renew_failed">%1$s নবায়ন করা যায়নি। অ্যাডঅন থেকে নিজে নবায়ন করুন।</string>
+    <string name="direct_source_stream">সরাসরি সোর্স স্ট্রিম</string>
+    <string name="direct_source_stream_subtitle">প্রথম সুর থেকেই YouTube-এর উপরের সোর্স থেকে চালান, গানের মাঝে বদল ছাড়াই</string>
+    <string name="direct_source_stream_in_party">একসাথে শুনুন পার্টিতে থাকার সময় বন্ধ</string>
 </resources>

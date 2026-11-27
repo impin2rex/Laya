@@ -191,4 +191,10 @@
     </plurals>
     <string name="d_session_expired_banner">Your session expired. Sign in again</string>
     <string name="d_session_expired_sign_in_again">Session expired · Sign in again</string>
+    <string name="direct_source_stream">Direct Source Stream</string>
+    <string name="direct_source_stream_subtitle">Play from sources above YouTube from the first note, no mid-song swap</string>
+    <string name="direct_source_stream_in_party">Off while you\'re in a Listen Together party</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Addons</string>
+    <string name="search_addons_none">No addons are enabled. Add one in Settings → Sources.</string>
 </resources>

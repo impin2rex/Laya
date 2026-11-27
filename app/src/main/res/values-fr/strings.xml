@@ -1456,4 +1456,7 @@
     <string name="lossless_renewed_until">%1$s renouvelé jusqu’à %2$s</string>
     <string name="lossless_renew_failed">Impossible de renouveler %1$s. Renouvelez-le vous-même depuis le module.</string>
     <string name="lossless_channel">Sessions sans perte</string>
+    <string name="direct_source_stream">Lecture directe depuis la source</string>
+    <string name="direct_source_stream_subtitle">Lit depuis les sources au-dessus de YouTube dès la première note, sans changement en cours de morceau</string>
+    <string name="direct_source_stream_in_party">Désactivé pendant une session Écouter ensemble</string>
 </resources>

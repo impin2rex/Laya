@@ -187,4 +187,10 @@
     </plurals>
     <string name="d_session_expired_banner">Sesi Anda berakhir. Masuk lagi</string>
     <string name="d_session_expired_sign_in_again">Sesi berakhir · Masuk lagi</string>
+    <string name="direct_source_stream">Streaming langsung dari sumber</string>
+    <string name="direct_source_stream_subtitle">Putar dari sumber di atas YouTube sejak nada pertama, tanpa beralih di tengah lagu</string>
+    <string name="direct_source_stream_in_party">Nonaktif selama kamu di pesta Dengar bersama</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="search_source_addons">Addon</string>
+    <string name="search_addons_none">Tidak ada addon yang aktif. Tambahkan satu di Pengaturan → Sumber.</string>
 </resources>

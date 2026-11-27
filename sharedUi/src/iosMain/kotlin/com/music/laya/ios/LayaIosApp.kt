@@ -699,7 +699,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         suggestions = emptyList(); typeahead = emptyList()
         IosSearchHistory.recordAddon(q)
         addonJob?.cancel()
-        val addons = SourceRegistry.active().filterIsInstance<AddonSource>()
+        val addons = SourceRegistry.activeForAddonSearch()
         if (addons.isEmpty()) { addonResults = UiState.Error(noAddons); return }
         addonResults = UiState.Loading
         addonJob = scope.launch {
