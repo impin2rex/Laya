@@ -2630,6 +2630,26 @@ fun LayaDesktopApp() {
         ),
     )
 
+    /** The search results themselves are showing, with no artist, album or other page over them. */
+    fun onSearchPage() = destination == DesktopDestination.SEARCH && openedArtist == null &&
+        openedCollection == null && !overlays.replay && overlays.settingsPage == null &&
+        selectedMoodGenre == null && libraryShowAll == null
+
+    fun selectDestination(next: DesktopDestination) {
+        if (next == DesktopDestination.LIBRARY && libraryStale) {
+            libraryStale = false
+            reloadLibrary()
+        }
+        openedArtist = null
+        openedCollection = null
+        overlays.replay = false
+        overlays.settingsPage = null
+        selectedMoodGenre = null
+        libraryShowAll = null
+        if (next == DesktopDestination.SEARCH) searchFocusRequested = true
+        destination = next
+    }
+
     /** Typing, from the page's field or the sidebar's: the typeahead follows, and an empty field goes back to recents. */
     fun editQuery(text: String) {
         query = text
@@ -2647,8 +2667,7 @@ fun LayaDesktopApp() {
     fun searchAddonSources() {
         val q = query.trim()
         if (q.isEmpty()) return
-        overlays.settingsPage = null
-        destination = DesktopDestination.SEARCH
+        if (!onSearchPage()) selectDestination(DesktopDestination.SEARCH)
         searchTyping = false
         searchSuggestions = emptyList()
         searchScrollReset++
@@ -2670,8 +2689,8 @@ fun LayaDesktopApp() {
     fun search() {
         if (searchAddons) return searchAddonSources()
         if (query.isBlank() || searchLoading) return
-        overlays.settingsPage = null
-        destination = DesktopDestination.SEARCH
+        // An artist or album opened from the last results is left for the new ones; back returns to it.
+        if (!onSearchPage()) selectDestination(DesktopDestination.SEARCH)
         searchTyping = false
         searchSuggestions = emptyList()
         // Submitting is picking the first track the typeahead offered, as on the phone — or, with
@@ -2747,21 +2766,6 @@ fun LayaDesktopApp() {
         searchSuggestions = emptyList()
         searchTypeahead = emptyList()
         search()
-    }
-
-    fun selectDestination(next: DesktopDestination) {
-        if (next == DesktopDestination.LIBRARY && libraryStale) {
-            libraryStale = false
-            reloadLibrary()
-        }
-        openedArtist = null
-        openedCollection = null
-        overlays.replay = false
-        overlays.settingsPage = null
-        selectedMoodGenre = null
-        libraryShowAll = null
-        if (next == DesktopDestination.SEARCH) searchFocusRequested = true
-        destination = next
     }
 
     // Settings' search and scroll outlive a visit to one of its pages, and start over each time
@@ -3941,9 +3945,7 @@ fun LayaDesktopApp() {
                         query = query,
                         onQueryChange = { text ->
                             editQuery(text)
-                            if (destination != DesktopDestination.SEARCH || overlays.settingsPage != null) {
-                                selectDestination(DesktopDestination.SEARCH)
-                            }
+                            if (!onSearchPage()) selectDestination(DesktopDestination.SEARCH)
                         },
                         onSearch = ::search,
                         onDestinationSelected = ::selectDestination,
@@ -6157,7 +6159,7 @@ private fun DesktopArtistPage(
                 // and animated artwork is on.
                 val animatedCanvas by DesktopPlayerSettings.animatedCanvas.collectAsState()
                 val video by produceState<String?>(null, name, animatedCanvas) {
-                    value = if (animatedCanvas) AppleArtistArtRepository.artFor(name)?.videoUrl else null
+                    value = if (animatedCanvas) AppleArtistArtRepository.artFor(name, artist.songs.map { it.title })?.videoUrl else null
                 }
                 // Android caps the top-songs block and pages it sideways so the release shelves are
                 // not buried under a hundred rows.
@@ -7529,7 +7531,10 @@ private fun DesktopSettingsScreen(
                         DesktopSignatureSettings::setEnabled,
                     )
                     var editingSignatureApi by remember { mutableStateOf(false) }
-                    if (signatureEnabled) {
+                    if (signatureEnabled) SettingsUnder(
+                        DesktopStrings["artist_signatures", "Artist signatures"],
+                        DesktopStrings["artist_signatures_subtitle", "Shows a handwritten signature when Apple Music has no title logo"],
+                    ) {
                         // Only the saved address is ever shown; the built-in one stays out of the UI.
                         val signatureUrl by DesktopSignatureSettings.customUrl.collectAsState()
                         val signatureServerOnline by DesktopSignatureSettings.server.online.collectAsState()
@@ -9064,6 +9069,17 @@ private fun SettingsGroup(title: String, content: @Composable () -> Unit) {
             }
         }
     }
+}
+
+/**
+ * Rows that belong to the setting above them (its server, its options): when the search finds that
+ * setting, they come along with it rather than being filtered on their own text.
+ */
+@Composable
+private fun SettingsUnder(parentTitle: String, parentSubtitle: String, content: @Composable () -> Unit) {
+    val query = LocalSettingsQuery.current
+    val parentHit = parentTitle.contains(query, ignoreCase = true) || parentSubtitle.contains(query, ignoreCase = true)
+    CompositionLocalProvider(LocalSettingsQuery provides if (parentHit) "" else query) { content() }
 }
 
 /** What the settings field is filtering on, or blank when it is empty. */

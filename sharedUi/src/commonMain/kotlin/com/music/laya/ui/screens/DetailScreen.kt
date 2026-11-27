@@ -376,8 +376,11 @@ fun DetailScreen(
     // nobody, so a title that reads as several artists waits for that swap; any
     // other name starts the moment the page opens.
     val nameSettled = !page.title.looksLikeCredit() || page.songs !is UiState.Loading
-    LaunchedEffect(page.browseId, page.title, nameSettled) {
-        if (isArtist && nameSettled) appleArt = DetailExtras.host.artFor(page.title) ?: appleArt
+    // The songs tell Apple's namesakes apart (see AppleArtistArtRepository.artFor): asked again once
+    // they are in, which costs nothing when the first answer was already settled.
+    val songTitles = (page.songs as? UiState.Success)?.data?.map { it.title }
+    LaunchedEffect(page.browseId, page.title, nameSettled, songTitles != null) {
+        if (isArtist && nameSettled) appleArt = DetailExtras.host.artFor(page.title, songTitles) ?: appleArt
     }
     LaunchedEffect(page.browseId, page.title, nameSettled, signatureEnabled, signatureBaseUrl, signatureUpdates) {
         if (!isArtist || !nameSettled) return@LaunchedEffect

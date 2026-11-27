@@ -17,7 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 
 object AndroidDetailHost : DetailHost {
     override fun cachedArt(name: String): AppleArtistArt? = AppleArtistArtRepository.cached(name)
-    override suspend fun artFor(name: String): AppleArtistArt? = AppleArtistArtRepository.artFor(name)
+    override suspend fun artFor(name: String, songTitles: List<String>?): AppleArtistArt? =
+        AppleArtistArtRepository.artFor(name, songTitles)
     override val signatureUpdates: StateFlow<Int> get() = ArtistSignatureRepository.updates
     override fun signatureBase(enabled: Boolean, url: String) = ArtistSignatureRepository.effectiveBaseUrl(enabled, url)
     override fun cachedSignature(name: String, base: String?): ArtistSignature? = ArtistSignatureRepository.cached(name, base)

@@ -123,7 +123,7 @@ internal fun TvArtistContent(
         // A title that is still a whole credit ("A, B & C") finds nobody; wait
         // for the page to settle on the one name.
         if (page != null && page.songs !is UiState.Loading) {
-            appleArt = AppleArtistArtRepository.artFor(title) ?: appleArt
+            appleArt = AppleArtistArtRepository.artFor(title, songs.map { it.title }) ?: appleArt
         }
     }
 

@@ -2452,9 +2452,16 @@ private class SettingsGroupScope(
     ) {
         if (!available) return
         // The header counts for every row beneath it: searching "playback"
-        // should turn up the playback group entire, not nothing at all.
-        if (search.matches(header, *keywords)) entries += Entry(divided, content)
+        // should turn up the playback group entire, not nothing at all. A row
+        // drawn under its parent comes along with it: "artist signatures"
+        // finds the switch, and its server address and status belong to it.
+        val hit = search.matches(header, *keywords) || (!divided && parentShown)
+        if (divided) parentShown = hit
+        if (hit) entries += Entry(divided, content)
     }
+
+    /** Whether the last row with its own divider survived the search. */
+    private var parentShown = false
 }
 
 /**
