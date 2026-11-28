@@ -53,6 +53,8 @@ import com.music.laya.data.home.dialId
 import com.music.laya.data.home.dialKind
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.ui.home.HomeDials
+import com.music.laya.ui.home.LuckyDiceFace
+import com.music.laya.ui.home.rememberLuckyDice
 import com.music.laya.ui.home.rememberHomeDials
 import com.music.laya.ui.tv.components.TvDialog
 import com.music.laya.ui.tv.components.TvDialogList
@@ -64,7 +66,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -206,6 +207,9 @@ private fun TvHomeDials(
     val lucky by AppSettings.homeLuckyTile.collectAsState()
     val withArtists by AppSettings.homeArtistDial.collectAsState()
     var menu by remember { mutableStateOf<DialEntry?>(null) }
+    val dice = rememberLuckyDice()
+    val reduceMotion by AppSettings.reduceAnimation.collectAsState() // as the phone's: no chase, the face just changes
+    val scope = rememberCoroutineScope()
     // null stands for the dice: a random pick from what was played and what YouTube picked.
     val speedTiles: List<DialEntry?> =
         (if (lucky && chipTitle == null && dials.luckyPool.isNotEmpty()) listOf(null) else emptyList()) + dials.speedDial
@@ -218,17 +222,14 @@ private fun TvHomeDials(
                 key = { it?.item?.dialId ?: "lucky" },
             ) { entry ->
                 if (entry == null) {
+                    // The phone's die: the light chases round it while the pick is found, then it lands.
                     TvLockup(
                         title = "",
                         subtitle = null,
                         artworkUrl = null,
                         width = 150.dp,
-                        onClick = { dials.luckyPool.randomOrNull()?.let(onOpen) },
-                        overlay = {
-                            Box(Modifier.fillMaxSize().background(TvGlass.Placeholder), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Casino, null, tint = TvGlass.TextPrimary, modifier = Modifier.size(48.dp))
-                            }
-                        },
+                        onClick = { scope.launch { dice.roll(reduced = reduceMotion, onRoll = { dials.luckyPool.randomOrNull() }, onPick = onOpen) } },
+                        overlay = { LuckyDiceFace(dice, dark = true, modifier = Modifier.fillMaxSize()) },
                     )
                 } else {
                     TvDialTile(entry, labels, pinIcon, newTags, onOpen) { menu = entry }

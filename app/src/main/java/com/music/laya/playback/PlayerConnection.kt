@@ -348,7 +348,7 @@ fun rememberPlayerState(controller: MediaController?): PlayerState {
             state = state.copy(
                 song = item?.toSong(),
                 isPlaying = player.isPlaying,
-                durationMs = player.duration.coerceAtLeast(0L),
+                durationMs = steadyDuration(player.duration, item?.mediaId, state),
                 error = error,
                 isLoading = player.playbackState == Player.STATE_BUFFERING,
                 repeatMode = player.repeatMode,
@@ -421,13 +421,24 @@ fun rememberPlayerState(controller: MediaController?): PlayerState {
     LaunchedEffect(controller, state.isPlaying, foreground) {
         while (controller != null && state.isPlaying && foreground) {
             position.report(controller.currentPosition.coerceAtLeast(0L))
-            val duration = controller.duration.coerceAtLeast(0L)
+            val duration = steadyDuration(controller.duration, controller.currentMediaItem?.mediaId, state)
             if (duration != state.durationMs) state = state.copy(durationMs = duration)
             delay(500)
         }
     }
     return state
 }
+
+/**
+ * The player's duration, except while the same song re-opens: a quality upgrade or a version swap rebuilds the
+ * playing item's source, its duration is unknown until the new stream is read, and taken as 0 the scrubber drew
+ * the bar empty — a flash of 0:00 on every upgrade. The last known length stands in until the new one arrives.
+ */
+private fun steadyDuration(playerDuration: Long, mediaId: String?, state: PlayerState): Long =
+    playerDuration.takeIf { it > 0L }
+        ?: state.durationMs.takeIf { it > 0L && mediaId != null && mediaId == state.song?.videoId }
+            ?.also { android.util.Log.d("LayaPosition", "$mediaId re-opening: kept its length ${it}ms") }
+        ?: 0L
 
 /**
  * The inverse of [toMediaItem], as far as a MediaItem can carry a [Song].

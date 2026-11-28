@@ -52,6 +52,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -103,6 +104,7 @@ import com.music.laya.ui.components.contextClick
 import com.music.laya.ui.components.longPressMenuClickable
 import com.music.laya.ui.components.thumbnailBorder
 import com.music.laya.ui.haptics.Haptic
+import com.music.laya.ui.haptics.Haptics
 import com.music.laya.ui.haptics.rememberHaptics
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -581,132 +583,150 @@ private fun LuckyDiceTile(
     onRoll: suspend () -> ShelfItem?,
     onPick: (ShelfItem) -> Unit,
 ) {
-    val haptics = rememberHaptics()
+    val dice = rememberLuckyDice()
     val scope = rememberCoroutineScope()
-    var face by remember { mutableIntStateOf(3) }
-    val spin = remember { Animatable(0f) }
-    val settle = remember { Animatable(1f) }
-    var rolling by remember { mutableStateOf(false) }
-    val look = if (isDark()) DICE_DARK else DICE_LIGHT
     Box(
         modifier
             .dialPress(reduced)
             .clip(DIAL_SHAPE)
-            .background(look.ground)
-            .clickable(role = Role.Button) {
-                if (rolling) return@clickable
-                rolling = true
-                scope.launch {
-                    val found = async { runCatching { onRoll() }.getOrNull() }
-                    try {
-                        if (reduced) {
-                            found.await()?.let(onPick)
-                            face = (1..6).random()
-                            haptics.play(Haptic.Select)
-                            return@launch
-                        }
-                        spin.snapTo(0f)
-                        var square = 0
-                        val tick: Animatable<Float, AnimationVector1D>.() -> Unit = {
-                            val now = value.toInt()
-                            if (now != square) {
-                                square = now
-                                haptics.play(Haptic.Tick)
-                            }
-                        }
-                        coroutineScope {
-                            val chase = launch {
-                                spin.animateTo(
-                                    DICE_WAIT_MAX_MS * DICE_SPEED,
-                                    tween(DICE_WAIT_MAX_MS.toInt(), easing = LinearEasing),
-                                    block = tick,
-                                )
-                            }
-                            settle.animateTo(0f, tween(DICE_FADE_MS))
-                            delay(DICE_MIN_MS - DICE_FADE_MS)
-                            val pick = withTimeoutOrNull(DICE_WAIT_MAX_MS - DICE_MIN_MS) { found.await() }
-                            if (!found.isCompleted) found.cancel()
-                            pick?.let(onPick)
-                            chase.cancelAndJoin()
-                        }
-                        // Out of that speed to a stop with no step in it: the curve starts at twice its
-                        // mean speed, so its time makes that the speed the light had.
-                        spin.animateTo(
-                            spin.value + DICE_REST_STEPS,
-                            tween((2 * DICE_REST_STEPS / DICE_SPEED).toInt(), easing = DICE_REST_EASING),
-                            block = tick,
-                        )
-                        face = (1..6).random()
-                        haptics.play(Haptic.Select)
-                        settle.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium))
-                    } finally {
-                        rolling = false
-                    }
-                }
-            }
+            .clickable(role = Role.Button) { scope.launch { dice.roll(reduced, onRoll, onPick) } }
             .semantics {
                 contentDescription = label
-                if (rolling) stateDescription = "…"
+                if (dice.rolling) stateDescription = "…"
             },
     ) {
-        Canvas(Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            // Crimson in from the upper left, violet from the lower right, a little cyan at the upper right.
-            DICE_WASHES.forEach { wash ->
-                drawRect(
-                    Brush.radialGradient(
-                        listOf(wash.color.copy(alpha = wash.alpha * look.washStrength), wash.color.copy(alpha = 0f)),
-                        center = Offset(w * wash.x, h * wash.y),
-                        radius = size.maxDimension * wash.radius,
-                    ),
-                )
+        LuckyDiceFace(dice, isDark(), Modifier.fillMaxSize())
+        Box(Modifier.fillMaxSize().dialRim(tileStyle))
+    }
+}
+
+/** The die's state: the face it shows, the light's place round the edge, and how far it has settled onto the face. */
+@Stable
+class LuckyDice internal constructor(private val haptics: Haptics) {
+    internal var face by mutableIntStateOf(3)
+    internal val spin = Animatable(0f)
+    internal val settle = Animatable(1f)
+    var rolling by mutableStateOf(false)
+        private set
+
+    /** One roll: the light chases while [onRoll] looks for a pick, which goes to [onPick]; then the die lands. A roll under way ignores another. */
+    suspend fun roll(reduced: Boolean, onRoll: suspend () -> ShelfItem?, onPick: (ShelfItem) -> Unit) = coroutineScope {
+        if (rolling) return@coroutineScope
+        rolling = true
+        val found = async { runCatching { onRoll() }.getOrNull() }
+        try {
+            if (reduced) {
+                found.await()?.let(onPick)
+                face = (1..6).random()
+                haptics.play(Haptic.Select)
+                return@coroutineScope
             }
-            // Three squares of 80 with gaps of 30 on a 512 ground, dead centre.
-            val unit = size.minDimension / 512f
-            val cellSide = 80f * unit
-            val gap = 30f * unit
-            val gridSide = cellSide * 3 + gap * 2
-            val left = (w - gridSide) / 2f
-            val top = (h - gridSide) / 2f
-            val head = spin.value % DICE_RING.size
-            val toFace = settle.value
-            val pips = DICE_FACES[face - 1]
-            for (i in 0 until 9) {
-                val ring = DICE_RING.indexOf(i)
-                val spinner = if (ring < 0) 0f else {
-                    val behind = ((head - ring) % DICE_RING.size + DICE_RING.size) % DICE_RING.size
-                    (1f - behind / DICE_TAIL).coerceIn(0f, 1f)
+            spin.snapTo(0f)
+            var square = 0
+            val tick: Animatable<Float, AnimationVector1D>.() -> Unit = {
+                val now = value.toInt()
+                if (now != square) {
+                    square = now
+                    haptics.play(Haptic.Tick)
                 }
-                val pip = if (i in pips) 1f else 0f
-                val level = (spinner + (pip - spinner) * toFace).coerceIn(0f, 1f)
-                // A lit square swells a touch with the landing's overshoot.
-                val pop = if (pip > 0f && toFace > 1f) 1f + (toFace - 1f) * 0.6f else 1f
-                val side = cellSide * pop
-                val center = Offset(
-                    left + (i % 3) * (cellSide + gap) + cellSide / 2f,
-                    top + (i / 3) * (cellSide + gap) + cellSide / 2f,
-                )
-                if (level > 0f) {
-                    drawCircle(
-                        Brush.radialGradient(
-                            listOf(look.lit.copy(alpha = look.glow * level), look.lit.copy(alpha = 0f)),
-                            center = center,
-                            radius = side * 1.05f,
-                        ),
-                        radius = side * 1.05f,
-                        center = center,
+            }
+            coroutineScope {
+                val chase = launch {
+                    spin.animateTo(
+                        DICE_WAIT_MAX_MS * DICE_SPEED,
+                        tween(DICE_WAIT_MAX_MS.toInt(), easing = LinearEasing),
+                        block = tick,
                     )
                 }
-                drawRoundRect(
-                    color = lerp(look.unlit, look.lit, level),
-                    topLeft = Offset(center.x - side / 2f, center.y - side / 2f),
-                    size = Size(side, side),
-                    cornerRadius = CornerRadius(side * 0.08f),
+                settle.animateTo(0f, tween(DICE_FADE_MS))
+                delay(DICE_MIN_MS - DICE_FADE_MS)
+                val pick = withTimeoutOrNull(DICE_WAIT_MAX_MS - DICE_MIN_MS) { found.await() }
+                if (!found.isCompleted) found.cancel()
+                pick?.let(onPick)
+                chase.cancelAndJoin()
+            }
+            // Out of that speed to a stop with no step in it: the curve starts at twice its
+            // mean speed, so its time makes that the speed the light had.
+            spin.animateTo(
+                spin.value + DICE_REST_STEPS,
+                tween((2 * DICE_REST_STEPS / DICE_SPEED).toInt(), easing = DICE_REST_EASING),
+                block = tick,
+            )
+            face = (1..6).random()
+            haptics.play(Haptic.Select)
+            settle.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium))
+        } finally {
+            rolling = false
+        }
+    }
+}
+
+@Composable
+fun rememberLuckyDice(): LuckyDice {
+    val haptics = rememberHaptics()
+    return remember(haptics) { LuckyDice(haptics) }
+}
+
+/** The die as [dice] has it now, drawn to fill [modifier]: Home's dice tile on the phone, and the TV's. */
+@Composable
+fun LuckyDiceFace(dice: LuckyDice, dark: Boolean, modifier: Modifier = Modifier) {
+    val look = if (dark) DICE_DARK else DICE_LIGHT
+    Canvas(modifier.background(look.ground)) {
+        val w = size.width
+        val h = size.height
+        // Crimson in from the upper left, violet from the lower right, a little cyan at the upper right.
+        DICE_WASHES.forEach { wash ->
+            drawRect(
+                Brush.radialGradient(
+                    listOf(wash.color.copy(alpha = wash.alpha * look.washStrength), wash.color.copy(alpha = 0f)),
+                    center = Offset(w * wash.x, h * wash.y),
+                    radius = size.maxDimension * wash.radius,
+                ),
+            )
+        }
+        // Three squares of 80 with gaps of 30 on a 512 ground, dead centre.
+        val unit = size.minDimension / 512f
+        val cellSide = 80f * unit
+        val gap = 30f * unit
+        val gridSide = cellSide * 3 + gap * 2
+        val left = (w - gridSide) / 2f
+        val top = (h - gridSide) / 2f
+        val head = dice.spin.value % DICE_RING.size
+        val toFace = dice.settle.value
+        val pips = DICE_FACES[dice.face - 1]
+        for (i in 0 until 9) {
+            val ring = DICE_RING.indexOf(i)
+            val spinner = if (ring < 0) 0f else {
+                val behind = ((head - ring) % DICE_RING.size + DICE_RING.size) % DICE_RING.size
+                (1f - behind / DICE_TAIL).coerceIn(0f, 1f)
+            }
+            val pip = if (i in pips) 1f else 0f
+            val level = (spinner + (pip - spinner) * toFace).coerceIn(0f, 1f)
+            // A lit square swells a touch with the landing's overshoot.
+            val pop = if (pip > 0f && toFace > 1f) 1f + (toFace - 1f) * 0.6f else 1f
+            val side = cellSide * pop
+            val center = Offset(
+                left + (i % 3) * (cellSide + gap) + cellSide / 2f,
+                top + (i / 3) * (cellSide + gap) + cellSide / 2f,
+            )
+            if (level > 0f) {
+                drawCircle(
+                    Brush.radialGradient(
+                        listOf(look.lit.copy(alpha = look.glow * level), look.lit.copy(alpha = 0f)),
+                        center = center,
+                        radius = side * 1.05f,
+                    ),
+                    radius = side * 1.05f,
+                    center = center,
                 )
             }
+            drawRoundRect(
+                color = lerp(look.unlit, look.lit, level),
+                topLeft = Offset(center.x - side / 2f, center.y - side / 2f),
+                size = Size(side, side),
+                cornerRadius = CornerRadius(side * 0.08f),
+            )
         }
-        Box(Modifier.fillMaxSize().dialRim(tileStyle))
     }
 }
 

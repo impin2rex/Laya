@@ -250,6 +250,14 @@ fun TvNowPlayingScreen(
             hideControls()
         }
     }
+    // Up Next goes back down after the same idle seconds, paused or not (any press restarts the count), and the
+    // player is shown again — as Back would do it, so focus returns to the scrubber.
+    LaunchedEffect(upNextOpen, lastInput) {
+        if (upNextOpen) {
+            delay(ControlsTimeoutMs)
+            upNextOpen = false
+        }
+    }
     // Focus follows what's on screen: the scrubber when the transport rises,
     // the stage (which takes the remote's presses) when it goes.
     LaunchedEffect(controlsVisible) {

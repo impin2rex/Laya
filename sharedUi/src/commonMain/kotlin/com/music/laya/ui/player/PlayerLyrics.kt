@@ -2017,12 +2017,14 @@ internal fun LyricsPanel(
      * read from its top edge leaves most of the screen below the words.
      */
     centerFocus: Boolean = false,
+    /** Lyrics on screen get karaoke's neural vocal ready ([Karaoke.warm]); false leaves it until karaoke is switched on. */
+    warmKaraoke: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val panelPlaying = isPlaying && active
     // Lyrics on screen: karaoke's mic is a tap away, so its neural vocal gets
     // ready now — see [Karaoke.warm].
-    if (active) {
+    if (active && warmKaraoke) {
         DisposableEffect(Unit) {
             val release = Karaoke.lyricsShown()
             onDispose { release() }

@@ -5,6 +5,7 @@ import android.graphics.BitmapShader
 import android.graphics.Matrix
 import android.graphics.RuntimeShader
 import android.os.Build
+import coil3.asImage
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -87,4 +88,10 @@ private class AgslMask(seedX: Float, seedY: Float) : AutoMixMaskShader {
         }
         return mask
     }
+}
+
+internal actual fun softwareDrawable(image: coil3.Image): coil3.Image {
+    val bitmap = (image as? coil3.BitmapImage)?.bitmap ?: return image
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || bitmap.config != Bitmap.Config.HARDWARE) return image
+    return bitmap.copy(Bitmap.Config.ARGB_8888, false)?.asImage() ?: image
 }

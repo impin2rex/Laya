@@ -33,3 +33,6 @@ private class SkiaMask(seedX: Float, seedY: Float) : AutoMixMaskShader {
         }
     }
 }
+
+/** Never hardware-backed here. */
+internal actual fun softwareDrawable(image: coil3.Image): coil3.Image = image

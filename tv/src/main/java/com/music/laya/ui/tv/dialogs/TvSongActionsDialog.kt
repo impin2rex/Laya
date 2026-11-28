@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.Undo
+import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Equalizer
@@ -57,7 +59,13 @@ import com.music.laya.data.model.LikeStatus
 import com.music.laya.data.model.PlaylistPrivacy
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.NerdStats
+import com.music.laya.playback.OriginalVersion
+import com.music.laya.playback.QualityUpgrade
 import com.music.laya.playback.SleepTimer
+import com.music.laya.playback.canRevertToOriginal
+import com.music.laya.playback.revertToOriginal
+import com.music.laya.playback.upgradeQuality
 import com.music.laya.playback.beginRadioQueue
 import com.music.laya.playback.commitRadioQueue
 import com.music.laya.playback.playSongs
@@ -126,6 +134,15 @@ fun TvSongActionMenuDialog(
     val sleepDeadline by SleepTimer.deadline.collectAsState()
     val sleepAfterTrack by SleepTimer.afterTrack.collectAsState()
     val nerdStats by AppSettings.showNerdStats.collectAsState()
+    val pinnedToOriginal by OriginalVersion.pinned.collectAsState()
+    val upgradesInFlight by NerdStats.racingLossless.collectAsState()
+    val playingItem = mediaController?.currentMediaItem?.takeIf { it.mediaId == song.videoId }
+    val playingThis = playingItem != null
+    // "Known": an unresolved track playing off the disk cache answers false and keeps the revert on offer.
+    val playingYouTubesOwn = playingItem != null && QualityUpgrade.isKnownToBePlayingYouTubesOwn(
+        song.videoId,
+        playingItem.localConfiguration?.uri?.let(QualityUpgrade::cacheTag),
+    )
 
     when (sheet) {
         SongSheet.Playlist -> {
@@ -162,6 +179,35 @@ fun TvSongActionMenuDialog(
                 .heightIn(max = 288.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
+            // The phone's version row (MainActivity's onRollbackToOriginal / onUpgradeQuality), for the song
+            // playing: back to YouTube's own upload from a substituted copy, or a fresh look for a better one
+            // from YouTube's own. Never both; nothing for a saved file, which no stream chose.
+            if (playingThis && song.localUri == null) {
+                val onOriginal = song.videoId in pinnedToOriginal || playingYouTubesOwn
+                when {
+                    onOriginal -> item {
+                        TvListRow(
+                            title = stringResource(R.string.upgrade_quality),
+                            trailingIcon = Icons.Rounded.HighQuality,
+                            enabled = song.videoId !in upgradesInFlight,
+                            onClick = {
+                                mediaController?.upgradeQuality()
+                                onDismiss()
+                            },
+                        )
+                    }
+                    song.canRevertToOriginal() -> item {
+                        TvListRow(
+                            title = stringResource(R.string.revert_to_original),
+                            trailingIcon = Icons.AutoMirrored.Rounded.Undo,
+                            onClick = {
+                                mediaController?.revertToOriginal()
+                                onDismiss()
+                            },
+                        )
+                    }
+                }
+            }
             item {
                 TvListRow(
                     title = stringResource(R.string.tv_play_next),

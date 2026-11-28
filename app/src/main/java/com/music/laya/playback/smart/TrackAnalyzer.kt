@@ -1020,7 +1020,9 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
         // held while the models ran, in a process that was reaching a 256 MB heap limit and had
         // died on it. Returning is what releases them — a `val` cannot be nulled, and a narrower
         // scope alone does not make ART treat one as dead.
+        val t0 = android.os.SystemClock.elapsedRealtime()
         val structural = structure(trackId, uri, copy, effectiveDuration)
+        val t1 = android.os.SystemClock.elapsedRealtime()
         // A party started while Pass 1 was decoding. Dropped as "no result"
         // rather than as a failure — the track was never measured, so nothing
         // should be recorded against it and nothing should stop it being
@@ -1041,12 +1043,14 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
         val window = BeatTracker.WINDOW_SECONDS
         val tailStart = max(0.0, effectiveDuration - window)
         val head = region(openSource, 0.0, minOf(window, effectiveDuration), features)
+        val t2 = android.os.SystemClock.elapsedRealtime()
         // Between the two model passes, for the same reason as above. Not
         // folded into the `tail` condition below: a head-only result would be
         // written *and persisted* as if it were a whole-track one, freezing a
         // deliberately partial answer in place of the complete one.
         if (stopped) return WholeTrack(null)
         val tail = if (tailStart > window / 2) region(openSource, tailStart, effectiveDuration, features) else null
+        val t3 = android.os.SystemClock.elapsedRealtime()
         // Last of the three. An abort during the tail pass leaves `tail` null,
         // which is indistinguishable from a window the models found nothing in
         // — and that one gets published, with the DSP estimate standing in. A
@@ -1066,7 +1070,9 @@ class TrackAnalyzer(private val context: Context, private val cache: AudioCache)
                 "conf=${leading?.beatConfidence ?: features.beatConfidence} " +
                 "key=${features.key} contentEnd=${features.contentEndTime} " +
                 "mixOutCandidates=${features.mixOutCandidates.size} " +
-                "vocalMask=${if (head?.vocalMask != null || tail?.vocalMask != null) "model" else "dsp"}",
+                "vocalMask=${if (head?.vocalMask != null || tail?.vocalMask != null) "model" else "dsp"} " +
+                // Where the time went, per phase: on a slow TV the whole pass outlasted the song.
+                "took dsp=${t1 - t0}ms head=${t2 - t1}ms tail=${t3 - t2}ms",
         )
 
         return WholeTrack(

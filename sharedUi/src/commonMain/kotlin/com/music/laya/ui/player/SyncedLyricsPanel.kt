@@ -38,6 +38,10 @@ fun SyncedLyricsPanel(
         onRevealControls = {},
         onHideControls = {},
         centerFocus = centerFocus,
+        // Not on the TV, where the lyrics are on screen nearly all the time: measured on a 4-core armv7 TV, the
+        // separation took 74 s of model time per 5.8 s of audio and starved Automix's analysis, which then finished
+        // minutes after the blend (4.5 min for a 4:37 track) and every mix fell back to a plain fade.
+        warmKaraoke = false,
         modifier = modifier,
     )
 }

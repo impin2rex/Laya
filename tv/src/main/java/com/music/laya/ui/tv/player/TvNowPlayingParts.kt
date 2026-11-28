@@ -78,7 +78,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -114,7 +113,6 @@ import com.music.laya.ui.player.AutoMixCanvasLayer
 import com.music.laya.ui.player.SyncedLyricsPanel
 import com.music.laya.ui.player.rememberArtworkMesh
 import com.music.laya.ui.tv.components.TvActivityIndicator
-import com.music.laya.ui.tv.components.TvArtwork
 import com.music.laya.ui.tv.components.TvButton
 import com.music.laya.ui.tv.components.TvRow
 import com.music.laya.ui.tv.components.TvLockup
@@ -218,9 +216,12 @@ internal fun TvNowPlayingStage(
                     clip = true
                 },
         ) {
-            com.music.laya.ui.player.SongChangeCover(song.thumbnailUrl.artworkAt(720) ?: song.thumbnailUrl, Modifier.fillMaxSize()) {
-                TvArtwork(url = song.thumbnailUrl, px = 720, shape = RectangleShape, modifier = it)
-            }
+            // The phone's cover: through an Automix blend the next sleeve is revealed over this one in step with
+            // the mix; any other change of song dissolves as before.
+            val cover = com.music.laya.ui.player.rememberMiniAutoMixArtwork(
+                song, queue, queueIndex, px = 720, ownSwitch = true, blur = true,
+            )
+            cover(song.thumbnailUrl.artworkAt(720) ?: song.thumbnailUrl, Modifier.fillMaxSize())
             AutoMixCanvasLayer(
                 song = song,
                 queue = queue,
@@ -602,6 +603,13 @@ private fun TvScrubber(
         if (isPlaying) while (true) withFrameNanos { frame.longValue = it }
     }
     val thickness by animateDpAsState(if (focused) 6.dp else 4.dp, tween(160), label = "scrubThickness")
+    // Automix's planned blend, as the phone's scrubber marks it (ThinSlider): a white patch, feathered at both ends,
+    // fading in once known and out when gone. Hidden while scrubbing, as there.
+    val window by AppSettings.smartTransitionWindow.collectAsState()
+    val liveWindow = window?.takeIf { scrubTarget == null && it.end > it.start }
+    var shownWindow by remember { mutableStateOf(liveWindow) }
+    LaunchedEffect(liveWindow) { if (liveWindow != null) shownWindow = liveWindow }
+    val windowAlpha by animateFloatAsState(if (liveWindow != null) 1f else 0f, tween(500), label = "automixWindow")
 
     Column {
         Box(
@@ -641,6 +649,26 @@ private fun TvScrubber(
                         size = Size(size.width * fraction, h),
                         cornerRadius = radius,
                     )
+                    shownWindow?.takeIf { windowAlpha > 0f }?.let { w ->
+                        val from = size.width * w.start.coerceIn(0f, 1f)
+                        val to = size.width * w.end.coerceIn(0f, 1f)
+                        val span = to - from
+                        if (span > 0f) {
+                            val f = (span * 0.4f).coerceIn(6.dp.toPx(), 40.dp.toPx()).coerceAtMost(span / 2f) / span
+                            val full = 0.5f * windowAlpha
+                            val ramp = (0..6).map { step ->
+                                val t = step / 6f
+                                t to Color.White.copy(alpha = full * t * t * (3f - 2f * t))
+                            }
+                            val stops = ramp.map { (t, c) -> f * t to c } + ramp.reversed().map { (t, c) -> 1f - f * t to c }
+                            drawRoundRect(
+                                brush = Brush.horizontalGradient(colorStops = stops.toTypedArray(), startX = from, endX = to),
+                                topLeft = Offset(0f, top),
+                                size = Size(size.width, h),
+                                cornerRadius = radius,
+                            )
+                        }
+                    }
                     if (focused) {
                         val x = (size.width * fraction).coerceIn(h, size.width - h)
                         drawCircle(Color.White, radius = h * 1.15f, center = Offset(x, size.height / 2f))
@@ -718,7 +746,13 @@ private fun TvQualityLine(showStats: Boolean, modifier: Modifier = Modifier) {
         stats.isLossless -> stringResource(R.string.lossless)
         else -> null
     }
-    val detail = if (showStats) streamDetail(stats) else null
+    val channels = when (val n = stats.channels) {
+        null -> null
+        1 -> stringResource(R.string.mono)
+        2 -> stringResource(R.string.stereo)
+        else -> "$n ch"
+    }
+    val detail = if (showStats) streamDetail(stats, channels) else null
     if (label == null && detail.isNullOrBlank()) return
     Row(
         modifier = modifier,
@@ -755,7 +789,8 @@ private fun TvQualityLine(showStats: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-private fun streamDetail(s: NerdStats.Snapshot): String {
+/** The phone's stats line (PlayerControls' describe): "FLAC · 24-bit · 96 kHz · 4608 kbps · Stereo", whichever parts are known. */
+private fun streamDetail(s: NerdStats.Snapshot, channels: String?): String {
     val codec = when (val mime = s.mimeType?.lowercase()) {
         null -> null
         "audio/flac" -> "FLAC"
@@ -770,15 +805,10 @@ private fun streamDetail(s: NerdStats.Snapshot): String {
         "audio/raw" -> "PCM"
         else -> mime.substringAfter('/').uppercase()
     }
-    val rate = s.sampleRateHz
-    val depth = s.bitDepth
-    val format = when {
-        depth != null && rate != null -> "$depth-bit/${khz(rate)}"
-        rate != null -> khz(rate)
-        else -> null
-    }
+    val depth = s.bitDepth?.let { "$it-bit" }
+    val rate = s.sampleRateHz?.let { NerdStats.megahertzLabel(it) ?: khz(it) } // DSD reads in MHz, as on the phone
     val bitrate = s.bitrateKbps?.takeIf { it > 0 }?.let { "$it kbps" }
-    return listOfNotNull(codec, format, bitrate, s.sourceName).joinToString(" · ")
+    return listOfNotNull(codec, depth, rate, bitrate, channels).joinToString(" · ")
 }
 
 private fun khz(hz: Int): String {

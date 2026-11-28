@@ -54,6 +54,9 @@ internal expect fun autoMixMaskShader(seedX: Float, seedY: Float): AutoMixMaskSh
 /** Whether [BlurEffect] does anything here: it is a no-op on Android before 12. */
 internal expect val blurEffectSupported: Boolean
 
+/** [image] as one a software canvas can draw ([softCoverOf]): Android's hardware bitmaps copied, anything else as is. */
+internal expect fun softwareDrawable(image: coil3.Image): coil3.Image
+
 /** How much of the soft stand-in still shows at [eased]: the blur's own quadratic fall-off, gone at its end. */
 internal fun softCoverAlpha(eased: Float): Float {
     val remaining = (1f - eased / Tuning.BLUR_END_PROGRESS).coerceIn(0f, 1f)

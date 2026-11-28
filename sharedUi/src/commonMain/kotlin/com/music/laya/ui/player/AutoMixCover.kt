@@ -398,6 +398,8 @@ fun rememberMiniAutoMixArtwork(
      * player's. Either way only while Automix is on.
      */
     ownSwitch: Boolean? = null,
+    /** Sharpen the incoming cover out of a blur, as the phone's full player does; the bars' small covers don't. */
+    blur: Boolean = false,
 ): @Composable (String?, Modifier) -> Unit {
     val occurrence = remember(song?.videoId, song?.queueEntryId, queue, index) {
         song?.let { coverOccurrence(it, queue, index) }
@@ -413,9 +415,9 @@ fun rememberMiniAutoMixArtwork(
     AutoMixRevealClockEffect()
     AutoMixArtworkPrefetchEffect(queue, gate, mini = true, miniPx = px)
 
-    return remember(cover, occurrence, gate) {
+    return remember(cover, occurrence, gate, blur) {
         { model, modifier ->
-            AutoMixCover(cover.framesFor(occurrence, gate), modifier, blur = false, revealKey = model, reveal = true) { artworkModifier ->
+            AutoMixCover(cover.framesFor(occurrence, gate), modifier, blur = blur, revealKey = model, reveal = true) { artworkModifier ->
                 AsyncImage(
                     model = model,
                     contentDescription = null,
@@ -482,8 +484,10 @@ internal fun AutoMixIncomingStill(
     // Below Android 12 the blur effect is a no-op: crossfade from a soft copy instead.
     val soft = if (blur && !blurEffectSupported) {
         val context = LocalPlatformContext.current
-        remember(result.image, result.painter, context) {
-            softCoverOf(result.painter ?: result.image.asPainter(context))
+        // From the image, made drawable in software first: softCoverOf draws into a software canvas, which throws
+        // on Coil's hardware bitmaps ("Software rendering doesn't support hardware bitmaps", Android 10 TV).
+        remember(result.image, context) {
+            softCoverOf(softwareDrawable(result.image).asPainter(context))
         }
     } else null
     DecodedCover(
