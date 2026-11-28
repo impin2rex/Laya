@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.playback.PlaybackPosition
 import com.music.laya.ui.haptics.rememberHaptics
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * [LyricsPanel] for a screen in another module — the Android TV app's — that
@@ -37,6 +38,10 @@ fun SyncedLyricsPanel(
         onRevealControls = {},
         onHideControls = {},
         centerFocus = centerFocus,
+        // Not on the TV, where the lyrics are on screen nearly all the time: measured on a 4-core armv7 TV, the
+        // separation took 74 s of model time per 5.8 s of audio and starved Automix's analysis, which then finished
+        // minutes after the blend (4.5 min for a 4:37 track) and every mix fell back to a plain fade.
+        warmKaraoke = false,
         modifier = modifier,
     )
 }
@@ -83,4 +88,13 @@ fun rememberLyricsVersions(trackId: String, lyrics: List<LyricLine>?): LyricsVer
         toggleTranslation = ui.toggleTranslation,
         toggleRomanization = ui.toggleRomanization,
     )
+}
+
+/**
+ * The translation or romanization the app's player has under its lyrics, by track — line for line
+ * with the lyrics the app settled on — for the lock screens (Android's player, the iPhone's lyrics
+ * card), which draw the same. Null while it shows the originals alone.
+ */
+object LyricsOnShow {
+    val subLines = MutableStateFlow<Pair<String, List<LyricLine>>?>(null)
 }

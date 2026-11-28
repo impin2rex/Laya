@@ -72,6 +72,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import com.music.laya.ui.components.ExplicitBadge
+import com.music.laya.ui.components.titleBadges
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.ui.theme.stableStatusBarInsets
@@ -305,6 +306,10 @@ internal fun LandscapeArtwork(
     artRequest: ImageRequest,
     artLoaded: Boolean,
     onArtState: (AsyncImagePainter.State) -> Unit,
+    /** The AutoMix pair while one is dissolving on this sleeve — see [AutoMixCover]. */
+    autoMixFrames: AutoMixCoverFrames? = null,
+    /** The clip's opacity: 1, or fading back to its still as an AutoMix starts. */
+    canvasAlpha: () -> Float = { 1f },
     canvas: CanvasArtwork?,
     canvasRendered: Boolean,
     isPlaying: Boolean,
@@ -312,6 +317,12 @@ internal fun LandscapeArtwork(
     modifier: Modifier = Modifier,
     /** Halts the clip for a transition — see [CanvasArtworkPlayer]'s own. */
     pausedForTransition: Boolean = false,
+    /** The incoming clip of a live AutoMix blend, played beside [canvas] and revealed over it. */
+    standbyCanvas: CanvasArtwork? = null,
+    standbyReveal: CanvasOrganicReveal? = null,
+    onStandbyRenderedChange: (Boolean) -> Unit = {},
+    /** Holds [canvas] on its current frame while the standby is revealed over it. */
+    freezeCanvas: Boolean = false,
     /**
      * The sleeve's shape, asked for each frame: its corner rounds off into the
      * mini player's cover's as the player docks into it.
@@ -401,23 +412,32 @@ internal fun LandscapeArtwork(
                     modifier = Modifier.fillMaxSize(0.36f),
                 )
             }
-            AsyncImage(
-                model = artRequest,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                onState = onArtState,
-                // Not drawn under a clip that got there first — see the
-                // portrait sleeve's note on TextureView stacking order.
-                modifier = Modifier
+            // Not drawn under a clip that got there first — see the
+            // portrait sleeve's note on TextureView stacking order.
+            AutoMixCover(
+                autoMixFrames,
+                Modifier
                     .fillMaxSize()
                     .drawWithContent { if (artLoaded || !canvasRendered) drawContent() },
-            )
-            canvas?.let { clip ->
+                blur = true,
+                revealKey = artRequest,
+            ) { artworkModifier ->
+                AsyncImage(
+                    model = artRequest,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    onState = onArtState,
+                    modifier = artworkModifier,
+                )
+            }
+            CanvasPresentationHost(canvas, standbyCanvas.takeIf { canvas != null }) { clip, standby ->
                 CanvasArtworkPlayer(
                     canvas = clip,
                     isPlaying = isPlaying,
-                    pausedForTransition = pausedForTransition,
-                    onRenderedChanged = onCanvasRenderedChange,
+                    presentationAlpha = canvasAlpha,
+                    pausedForTransition = pausedForTransition || (if (standby) standbyReveal == null else freezeCanvas),
+                    onRenderedChanged = if (standby) onStandbyRenderedChange else onCanvasRenderedChange,
+                    organicReveal = if (standby) standbyReveal else null,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -514,11 +534,7 @@ internal fun LandscapeCredits(
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     onOverflowChange = { titleOverflowing = it },
-                    leading = if (song.isExplicit == true) {
-                        { ExplicitBadge(Color.White) }
-                    } else {
-                        null
-                    },
+                    leading = titleBadges(song, Color.White),
                     modifier = Modifier.opensPage(song.albumId, onOpenAlbum),
                 )
                 Spacer(Modifier.height(2.dp))

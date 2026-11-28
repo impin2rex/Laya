@@ -121,6 +121,9 @@
     <string name="downloaded">ডাউনলোড হয়েছে</string>
     <string name="explore">এক্সপ্লোর</string>
     <string name="library">লাইব্রেরি</string>
+    <string name="mixes_yours">আপনার মিক্স</string>
+    <string name="mixes_none">এখনও কোনো মিক্স নেই। শুনতে থাকুন, YouTube Music আপনার জন্য মিক্স বানাবে।</string>
+    <string name="radio">রেডিও</string>
     <string name="library_sign_in_description">আপনার পছন্দের গান, প্লেলিস্ট আর YouTube Music হিস্ট্রি দেখতে Google অ্যাকাউন্টে সাইন ইন করুন।</string>
     <string name="new_playlist">নতুন প্লেলিস্ট</string>
     <string name="on_device">ডিভাইসে</string>
@@ -163,7 +166,7 @@
     <string name="shelf_quick_picks">কুইক পিকস</string>
     <string name="shelf_recents">সাম্প্রতিক</string>
     <string name="shelf_recommended_music_videos">সাজেস্ট করা মিউজিক ভিডিও</string>
-    <string name="shelf_shorts">Shorts</string>
+    <string name="shelf_shorts">শর্টস</string>
     <string name="shelf_similar_to">%1$s-এর মতো</string>
     <string name="shelf_single">সিঙ্গল</string>
     <string name="shelf_song_item">গান</string>
@@ -230,4 +233,64 @@
     <string name="recognize_minutes_ago">%1$d মিনিট আগে</string>
     <string name="recognize_hours_ago">%1$d ঘণ্টা আগে</string>
     <string name="recognize_days_ago">%1$d দিন আগে</string>
+    <string name="save">সেভ করুন</string>
+    <string name="lyrics_share_video_silent">গানের অডিও পাওয়া যায়নি, তাই এই ভিডিওতে শব্দ নেই।</string>
+    <string name="lyrics_share_title">লিরিক্স শেয়ার করুন</string>
+    <string name="lyrics_share_description">আপনার বাছাই করা লাইনগুলো, কভারসহ একটা কার্ডে সাজানো।</string>
+    <string name="lyrics_share_story">স্টোরি বানান</string>
+    <string name="lyrics_share_story_revert">কার্ডে ফিরে যান</string>
+    <string name="lyrics_share_video">ভিডিও</string>
+    <string name="lyrics_share_image">ছবি</string>
+    <string name="lyrics_share_saving">সংরক্ষণ হচ্ছে…</string>
+    <string name="lyrics_share_show_logo">Laya লোগো দেখান</string>
+    <string name="your_lyrics_card">আপনার লিরিক্স কার্ড</string>
+    <string name="couldnt_draw_picture">ছবিটা তৈরি করা গেল না</string>
+    <string name="saved_bang">সেভ হয়ে গেছে!</string>
+    <string name="video_quality_auto">স্বয়ংক্রিয়</string>
+    <string name="add_to_queue">কিউতে যোগ করুন</string>
+    <string name="queue_select_all">সব বেছে নিন</string>
+    <string name="queue_add_to_playlist">প্লেলিস্ট</string>
+    <string name="queue_selection_remove">সরান</string>
+    <string name="best_part">সেরা অংশ</string>
+    <string name="best_part_description">সেরা অংশে যান</string>
+    <string-array name="lyrics_intro_lines"><item>বিট ধরা পড়ছে</item>
+        <item>গান শুরু হচ্ছে</item>
+        <item>গরম হচ্ছে</item>
+        <item>মেজাজ তৈরি হচ্ছে</item>
+        <item>আগে বেস, পরে কথা</item>
+        <item>একটু অপেক্ষা করুন</item>
+        <item>বিল্ড-আপটা অনুভব করুন</item>
+        <item>আপাতত শুধু গ্রুভ</item>
+        <item>হুক আসছে</item>
+        <item>একটু শ্বাস নিতে দিন</item>
+        <item>ভোকাল আসছে</item>
+        <item>প্রথম সুর এসে গেছে</item></string-array>
+    <string-array name="lyrics_loading_lines"><item>গানের কথা আনা হচ্ছে</item>
+        <item>কথাগুলো খোঁজা হচ্ছে</item>
+        <item>স্তবকগুলো আনা হচ্ছে</item>
+        <item>গানের কথা লোড হচ্ছে</item>
+        <item>লিরিক শিট দেখা হচ্ছে</item>
+        <item>গানের বই খোঁজা হচ্ছে</item>
+        <item>গানের কথা সাজানো হচ্ছে</item>
+        <item>কথাগুলো আসছে</item>
+        <item>আর্কাইভ দেখা হচ্ছে</item>
+        <item>সঠিক কথা খোঁজা হচ্ছে</item>
+        <item>গানের কথা জোড়া লাগছে</item>
+        <item>প্রায় কথাগুলো পেয়ে গেছি</item></string-array>
+    <string name="video_quality">ভিডিওর মান</string>
+    <string name="switch_to_audio">অডিওতে যান</string>
+    <string name="switch_to_video">ভিডিওতে যান</string>
+    <string name="audio_short">অডিও</string>
+    <string name="queue_selected_count">%1$d টি নির্বাচিত</string>
+    <string name="queue_select">নির্বাচন</string>
+    <string name="queue_close_selection">নির্বাচন মোড বন্ধ করুন</string>
+    <string name="queue_add_all_to_playlist">সব প্লেলিস্টে যোগ করুন</string>
+    <string name="queue_removed_song">%1$s সরানো হয়েছে</string>
+    <string name="queue_undo_action">পূর্বাবস্থায়</string>
+    <string name="queue_cleared">কিউ খালি করা হয়েছে</string>
+    <plurals name="queue_removed_count"><item quantity="one">%1$d টি গান সরানো হয়েছে</item>
+        <item quantity="other">%1$d টি গান সরানো হয়েছে</item></plurals>
+    <string name="lyrics_share_making_video">ভিডিও তৈরি হচ্ছে…</string>
+    <string name="top_result">সেরা ফলাফল</string>
+    <string name="something_went_wrong">কিছু একটা সমস্যা হয়েছে</string>
 </resources>

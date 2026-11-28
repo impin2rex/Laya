@@ -85,11 +85,17 @@ final class PcmReader: NSObject, KaraokePcmSource {
     init?(source: URL, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64, rate: Double = 44_100, channels: Int = 2) {
         self.rate = rate
         self.channels = channels
-        if source.isFileURL {
-            asset = AVURLAsset(url: source)
+        // A playlist is no use here however it is delivered: AVAssetReader reads no HLS at all, reporting
+        // no tracks at all. Its segments written back out in order are an ordinary file, which it reads.
+        // A fetch that fails leaves the playlist in hand, so start() refuses it the way it always has.
+        let readable = source.isFileURL && source.pathExtension.lowercased() == "m3u8"
+            ? (HlsAssembly.assemble(playlist: source) ?? source)
+            : source
+        if readable.isFileURL {
+            asset = AVURLAsset(url: readable)
             loader = nil
         } else {
-            let l = ChunkedResourceLoader(source: source, headers: headers, mimeType: mimeType,
+            let l = ChunkedResourceLoader(source: readable, headers: headers, mimeType: mimeType,
                                           knownLength: contentLength > 0 ? contentLength : nil, chunkBytes: max(64 * 1024, chunkBytes))
             asset = AVURLAsset(url: l.proxyURL)
             asset?.resourceLoader.setDelegate(l, queue: l.queue)

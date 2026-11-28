@@ -28,9 +28,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BlurOff
 import androidx.compose.material.icons.rounded.BlurOn
@@ -48,6 +50,8 @@ import androidx.compose.material.icons.rounded.FilterAlt
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Gradient
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.History
@@ -97,6 +101,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import org.jetbrains.compose.resources.StringResource
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -135,6 +142,8 @@ import com.music.laya.data.settings.AutomixPerformanceMode
 import com.music.laya.data.settings.AudioQuality
 import com.music.laya.data.settings.DownloadQuality
 import com.music.laya.data.settings.ThemeMode
+import com.music.laya.data.settings.HomeDialSource
+import com.music.laya.data.settings.HomeDialTileStyle
 import com.music.laya.ui.player.appLanguageTag
 import com.music.laya.ui.player.fullBleedArtworkAvailable
 import kotlinx.coroutines.launch
@@ -192,6 +201,7 @@ fun SettingsScreen(
     val reverbEnabled by AppSettings.reverbEnabled.collectAsStateWithLifecycle()
     val reverb by AppSettings.reverb.collectAsStateWithLifecycle()
     val nerdStats by AppSettings.showNerdStats.collectAsStateWithLifecycle()
+    val bestPart by AppSettings.showBestPart.collectAsStateWithLifecycle()
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
     val systemFont by AppSettings.systemFont.collectAsStateWithLifecycle()
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
@@ -223,12 +233,14 @@ fun SettingsScreen(
     val downloadQuality by AppSettings.downloadQuality.collectAsStateWithLifecycle()
     val wifiOnlyDownloads by AppSettings.wifiOnlyDownloads.collectAsStateWithLifecycle()
     val exportDownloads by AppSettings.exportDownloads.collectAsStateWithLifecycle()
+    val directSourceStream by AppSettings.directSourceStream.collectAsStateWithLifecycle()
     val stopOnTaskRemoved by AppSettings.stopOnTaskRemoved.collectAsStateWithLifecycle()
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
     val hideStatusBarInPlayer by AppSettings.hideStatusBarInPlayer.collectAsStateWithLifecycle()
     val hideSongStatus by AppSettings.hideSongStatus.collectAsStateWithLifecycle()
     val showQueueHistory by AppSettings.showQueueHistory.collectAsStateWithLifecycle()
     val swipeToPlayNext by AppSettings.swipeToPlayNext.collectAsStateWithLifecycle()
+    val hideAiSongs by AppSettings.hideAiSongs.collectAsStateWithLifecycle()
     val dontRepeatSuggestions by AppSettings.dontRepeatSuggestions.collectAsStateWithLifecycle()
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
     val independentVolume by AppSettings.independentVolume.collectAsStateWithLifecycle()
@@ -272,13 +284,21 @@ fun SettingsScreen(
     var importStatus by remember { mutableStateOf<String?>(null) }
     var confirmImport by remember { mutableStateOf(false) }
     var confirmClearSongCache by remember { mutableStateOf(false) }
+    var confirmClearAllCache by remember { mutableStateOf(false) }
     val backup = host.rememberBackup(onExported = { exportStatus = it }, onImported = { importStatus = it })
     val version = host.versionName()
 
     // Made fresh on every pass rather than remembered: it tallies the rows
     // that answered to the query, and that tally has to start from zero each
     // time the query changes.
-    val search = SettingsSearch(searchQuery)
+    // Settings open on the account and a list of categories, as Melo's do; a category shows its
+    // own groups. A search reaches every row whatever page is open.
+    // The open page is held outside the screen so the app's own back button (in its top bar)
+    // closes it first, as it does a pushed page; Settings draws no back arrow of its own.
+    val pageName by SettingsPages.open.collectAsStateWithLifecycle()
+    val page = SettingsCategory.entries.firstOrNull { it.name == pageName }
+    val search = SettingsSearch(searchQuery, page)
+    PlatformBackHandler(enabled = page != null && searchQuery.isBlank()) { SettingsPages.closePage() }
 
     // What is left after a keystroke is a different list, and the offset the
     // last one was scrolled to means nothing in it.
@@ -303,12 +323,13 @@ fun SettingsScreen(
             .padding(contentPadding),
     ) {
         Text(
-            text = stringResource(Res.string.settings),
+            text = page?.takeUnless { search.searching }?.let { stringResource(it.title) } ?: stringResource(Res.string.settings),
             style = MaterialTheme.typography.displayLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 14.dp),
         )
-        SearchField(
+        LaunchedEffect(page) { scrollState.scrollTo(0) }
+        if (page == null || search.searching) SearchField(
             query = searchQuery,
             onQueryChange = { searchQuery = it },
             onSubmit = {},
@@ -319,7 +340,7 @@ fun SettingsScreen(
             },
         )
 
-        SearchableSettingsGroup(search) {
+        SearchableSettingsGroup(search, category = null) {
             if (onAccountScrobbling != null) {
                 val accountTitle = stringResource(Res.string.account_integrations)
                 // What the row opens is the scrobbling screen, so the services it
@@ -360,7 +381,24 @@ fun SettingsScreen(
         // above lists that as the module's own row now. Lossless itself is no
         // longer a setting at all — see
         // [SourceResolver.requestForNow][com.music.laya.data.sources.SourceResolver.requestForNow].
-        SearchableSettingsGroup(search, header = stringResource(Res.string.audio_quality)) {
+        if (page == null && !search.searching) {
+            // Melo's order: what the app looks like, what you listen to, how the app behaves, and about it.
+            for ((section, categories) in SETTINGS_SECTIONS) {
+                SettingsGroup(header = stringResource(section)) {
+                    categories.forEachIndexed { index, category ->
+                        if (index > 0) RowDivider()
+                        SettingsRow(
+                            icon = category.icon,
+                            title = stringResource(category.title),
+                            subtitle = stringResource(category.subtitle),
+                            onClick = { SettingsPages.open.value = category.name },
+                        )
+                    }
+                }
+            }
+        }
+
+        SearchableSettingsGroup(search, SettingsCategory.PLAYBACK, header = stringResource(Res.string.audio_quality)) {
             if (onSources != null) {
                 val sourceTitle = stringResource(Res.string.source)
                 val sourceSubtitle = stringResource(Res.string.sources_subtitle)
@@ -370,6 +408,20 @@ fun SettingsScreen(
                         title = sourceTitle,
                         subtitle = sourceSubtitle,
                         onClick = onSources,
+                    )
+                }
+                // One line: it qualifies the Sources row rather than being a
+                // setting of its own. Off for a party — holding each fetch until
+                // a track is about to play would leave this phone behind.
+                val directSourceTitle = stringResource(Res.string.direct_source_stream)
+                row(directSourceTitle, "addon", "direct", "prefetch", "read-ahead", divided = false, available = host.hasDirectSourceStream) {
+                    SettingsSubRow(
+                        title = directSourceTitle,
+                        checked = directSourceStream && !(party.code != null),
+                        onCheckedChange = { if (!(party.code != null)) AppSettings.setDirectSourceStream(it) },
+                        subtitle = stringResource(
+                            if ((party.code != null)) Res.string.direct_source_stream_in_party else Res.string.direct_source_stream_subtitle,
+                        ),
                     )
                 }
             }
@@ -439,7 +491,7 @@ fun SettingsScreen(
         // does this minute cost"; these answer "what am I keeping, and when may
         // it be fetched" — and those two questions only make sense read
         // together, which is what puts them side by side here.
-        if (host.hasDownloads) SearchableSettingsGroup(search, header = stringResource(Res.string.downloads)) {
+        if (host.hasDownloads) SearchableSettingsGroup(search, SettingsCategory.STORAGE, header = stringResource(Res.string.downloads)) {
             val downloadQualityTitle = stringResource(Res.string.download_quality)
             row(downloadQualityTitle, "offline", "lossless") {
                 SettingsRow(
@@ -473,7 +525,7 @@ fun SettingsScreen(
             }
         }
 
-        SearchableSettingsGroup(search, header = stringResource(Res.string.playback)) {
+        SearchableSettingsGroup(search, SettingsCategory.PLAYBACK, header = stringResource(Res.string.playback)) {
             val preferMusicOnlyTitle = stringResource(Res.string.prefer_music_only)
             // Not an engine option: both phones' players decide a music video's picture by it.
             row(preferMusicOnlyTitle, "video", "audio", "music video") {
@@ -742,7 +794,7 @@ fun SettingsScreen(
             }
         }
 
-        SearchableSettingsGroup(search, header = stringResource(Res.string.appearance)) {
+        SearchableSettingsGroup(search, SettingsCategory.APPEARANCE, header = stringResource(Res.string.appearance)) {
             val themeTitle = stringResource(Res.string.theme)
             row(themeTitle, "dark mode", "light mode") {
                 SettingsRow(icon = Icons.Rounded.Brightness4, title = themeTitle)
@@ -751,6 +803,46 @@ fun SettingsScreen(
                     selectedIndex = ThemeMode.entries.indexOf(theme),
                     onSelect = { AppSettings.setThemeMode(ThemeMode.entries[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
+            val colorBackgroundTitle = stringResource(Res.string.color_background)
+            row(colorBackgroundTitle, "ambient", "background", "artwork", "colour", "color") {
+                val colorBackground by AppSettings.colorBackground.collectAsStateWithLifecycle()
+                SettingsRow(
+                    icon = Icons.Rounded.Gradient,
+                    title = colorBackgroundTitle,
+                    subtitle = stringResource(Res.string.color_background_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = colorBackground,
+                            onCheckedChange = AppSettings::setColorBackground,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setColorBackground(!colorBackground) },
+                )
+            }
+            val splashScreenTitle = stringResource(Res.string.splash_screen)
+            row(splashScreenTitle, "splash", "launch", "startup", "logo", "animation") {
+                val splashScreen by AppSettings.splashScreen.collectAsStateWithLifecycle()
+                SettingsRow(
+                    icon = Icons.Rounded.AutoAwesome,
+                    title = splashScreenTitle,
+                    subtitle = stringResource(Res.string.splash_screen_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = splashScreen,
+                            onCheckedChange = AppSettings::setSplashScreen,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setSplashScreen(!splashScreen) },
                 )
             }
             val systemFontTitle = stringResource(Res.string.system_font)
@@ -1079,7 +1171,133 @@ fun SettingsScreen(
             }
         }
 
-        if (refreshRates != null) SearchableSettingsGroup(search, header = stringResource(Res.string.performance)) {
+        // The Home dials, ported from Melo (GPL-3.0) along with their settings:
+        // everything past the first switch shapes the Speed Dial, so it goes
+        // with it while the dial is off.
+        val homeSpeedDial by AppSettings.homeSpeedDial.collectAsStateWithLifecycle()
+        val homeArtistDial by AppSettings.homeArtistDial.collectAsStateWithLifecycle()
+        val homeLuckyTile by AppSettings.homeLuckyTile.collectAsStateWithLifecycle()
+        val homeDialSource by AppSettings.homeDialSource.collectAsStateWithLifecycle()
+        val homeDialRows by AppSettings.homeDialRows.collectAsStateWithLifecycle()
+        val homeDialTileStyle by AppSettings.homeDialTileStyle.collectAsStateWithLifecycle()
+        val homeDialLabels by AppSettings.homeDialLabels.collectAsStateWithLifecycle()
+        val homeDialPinIcon by AppSettings.homeDialPinIcon.collectAsStateWithLifecycle()
+        val homeDialNewReleaseTags by AppSettings.homeDialNewReleaseTags.collectAsStateWithLifecycle()
+        val hiddenFromDial by AppSettings.hiddenFromDial.collectAsStateWithLifecycle()
+        SearchableSettingsGroup(search, SettingsCategory.HOME, header = stringResource(Res.string.settings_home)) {
+            val speedDialTitle = stringResource(Res.string.settings_home_speed_dial)
+            // Carries the keywords of the rows that only appear once it is on.
+            row(speedDialTitle, "tiles", "pins", "artists", "lucky", "random", "dice") {
+                SettingsRow(
+                    icon = Icons.Rounded.Apps,
+                    title = speedDialTitle,
+                    subtitle = stringResource(Res.string.settings_home_speed_dial_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = homeSpeedDial,
+                            onCheckedChange = AppSettings::setHomeSpeedDial,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setHomeSpeedDial(!homeSpeedDial) },
+                )
+            }
+            if (homeSpeedDial) {
+                val artistDialTitle = stringResource(Res.string.settings_home_artist_dial)
+                row(artistDialTitle, "artists", divided = false) {
+                    SettingsSubRow(
+                        title = artistDialTitle,
+                        checked = homeArtistDial,
+                        onCheckedChange = AppSettings::setHomeArtistDial,
+                    )
+                }
+                val luckyTileTitle = stringResource(Res.string.settings_home_lucky_tile)
+                row(luckyTileTitle, "lucky", "random", "dice", "shuffle", divided = false) {
+                    SettingsSubRow(
+                        title = luckyTileTitle,
+                        checked = homeLuckyTile,
+                        onCheckedChange = AppSettings::setHomeLuckyTile,
+                    )
+                }
+                val dialSourceTitle = stringResource(Res.string.settings_home_dial_source)
+                row(dialSourceTitle, "youtube", "history", "tiles") {
+                    SettingsRow(icon = Icons.Rounded.History, title = dialSourceTitle)
+                    SegmentedControl(
+                        options = listOf(
+                            stringResource(Res.string.settings_home_dial_source_youtube),
+                            stringResource(Res.string.settings_home_dial_source_history),
+                        ),
+                        selectedIndex = HomeDialSource.entries.indexOf(homeDialSource),
+                        onSelect = { AppSettings.setHomeDialSource(HomeDialSource.entries[it]) },
+                        modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                    )
+                }
+                val dialRowsTitle = stringResource(Res.string.settings_home_dial_rows)
+                row(dialRowsTitle, "rows", "grid", "size") {
+                    val rowChoices = AppSettings.HOME_DIAL_ROWS.toList()
+                    SettingsRow(icon = Icons.Rounded.GridView, title = dialRowsTitle)
+                    SegmentedControl(
+                        options = rowChoices.map { stringResource(Res.string.settings_home_dial_grid, it) },
+                        selectedIndex = rowChoices.indexOf(homeDialRows),
+                        onSelect = { AppSettings.setHomeDialRows(rowChoices[it]) },
+                        modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                    )
+                }
+                val tileStyleTitle = stringResource(Res.string.settings_home_dial_tile_style)
+                row(tileStyleTitle, "edge", "glass", "plain", "rim", "tiles") {
+                    SettingsRow(icon = Icons.Rounded.BlurOn, title = tileStyleTitle)
+                    SegmentedControl(
+                        options = listOf(
+                            stringResource(Res.string.settings_home_dial_tile_style_plain),
+                            stringResource(Res.string.settings_home_dial_tile_style_edge),
+                            stringResource(Res.string.settings_home_dial_tile_style_glass),
+                        ),
+                        selectedIndex = HomeDialTileStyle.entries.indexOf(homeDialTileStyle),
+                        onSelect = { AppSettings.setHomeDialTileStyle(HomeDialTileStyle.entries[it]) },
+                        modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                    )
+                }
+                val dialLabelsTitle = stringResource(Res.string.settings_home_dial_labels)
+                row(dialLabelsTitle, "titles", "labels", divided = false) {
+                    SettingsSubRow(
+                        title = dialLabelsTitle,
+                        checked = homeDialLabels,
+                        onCheckedChange = AppSettings::setHomeDialLabels,
+                    )
+                }
+                val dialPinIconTitle = stringResource(Res.string.settings_home_dial_pin_icon)
+                row(dialPinIconTitle, "pin", "badge", divided = false) {
+                    SettingsSubRow(
+                        title = dialPinIconTitle,
+                        checked = homeDialPinIcon,
+                        onCheckedChange = AppSettings::setHomeDialPinIcon,
+                    )
+                }
+                val dialNewTagsTitle = stringResource(Res.string.settings_home_dial_new_tags)
+                row(dialNewTagsTitle, "new", "releases", "tag", divided = false) {
+                    SettingsSubRow(
+                        title = dialNewTagsTitle,
+                        checked = homeDialNewReleaseTags,
+                        onCheckedChange = AppSettings::setHomeDialNewReleaseTags,
+                    )
+                }
+                if (hiddenFromDial.isNotEmpty()) {
+                    val restoreTilesTitle = stringResource(Res.string.settings_home_restore_tiles, hiddenFromDial.size)
+                    row(restoreTilesTitle, "restore", "removed", "hidden", "tiles") {
+                        SettingsRow(
+                            icon = Icons.Rounded.Restore,
+                            title = restoreTilesTitle,
+                            onClick = { hiddenFromDial.forEach { AppSettings.setHiddenFromDial(it, false) } },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (refreshRates != null) SearchableSettingsGroup(search, SettingsCategory.GENERAL, header = stringResource(Res.string.performance)) {
             val highPerformanceModeTitle = stringResource(Res.string.high_performance_mode)
             row(highPerformanceModeTitle, "frame rate", "refresh rate", "hz", "battery", "smooth") {
                 SettingsRow(
@@ -1138,7 +1356,7 @@ fun SettingsScreen(
             }
         }
 
-        if (localMusicFolder != null) SearchableSettingsGroup(search, header = stringResource(Res.string.local_music)) {
+        if (localMusicFolder != null) SearchableSettingsGroup(search, SettingsCategory.STORAGE, header = stringResource(Res.string.local_music)) {
             val localMusicFolderTitle = stringResource(Res.string.local_music_folder)
             row(localMusicFolderTitle, "folder", "offline", "files") {
                 SettingsRow(
@@ -1186,9 +1404,9 @@ fun SettingsScreen(
         val cacheLimitMb = if (cacheUnlimited) CACHE_UNLIMITED_STOP_MB else (cacheLimitBytes / (1024 * 1024)).toInt()
         val unlimitedLabel = stringResource(Res.string.song_cache_unlimited)
         val cacheLimitLabel = if (cacheUnlimited) unlimitedLabel else formatCacheSize(cacheLimitMb)
-        if (host.hasSongCache) SearchableSettingsGroup(search, header = stringResource(Res.string.storage)) {
+        if (host.hasSongCache) SearchableSettingsGroup(search, SettingsCategory.STORAGE, header = stringResource(Res.string.storage)) {
             val showCacheFolderTitle = stringResource(Res.string.show_cache_folder)
-            row(showCacheFolderTitle, "cache", "cached songs", "library", "folder") {
+            if (host.hasCacheFolder) row(showCacheFolderTitle, "cache", "cached songs", "library", "folder") {
                 SettingsRow(
                     icon = Icons.Rounded.Cached,
                     title = showCacheFolderTitle,
@@ -1245,18 +1463,27 @@ fun SettingsScreen(
                     onClick = host::clearImageCache,
                 )
             }
+            val clearAllCacheTitle = stringResource(Res.string.clear_all_cache)
+            row(clearAllCacheTitle, "cache", "video", "audio", "storage", "free space") {
+                SettingsRow(
+                    icon = Icons.Rounded.DeleteSweep,
+                    title = clearAllCacheTitle,
+                    subtitle = stringResource(Res.string.clear_all_cache_subtitle),
+                    onClick = { confirmClearAllCache = true },
+                )
+            }
         }
 
         // Only in a build that carries the watch app — see app/build.gradle.kts.
         if (onWearOs != null) {
-            SearchableSettingsGroup(search) {
+            SearchableSettingsGroup(search, SettingsCategory.GENERAL) {
                 row(stringResource(Res.string.wear_os_section), "watch", "wear os", "galaxy watch", "pixel watch", "install") {
                     host.WearOsRow(onClick = onWearOs)
                 }
             }
         }
 
-        SearchableSettingsGroup(search, header = stringResource(Res.string.your_data)) {
+        SearchableSettingsGroup(search, SettingsCategory.YOUR_DATA, header = stringResource(Res.string.your_data)) {
             if (onOpenReplay != null) {
                 val replayTitle = stringResource(Res.string.replay)
                 row(replayTitle, "stats", "history", "wrapped") {
@@ -1315,7 +1542,7 @@ fun SettingsScreen(
 
         // No footer: it only restated the stop-on-close row's own subtitle,
         // which sits four rows above it and says the same thing in fewer words.
-        SearchableSettingsGroup(search, header = stringResource(Res.string.miscellaneous)) {
+        SearchableSettingsGroup(search, SettingsCategory.GENERAL, header = stringResource(Res.string.miscellaneous)) {
             val playNextOnSwipeTitle = stringResource(Res.string.play_next_on_swipe)
             row(playNextOnSwipeTitle, "swipe", "queue") {
                 SettingsRow(
@@ -1337,6 +1564,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setSwipeToPlayNext(!swipeToPlayNext) },
+                )
+            }
+            val hideAiSongsTitle = stringResource(Res.string.hide_ai_songs)
+            row(hideAiSongsTitle, "ai", "generated", "slop", "filter") {
+                SettingsRow(
+                    icon = Icons.Rounded.SmartToy,
+                    title = hideAiSongsTitle,
+                    subtitle = stringResource(Res.string.hide_ai_songs_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = hideAiSongs,
+                            onCheckedChange = AppSettings::setHideAiSongs,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setHideAiSongs(!hideAiSongs) },
                 )
             }
             val dontRepeatSongsTitle = stringResource(Res.string.dont_repeat_songs)
@@ -1457,7 +1703,7 @@ fun SettingsScreen(
             }
         }
 
-        if (onAppLanguage != null) SearchableSettingsGroup(search, header = stringResource(Res.string.language)) {
+        if (onAppLanguage != null) SearchableSettingsGroup(search, SettingsCategory.GENERAL, header = stringResource(Res.string.language)) {
             val appLanguageTitle = stringResource(Res.string.app_language)
             row(appLanguageTitle, "locale", "translate") {
                 SettingsRow(
@@ -1469,7 +1715,7 @@ fun SettingsScreen(
             }
         }
 
-        SearchableSettingsGroup(search, header = stringResource(Res.string.advanced_options)) {
+        SearchableSettingsGroup(search, SettingsCategory.ADVANCED, header = stringResource(Res.string.advanced_options)) {
             val smartAlignmentTitle = stringResource(Res.string.smart_version_alignment)
             row(smartAlignmentTitle, "alignment", "sync", "waveform", "video", "audio", "skit", "intro", available = engineOptions) {
                 SettingsRow(
@@ -1487,6 +1733,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setSmartVersionAlignment(!smartVersionAlignment) },
+                )
+            }
+            val bestPartTitle = stringResource(Res.string.show_best_part)
+            row(bestPartTitle, "best part", "chorus", "skip", "replayed", "highlight") {
+                SettingsRow(
+                    icon = Icons.Rounded.MusicNote,
+                    title = bestPartTitle,
+                    subtitle = stringResource(Res.string.show_best_part_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = bestPart,
+                            onCheckedChange = AppSettings::setShowBestPart,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setShowBestPart(!bestPart) },
                 )
             }
             val showNerdStatsTitle = stringResource(Res.string.show_nerd_stats)
@@ -1508,6 +1773,10 @@ fun SettingsScreen(
                     onClick = { AppSettings.setShowNerdStats(!nerdStats) },
                 )
             }
+            host.lockScreenRow?.let { lockScreenRow ->
+                val lockScreenTitle = stringResource(Res.string.lock_screen_player)
+                row(lockScreenTitle, "lock screen", "lockscreen", "lyrics", "keyguard", "album art") { lockScreenRow() }
+            }
             host.appIconRow?.let { appIconRow ->
                 val appIconTitle = stringResource(Res.string.app_icon)
                 row(appIconTitle, "icon", "launcher", "logo") { appIconRow() }
@@ -1516,7 +1785,7 @@ fun SettingsScreen(
 
         // Read after every group above has had its turn at the query, which is
         // what makes this an accurate "nothing here" rather than a guess.
-        if (!search.anyMatch) {
+        if (search.searching && !search.anyMatch) {
             MessageState(stringResource(Res.string.settings_search_empty, searchQuery))
         }
 
@@ -1627,6 +1896,27 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { confirmClearSongCache = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (confirmClearAllCache) {
+        AlertDialog(
+            onDismissRequest = { confirmClearAllCache = false },
+            title = { Text(stringResource(Res.string.clear_all_cache_title)) },
+            text = { Text(stringResource(Res.string.clear_all_cache_warning)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClearAllCache = false
+                    host.clearAllCache()
+                }) {
+                    Text(stringResource(Res.string.clear))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearAllCache = false }) {
                     Text(stringResource(Res.string.cancel))
                 }
             },
@@ -2111,11 +2401,17 @@ val TEXT_INSET = ROW_INSET + ICON_SIZE + ICON_GAP
  * every group has had its turn, which is why this is made fresh on each pass
  * rather than remembered.
  */
-private class SettingsSearch(query: String) {
+private class SettingsSearch(query: String, val page: SettingsCategory?) {
     // Trimmed, because a trailing space is a typo rather than a search for
     // something ending in one — and on a phone keyboard it is one keystroke
     // away from every word typed.
     private val needle = query.trim()
+
+    /** A search is typed: every group shows its matching rows, whatever page is open. */
+    val searching get() = needle.isNotEmpty()
+
+    /** Whether a group on [category] (null: the front page) is drawn now. */
+    fun shows(category: SettingsCategory?) = searching || category == page
 
     var anyMatch = false
         private set
@@ -2156,9 +2452,16 @@ private class SettingsGroupScope(
     ) {
         if (!available) return
         // The header counts for every row beneath it: searching "playback"
-        // should turn up the playback group entire, not nothing at all.
-        if (search.matches(header, *keywords)) entries += Entry(divided, content)
+        // should turn up the playback group entire, not nothing at all. A row
+        // drawn under its parent comes along with it: "artist signatures"
+        // finds the switch, and its server address and status belong to it.
+        val hit = search.matches(header, *keywords) || (!divided && parentShown)
+        if (divided) parentShown = hit
+        if (hit) entries += Entry(divided, content)
     }
+
+    /** Whether the last row with its own divider survived the search. */
+    private var parentShown = false
 }
 
 /**
@@ -2170,11 +2473,14 @@ private class SettingsGroupScope(
 @Composable
 private fun SearchableSettingsGroup(
     search: SettingsSearch,
+    /** The page the group lives on; null keeps it on the front page. */
+    category: SettingsCategory?,
     header: String? = null,
     footer: String? = null,
     topSpacing: Dp = 26.dp,
     content: @Composable SettingsGroupScope.() -> Unit,
 ) {
+    if (!search.shows(category)) return
     val scope = SettingsGroupScope(search, header)
     scope.content()
     if (scope.entries.isEmpty()) return
@@ -2579,3 +2885,33 @@ fun SegmentedControl(
 
 /** The signature server's "Online" line. */
 private val SERVER_ONLINE_GREEN = Color(0xFF34C759)
+
+/** The pages settings are grouped into, as Melo groups its own. */
+private enum class SettingsCategory(val title: StringResource, val subtitle: StringResource, val icon: ImageVector) {
+    APPEARANCE(Res.string.appearance, Res.string.settings_category_appearance_subtitle, Icons.Rounded.Brightness4),
+    HOME(Res.string.settings_home, Res.string.settings_category_home_subtitle, Icons.Rounded.GridView),
+    PLAYBACK(Res.string.playback, Res.string.settings_category_playback_subtitle, Icons.Rounded.MusicNote),
+    STORAGE(Res.string.storage, Res.string.settings_category_storage_subtitle, Icons.Rounded.Storage),
+    GENERAL(Res.string.settings_category_general, Res.string.settings_category_general_subtitle, Icons.Rounded.Tune),
+    YOUR_DATA(Res.string.your_data, Res.string.settings_category_data_subtitle, Icons.Rounded.FileUpload),
+    ADVANCED(Res.string.advanced_options, Res.string.settings_category_advanced_subtitle, Icons.Rounded.BarChart),
+}
+
+private val SETTINGS_SECTIONS: List<Pair<StringResource, List<SettingsCategory>>> = listOf(
+    Res.string.settings_section_look to listOf(SettingsCategory.APPEARANCE, SettingsCategory.HOME),
+    Res.string.settings_section_listening to listOf(SettingsCategory.PLAYBACK, SettingsCategory.STORAGE),
+    Res.string.settings_section_app to listOf(SettingsCategory.GENERAL, SettingsCategory.YOUR_DATA),
+    Res.string.settings_section_about to listOf(SettingsCategory.ADVANCED),
+)
+
+/** Which settings category is open (by name), or null for the front page. */
+object SettingsPages {
+    val open = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+
+    /** Back from a category to the front page; false when the front page is already showing. */
+    fun closePage(): Boolean {
+        if (open.value == null) return false
+        open.value = null
+        return true
+    }
+}

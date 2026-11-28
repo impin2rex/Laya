@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "Laya mendengarkan lewat mikrofon saat kamu mencari dengan suara atau mengenali lagu yang diputar di dekatmu.";
+"NSSpeechRecognitionUsageDescription" = "Laya mengubah ucapanmu menjadi pencarian lagu, artis, album, dan playlist.";
+"NSPhotoLibraryAddUsageDescription" = "Laya menyimpan kartu Replay dan lirik ke pustaka fotomu saat kamu mengetuk Simpan.";
+"NSLocalNetworkUsageDescription" = "Laya menemukan Chromecast dan speaker Google Cast di Wi-Fi-mu agar kamu bisa memutar musik di perangkat tersebut.";

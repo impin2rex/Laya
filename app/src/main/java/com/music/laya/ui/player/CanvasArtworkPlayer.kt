@@ -161,6 +161,11 @@ internal fun AndroidCanvasArtworkPlayer(
      * while paused, so there is nothing to fade back in once it lifts.
      */
     pausedForTransition: Boolean = false,
+    /**
+     * An AutoMix reveal laid over the clip — cut through the organic mask as it climbs, hidden at
+     * zero, whole at one. Null for a clip that is simply on screen.
+     */
+    organicReveal: CanvasOrganicReveal? = null,
 ) {
     val context = LocalContext.current
 
@@ -350,6 +355,8 @@ internal fun AndroidCanvasArtworkPlayer(
         }
     }
 
+    val revealMask = remember(organicReveal?.generation) { organicReveal?.let { AutoMixLayerMask(it.generation) } }
+
     AndroidView(
         factory = { viewContext ->
             val texture = TextureView(viewContext).apply {
@@ -465,6 +472,11 @@ internal fun AndroidCanvasArtworkPlayer(
                 // recomposing the player around it.
                 alpha * presentationAlpha()
             }
+            // Read here, as the fade above is, so each frame of the reveal re-runs this block.
+            val reveal = organicReveal?.progress?.invoke()
+            frame.revealMask = if (reveal != null) revealMask else null
+            frame.setReveal(reveal ?: 1f)
+            if (reveal != null && reveal <= 0f) view.alpha = 0f
             // Only when something they are made of has changed. The fade above
             // re-runs this block on every frame of a collapse or of the player
             // closing into the mini player, and each pass built a fresh matrix,
@@ -714,7 +726,31 @@ private class FadingBottomFrame(context: Context) : FrameLayout(context) {
         gradient = null
     }
 
+    /** The AutoMix reveal over the frame, when this is the incoming clip of a live blend. */
+    var revealMask: AutoMixLayerMask? = null
+    private var revealProgress = 1f
+
+    fun setReveal(progress: Float) {
+        if (progress == revealProgress) return
+        revealProgress = progress
+        invalidate()
+    }
+
     override fun dispatchDraw(canvas: Canvas) {
+        val mask = revealMask
+        val progress = revealProgress
+        if (mask == null || progress >= 1f) {
+            drawFaded(canvas)
+            return
+        }
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val layer = mask.begin(canvas, w, h, progress)
+        drawFaded(canvas)
+        mask.end(canvas, layer, w, h, progress)
+    }
+
+    private fun drawFaded(canvas: Canvas) {
         val fade = fadeFraction
         val endY = fadeEndPx?.coerceIn(0f, height.toFloat()) ?: height.toFloat()
         if (fade <= 0.001f || endY <= 0f) {
@@ -774,6 +810,7 @@ internal fun AndroidCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
         bottomFade = spec.bottomFade,
         bottomFadeEndPx = spec.bottomFadeEndPx,
         pausedForTransition = spec.pausedForTransition,
+        organicReveal = spec.organicReveal,
     )
 }
 

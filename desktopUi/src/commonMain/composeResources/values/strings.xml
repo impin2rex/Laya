@@ -9,6 +9,8 @@
     <string name="audio_pipeline">Audio Pipeline</string>
     <string name="automix_analysis_status">Automix · this song: %1$s · next: %2$s</string>
     <string name="automix_not_supported_video">Automix not supported on video songs</string>
+    <string name="best_part">Best Part</string>
+    <string name="best_part_description">Skip to the best part</string>
     <string name="automix_stopped_in_party">Automix: stopped in listen together</string>
     <string name="autoplay">AutoPlay</string>
     <string name="autoplay_empty_description">Similar music will keep playing</string>
@@ -94,6 +96,18 @@
     <string name="lyrics_romanized">Romanized pronunciation</string>
     <string name="lyrics_saved_with_download">Lyrics saved with this download</string>
     <string name="lyrics_share_pick_limit">Card is full</string>
+    <string name="save">Save</string>
+    <string name="lyrics_share_title">Share lyrics</string>
+    <string name="lyrics_share_description">The lines you picked, laid out on a card with the cover.</string>
+    <string name="lyrics_share_story">Convert to story</string>
+    <string name="lyrics_share_story_revert">Convert to card</string>
+    <string name="lyrics_share_video">Video</string>
+    <string name="lyrics_share_image">Image</string>
+    <string name="lyrics_share_saving">Saving…</string>
+    <string name="lyrics_share_show_logo">Show Laya logo</string>
+    <string name="your_lyrics_card">Your lyrics card</string>
+    <string name="couldnt_draw_picture">Could not create the picture</string>
+    <string name="saved_bang">Saved!</string>
     <string name="lyrics_translated_to">Translated to %1$s</string>
     <string name="lyrics_translation_unavailable">Translation is unavailable right now</string>
     <string name="medium_quality">Medium Quality</string>
@@ -149,6 +163,9 @@
     <string name="downloaded">Downloaded</string>
     <string name="explore">Explore</string>
     <string name="library">Library</string>
+    <string name="mixes_yours">Your Mixes</string>
+    <string name="mixes_none">No mixes yet. Keep listening and YouTube Music will make some for you.</string>
+    <string name="radio">Radio</string>
     <string name="library_sign_in_description">Sign in to your Google account to see your liked songs, playlists, and YouTube Music history.</string>
     <string name="new_playlist">New playlist</string>
     <string name="on_device">On Device</string>
@@ -263,4 +280,23 @@
     <string name="recognize_minutes_ago">%1$d min ago</string>
     <string name="recognize_hours_ago">%1$d h ago</string>
     <string name="recognize_days_ago">%1$d d ago</string>
+    <string name="add_to_queue">Add to queue</string>
+    <string name="queue_selected_count">%1$d selected</string>
+    <string name="queue_select_all">Select all</string>
+    <string name="queue_select">Select</string>
+    <string name="queue_close_selection">Close selection mode</string>
+    <string name="queue_add_to_playlist">Playlist</string>
+    <string name="queue_selection_remove">Remove</string>
+    <string name="queue_add_all_to_playlist">Add all to playlist</string>
+    <string name="queue_removed_song">Removed %1$s</string>
+    <string name="queue_undo_action">Undo</string>
+    <string name="queue_cleared">Queue cleared</string>
+    <plurals name="queue_removed_count">
+        <item quantity="one">Removed %1$d song</item>
+        <item quantity="other">Removed %1$d songs</item>
+    </plurals>
+    <string name="lyrics_share_video_silent">Couldn’t get the song’s audio, so this video has no sound.</string>
+    <string name="lyrics_share_making_video">Making the video…</string>
+    <string name="top_result">Top result</string>
+    <string name="something_went_wrong">Something went wrong</string>
 </resources>

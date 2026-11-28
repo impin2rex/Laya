@@ -100,7 +100,7 @@ class LosslessSource(
         }
 
         /** How often a held session's end date is compared with the clock. */
-        const val CHECK_EVERY_MS = 60_000L
+        const val CHECK_EVERY_MS = 5 * 60_000L
 
         /**
          * A lost session ([com.music.laya.data.sources.lossless.ZarzSession.lost]) switches its source off at once,
@@ -119,9 +119,20 @@ class LosslessSource(
             LosslessProvider.all.forEach { provider ->
                 val owed = MutableStateFlow(false)
                 scope.launch { lossesOf(provider).collect { if (switchOff(provider)) owed.value = true } }
+                // Belt and braces for the report above, which fires once: a session already gone
+                // before this run (cleared in an earlier one, the switch left on) is never reported
+                // again, and the row sat "on" with nothing behind it. No session, no switch — at
+                // startup and whenever it drops. Silent: the notice stays with a real loss. Turning
+                // the switch on by hand doesn't change [verified], so it doesn't fight the verify flow.
+                // Not for a loss happening now ([ZarzSession.expired]): that one is the collector above's to switch
+                // off, as it owes the notice only for a switch it turned off itself, and this one used to get there
+                // first — every session lost while the app ran went off without a word.
+                scope.launch {
+                    provider.session.verified.collect { if (!it && !provider.session.expired.value) switchOff(provider) }
+                }
                 scope.launch {
                     while (true) {
-                        provider.session.check()
+                        provider.session.renewOrCheck()
                         delay(CHECK_EVERY_MS)
                     }
                 }

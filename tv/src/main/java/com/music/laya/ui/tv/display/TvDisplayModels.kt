@@ -1,11 +1,13 @@
 package com.music.laya.ui.tv.display
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import com.music.laya.R
 
-enum class TvRefreshRatePreference(val label: String, val description: String) {
-    SYSTEM_AUTO("Auto (Recommended)", "Allows the TV and Android system to manage the display refresh rate dynamically."),
-    SMOOTH_60("Smooth 60 Hz", "Requests standard 60 Hz interface motion at native resolution."),
-    ULTRA_120("Ultra 120 Hz", "Requests up to 120 fps for interface motion on compatible displays. Canvas video maintains native source frame rate.");
+enum class TvRefreshRatePreference(@StringRes val label: Int, @StringRes val description: Int) {
+    SYSTEM_AUTO(R.string.tv_refresh_auto, R.string.tv_refresh_auto_desc),
+    SMOOTH_60(R.string.tv_refresh_60, R.string.tv_refresh_60_desc),
+    ULTRA_120(R.string.tv_refresh_120, R.string.tv_refresh_120_desc);
 
     companion object {
         fun fromString(value: String): TvRefreshRatePreference = when (value.uppercase()) {

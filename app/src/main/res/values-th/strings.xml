@@ -21,6 +21,7 @@
     <string name="search">ค้นหา</string>
     <string name="clear_search">ล้างการค้นหา</string>
     <string name="library">คลังเพลง</string>
+    <string name="radio">วิทยุ</string>
     <string name="home">หน้าแรก</string>
     <string name="play">เล่น</string>
     <string name="explore">สำรวจ</string>
@@ -524,6 +525,13 @@
     <string name="lyrics_share_description">บรรทัดที่คุณเลือก เรียงเป็นการ์ดพร้อมปก</string>
     <string name="lyrics_share_story">แปลงเป็นสตอรี่</string>
     <string name="lyrics_share_story_revert">กลับเป็นการ์ด</string>
+    <string name="lyrics_share_video">วิดีโอ</string>
+    <string name="lyrics_share_image">รูปภาพ</string>
+    <string name="lyrics_share_saving">กำลังบันทึก…</string>
+    <string name="lyrics_share_gradient">ไล่ระดับสี</string>
+    <string name="lyrics_share_canvas">แคนวาส</string>
+    <string name="lyrics_share_show_logo">แสดงโลโก้ Laya</string>
+    <string name="lyrics_share_making_video">กำลังสร้างวิดีโอ…</string>
     <string name="listening_shape">รูปแบบการฟังของคุณ</string>
     <string name="member_since">สมาชิกตั้งแต่</string>
     <string name="member_since_value">เป็นสมาชิกตั้งแต่ %1$s</string>
@@ -794,67 +802,67 @@
     <string name="listen_together_status_all_offline">ทั้งเซิร์ฟเวอร์ที่กำหนดเองและเซิร์ฟเวอร์เริ่มต้นออฟไลน์อยู่</string>
     <string name="listen_together_top_bar_fallback">สำรอง · %1$s</string>
 
-    <string name="lyrics_offset">Lyrics offset</string>
+    <string name="lyrics_offset">ค่าชดเชยเนื้อเพลง</string>
 
 
 
 
 
-    <string name="auto_quick_picks">Quick picks</string>
+    <string name="auto_quick_picks">เลือกด่วน</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">ล่าสุด</string>
 
-    <string name="auto_liked">Liked songs</string>
+    <string name="auto_liked">เพลงที่ถูกใจ</string>
 
-    <string name="auto_login_title">Sign in to YouTube on your phone</string>
+    <string name="auto_login_title">ลงชื่อเข้าใช้ YouTube บนโทรศัพท์ของคุณ</string>
 
-    <string name="auto_login_subtitle">Open Laya on your phone to sign in</string>
+    <string name="auto_login_subtitle">เปิด Laya บนโทรศัพท์เพื่อลงชื่อเข้าใช้</string>
 
-    <string name="auto_empty_recents_title">No recent songs</string>
+    <string name="auto_empty_recents_title">ไม่มีเพลงล่าสุด</string>
 
-    <string name="auto_empty_recents_subtitle">Songs you play will appear here</string>
+    <string name="auto_empty_recents_subtitle">เพลงที่คุณเล่นจะแสดงที่นี่</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">ไม่มีคำแนะนำ</string>
 
-    <string name="auto_empty_quick_picks_subtitle">Check your connection and try again</string>
+    <string name="auto_empty_quick_picks_subtitle">ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง</string>
 
-    <string name="auto_empty_playlists_title">No playlists available</string>
+    <string name="auto_empty_playlists_title">ไม่มีเพลย์ลิสต์ให้ใช้งาน</string>
 
-    <string name="auto_empty_playlists_subtitle">Check your connection and try again</string>
+    <string name="auto_empty_playlists_subtitle">ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง</string>
 
-    <string name="auto_empty_liked_title">No liked songs</string>
+    <string name="auto_empty_liked_title">ไม่มีเพลงที่ถูกใจ</string>
 
-    <string name="auto_empty_liked_subtitle">Tap the heart on a song to save it here</string>
+    <string name="auto_empty_liked_subtitle">แตะรูปหัวใจบนเพลงเพื่อบันทึกไว้ที่นี่</string>
 
-    <string name="auto_empty_offline_title">No offline songs</string>
+    <string name="auto_empty_offline_title">ไม่มีเพลงออฟไลน์</string>
 
-    <string name="auto_empty_offline_subtitle">Download songs on your phone to listen here</string>
+    <string name="auto_empty_offline_subtitle">ดาวน์โหลดเพลงบนโทรศัพท์เพื่อฟังที่นี่</string>
 
-    <string name="auto_unavailable_title">Content unavailable</string>
+    <string name="auto_unavailable_title">เนื้อหาไม่พร้อมใช้งาน</string>
 
-    <string name="auto_unavailable_subtitle">Reopen the folder and try again</string>
+    <string name="auto_unavailable_subtitle">เปิดโฟลเดอร์อีกครั้งแล้วลองใหม่</string>
 
-    <string name="subscribe">Subscribe</string>
+    <string name="subscribe">ติดตาม</string>
 
-    <string name="unsubscribe">Unsubscribe</string>
+    <string name="unsubscribe">เลิกติดตาม</string>
 
-    <string name="settings_search_hint">Search settings</string>
+    <string name="settings_search_hint">ค้นหาการตั้งค่า</string>
 
-    <string name="settings_search_empty">No settings match “%1$s”</string>
+    <string name="settings_search_empty">ไม่มีการตั้งค่าที่ตรงกับ “%1$s”</string>
 
-    <string name="source_unrecognised">Laya could not tell what that link is</string>
+    <string name="source_unrecognised">Laya ไม่รู้ว่าลิงก์นั้นคืออะไร</string>
 
-    <string name="source_already_added">Already added as %1$s</string>
+    <string name="source_already_added">เพิ่มแล้วในชื่อ %1$s</string>
 
-    <string name="source_skipped_by_quality">Not used on %1$s · quality is set to %2$s</string>
+    <string name="source_skipped_by_quality">ไม่ได้ใช้กับ %1$s · ตั้งคุณภาพเป็น %2$s</string>
 
-    <string name="upgrade_quality">Upgrade quality</string>
+    <string name="upgrade_quality">อัปเกรดคุณภาพ</string>
 
     <string name="dolby_atmos">Dolby Atmos</string>
 
-    <string name="dolby_atmos_subtitle">Play the more immersive, surround version of a song when there is one.</string>
+    <string name="dolby_atmos_subtitle">เล่นเพลงเวอร์ชันเซอร์ราวด์ที่สมจริงยิ่งขึ้นเมื่อมี</string>
 
-    <string name="dolby_atmos_unavailable">This device can\'t play Atmos, so these songs play in their usual version</string>
+    <string name="dolby_atmos_unavailable">อุปกรณ์นี้เล่น Atmos ไม่ได้ เพลงเหล่านี้จึงเล่นในเวอร์ชันปกติ</string>
 
     <string name="prefer_music_only">เลือกเวอร์ชันเพลงอย่างเดียวก่อน</string>
 
@@ -862,170 +870,170 @@
     <string name="smart_version_alignment">จัดตำแหน่งเสียงอัจฉริยะ</string>
     <string name="smart_version_alignment_subtitle">วิเคราะห์รูปคลื่นเสียงเพื่อหาจุดเล่นที่ตรงกันพอดี</string>
 
-    <string name="equalizer_footer">Shapes the sound inside Laya, before it reaches the system.</string>
+    <string name="equalizer_footer">ปรับแต่งเสียงภายใน Laya ก่อนส่งไปยังระบบ</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">ไดนามิก</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">กำหนดเอง</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">โทนเสียง</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">เอียง</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">เส้นโค้ง</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">กว้าง</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">โฟกัส</string>
 
-    <string name="equalizer_broad_footer">Drag left for a warmer sound and right for a brighter one; down scoops the middle, up brings it forward. Broad moves wide stretches of the spectrum at once.</string>
+    <string name="equalizer_broad_footer">ลากไปทางซ้ายเพื่อให้เสียงอุ่นขึ้น ลากไปทางขวาเพื่อให้สว่างขึ้น ลากลงเพื่อลดเสียงกลาง ลากขึ้นเพื่อดันเสียงกลางให้เด่น “กว้าง” จะปรับย่านความถี่กว้างพร้อมกัน</string>
 
-    <string name="equalizer_focused_footer">Drag left for a warmer sound and right for a brighter one; down scoops the middle, up brings it forward. Focused works on narrower stretches, so it changes less around what it moves.</string>
+    <string name="equalizer_focused_footer">ลากไปทางซ้ายเพื่อให้เสียงอุ่นขึ้น ลากไปทางขวาเพื่อให้สว่างขึ้น ลากลงเพื่อลดเสียงกลาง ลากขึ้นเพื่อดันเสียงกลางให้เด่น “เน้นจุด” จะปรับย่านที่แคบกว่า จึงกระทบย่านรอบข้างน้อยลง</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">พรีเซ็ต</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">แบนด์</string>
 
-    <string name="equalizer_bands_footer">Moving a band leaves the preset behind and the curve becomes your own.</string>
+    <string name="equalizer_bands_footer">เมื่อเลื่อนแถบความถี่ ค่าที่ตั้งไว้ล่วงหน้าจะถูกยกเลิก และเส้นโค้งจะกลายเป็นของคุณเอง</string>
 
-    <string name="equalizer_reset">Reset all bands</string>
+    <string name="equalizer_reset">รีเซ็ตทุกแถบความถี่</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">บาลานซ์</string>
 
     <string name="equalizer_balance_left">L</string>
 
     <string name="equalizer_balance_right">R</string>
 
-    <string name="equalizer_balance_footer">Shifts the sound towards one ear by quietening the other.</string>
+    <string name="equalizer_balance_footer">เลื่อนเสียงไปทางหูข้างหนึ่งโดยลดเสียงอีกข้างลง</string>
     <string name="equalizer_bitstream_title">ไม่ได้ทำงานในขณะนี้</string>
     <string name="equalizer_bitstream_subtitle">แทร็กนี้ถูกส่งไปยังเอาต์พุตโดยไม่ถอดรหัส</string>
     <string name="equalizer_bitstream_footer">อีควอไลเซอร์ทำงานกับเสียงที่ถอดรหัสแล้ว แทร็กนี้ถูกส่งผ่านเป็นบิตสตรีมให้อุปกรณ์ของคุณถอดรหัสเอง จึงไม่มีตัวอย่างเสียงให้กรองที่นี่</string>
 
-    <string name="system_equalizer">System equalizer</string>
+    <string name="system_equalizer">อีควอไลเซอร์ของระบบ</string>
 
-    <string name="system_equalizer_subtitle">Your device\'s own panel</string>
+    <string name="system_equalizer_subtitle">แผงควบคุมของอุปกรณ์คุณเอง</string>
 
-    <string name="system_equalizer_footer">Runs after Laya\'s, on the whole audio session. Using both applies both.</string>
+    <string name="system_equalizer_footer">ทำงานหลังจากของ Laya กับเซสชันเสียงทั้งหมด หากใช้ทั้งสองอย่าง จะมีผลทั้งคู่</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">แฟลต</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">อะคูสติก</string>
 
-    <string name="eq_preset_bass_boost">Bass boost</string>
+    <string name="eq_preset_bass_boost">เพิ่มเสียงเบส</string>
 
-    <string name="eq_preset_bass_cut">Bass cut</string>
+    <string name="eq_preset_bass_cut">ลดเสียงเบส</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">เสียงร้อง</string>
 
-    <string name="eq_preset_treble_boost">Treble boost</string>
+    <string name="eq_preset_treble_boost">เพิ่มเสียงแหลม</string>
 
-    <string name="eq_preset_treble_cut">Treble cut</string>
+    <string name="eq_preset_treble_cut">ลดเสียงแหลม</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">ความดัง</string>
 
-    <string name="eq_preset_spoken_word">Spoken word</string>
+    <string name="eq_preset_spoken_word">เสียงพูด</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">อิเล็กทรอนิกส์</string>
 
-    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_rock">ร็อก</string>
 
-    <string name="eq_preset_hip_hop">Hip-hop</string>
+    <string name="eq_preset_hip_hop">ฮิปฮอป</string>
 
-    <string name="eq_preset_jazz">Jazz</string>
+    <string name="eq_preset_jazz">แจ๊ส</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">คลาสสิก</string>
 
-    <string name="eq_preset_small_speakers">Small speakers</string>
+    <string name="eq_preset_small_speakers">ลำโพงขนาดเล็ก</string>
 
-    <string name="eq_preset_late_night">Late night</string>
+    <string name="eq_preset_late_night">ดึกดื่น</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">กำหนดเอง</string>
 
-    <string name="legacy_mesh_gradient">Legacy mesh gradient</string>
+    <string name="legacy_mesh_gradient">เมชกราเดียนต์แบบเดิม</string>
 
-    <string name="legacy_mesh_gradient_subtitle">Brings back the drifting colour blobs behind the player from v1.5</string>
+    <string name="legacy_mesh_gradient_subtitle">นำเบลอสีที่ลอยอยู่ด้านหลังเครื่องเล่นจาก v1.5 กลับมา</string>
 
-    <string name="add_addon">Add an addon</string>
+    <string name="add_addon">เพิ่มแอดออน</string>
 
-    <string name="add_addon_detail">Point Laya at an addon server you host or were given a link to</string>
+    <string name="add_addon_detail">ชี้ Laya ไปยังเซิร์ฟเวอร์แอดออนที่คุณโฮสต์เองหรือได้รับลิงก์มา</string>
 
-    <string name="translation_language">Translation language</string>
+    <string name="translation_language">ภาษาที่ใช้แปล</string>
 
-    <string name="translation_language_description">The language the translate button turns lyrics into.</string>
+    <string name="translation_language_description">ภาษาที่ปุ่มแปลจะแปลเนื้อเพลงให้</string>
 
-    <string name="translation_language_app_default">App language</string>
+    <string name="translation_language_app_default">ภาษาของแอป</string>
 
-    <string name="translation_language_subtitle">Follows the app language</string>
+    <string name="translation_language_subtitle">ใช้ตามภาษาของแอป</string>
 
-    <string name="search_languages">Search languages</string>
+    <string name="search_languages">ค้นหาภาษา</string>
 
-    <string name="no_languages_match">No languages match</string>
+    <string name="no_languages_match">ไม่พบภาษาที่ตรงกัน</string>
 
 
 
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_pipeline">สายประมวลผลเสียง</string>
     <string name="cast_dialog_title">Cast</string>
-    <string name="cast_dialog_subtitle">Play on a Chromecast or Google Cast speaker</string>
-    <string name="cast_searching">Looking for devices…</string>
-    <string name="cast_searching_hint">Your phone and the receiver need to be on the same Wi-Fi network.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
-    <string name="cast_stop">Stop casting</string>
-    <string name="cast_track_unsupported">This track can\'t be cast</string>
-    <string name="cast_connect_failed">Couldn\'t connect to the receiver</string>
+    <string name="cast_dialog_subtitle">เล่นบนลำโพง Chromecast หรือ Google Cast</string>
+    <string name="cast_searching">กำลังค้นหาอุปกรณ์…</string>
+    <string name="cast_searching_hint">โทรศัพท์และเครื่องรับต้องอยู่ในเครือข่าย Wi-Fi เดียวกัน</string>
+    <string name="cast_device_connecting">กำลังเชื่อมต่อ…</string>
+    <string name="cast_device_connected">กำลังแคสต์</string>
+    <string name="cast_stop">หยุดแคสต์</string>
+    <string name="cast_track_unsupported">แคสต์เพลงนี้ไม่ได้</string>
+    <string name="cast_connect_failed">เชื่อมต่อกับเครื่องรับไม่ได้</string>
     <string name="audio_pipeline_subtitle">เส้นทางสัญญาณแบบเรียลไทม์ จากตัวถอดรหัสถึงเอาต์พุต</string>
 
-    <string name="pipeline_track_info">Track Info</string>
+    <string name="pipeline_track_info">ข้อมูลเพลง</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">ตัวถอดรหัส</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">ตัวสุ่มตัวอย่างใหม่</string>
 
     <string name="pipeline_dsp">DSP</string>
 
-    <string name="pipeline_output_device">Output Device</string>
+    <string name="pipeline_output_device">อุปกรณ์เอาต์พุต</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">แหล่งที่มา</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">รูปแบบ</string>
 
-    <string name="pipeline_bit_depth">Bit Depth</string>
+    <string name="pipeline_bit_depth">บิตเดปธ์</string>
 
-    <string name="pipeline_sample_rate">Sample Rate</string>
+    <string name="pipeline_sample_rate">อัตราสุ่มตัวอย่าง</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">บิตเรต</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">ช่องสัญญาณ</string>
 
-    <string name="pipeline_decoder_name">Decoder Name</string>
+    <string name="pipeline_decoder_name">ชื่อตัวถอดรหัส</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">อัตรา I/O</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">ประเภท</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">ความถี่ตัด</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">คุณภาพ</string>
 
-    <string name="pipeline_pcm_format">PCM Format</string>
+    <string name="pipeline_pcm_format">รูปแบบ PCM</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">พรีเซ็ต EQ</string>
 
-    <string name="pipeline_stereo_expand">Stereo Expand</string>
+    <string name="pipeline_stereo_expand">ขยายสเตอริโอ</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">บัฟเฟอร์</string>
 
-    <string name="pipeline_output_api">Output API</string>
+    <string name="pipeline_output_api">API เอาต์พุต</string>
 
-    <string name="pipeline_device_name">Device Name</string>
+    <string name="pipeline_device_name">ชื่ออุปกรณ์</string>
 
 
 
-    <string name="shared_link">Shared link</string>
+    <string name="shared_link">ลิงก์ที่แชร์</string>
 
-    <string name="song_will_play_next">Song will play next</string>
+    <string name="song_will_play_next">เพลงจะเล่นเป็นเพลงถัดไป</string>
 
-    <string name="song_added_to_queue">Song added to queue</string>
+    <string name="song_added_to_queue">เพิ่มเพลงลงในคิวแล้ว</string>
     <string name="song_added_to_playlist">เพิ่มลงในเพลย์ลิสต์แล้ว</string>
     <string name="song_already_in_playlist">อยู่ในเพลย์ลิสต์แล้ว</string>
     <plurals name="add_to_playlists_count">
@@ -1036,25 +1044,23 @@
     </plurals>
     <string name="party_queue_full">คิวเต็มแล้ว (ปาร์ตี้มีได้สูงสุด %d เพลง)</string>
 
-    <string name="paxsenix_api_key">PaxSenix API key</string>
+    <string name="paxsenix_api_key">คีย์ API ของ PaxSenix</string>
 
-    <string name="paxsenix_api_key_configured">PaxSenix API key — configured</string>
+    <string name="paxsenix_api_key_configured">คีย์ API ของ PaxSenix — ตั้งค่าแล้ว</string>
 
-    <string name="paxsenix_api_key_missing">PaxSenix API key — optional, not configured</string>
+    <string name="paxsenix_api_key_missing">คีย์ API ของ PaxSenix — ไม่บังคับ ยังไม่ได้ตั้งค่า</string>
 
-    <string name="addon_url_description">Paste the addon’s URL — either its root or its manifest.json. Laya reads what it can search and stream, then asks it for tracks over plain HTTP.</string>
+    <string name="addon_url_description">วาง URL ของแอดออน ไม่ว่าจะเป็นรากหรือ manifest.json Laya จะอ่านว่าค้นหาและสตรีมอะไรได้ แล้วขอแทร็กผ่าน HTTP ธรรมดา</string>
 
-    <string name="sort_date_added_oldest">Date added (oldest first)</string>
+    <string name="sort_date_added_oldest">วันที่เพิ่ม (เก่าที่สุดก่อน)</string>
 
-    <string name="sort_date_added_toggle">Date added</string>
+    <string name="sort_date_added_toggle">วันที่เพิ่ม</string>
 
-    <string name="sort_default">Default order</string>
+    <string name="sort_default">ลำดับเริ่มต้น</string>
 
-    <string name="sort_library">Sort</string>
+    <string name="sort_library">เรียงลำดับ</string>
 
-    <string name="sort_songs">Sort songs</string>
-
-
+    <string name="sort_songs">เรียงเพลง</string>
 
 
 
@@ -1064,19 +1070,21 @@
 
 
 
-    <string name="vietnamese">Vietnamese</string>
 
 
-    <string name="miscellaneous_footer">When enabled, closing the app from the recent apps screen will also stop music playback.</string>
+    <string name="vietnamese">ภาษาเวียดนาม</string>
 
 
-    <string name="export_compatible_downloads">Export compatible downloads</string>
+    <string name="miscellaneous_footer">เมื่อเปิดใช้ การปิดแอปจากหน้าจอแอปล่าสุดจะหยุดเล่นเพลงด้วย</string>
 
 
-    <string name="output_precision">Output precision</string>
+    <string name="export_compatible_downloads">ส่งออกไฟล์ดาวน์โหลดที่รองรับ</string>
 
 
-    <string name="prefer_usb_dac">Prefer USB DAC</string>
+    <string name="output_precision">ความแม่นยำเอาต์พุต</string>
+
+
+    <string name="prefer_usb_dac">ใช้ USB DAC เป็นหลัก</string>
     <string name="loudness_normalization">ปรับระดับความดังให้เท่ากัน</string>
     <string name="loudness_normalization_subtitle">ปรับทุกแทร็กให้ดังเท่ากัน</string>
     <string name="loudness_off_on_speaker">ปิดบนลำโพงโทรศัพท์</string>
@@ -1092,144 +1100,144 @@
     <string name="loudness_lufs">%1$s LUFS</string>
 
 
-    <string name="blur_unfocused_lyrics">Blur unfocused lyrics</string>
+    <string name="blur_unfocused_lyrics">เบลอเนื้อเพลงที่ไม่ได้โฟกัส</string>
 
 
-    <string name="blur_unfocused_lyrics_subtitle">Keeps the spotlight on the current line</string>
+    <string name="blur_unfocused_lyrics_subtitle">ให้สปอตไลต์อยู่ที่บรรทัดปัจจุบัน</string>
 
 
     <string name="advanced_options">Advanced options</string>
 
 
-    <string name="lyrics_debug_logs">Lyrics debug logs</string>
+    <string name="lyrics_debug_logs">บันทึกดีบักเนื้อเพลง</string>
 
 
-    <string name="lyrics_debug_logs_subtitle">Show live API queries and scraper activity in the lyrics panel</string>
+    <string name="lyrics_debug_logs_subtitle">แสดงการค้นหา API และกิจกรรมของตัวดึงข้อมูลแบบสดในแผงเนื้อเพลง</string>
 
 
-    <string name="shelf_trending_community_playlists">Trending community playlists</string>
+    <string name="shelf_trending_community_playlists">เพลย์ลิสต์ชุมชนที่กำลังมาแรง</string>
 
 
-    <string name="shelf_featured_playlists_for_you">Featured playlists for you</string>
+    <string name="shelf_featured_playlists_for_you">เพลย์ลิสต์แนะนำสำหรับคุณ</string>
 
 
-    <string name="shelf_quick_picks">Quick picks</string>
+    <string name="shelf_quick_picks">เลือกด่วน</string>
 
 
-    <string name="shelf_listen_again">Listen again</string>
+    <string name="shelf_listen_again">ฟังอีกครั้ง</string>
 
 
-    <string name="shelf_mixed_for_you">Mixed for you</string>
+    <string name="shelf_mixed_for_you">มิกซ์สำหรับคุณ</string>
 
 
-    <string name="shelf_similar_to">Similar to %1$s</string>
+    <string name="shelf_similar_to">คล้ายกับ %1$s</string>
 
 
-    <string name="shelf_forgotten_favorites">Forgotten favorites</string>
+    <string name="shelf_forgotten_favorites">เพลงโปรดที่ลืมไป</string>
 
 
-    <string name="shelf_recommended_music_videos">Recommended music videos</string>
+    <string name="shelf_recommended_music_videos">มิวสิกวิดีโอแนะนำ</string>
 
 
-    <string name="shelf_from_your_library">From your library</string>
+    <string name="shelf_from_your_library">จากคลังของคุณ</string>
 
 
-    <string name="shelf_charts">Charts</string>
+    <string name="shelf_charts">ชาร์ต</string>
 
 
-    <string name="shelf_new_releases">New releases</string>
+    <string name="shelf_new_releases">ออกใหม่</string>
 
 
-    <string name="shelf_top_music_videos">Top music videos</string>
+    <string name="shelf_top_music_videos">มิวสิกวิดีโอยอดนิยม</string>
 
 
-    <string name="shelf_for_you">For you</string>
+    <string name="shelf_for_you">สำหรับคุณ</string>
 
 
-    <string name="shelf_energy_boosters">Energy boosters</string>
+    <string name="shelf_energy_boosters">เพิ่มพลัง</string>
 
 
-    <string name="shelf_feel_good">Feel good</string>
+    <string name="shelf_feel_good">อารมณ์ดี</string>
 
 
-    <string name="shelf_commute">Commute</string>
+    <string name="shelf_commute">เดินทาง</string>
 
 
-    <string name="shelf_workout">Workout</string>
+    <string name="shelf_workout">ออกกำลังกาย</string>
 
 
-    <string name="shelf_focus">Focus</string>
+    <string name="shelf_focus">โฟกัส</string>
 
 
-    <string name="shelf_relax">Relax</string>
+    <string name="shelf_relax">ผ่อนคลาย</string>
 
 
-    <string name="shelf_sleep">Sleep</string>
+    <string name="shelf_sleep">นอนหลับ</string>
 
 
-    <string name="shelf_party">Party</string>
+    <string name="shelf_party">ปาร์ตี้</string>
 
 
-    <string name="shelf_romance">Romance</string>
+    <string name="shelf_romance">โรแมนติก</string>
 
 
     <string name="shelf_sad">Sad</string>
 
 
-    <string name="shelf_100_on_repeat">100% on repeat</string>
+    <string name="shelf_100_on_repeat">เล่นซ้ำ 100%</string>
 
 
-    <string name="shelf_new_albums_singles">New albums &amp; singles</string>
+    <string name="shelf_new_albums_singles">อัลบั้ม &amp; ซิงเกิลใหม่</string>
 
 
-    <string name="shelf_hits_today">Hits today</string>
+    <string name="shelf_hits_today">ฮิตวันนี้</string>
 
 
-    <string name="shelf_artists_on_the_rise">Artists on the rise</string>
+    <string name="shelf_artists_on_the_rise">ศิลปินมาแรง</string>
 
 
 
-    <string name="shelf_top_tunes_right_now">Top tunes right now</string>
+    <string name="shelf_top_tunes_right_now">เพลงดังตอนนี้</string>
 
 
-    <string name="shelf_concerts">Concerts</string>
+    <string name="shelf_concerts">คอนเสิร์ต</string>
 
 
     <string name="shelf_shorts">Shorts</string>
 
 
-    <string name="shelf_single">Single</string>
+    <string name="shelf_single">ซิงเกิล</string>
 
 
-    <string name="shelf_chart">Chart</string>
+    <string name="shelf_chart">ชาร์ต</string>
 
 
-    <string name="shelf_song_item">Song</string>
+    <string name="shelf_song_item">เพลง</string>
 
 
-    <string name="shelf_from_the_community">From the community</string>
+    <string name="shelf_from_the_community">จากชุมชน</string>
 
 
-    <string name="shelf_youtube_charts">YouTube Charts</string>
+    <string name="shelf_youtube_charts">ชาร์ต YouTube</string>
 
 
-    <string name="shelf_trending">Trending</string>
+    <string name="shelf_trending">มาแรง</string>
 
 
-    <string name="shelf_recents">Recents</string>
+    <string name="shelf_recents">ล่าสุด</string>
 
 
-    <string name="subscriptions">Subscriptions</string>
+    <string name="subscriptions">การติดตาม</string>
 
 
 
-    <string name="card_views_format">%1$s views</string>
+    <string name="card_views_format">%1$s ครั้งที่ดู</string>
 
 
-    <string name="card_plays_format">%1$s plays</string>
+    <string name="card_plays_format">%1$s ครั้งที่เล่น</string>
 
 
-    <string name="card_songs_format">%1$s songs</string>
+    <string name="card_songs_format">%1$s เพลง</string>
 
 
     <string name="source_needs_lossless_output">ต้องใช้เอาต์พุตแบบ lossless · ใช้อุปกรณ์ที่รองรับ lossless</string>
@@ -1287,6 +1295,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">ยังไม่ได้กำหนดค่า — แตะเพื่อตั้งค่า URL API</string>
     <string name="artist_signatures_test_failed">ไม่สามารถเข้าถึง API ที่ URL นี้ได้</string>
+    <string name="artist_signatures_builtin">เซิร์ฟเวอร์ในตัว</string>
+    <string name="artist_signatures_online">ออนไลน์</string>
     <string name="search_source_addons">แอดออน</string>
     <string name="search_addons_none">ยังไม่ได้เปิดใช้แอดออน เพิ่มได้ที่ การตั้งค่า → แหล่งที่มา</string>
     <string name="app_icon">ไอคอนแอป</string>
@@ -1386,4 +1396,49 @@
     <string name="lossless_verify_expired_notice">การยืนยัน %1$s หมดอายุแล้ว เปิดอีกครั้งในแหล่งเพลงเพื่อฟังแบบไม่สูญเสียคุณภาพต่อ</string>
     <string name="lossless_verify_expired">การยืนยันหมดอายุ · เปิดอีกครั้ง</string>
     <string name="lossless_verified_until">ยืนยันแล้ว · ถึง %1$s</string>
+    <string name="best_part_description">ข้ามไปท่อนเด็ด</string>
+    <string name="show_best_part">ปุ่มท่อนเด็ด</string>
+    <string name="show_best_part_subtitle">ปุ่มบนปกเพลงที่ข้ามไปยังช่วงของเพลงที่ผู้คนเล่นซ้ำมากที่สุด</string>
+    <string name="lyrics_share_video_silent">ไม่สามารถดึงเสียงของเพลงได้ วิดีโอนี้จึงไม่มีเสียง</string>
+    <string name="choose_in_youtube_music">เลือกใน YouTube Music</string>
+    <string name="lock_screen_player">เครื่องเล่นบนหน้าจอล็อก</string>
+    <string name="lock_screen_player_subtitle">ภาพปก เนื้อเพลงที่ซิงค์ และปุ่มควบคุมบนหน้าจอล็อกขณะเล่นเพลง</string>
+    <string name="lock_screen_player_needs_setup">ให้สิทธิ์ในการตั้งค่าเพื่อเปิดใช้งาน แตะเพื่อตั้งค่า</string>
+    <string name="lock_screen_previous">ก่อนหน้า</string>
+    <string name="lock_screen_play_pause">เล่นหรือหยุดชั่วคราว</string>
+    <string name="lock_screen_next">ถัดไป</string>
+    <string name="lock_screen_like">ถูกใจ</string>
+    <string name="lock_screen_unlock">ปลดล็อก</string>
+    <string name="lock_screen_setup">ตั้งค่าหน้าจอล็อก</string>
+    <string name="lock_screen_setup_subtitle">ให้สิทธิ์ทั้งหมดนี้เพื่อเปิดใช้เครื่องเล่นบนหน้าจอล็อก</string>
+    <string name="lock_screen_setup_overlay">แสดงทับแอปอื่น</string>
+    <string name="lock_screen_setup_overlay_subtitle">ให้เครื่องเล่นเปิดทับหน้าจอล็อกได้</string>
+    <string name="lock_screen_setup_full_screen">การแจ้งเตือนแบบเต็มหน้าจอ</string>
+    <string name="lock_screen_setup_full_screen_subtitle">ให้เครื่องเล่นเปิดจากการแจ้งเตือนทับหน้าจอล็อกได้</string>
+    <string name="lock_screen_setup_battery">แบตเตอรี่: ไม่จำกัด</string>
+    <string name="lock_screen_setup_battery_subtitle">ป้องกันไม่ให้ระบบปิดเครื่องเล่นระหว่างเล่นเพลง</string>
+    <string name="lock_screen_setup_manufacturer">สิทธิ์ของผู้ผลิต</string>
+    <string name="lock_screen_setup_manufacturer_subtitle">บน Xiaomi, vivo และโทรศัพท์ที่คล้ายกัน ให้อนุญาตแสดงบนหน้าจอล็อก หน้าต่างป๊อปอัปขณะทำงานเบื้องหลัง และเริ่มอัตโนมัติด้วย</string>
+    <string name="lock_screen_setup_grant">ให้สิทธิ์</string>
+    <string name="lock_screen_setup_open">เปิดการตั้งค่า</string>
+    <string name="lock_screen_options">ตัวเลือก</string>
+    <string name="lock_screen_lyrics_interactive">เนื้อเพลงแบบโต้ตอบ</string>
+    <string name="lock_screen_lyrics_interactive_subtitle">เลื่อนเนื้อเพลงและแตะบรรทัดเพื่อข้ามไปยังบรรทัดนั้น</string>
+    <string name="lock_screen_progress">แถบความคืบหน้า</string>
+    <string name="lock_screen_progress_subtitle">แสดงแถบเลื่อนพร้อมเวลาที่ผ่านไปและเวลาทั้งหมด</string>
+    <string name="remove_from_history">ลบออกจากประวัติ</string>
+    <string name="history_removed">ลบออกจากประวัติแล้ว</string>
+    <string name="history_remove_failed">ไม่สามารถลบออกจากประวัติได้</string>
+    <string name="lock_screen_art_transition">การเปลี่ยนภาพปก</string>
+    <string name="lock_screen_art_transition_subtitle">ผสานภาพปกเข้ากับภาพปกเพลงถัดไประหว่างที่ Automix มิกซ์เพลง</string>
+    <string name="all_cache_cleared">ล้างแคชทั้งหมดแล้ว</string>
+    <string name="lossless_expiring_title">เซสชัน %1$s ใกล้หมดอายุ</string>
+    <string name="lossless_expiring_body">หมดอายุในอีก %1$d นาที แตะเพื่อต่ออายุ</string>
+    <string name="lossless_renew_failed_body">ต่ออายุอัตโนมัติไม่สำเร็จ หมดอายุในอีก %1$d นาที แตะเพื่อลองอีกครั้ง</string>
+    <string name="lossless_renewed_until">ต่ออายุ %1$s ถึง %2$s แล้ว</string>
+    <string name="lossless_renew_failed">ต่ออายุ %1$s ไม่สำเร็จ โปรดต่ออายุเองจากส่วนเสริม</string>
+    <string name="lossless_channel">เซสชันแบบไม่สูญเสีย</string>
+    <string name="direct_source_stream">สตรีมตรงจากแหล่งที่มา</string>
+    <string name="direct_source_stream_subtitle">เล่นจากแหล่งที่อยู่เหนือ YouTube ตั้งแต่โน้ตแรก ไม่สลับกลางเพลง</string>
+    <string name="direct_source_stream_in_party">ปิดอยู่ขณะอยู่ในปาร์ตี้ฟังด้วยกัน</string>
 </resources>

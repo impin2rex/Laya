@@ -16,11 +16,13 @@ import com.music.laya.data.settings.LastPlayerScreen
 import com.music.laya.data.settings.MixBlend
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TransitionWindow
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.ui.player.AudioOutputDevice
 import com.music.laya.ui.player.AudioOutputKind
 import com.music.laya.ui.player.CanvasVideoSpec
 import com.music.laya.ui.player.MusicVideoQualityUi
 import com.music.laya.ui.player.LyricsRomanizationResult
+import com.music.laya.ui.player.LyricsShareRequest
 import com.music.laya.ui.player.LyricsTranslationResult
 import com.music.laya.ui.player.MAX_LYRICS_OFFSET_MS
 import com.music.laya.ui.player.MIN_LYRICS_OFFSET_MS
@@ -196,6 +198,19 @@ internal object DesktopPlayerHost : PlayerHost {
     override fun AudioPipelineDialog(hazeState: HazeState, isPlaying: Boolean, onDismiss: () -> Unit) {
         pipelineDialog?.invoke(onDismiss)
     }
+
+    override val lyricsShareAvailable: Boolean get() = true
+
+    /** The shared card and video, written out through [DesktopImageSharer] and [DesktopVideoSharer]. */
+    @Composable
+    override fun LyricsShareSheet(hazeState: HazeState, request: LyricsShareRequest, onDismiss: () -> Unit) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.music.laya.ui.share.LocalImageSharer provides DesktopImageSharer,
+            com.music.laya.ui.share.LocalVideoSharer provides DesktopVideoSharer,
+        ) {
+            com.music.laya.ui.player.LyricsShareSheetContent(hazeState, request, onDismiss)
+        }
+    }
 }
 
 /**
@@ -234,8 +249,10 @@ internal object DesktopPlayerSettings : PlayerSettingsSource {
     override val reduceDynamicBlur = MutableStateFlow(false)
     override val reverbEnabled get() = DesktopReverbSettings.enabled
     override val showNerdStats = MutableStateFlow(false)
+    override val showBestPart = MutableStateFlow(false)
     override val smartAnalysis = MutableStateFlow(SmartAnalysis())
     override val smartFadeEnabled = MutableStateFlow(false)
+    override val autoMixArtwork = MutableStateFlow(AutoMixArtworkPreferences())
     override val smartMixInProgress = MutableStateFlow(false)
     override val smartMixBlend = MutableStateFlow<MixBlend?>(null)
     override val smartTransitionWindow = MutableStateFlow<TransitionWindow?>(null)

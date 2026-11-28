@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 interface DetailHost {
     fun cachedArt(name: String): AppleArtistArt? = null
-    suspend fun artFor(name: String): AppleArtistArt? = null
+    suspend fun artFor(name: String, songTitles: List<String>? = null): AppleArtistArt? = null
     val signatureUpdates: StateFlow<Int> get() = NO_UPDATES
     fun signatureBase(enabled: Boolean, url: String): String? = null
     fun cachedSignature(name: String, base: String?): ArtistSignature? = null

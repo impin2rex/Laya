@@ -123,6 +123,8 @@ fun HomeScreen(
     title: String?,
     signedIn: Boolean = true,
     onSignIn: (() -> Unit)? = null,
+    /** The sign-in card's heading in place of "Sign in to YouTube Music": an expired login says so. */
+    signInTitle: String? = null,
     /**
      * Holding a card rather than tapping it. Every card on the feed answers,
      * whichever kind it is: the caller reads the item the same way it does for
@@ -142,6 +144,8 @@ fun HomeScreen(
     leadHero: Boolean = true,
     currentSong: Song? = null,
     isPlaying: Boolean = false,
+    /** Home's dials (the desktop's Speed Dial), drawn above the feed; null for none. */
+    dials: (@Composable () -> Unit)? = null,
 ) {
     val recentsViewType by AppUi.host.homeRecentsViewType.collectAsStateWithLifecycle()
 
@@ -170,9 +174,10 @@ fun HomeScreen(
             }
             if (!signedIn && onSignIn != null) {
                 item {
-                    SignInBanner(onSignIn = onSignIn, modifier = Modifier.padding(bottom = 8.dp))
+                    SignInBanner(onSignIn = onSignIn, modifier = Modifier.padding(bottom = 8.dp), title = signInTitle)
                 }
             }
+            if (dials != null) item(key = "home_dials") { dials() }
             when (state) {
                 is UiState.Loading -> {
                     if (recentlyPlayedLoading) {

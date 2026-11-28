@@ -40,6 +40,26 @@ import platform.AVKit.AVRoutePickerView
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
 import platform.UIKit.UIColor
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.audio_pipeline
+import com.music.laya.sharedui.resources.mono
+import com.music.laya.sharedui.resources.pipeline_bit_depth
+import com.music.laya.sharedui.resources.pipeline_bitrate
+import com.music.laya.sharedui.resources.pipeline_channels
+import com.music.laya.sharedui.resources.pipeline_device_name
+import com.music.laya.sharedui.resources.pipeline_format
+import com.music.laya.sharedui.resources.pipeline_io_buffer
+import com.music.laya.sharedui.resources.pipeline_io_rate
+import com.music.laya.sharedui.resources.pipeline_output_device
+import com.music.laya.sharedui.resources.pipeline_resampler
+import com.music.laya.sharedui.resources.pipeline_route
+import com.music.laya.sharedui.resources.pipeline_source
+import com.music.laya.sharedui.resources.pipeline_surround_channels
+import com.music.laya.sharedui.resources.pipeline_track_info
+import com.music.laya.sharedui.resources.stereo
+import org.jetbrains.compose.resources.stringResource
+import com.music.laya.sharedui.resources.pipeline_sample_rate
+import com.music.laya.sharedui.resources.ios_speaker_name
 
 /** The audio session's current output route, as the Swift engine reports it. */
 internal class RouteInfo(val name: String, val portType: String, val rateHz: Int, val channels: Int, val ioBufferMs: Int)
@@ -124,24 +144,24 @@ internal fun IosAudioPipeline(hazeState: HazeState, onDismiss: () -> Unit) {
     val inRate = stats?.sampleRateHz
     val outRate = outputRateHz()
     val lossless = stats?.isLossless == true
-    PlayerDrawer(hazeState = hazeState, title = "Audio Pipeline", onDismiss = onDismiss) {
-        Section("Track info") {
-            Line("Source", stats?.sourceName ?: none)
-            Line("Format", NerdStats.codecLabel(stats?.mimeType) ?: stats?.mimeType ?: none)
-            Line("Bit depth", if (lossless) stats?.bitDepth?.let { "$it-bit" } ?: none else none)
-            Line("Sample rate", inRate?.let(::rateText) ?: none)
-            Line("Bitrate", stats?.bitrateKbps?.let { "$it kbps" } ?: none)
-            Line("Channels", when (val c = stats?.channels) { null -> none; 1 -> "Mono"; 2 -> "Stereo"; else -> "$c (Surround)" })
+    PlayerDrawer(hazeState = hazeState, title = stringResource(Res.string.audio_pipeline), onDismiss = onDismiss) {
+        Section(stringResource(Res.string.pipeline_track_info)) {
+            Line(stringResource(Res.string.pipeline_source), stats?.sourceName ?: none)
+            Line(stringResource(Res.string.pipeline_format), NerdStats.codecLabel(stats?.mimeType) ?: stats?.mimeType ?: none)
+            Line(stringResource(Res.string.pipeline_bit_depth), if (lossless) stats?.bitDepth?.let { "$it-bit" } ?: none else none)
+            Line(stringResource(Res.string.pipeline_sample_rate), inRate?.let(::rateText) ?: none)
+            Line(stringResource(Res.string.pipeline_bitrate), stats?.bitrateKbps?.let { "$it kbps" } ?: none)
+            Line(stringResource(Res.string.pipeline_channels), when (val c = stats?.channels) { null -> none; 1 -> stringResource(Res.string.mono); 2 -> stringResource(Res.string.stereo); else -> stringResource(Res.string.pipeline_surround_channels, c) })
         }
-        Section("Resampler") {
-            Line("I/O rate", if (inRate != null && outRate != null) "${rateText(inRate)} → ${rateText(outRate)}" else none)
+        Section(stringResource(Res.string.pipeline_resampler)) {
+            Line(stringResource(Res.string.pipeline_io_rate), if (inRate != null && outRate != null) "${rateText(inRate)} → ${rateText(outRate)}" else none)
         }
-        Section("Output device") {
-            Line("Device name", outputs.firstOrNull { it.isActive }?.let { it.name.ifBlank { "iPhone Speaker" } } ?: none)
-            Line("Route", route?.portType?.ifBlank { null } ?: none)
-            Line("Sample rate", outRate?.let(::rateText) ?: none)
-            Line("Channels", route?.channels?.takeIf { it > 0 }?.toString() ?: none)
-            Line("I/O buffer", route?.ioBufferMs?.takeIf { it > 0 }?.let { "$it ms" } ?: none)
+        Section(stringResource(Res.string.pipeline_output_device)) {
+            Line(stringResource(Res.string.pipeline_device_name), outputs.firstOrNull { it.isActive }?.let { it.name.ifBlank { stringResource(Res.string.ios_speaker_name) } } ?: none)
+            Line(stringResource(Res.string.pipeline_route), route?.portType?.ifBlank { null } ?: none)
+            Line(stringResource(Res.string.pipeline_sample_rate), outRate?.let(::rateText) ?: none)
+            Line(stringResource(Res.string.pipeline_channels), route?.channels?.takeIf { it > 0 }?.toString() ?: none)
+            Line(stringResource(Res.string.pipeline_io_buffer), route?.ioBufferMs?.takeIf { it > 0 }?.let { "$it ms" } ?: none)
         }
     }
 }

@@ -1,11 +1,11 @@
 package com.music.laya.download
 
 /**
- * The box walking [Mp4Sidx] and [ManifestFile] share: read-only, bounds-checked,
- * and quiet about anything malformed — a box that does not fit its parent ends
- * the list rather than throwing, so each caller decides what a short list means.
+ * The box walking `Mp4Sidx`, `ManifestFile` and [FlacFromMp4] share: read-only, bounds-checked,
+ * and quiet about anything malformed — a box that does not fit its parent ends the list rather
+ * than throwing, so each caller decides what a short list means.
  */
-internal object Mp4Boxes {
+object Mp4Boxes {
 
     class Box(val offset: Int, val headerLen: Int, val size: Int, val type: String) {
         val content get() = offset + headerLen
@@ -26,11 +26,15 @@ internal object Mp4Boxes {
                 size = (end - pos).toLong()
             }
             if (size < header || pos + size > end) break
-            out += Box(pos, header, size.toInt(), String(bytes, pos + 4, 4, Charsets.ISO_8859_1))
+            out += Box(pos, header, size.toInt(), fourcc(bytes, pos + 4))
             pos += size.toInt()
         }
         return out
     }
+
+    /** A box type is four bytes of ASCII, read one byte to one character as ISO-8859-1 would. */
+    private fun fourcc(bytes: ByteArray, off: Int) =
+        buildString(4) { for (i in 0 until 4) append((bytes[off + i].toInt() and 0xFF).toChar()) }
 
     fun child(bytes: ByteArray, parent: Box, type: String): Box? =
         boxes(bytes, parent.content, parent.end).firstOrNull { it.type == type }

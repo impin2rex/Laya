@@ -1,10 +1,14 @@
 package com.music.laya.data.innertube
 
+import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.TrackLog
 import com.music.laya.data.model.Song
 import com.music.laya.data.stats.ListenIdentity
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.platform.ConcurrentMap
 import com.music.laya.platform.ioDispatcher
+import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.playback.youtubeSeedFor
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -104,6 +108,12 @@ object PlaybackTracker {
     @Volatile
     private var session: Session? = null
 
+    /** A source row's YouTube match, by its media id ("" when YouTube has none), for its history entry. */
+    private val youTubeOf = ConcurrentMap<String, String>()
+    /** Source rows whose YouTube match is being looked up, so the five-second sampler asks only once. */
+    private val seeding = ConcurrentMap<String, Boolean>()
+    private const val MAX_SEEDS = 200
+
     /** The track a session is being opened for, so repeat calls don't stack up. */
     @Volatile
     private var opening: String? = null
@@ -114,17 +124,33 @@ object PlaybackTracker {
      * a pause/resume does not register a second play.
      */
     fun onPlaying(played: Song) {
+        // A row from a source (an Addons search pick, a Tidal or JioSaavn row) has no YouTube id, so it
+        // was never registered. Credited to its YouTube match instead, found once per track.
+        if (SourceRegistry.parseTrackKey(played.videoId) != null) {
+            youTubeOf[played.videoId]?.let { id -> if (id.isNotEmpty()) register(played.copy(videoId = id)); return }
+            if (seeding.put(played.videoId, true) != null) return
+            scope.launch(TrackLog.about(played.videoId)) {
+                val id = runCatching { youtubeSeedFor(played) }.getOrNull()?.takeIf { VIDEO_ID.matches(it) }
+                if (youTubeOf.size > MAX_SEEDS) youTubeOf.clear()
+                youTubeOf[played.videoId] = id.orEmpty()
+                seeding.remove(played.videoId)
+                if (id == null) TrackLog.d(TAG, "no YouTube match for '${played.title}'; its play is not in YouTube history")
+                else register(played.copy(videoId = id))
+            }
+            return
+        }
         // The listen's own track — its audio release, whenever there is one; see [ListenIdentity]
         // — not whichever version of it is playing. Settled before anything is registered.
         val known = ListenIdentity.known(played)
         if (known == null) {
-            scope.launch(TrackLog.about(played.videoId)) { register(ListenIdentity.resolve(played).videoId) }
+            scope.launch(TrackLog.about(played.videoId)) { register(ListenIdentity.resolve(played)) }
         } else {
-            register(known.videoId)
+            register(known)
         }
     }
 
-    private fun register(videoId: String) {
+    private fun register(song: Song) {
+        val videoId = song.videoId
         if (!VIDEO_ID.matches(videoId)) return
         if (Innertube.cookie == null) return
         // A downloaded track plays perfectly well with the radio off — the
@@ -140,7 +166,7 @@ object PlaybackTracker {
         opening = videoId
         scope.launch(TrackLog.about(videoId)) {
             try {
-                openWithRetries(videoId)
+                openWithRetries(song)
             } finally {
                 if (opening == videoId) opening = null
             }
@@ -155,7 +181,8 @@ object PlaybackTracker {
      */
     fun onVersionSwapped(from: Song, to: Song) {
         val before = ListenIdentity.of(from).videoId
-        val listen = ListenIdentity.onVersionSwapped(from, to).videoId
+        val listenSong = ListenIdentity.onVersionSwapped(from, to)
+        val listen = listenSong.videoId
         if (listen == before) return
         if (opening == before) opening = null
         val closing = session?.takeIf { it.videoId == before }
@@ -165,7 +192,7 @@ object PlaybackTracker {
                 runCatching { flush(closing, maxOf(closing.reportedSeconds, closing.flushingTo), final = true) }
             }
         }
-        register(listen)
+        register(listenSong)
     }
 
     /**
@@ -190,7 +217,7 @@ object PlaybackTracker {
      * [REPORT_INTERVAL_SECONDS] of new audio.
      */
     fun onProgress(playedId: String, positionSeconds: Long) {
-        val videoId = ListenIdentity.idOf(playedId)
+        val videoId = youTubeOf[playedId]?.ifEmpty { null } ?: ListenIdentity.idOf(playedId)
         val current = session ?: return
         if (current.videoId != videoId) return
         if (!current.atrSent && positionSeconds >= current.tracking.atrAfterSeconds) {
@@ -244,11 +271,12 @@ object PlaybackTracker {
      * YouTube declining to issue a tracking block for this track at all. Only
      * genuine failures are repeated.
      */
-    private suspend fun openWithRetries(videoId: String) {
+    private suspend fun openWithRetries(song: Song) {
+        val videoId = song.videoId
         repeat(OPEN_ATTEMPTS) { attempt ->
             if (opening != videoId) return
             val settled = try {
-                open(videoId)
+                open(song)
             } catch (e: CancellationException) {
                 // Not a failure, and not ours to swallow: the only thing that
                 // cancels this is the tracker's own scope going away.
@@ -270,7 +298,8 @@ object PlaybackTracker {
      * @return whether there is anything left to try. False means the attempt is
      *   worth repeating — the answer was a failure, not a verdict.
      */
-    private suspend fun open(videoId: String): Boolean = lock.withLock {
+    private suspend fun open(song: Song): Boolean = lock.withLock {
+        val videoId = song.videoId
         // The one thing the tracking request cannot be answered without. Fetched
         // through [StreamResolver] so it is shared with — and usually already
         // warmed by — the resolve that is starting this very track.
@@ -290,6 +319,7 @@ object PlaybackTracker {
         val status = Innertube.pingPlayback(tracking.playbackUrl, fresh.cpn)
         session = fresh
         _registeredPlays.value++
+        YtMusicRepository.notePlayed(song)
         TrackLog.d(TAG, "history entry created for $videoId (HTTP $status)")
         true
     }

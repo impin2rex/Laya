@@ -139,7 +139,7 @@ internal object DesktopJioSaavn {
     suspend fun matches(song: Song): List<Song> {
         if (song.title.isBlank() || song.isVideo) return emptyList()
         for (query in DesktopTrackMatcher.queries(song)) {
-            val candidates = search(query, 25).getOrDefault(emptyList())
+            val candidates = search(query, 25).onFailure { noteSourceFailure() }.getOrDefault(emptyList())
                 .mapNotNull { (it as? SearchResult.Track)?.song }
             DesktopTrackMatcher.ranked(candidates, song).ifEmpty { null }?.let { return it }
         }

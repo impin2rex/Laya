@@ -1,5 +1,12 @@
 package com.music.laya.desktop
 
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.Brightness4
+import androidx.compose.material.icons.rounded.GridView
+import com.music.laya.data.settings.MusicVideoChoice
+import com.music.laya.data.aifilter.AiSongs
 import com.music.laya.ui.player.VideoKeys
 import androidx.compose.foundation.lazy.LazyListState
 import com.music.laya.ui.components.LocalShelfRowChrome
@@ -31,6 +38,7 @@ import com.music.laya.data.model.EntityType
 import com.music.laya.data.model.SearchHistoryEntity
 import com.music.laya.ui.LocalPullToRefreshEnabled
 import com.music.laya.ui.screens.ExploreScreen
+import com.music.laya.ui.screens.MixesScreen
 import com.music.laya.ui.screens.HomeScreen
 import com.music.laya.ui.screens.CompactTrackRow
 import com.music.laya.ui.screens.LibraryGridPage
@@ -39,6 +47,7 @@ import com.music.laya.ui.screens.LibraryScreen
 import com.music.laya.ui.screens.MoodGenrePlaylistsScreen
 import com.music.laya.ui.screens.SearchScreen
 import com.music.laya.data.NerdStats
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.playback.PlaybackPosition
 import com.music.laya.playback.QueueBuilder
 import com.music.laya.playback.QueueSource
@@ -47,9 +56,13 @@ import com.music.laya.playback.QueueTimeline.asQueueEntry
 import com.music.laya.data.listentogether.partyQueueIndexOf
 import com.music.laya.data.listentogether.partyUpcomingAfter
 import com.music.laya.ui.LyricsProviderState
+import com.music.laya.data.lyrics.LyricsPicks
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.ui.player.LyricsSidePanel
 import com.music.laya.ui.player.NowPlayingScreen
+import com.music.laya.ui.player.QueueActions
+import com.music.laya.data.model.QueueEntryIdentity
+import com.music.laya.playback.QueueEdits
 import com.music.laya.ui.player.QueueSidePanel
 import com.music.laya.ui.player.PlayerBack
 import com.music.laya.ui.player.CanvasArtworkPlayer
@@ -296,6 +309,7 @@ import com.music.laya.data.model.ROW_ART_PX
 import com.music.laya.data.model.SearchFilter
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.ShelfItem
+import com.music.laya.data.model.KeyedMix
 import com.music.laya.data.model.PlaybackSourceType
 import com.music.laya.data.model.Song
 import com.music.laya.data.model.SubscriptionState
@@ -323,6 +337,9 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.settings.HomeDialSource
+import com.music.laya.data.settings.HomeDialTileStyle
 import dev.chrisbanes.haze.materials.HazeMaterials
 import java.util.UUID
 import kotlin.math.abs
@@ -500,6 +517,7 @@ internal fun desktopTypography(): Typography {
 private enum class DesktopDestination(val id: String, val label: String) {
     LISTEN_NOW("listen-now", "Home"),
     EXPLORE("explore", "Explore"),
+    RADIO("radio", "Radio"),
     LIBRARY("library", "Library"),
     SEARCH("search", "Search"),
     HISTORY("history", "History"),
@@ -591,6 +609,11 @@ fun LayaDesktopApp() {
     var searchTyping by remember { mutableStateOf(false) }
     var searchLoading by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
+    // The Addons tab: every enabled addon's and Tidal/Qobuz catalogue's rows instead of YouTube's.
+    var searchAddons by remember { mutableStateOf(false) }
+    var addonResults by remember { mutableStateOf<UiState<List<Song>>?>(null) }
+    var addonSearchJob by remember { mutableStateOf<Job?>(null) }
+    val addonSearchHistory by DesktopAddonSearchHistory.recent.collectAsState()
     var homeState by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
     // The home feed is paged: `FEmusic_home` answers with a couple of shelves and a token, and
     // everything else arrives by following it.
@@ -602,6 +625,7 @@ fun LayaDesktopApp() {
     // Held out here so a page keeps its place when another is visited and it is come back to.
     val homeListState = rememberLazyListState()
     val exploreListState = rememberLazyListState()
+    val mixesListState = rememberLazyListState()
     val moodGenreListState = rememberLazyListState()
     val searchListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
@@ -625,6 +649,10 @@ fun LayaDesktopApp() {
     // Bumped by a retry so the loaders below re-run without the state they are keyed on having to
     // change to something and back again.
     var exploreReloads by remember { mutableStateOf(0) }
+    /** Radio's "Mixed for you" cards, and whose they are, so an account switch loads the new one's. */
+    var mixesState by remember { mutableStateOf<UiState<List<KeyedMix>>>(UiState.Loading) }
+    var mixesLoadedFor by remember { mutableStateOf<String?>(null) }
+    var mixesReloads by remember { mutableStateOf(0) }
     var moodGenreReloads by remember { mutableStateOf(0) }
     var moodGenreShelves by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
     var selectedSong by remember { mutableStateOf<Song?>(null) }
@@ -663,6 +691,8 @@ fun LayaDesktopApp() {
     var replaySummary by remember { mutableStateOf(DesktopListeningStats.summary()) }
     var statsCountedSongs by remember { mutableStateOf<Set<String>>(emptySet()) }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    // The queue's selection on its way into the playlist dialog; [playlistTarget] stands for it there.
+    var queuePlaylistSongs by remember { mutableStateOf<List<Song>?>(null) }
     // One busy flag and one message for every playlist edit: only one of them can be in flight,
     // because each is driven by a dialog that is modal.
     var playlistBusy by remember { mutableStateOf(false) }
@@ -714,7 +744,7 @@ fun LayaDesktopApp() {
     var crossfadeSeconds by remember { mutableStateOf(persistence.string("crossfade_seconds", "0").toIntOrNull()?.coerceIn(0, 12) ?: 0) }
     var downloadQuality by remember { mutableStateOf(persistence.string("download_quality", "LOSSLESS")) }
     var trayIconEnabled by remember { mutableStateOf(persistence.boolean("tray_icon", true)) }
-    var closeToTray by remember { mutableStateOf(persistence.boolean("close_to_tray", true)) }
+    var closeToTray by remember { mutableStateOf(persistence.boolean("close_to_tray", !DesktopPlatform.isWindows)) } // Windows: X quits, as its apps do
     // The three the FFmpeg engine unlocked: none of them could exist while JavaFX owned the decode,
     // because none of them can be done without the samples themselves.
     var spatialAudio by remember { mutableStateOf(persistence.boolean("spatial_audio", false)) }
@@ -730,6 +760,7 @@ fun LayaDesktopApp() {
     var spotifySignInJob by remember { mutableStateOf<Job?>(null) }
     var spotifySignInError by remember { mutableStateOf<String?>(null) }
     var showNerdStats by remember { mutableStateOf(persistence.boolean("show_nerd_stats", false)) }
+    var showBestPart by remember { mutableStateOf(persistence.boolean("show_best_part", false)) }
     var syncedLyrics by remember {
         mutableStateOf(persistence.boolean(DesktopLyricsClient.KEY_SYNCED_LYRICS, true))
     }
@@ -810,8 +841,22 @@ fun LayaDesktopApp() {
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) { DesktopAccounts.activate() }
         youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+        // The account may have been marked expired, or cleared of it.
+        accounts = withContext(Dispatchers.IO) { DesktopAccounts.accounts() }
         sessionSettled = true
         sessionRevision++
+        // Google's rotating cookies, renewed while the app runs so the saved sign-in never goes stale; a
+        // sign-in that couldn't be checked at launch (offline) is checked again within the minute.
+        while (true) {
+            delay(if (DesktopAccounts.unverified) UNVERIFIED_RECHECK_MS else DesktopCookieRotation.INTERVAL_MS)
+            val wasSignedIn = DesktopYouTubeAuth.isSignedIn
+            withContext(Dispatchers.IO) { DesktopAccounts.keepAlive() }
+            accounts = withContext(Dispatchers.IO) { DesktopAccounts.accounts() }
+            if (DesktopYouTubeAuth.isSignedIn != wasSignedIn) {
+                youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+                sessionRevision++
+            }
+        }
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
     var sourceConfigs by remember { mutableStateOf(persistence.sourceConfigs()) }
@@ -839,6 +884,8 @@ fun LayaDesktopApp() {
                 ),
             )
         }
+        // Renews each session before it ends; a failure is a system notification.
+        DesktopLosslessReminders.install(this)
     }
     var sourceStatus by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     val youtubeSourceEnabled = sourceConfigs.any {
@@ -989,6 +1036,10 @@ fun LayaDesktopApp() {
             accounts = withContext(Dispatchers.IO) { DesktopAccounts.accounts() }
             activeAccountId = DesktopAccounts.activeAccountId()
             activeProfileId = DesktopAccounts.activeProfileId()
+            // Signing the same account in again (an expired one) changes neither id above, so the session
+            // is announced outright: the avatar, Home and the library would otherwise wait for a restart.
+            youtubeSignedIn = DesktopYouTubeAuth.isSignedIn
+            sessionRevision++
             overlays.signIn = false
             overlays.accounts = false
         } finally {
@@ -1515,9 +1566,13 @@ fun LayaDesktopApp() {
         partySyncHolder[0]?.onLocalIntent()
     }
 
+    /** What the playlist dialog is adding: the queue's selection, or the one track. */
+    fun playlistSongs(): List<Song> = queuePlaylistSongs ?: listOfNotNull(playlistTarget)
+
     fun closePlaylistDialogs() {
         overlays.playlistDialog = false
         playlistTarget = null
+        queuePlaylistSongs = null
         overlays.rename = false
         overlays.delete = false
         overlays.reorder = false
@@ -1529,11 +1584,11 @@ fun LayaDesktopApp() {
     fun createPlaylist(title: String, privacy: PlaylistPrivacy) {
         val name = title.trim()
         if (name.isBlank()) return
-        val seed = playlistTarget
+        val seeds = playlistSongs()
         // A track from another source cannot go in an account playlist, so the playlist made to
         // hold it is one kept here.
-        if (!DesktopYouTubeAuth.isSignedIn || (seed != null && !DesktopSearchClient.isVideoId(seed.videoId))) {
-            playlists = playlists + DesktopPlaylist(title = name, songs = listOfNotNull(seed))
+        if (!DesktopYouTubeAuth.isSignedIn || seeds.any { !DesktopSearchClient.isVideoId(it.videoId) }) {
+            playlists = playlists + DesktopPlaylist(title = name, songs = seeds.distinctBy(Song::videoId))
             persistence.savePlaylists(playlists)
             closePlaylistDialogs()
             return
@@ -1541,7 +1596,7 @@ fun LayaDesktopApp() {
         playlistBusy = true
         playlistError = null
         scope.launch {
-            DesktopSearchClient.createPlaylist(name, privacy, listOfNotNull(seed?.videoId))
+            DesktopSearchClient.createPlaylist(name, privacy, seeds.map(Song::videoId).distinct())
                 .onSuccess { playlistId ->
                     closePlaylistDialogs()
                     editPlaylistShelf { items ->
@@ -1550,8 +1605,12 @@ fun LayaDesktopApp() {
                             // Only what this request itself establishes: an unseeded playlist gets
                             // a card of just its name rather than a guess at what the feed will
                             // call it.
-                            subtitle = if (seed != null) "1 song" else "",
-                            thumbnailUrl = seed?.thumbnailUrl,
+                            subtitle = when (val count = seeds.distinctBy(Song::videoId).size) {
+                                0 -> ""
+                                1 -> "1 song"
+                                else -> "$count songs"
+                            },
+                            thumbnailUrl = seeds.firstOrNull()?.thumbnailUrl,
                             videoId = null,
                             browseId = "VL$playlistId",
                         )
@@ -1573,7 +1632,7 @@ fun LayaDesktopApp() {
             DesktopCollection(
                 browseId = playlist.id,
                 title = playlist.title,
-                subtitle = "Playlist • ${playlist.songs.size} songs",
+                subtitle = DesktopStrings.plural("d_playlist_songs", playlist.songs.size, "Playlist • %1\$d song", "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 type = BrowseType.PLAYLIST,
                 songs = playlist.songs,
@@ -1623,23 +1682,26 @@ fun LayaDesktopApp() {
     }
 
     fun addToPlaylist(playlist: DesktopPlaylist) {
-        val song = playlistTarget ?: return
+        val added = playlistSongs()
+        if (added.isEmpty()) return
         playlists = playlists.map { current ->
-            if (current.id == playlist.id) current.copy(songs = (current.songs + song).distinctBy(Song::videoId)) else current
+            if (current.id == playlist.id) current.copy(songs = (current.songs + added).distinctBy(Song::videoId)) else current
         }
         persistence.savePlaylists(playlists)
-        playlistTarget = null
+        // The queue's selection too, or the next single add would carry it along.
+        closePlaylistDialogs()
     }
 
     fun addToAccountPlaylist(playlist: UserPlaylist) {
-        val song = playlistTarget ?: return
+        val added = playlistSongs()
+        if (added.isEmpty()) return
         playlistBusy = true
         playlistError = null
         scope.launch {
-            DesktopSearchClient.addToPlaylist(playlist.playlistId, listOf(song.videoId))
+            DesktopSearchClient.addToPlaylist(playlist.playlistId, added.map(Song::videoId).distinct())
                 .onSuccess { closePlaylistDialogs() }
                 .onFailure {
-                    DesktopTrackLog.log("playlist: could not add ${song.videoId}: ${it.message}")
+                    DesktopTrackLog.log("playlist: could not add ${added.size} track(s): ${it.message}")
                     playlistBusy = false
                     playlistError = it.message ?: "Could not add to ${playlist.title}"
                 }
@@ -1960,6 +2022,21 @@ fun LayaDesktopApp() {
     // switch then only showing it.
     val versionSwitching by playbackEngine.versionSwitching.collectAsState()
     val versionPairs = remember { mutableMapOf<String, Song>() }
+    // "Prefer music-only": the next video becomes its audio release before the transition, not on
+    // arrival, so AutoMix (which never mixes into a video) can blend into it. The phone does the same.
+    LaunchedEffect(selectedSong?.videoId, liveQueue.songs, partyState.inParty, repeatMode) {
+        val current = selectedSong ?: return@LaunchedEffect
+        val next = liveQueue.followingFor(current.videoId, repeatAll = repeatMode == DesktopRepeatMode.ALL)
+        if (!MusicVideoChoice.swapAheadWanted(next, partyState.inParty) || next == null) return@LaunchedEffect
+        val audio = withContext(Dispatchers.IO) { runCatching { YtMusicRepository.resolveAudio(next) }.getOrNull() }
+            ?.takeIf { it.videoId != next.videoId } ?: return@LaunchedEffect
+        val at = liveQueue.songs.indexOfFirst { it === next }.takeIf { it >= 0 } ?: return@LaunchedEffect
+        val swapped = MusicVideoChoice.audioInPlaceOf(next, audio)
+        versionPairs[swapped.videoId] = next
+        versionPairs[next.videoId] = swapped
+        liveQueue = liveQueue.copy(songs = liveQueue.songs.toMutableList().also { it[at] = swapped })
+        saveQueue()
+    }
     var alternateVersion by remember { mutableStateOf<Pair<String, Song>?>(null) }
     // The video the listener asked to watch.
     var watching by remember { mutableStateOf<String?>(null) }
@@ -2131,7 +2208,15 @@ fun LayaDesktopApp() {
     // and a track half a minute in then showed a skeleton and arrived mid-song.
     var lyrics by remember { mutableStateOf<DesktopLyrics?>(null) }
     // The provider picked for this track in the player's lyrics drawer, if any.
-    var lyricsOnly by remember(selectedSong?.videoId) { mutableStateOf<String?>(null) }
+    // A provider picked by hand for this track earlier, kept across leaving it and coming back.
+    var lyricsOnly by remember(selectedSong?.videoId) {
+        mutableStateOf(selectedSong?.let { LyricsPicks[it.videoId]?.label })
+    }
+    fun pickLyrics(label: String) {
+        lyricsOnly = label
+        val id = selectedSong?.videoId ?: return
+        LyricsSource.entries.firstOrNull { it.label == label }?.let { LyricsPicks[id] = it }
+    }
     // A title and artist typed into the song menu's lyrics search, overriding the
     // track's own credits for the lookup — for a cover or a mislabelled upload.
     var lyricsQuery by remember(selectedSong?.videoId) { mutableStateOf<Pair<String, String>?>(null) }
@@ -2405,6 +2490,35 @@ fun LayaDesktopApp() {
         onShare = ::shareSong,
     )
 
+    /** As Android's MainViewModel.removeFromHistory: the row goes at once and comes back if YouTube refuses. */
+    fun removeFromHistory(songs: List<Song>) {
+        val before = remoteHistory
+        val ids = songs.mapTo(HashSet()) { it.videoId }
+        remoteHistory = before.filterNot { it.videoId in ids }
+        scope.launch {
+            val removed = YtMusicRepository.removeFromHistory(ids).isSuccess
+            if (!removed) remoteHistory = before
+            DesktopPlayerHost.showMessage(
+                if (removed) DesktopStrings["history_removed", "Removed from history"]
+                else DesktopStrings["history_remove_failed", "Couldn't remove from history"],
+            )
+        }
+    }
+
+    /** The account history page's menu: the usual one, plus Remove from history. */
+    @Composable
+    fun historySongMenu(song: Song) = DesktopSongMenuAnchor(
+        song = song,
+        liked = song.videoId in likedIds,
+        actions = songActionsFor(song).copy(
+            onRemoveFromHistory = { s: Song -> removeFromHistory(listOf(s)) }
+                .takeIf { YtMusicRepository.canRemoveFromHistory(song.videoId) },
+        ),
+        onToggleLike = { toggleLike(song) },
+        onRevertToOriginal = null,
+        onUpgradeQuality = null,
+    )
+
     /** The "…" a song row hangs off, built the same way on every page that offers one. */
     @Composable
     fun songMenu(song: Song) = DesktopSongMenuAnchor(
@@ -2516,6 +2630,26 @@ fun LayaDesktopApp() {
         ),
     )
 
+    /** The search results themselves are showing, with no artist, album or other page over them. */
+    fun onSearchPage() = destination == DesktopDestination.SEARCH && openedArtist == null &&
+        openedCollection == null && !overlays.replay && overlays.settingsPage == null &&
+        selectedMoodGenre == null && libraryShowAll == null
+
+    fun selectDestination(next: DesktopDestination) {
+        if (next == DesktopDestination.LIBRARY && libraryStale) {
+            libraryStale = false
+            reloadLibrary()
+        }
+        openedArtist = null
+        openedCollection = null
+        overlays.replay = false
+        overlays.settingsPage = null
+        selectedMoodGenre = null
+        libraryShowAll = null
+        if (next == DesktopDestination.SEARCH) searchFocusRequested = true
+        destination = next
+    }
+
     /** Typing, from the page's field or the sidebar's: the typeahead follows, and an empty field goes back to recents. */
     fun editQuery(text: String) {
         query = text
@@ -2524,13 +2658,39 @@ fun LayaDesktopApp() {
             searchCommitted = false
             searchRows = emptyList()
             searchError = null
+            addonSearchJob?.cancel()
+            addonResults = null
+        }
+    }
+
+    /** Asks every addon and lossless catalogue at once — see [DesktopSourceRegistry.searchAddons]. */
+    fun searchAddonSources() {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        if (!onSearchPage()) selectDestination(DesktopDestination.SEARCH)
+        searchTyping = false
+        searchSuggestions = emptyList()
+        searchScrollReset++
+        addonSearchJob?.cancel()
+        if (!DesktopSourceRegistry.hasAddonSearch()) {
+            addonResults = UiState.Error(
+                DesktopStrings["search_addons_none", "No addons are enabled. Add one in Settings → Sources."],
+            )
+            return
+        }
+        DesktopAddonSearchHistory.record(q)
+        addonResults = UiState.Loading
+        addonSearchJob = scope.launch {
+            addonResults = runCatching { DesktopSourceRegistry.searchAddons(q) }
+                .fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Search failed") })
         }
     }
 
     fun search() {
+        if (searchAddons) return searchAddonSources()
         if (query.isBlank() || searchLoading) return
-        overlays.settingsPage = null
-        destination = DesktopDestination.SEARCH
+        // An artist or album opened from the last results is left for the new ones; back returns to it.
+        if (!onSearchPage()) selectDestination(DesktopDestination.SEARCH)
         searchTyping = false
         searchSuggestions = emptyList()
         // Submitting is picking the first track the typeahead offered, as on the phone — or, with
@@ -2606,21 +2766,6 @@ fun LayaDesktopApp() {
         searchSuggestions = emptyList()
         searchTypeahead = emptyList()
         search()
-    }
-
-    fun selectDestination(next: DesktopDestination) {
-        if (next == DesktopDestination.LIBRARY && libraryStale) {
-            libraryStale = false
-            reloadLibrary()
-        }
-        openedArtist = null
-        openedCollection = null
-        overlays.replay = false
-        overlays.settingsPage = null
-        selectedMoodGenre = null
-        libraryShowAll = null
-        if (next == DesktopDestination.SEARCH) searchFocusRequested = true
-        destination = next
     }
 
     // Settings' search and scroll outlive a visit to one of its pages, and start over each time
@@ -2719,7 +2864,7 @@ fun LayaDesktopApp() {
         playlists.map { playlist ->
             ShelfItem(
                 title = playlist.title,
-                subtitle = "Playlist • ${playlist.songs.size} songs",
+                subtitle = DesktopStrings.plural("d_playlist_songs", playlist.songs.size, "Playlist • %1\$d song", "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 videoId = null,
                 browseId = LOCAL_PLAYLIST_PREFIX + playlist.id,
@@ -2854,10 +2999,10 @@ fun LayaDesktopApp() {
             onActivate = {
                 DesktopWindowVisibility.show()
                 // A click on a recognition result's tray message (Windows) goes to that result.
-                if (DesktopRecognitionNotifier.consumeTrayClick()) {
-                    selectDestination(DesktopDestination.RECOGNIZE)
-                } else {
-                    overlays.nowPlaying = true
+                when (DesktopRecognitionNotifier.consumeTrayClick()) {
+                    true -> selectDestination(DesktopDestination.RECOGNIZE)
+                    false -> overlays.nowPlaying = true
+                    null -> Unit // a lossless reminder, answered by its own handler
                 }
             },
             onPlayPause = { if (selectedSong != null) togglePlayPauseFromUser() },
@@ -3031,6 +3176,50 @@ fun LayaDesktopApp() {
         ) {
             loadExplore()
         }
+    }
+
+    // Signed out, Radio's stations come from the moods instead; loaded once, retried on a later visit.
+    // AI songs radio/AutoPlay queued before their lookup landed leave the queue once flagged
+    // (YtMusicRepository.radio filters what it can up front). The listener's own picks stay.
+    val aiFlagged by AiSongs.flagged.collectAsState()
+    val hideAi by AiSongs.hide.collectAsState()
+    LaunchedEffect(liveQueue.songs, liveQueue.index) {
+        AiSongs.request(liveQueue.songs.drop(liveQueue.index + 1).filter { it.fromAutoplay }.map { it.videoId })
+    }
+    LaunchedEffect(aiFlagged, hideAi, liveQueue.songs) {
+        if (!hideAi || aiFlagged.isEmpty() || DesktopListenTogether.state.value.controlsLocked) return@LaunchedEffect
+        val queue = liveQueue
+        val kept = queue.songs.filterIndexed { i, song -> i <= queue.index || !(song.fromAutoplay && song.videoId in aiFlagged) }
+        if (kept.size != queue.songs.size) {
+            liveQueue = queue.copy(songs = kept)
+            saveQueue()
+        }
+    }
+
+    val homeSpeedDial by AppSettings.homeSpeedDial.collectAsState()
+    var moodStations by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
+    LaunchedEffect(destination, youtubeSignedIn) {
+        if (destination != DesktopDestination.RADIO || youtubeSignedIn || moodStations is UiState.Success) return@LaunchedEffect
+        moodStations = UiState.Loading
+        moodStations = YtMusicRepository.moodStations().fold({ UiState.Success(it) }, { UiState.Error(it.message ?: "Could not load stations") })
+    }
+
+    // Radio loads the first time it is opened, again for a different account, and on a retry.
+    LaunchedEffect(destination, youtubeSignedIn, activeAccountId, activeProfileId, sessionRevision, mixesReloads) {
+        if (destination != DesktopDestination.RADIO || !youtubeSignedIn) return@LaunchedEffect
+        if (!youtubeSourceEnabled) {
+            mixesState = UiState.Error("YouTube Music is disabled")
+            mixesLoadedFor = null
+            return@LaunchedEffect
+        }
+        val identity = "$activeAccountId/$activeProfileId/$sessionRevision/$mixesReloads"
+        if (identity == mixesLoadedFor) return@LaunchedEffect
+        mixesLoadedFor = identity
+        mixesState = UiState.Loading
+        mixesState = YtMusicRepository.mixedForYouKeyed().fold(
+            onSuccess = { UiState.Success(it) },
+            onFailure = { UiState.Error(it.message ?: "Could not load Radio") },
+        )
     }
 
     // Category buttons carry no artwork of their own, so a few are resolved at a time from the
@@ -3365,7 +3554,10 @@ fun LayaDesktopApp() {
         DesktopPlayerSettings.lyricsBlur.value = lyricsBlur
         DesktopPlayerSettings.syncedLyrics.value = syncedLyrics
         DesktopPlayerSettings.showNerdStats.value = showNerdStats
+        DesktopPlayerSettings.showBestPart.value = showBestPart
         DesktopPlayerSettings.smartFadeEnabled.value = automix
+        // The artwork transitions have no switch any more: always on.
+        DesktopPlayerSettings.autoMixArtwork.value = AutoMixArtworkPreferences(artTransition = true, miniPlayerTransition = true)
         DesktopPlayerSettings.smartAnalysis.value = playback.smartAnalysis
         DesktopPlayerSettings.smartMixInProgress.value = playback.mixing
         DesktopPlayerSettings.smartTransitionWindow.value = playback.transitionWindow
@@ -3470,6 +3662,49 @@ fun LayaDesktopApp() {
         }
     }
 
+    // The queue screen's edits, as Android's service applies them: rows by identity, one Undo for the lot.
+    class QueueRemoval(val token: Long, val before: List<Song>, val removed: List<Int>)
+    var lastQueueRemoval: QueueRemoval? = null
+    var queueRemovalTokens = 0L
+
+    fun removeQueueEntries(entries: List<QueueEntryIdentity>): Long? {
+        if (DesktopListenTogether.state.value.controlsLocked) return null
+        val before = liveQueue.songs
+        val indices = QueueEdits.resolve(before, entries, QueueEdits.songKey).filter { it != liveQueue.index }
+        if (indices.isEmpty()) return null
+        val (kept, at) = QueueEdits.remove(before, liveQueue.index, indices)
+        liveQueue = liveQueue.copy(songs = kept, index = at)
+        saveQueue()
+        partySyncHolder[0]?.onLocalIntent()
+        lastQueueRemoval = QueueRemoval(++queueRemovalTokens, before, indices)
+        return queueRemovalTokens
+    }
+
+    fun undoQueueRemoval(token: Long): Boolean {
+        if (DesktopListenTogether.state.value.controlsLocked) return false
+        val removal = lastQueueRemoval?.takeIf { it.token == token } ?: return false
+        lastQueueRemoval = null
+        val (songs, at) = QueueEdits.restore(
+            removal.before, removal.removed, liveQueue.songs, liveQueue.index, QueueEdits.sameSong,
+        ) ?: return false
+        liveQueue = liveQueue.copy(songs = songs, index = at)
+        saveQueue()
+        partySyncHolder[0]?.onLocalIntent()
+        return true
+    }
+
+    fun moveQueueEntryToUser(entry: QueueEntryIdentity): Boolean {
+        if (DesktopListenTogether.state.value.controlsLocked) return false
+        val from = QueueEdits.resolve(liveQueue.songs, listOf(entry), QueueEdits.songKey).singleOrNull() ?: return false
+        val (songs, at) = QueueEdits.moveToUserQueue(
+            liveQueue.songs, liveQueue.index, from, DesktopAppUiHost.swipeToPlayNext.value,
+        ) ?: return false
+        liveQueue = liveQueue.copy(songs = songs, index = at)
+        saveQueue()
+        partySyncHolder[0]?.onLocalIntent()
+        return true
+    }
+
     // Clears what the listener queued by hand, as the phone's Clear does; the album and AutoPlay
     // stay where they are.
     fun clearQueue() {
@@ -3496,10 +3731,12 @@ fun LayaDesktopApp() {
     LaunchedEffect(Unit) {
         snapshotFlow {
             val id = playback.song?.videoId
-            (id != null && id in likedIds) to watching?.takeIf { it == id }
-        }.collect { (liked, video) ->
-            DesktopMiniWindow.liked.value = liked
-            DesktopMiniWindow.videoId.value = video
+            Triple((id != null && id in likedIds) to watching?.takeIf { it == id }, liveQueue.songs, liveQueue.index)
+        }.collect { (state, songs, index) ->
+            DesktopMiniWindow.liked.value = state.first
+            DesktopMiniWindow.videoId.value = state.second
+            DesktopMiniWindow.queue.value = songs
+            DesktopMiniWindow.queueIndex.value = index
         }
     }
     SideEffect {
@@ -3638,6 +3875,8 @@ fun LayaDesktopApp() {
                 }
             }
             SideEffect { DesktopShortcuts.handler = shortcuts }
+            val playingArt = playback.song?.thumbnailUrl
+            LaunchedEffect(playingArt) { com.music.laya.ui.theme.AmbientArtwork.url.value = playingArt }
             DesktopFrame(
                 // The phone's page is black, not the near-black of its cards.
                 containerColor = DesktopBackground,
@@ -3686,7 +3925,9 @@ fun LayaDesktopApp() {
                         onOpenLyrics = { overlays.toggleSidePanel(DesktopSidePanel.LYRICS) },
                         onOpenQueue = { overlays.toggleSidePanel(DesktopSidePanel.QUEUE) },
                         sidePanel = overlays.sidePanel,
-                        accountAvatar = activeAccount?.profiles?.firstOrNull { it.profileId == activeProfileId }?.avatar?.takeIf { it.isNotBlank() }
+                        // Only while the session works: a stored account whose sign-in has lapsed is not signed in,
+                        // and its photo beside the "Sign in" card said otherwise.
+                        accountAvatar = if (!youtubeSignedIn) null else activeAccount?.profiles?.firstOrNull { it.profileId == activeProfileId }?.avatar?.takeIf { it.isNotBlank() }
                             ?: activeAccount?.avatar?.takeIf { it.isNotBlank() }
                             ?: activeAccount?.profiles?.firstOrNull()?.avatar?.takeIf { it.isNotBlank() },
                         onOpenAccounts = { DesktopTrackLog.log("accounts: opening the switcher"); overlays.accounts = true },
@@ -3704,9 +3945,7 @@ fun LayaDesktopApp() {
                         query = query,
                         onQueryChange = { text ->
                             editQuery(text)
-                            if (destination != DesktopDestination.SEARCH || overlays.settingsPage != null) {
-                                selectDestination(DesktopDestination.SEARCH)
-                            }
+                            if (!onSearchPage()) selectDestination(DesktopDestination.SEARCH)
                         },
                         onSearch = ::search,
                         onDestinationSelected = ::selectDestination,
@@ -3745,7 +3984,7 @@ fun LayaDesktopApp() {
                                 lyrics = sharedLyrics,
                                 lyricsSource = sharedLyricsSource,
                                 lyricsProviderStates = providerStates,
-                                onSelectLyricsProvider = { source -> lyricsOnly = source.label },
+                                onSelectLyricsProvider = { source -> pickLyrics(source.label) },
                                 lyricsUnavailable = sharedLyricsUnavailable,
                                 onSeek = ::seekPlayer,
                                 modifier = Modifier.fillMaxSize(),
@@ -3844,6 +4083,17 @@ fun LayaDesktopApp() {
                             onRemoveFromQueue = ::removeFromQueue,
                             onMoveInQueue = ::moveInQueue,
                             onClearQueue = ::clearQueue,
+                            queueActions = remember {
+                                QueueActions(
+                                    remove = { removeQueueEntries(it) },
+                                    undo = { undoQueueRemoval(it) },
+                                    moveToUserQueue = { moveQueueEntryToUser(it) },
+                                    addToPlaylist = { songs ->
+                                        queuePlaylistSongs = songs
+                                        playlistTarget = songs.firstOrNull()
+                                    },
+                                )
+                            },
                             onOpenMenu = { playerMenuOpen = true },
                             onOpenAlbum = { id ->
                                 overlays.nowPlaying = false
@@ -3880,7 +4130,7 @@ fun LayaDesktopApp() {
                             lyrics = sharedLyrics,
                             lyricsSource = sharedLyricsSource,
                             lyricsProviderStates = providerStates,
-                            onSelectLyricsProvider = { source -> lyricsOnly = source.label },
+                            onSelectLyricsProvider = { source -> pickLyrics(source.label) },
                             lyricsUnavailable = sharedLyricsUnavailable,
                             lyricsOffsetOpen = false,
                             onDismissLyricsOffset = {},
@@ -3957,7 +4207,7 @@ fun LayaDesktopApp() {
                                     showingTranslation = playerShowingTranslation.value,
                                     translateEnabled = !sharedLyrics.isNullOrEmpty(),
                                     lyricsProviders = menuLyricsProviders,
-                                    onSelectLyricsProvider = { label -> lyricsOnly = label },
+                                    onSelectLyricsProvider = { label -> pickLyrics(label) },
                                     onSearchLyrics = { title, artist -> searchLyrics(title, artist) },
                                     lyricsOffsetMs = lyricsOffsetMs,
                                     onSetLyricsOffset = { DesktopPlayerSettings.setLyricsOffsetMs(it) },
@@ -3998,6 +4248,8 @@ fun LayaDesktopApp() {
                                 activeProfileId = profile.profileId
                             },
                             onAddAccount = { overlays.accounts = false; overlays.signIn = true },
+                            // The sign-in window saves under the same account, so its channel choice comes back with it.
+                            onSignInAgain = { overlays.accounts = false; overlays.signIn = true },
                             onRemoveAccount = { account ->
                                 scope.launch {
                                     accounts = withContext(Dispatchers.IO) {
@@ -4075,12 +4327,11 @@ fun LayaDesktopApp() {
                     }
                     if (overlays.playlistDialog || playlistTarget != null) {
                         DesktopPlaylistDialog(
-                            song = playlistTarget,
+                            songs = playlistSongs(),
                             accountPlaylists = accountPlaylists,
                             localPlaylists = playlists,
                             signedIn = youtubeSignedIn,
-                            canUseAccount = playlistTarget
-                                ?.let { DesktopSearchClient.isVideoId(it.videoId) } ?: true,
+                            canUseAccount = playlistSongs().all { DesktopSearchClient.isVideoId(it.videoId) },
                             busy = playlistBusy,
                             error = playlistError,
                             onPickAccount = ::addToAccountPlaylist,
@@ -4248,6 +4499,7 @@ fun LayaDesktopApp() {
                                     },
                                     animatedCanvas = animatedCanvas,
                                     showNerdStats = showNerdStats,
+                                    showBestPart = showBestPart,
                                     fullBleedArtwork = fullBleedArtwork,
                                     onAnimatedCanvasChange = {
                                         animatedCanvas = it
@@ -4296,6 +4548,10 @@ fun LayaDesktopApp() {
                                     onShowNerdStatsChange = {
                                         showNerdStats = it
                                         persistence.saveBoolean("show_nerd_stats", it)
+                                    },
+                                    onShowBestPartChange = {
+                                        showBestPart = it
+                                        persistence.saveBoolean("show_best_part", it)
                                     },
                                     onFullBleedArtworkChange = {
                                         fullBleedArtwork = it
@@ -4544,12 +4800,27 @@ fun LayaDesktopApp() {
                             contentPadding = sharedPagePadding,
                             title = null,
                             signedIn = youtubeSignedIn || !sessionSettled,
-                            onSignIn = { overlays.accounts = true },
+                            // An expired account goes straight back to the sign-in window; nobody saved, to the switcher.
+                            onSignIn = { if (activeAccount?.expired == true) overlays.signIn = true else overlays.accounts = true },
+                            signInTitle = if (activeAccount?.expired == true) {
+                                DesktopStrings["d_session_expired_banner", "Your session expired. Sign in again"]
+                            } else null,
                             onItemLongPress = { item -> if (item.videoId != null) openMenu(item.toSong()) },
                             onLoadMore = ::loadMoreHome,
                             loadingMore = homeLoadingMore,
                             recentlyPlayedLoading = homeRecentsLoading,
                             leadHero = false,
+                            dials = if (!homeSpeedDial) null else ({
+                                DesktopHomeDialsSection(
+                                    shelves = (homeState as? UiState.Success)?.data.orEmpty(),
+                                    library = (libraryState as? UiState.Success)?.data,
+                                    loading = homeState is UiState.Loading,
+                                    settled = homeState is UiState.Success && !homeRecentsLoading,
+                                    onOpen = { openShelfItem(it) },
+                                    onMore = { openMenu(it.toSong()) },
+                                    onHistory = if (youtubeSignedIn) ({ selectDestination(DesktopDestination.HISTORY) }) else null,
+                                )
+                            }),
                         )
                         destination == DesktopDestination.EXPLORE && selectedMoodGenre != null -> Column(Modifier.fillMaxSize()) {
                             MoodGenrePlaylistsScreen(
@@ -4575,6 +4846,21 @@ fun LayaDesktopApp() {
                             pullState = rememberPullToRefreshState(),
                             contentPadding = sharedPagePadding,
                             showTitle = false,
+                        )
+                        destination == DesktopDestination.RADIO -> MixesScreen(
+                            // The desktop's pages carry no big heading; the sidebar names the page.
+                            title = null,
+                            state = mixesState,
+                            signedIn = youtubeSignedIn,
+                            listState = mixesListState,
+                            onItemClick = { openShelfItem(it) },
+                            onRetry = { mixesReloads++ },
+                            onSignIn = { overlays.accounts = true },
+                            moodStations = moodStations,
+                            refreshing = false,
+                            onRefresh = { mixesReloads++ },
+                            pullState = rememberPullToRefreshState(),
+                            contentPadding = sharedPagePadding,
                         )
                         destination == DesktopDestination.SEARCH -> SearchScreen(
                             query = query,
@@ -4664,6 +4950,32 @@ fun LayaDesktopApp() {
                             contentPadding = sharedPagePadding,
                             topPadding = 0.dp,
                             showField = false,
+                            searchingAddons = searchAddons,
+                            addonResults = addonResults,
+                            addonHistory = addonSearchHistory,
+                            onAddonHistoryClick = { term ->
+                                editQuery(term)
+                                search()
+                            },
+                            onAddonHistoryRemove = DesktopAddonSearchHistory::remove,
+                            onAddonHistoryClear = DesktopAddonSearchHistory::clear,
+                            sourceSwitcher = {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf(
+                                        DesktopStrings["search_source_youtube", "YouTube"] to false,
+                                        DesktopStrings["search_source_addons", "Addons"] to true,
+                                    ).forEach { (label, addons) ->
+                                        androidx.compose.material3.FilterChip(
+                                            selected = searchAddons == addons,
+                                            onClick = {
+                                                searchAddons = addons
+                                                if (query.isNotBlank()) search()
+                                            },
+                                            label = { Text(label) },
+                                        )
+                                    }
+                                }
+                            },
                         )
                         destination == DesktopDestination.LIBRARY && libraryShowAll != null -> Column(Modifier.fillMaxSize()) {
                             // The phone keeps the grid's sort beside it, in the bar above; here it sits
@@ -4752,7 +5064,7 @@ fun LayaDesktopApp() {
                             downloadedIds = downloads.map(Song::videoId).toSet(),
                             downloadInProgress = downloadInProgress,
                             contentPadding = contentPadding,
-                            menu = { song -> songMenu(song) },
+                            menu = { song -> historySongMenu(song) },
                         )
                         destination == DesktopDestination.DOWNLOADS -> Box(Modifier.fillMaxSize()) {
                             DesktopDownloadsPage(
@@ -4839,7 +5151,7 @@ private fun DesktopTopBar(
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             // The window's own buttons live at the head of the sidebar; a compact window has no
             // sidebar, so there they lead this bar instead.
-            if (compact && inlineCaption) {
+            if (compact && inlineCaption && DesktopPlatform.windowsCaption == 0) {
                 Box(
                     Modifier
                         .fillMaxHeight()
@@ -4930,7 +5242,7 @@ private fun DesktopTopBar(
                                     color = tint,
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.semantics { contentDescription = "Repeat one" },
+                                    modifier = Modifier.semantics { contentDescription = DesktopStrings["d_repeat_one", "Repeat one"] },
                                 )
                             } else {
                                 Icon(
@@ -4971,7 +5283,11 @@ private fun DesktopTopBar(
                                 } else {
                                     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                                         Box(Modifier.size(44.dp).clip(RoundedCornerShape(3.dp))) {
-                                            DesktopArtwork(song.thumbnailUrl, Modifier.matchParentSize(), px = ROW_ART_PX)
+                                            // The mini player's cover: Automix's dissolve and the reveal on every change of song.
+                                            val miniQueue by DesktopMiniWindow.queue.collectAsState()
+                                            val miniIndex by DesktopMiniWindow.queueIndex.collectAsState()
+                                            val cover = com.music.laya.ui.player.rememberMiniAutoMixArtwork(song, miniQueue, miniIndex)
+                                            cover(song.thumbnailUrl.artworkAt(ROW_ART_PX), Modifier.matchParentSize())
                                             DesktopMiniPlayerVideo(videoId, Modifier.matchParentSize())
                                         }
                                         Column(
@@ -5073,6 +5389,15 @@ private fun DesktopTopBar(
                         )
                     }
                     DesktopAccountButton(avatar = accountAvatar, onClick = onOpenAccounts)
+                }
+            }
+            // Windows keeps its caption buttons where every other window has them: the top right.
+            if (inlineCaption && DesktopPlatform.windowsCaption != 0) {
+                Box(
+                    Modifier.fillMaxHeight().desktopWindowGlass(DesktopChromeEdge.BOTTOM),
+                    contentAlignment = Alignment.TopEnd,
+                ) {
+                    DesktopWindowsCaptionButtons()
                 }
             }
             }
@@ -5190,6 +5515,9 @@ private fun DesktopSidebar(
             }
             DesktopSidebarItem(LayaIcons.Explore, "Explore", destination == DesktopDestination.EXPLORE) {
                 onDestinationSelected(DesktopDestination.EXPLORE)
+            }
+            DesktopSidebarItem(LayaIcons.TabRadio, "Radio", destination == DesktopDestination.RADIO) {
+                onDestinationSelected(DesktopDestination.RADIO)
             }
             DesktopSidebarItem(LayaIcons.Library, "Library", destination == DesktopDestination.LIBRARY) {
                 onDestinationSelected(DesktopDestination.LIBRARY)
@@ -5459,6 +5787,7 @@ private fun DesktopFloatingNavigation(
     val tabs = listOf(
         DesktopDestination.LISTEN_NOW to (LayaIcons.Play to "Play"),
         DesktopDestination.EXPLORE to (LayaIcons.Explore to "Explore"),
+        DesktopDestination.RADIO to (LayaIcons.TabRadio to "Radio"),
         DesktopDestination.LIBRARY to (LayaIcons.Library to "Library"),
         DesktopDestination.SEARCH to (LayaIcons.Search to "Search"),
     )
@@ -5664,6 +5993,15 @@ private fun DesktopFrame(
             // Both sources of the same state: the chrome blurs the backdrop behind it, and the
             // floating bottom bar blurs the page scrolling under it.
             if (!glass) Box(Modifier.fillMaxSize().hazeSource(haze)) { backdrop(false) }
+            // Over the system material the page's backdrop covers only the page: the colour
+            // background goes under the whole window here, so the sidebar's tint and the side
+            // panel take the song's colour as well.
+            if (glass) {
+                com.music.laya.ui.theme.AmbientBackgroundLayer(
+                    com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false)),
+                    Modifier.fillMaxSize(),
+                )
+            }
             Column(Modifier.fillMaxSize()) {
                 // Above everything, and outside the box the rest of the window is drawn in, because
                 // that is what a title bar is.
@@ -5741,7 +6079,16 @@ private fun DesktopPageBackdrop(artworkUrl: String?, transparentBase: Boolean) {
             .fillMaxSize()
             .then(if (transparentBase) Modifier else Modifier.background(DesktopBackground)),
     ) {
-        if (artworkUrl == null) return@Box
+        if (artworkUrl == null) {
+            // Melo's colour background, from the playing song, where a page brings no artwork of its own;
+            // over a see-through base the window's own layer under everything already draws it.
+            if (transparentBase) return@Box
+            com.music.laya.ui.theme.AmbientBackgroundLayer(
+                com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false)),
+                Modifier.fillMaxSize(),
+            )
+            return@Box
+        }
         DesktopMesh(artworkUrl)
         Box(
             Modifier.fillMaxSize().background(
@@ -5812,7 +6159,7 @@ private fun DesktopArtistPage(
                 // and animated artwork is on.
                 val animatedCanvas by DesktopPlayerSettings.animatedCanvas.collectAsState()
                 val video by produceState<String?>(null, name, animatedCanvas) {
-                    value = if (animatedCanvas) AppleArtistArtRepository.artFor(name)?.videoUrl else null
+                    value = if (animatedCanvas) AppleArtistArtRepository.artFor(name, artist.songs.map { it.title })?.videoUrl else null
                 }
                 // Android caps the top-songs block and pages it sideways so the release shelves are
                 // not buried under a hundred rows.
@@ -6321,6 +6668,79 @@ private fun DesktopLibraryGroupingContent(
 }
 
 /** Mobile's section order, with desktop-only groups placed beside their closest mobile counterpart. */
+/** The settings' categories, in the phone's sections: each one a page of [sections]. */
+private enum class DesktopSettingsCategory(
+    val key: String,
+    val fallback: String,
+    val icon: ImageVector,
+    val sections: Set<DesktopSettingsSection>,
+) {
+    APPEARANCE("appearance", "Appearance", Icons.Rounded.Brightness4,
+        setOf(DesktopSettingsSection.APPEARANCE, DesktopSettingsSection.LANGUAGE)),
+    HOME("settings_home", "Home", Icons.Rounded.GridView, setOf(DesktopSettingsSection.HOME)),
+    PLAYBACK("playback", "Playback", Icons.Rounded.MusicNote, setOf(
+        DesktopSettingsSection.PLAYBACK, DesktopSettingsSection.DESKTOP_PLAYBACK, DesktopSettingsSection.AUDIO_QUALITY,
+        DesktopSettingsSection.SOURCES, DesktopSettingsSection.AUDIO_OUTPUT, DesktopSettingsSection.OUTPUT_PRECISION,
+        DesktopSettingsSection.LYRICS,
+    )),
+    STORAGE("storage", "Storage", Icons.Rounded.Storage,
+        setOf(DesktopSettingsSection.STORAGE, DesktopSettingsSection.DOWNLOADS, DesktopSettingsSection.LOCAL_MUSIC)),
+    GENERAL("settings_category_general", "General", Icons.Rounded.Tune, setOf(
+        DesktopSettingsSection.ACCOUNT, DesktopSettingsSection.LISTEN_TOGETHER, DesktopSettingsSection.MISCELLANEOUS,
+    )),
+    ADVANCED("advanced_options", "Advanced options", Icons.Rounded.BarChart, setOf(DesktopSettingsSection.ADVANCED)),
+}
+
+private val DESKTOP_SETTINGS_SECTIONS = listOf(
+    ("settings_section_look" to "Look") to listOf(DesktopSettingsCategory.APPEARANCE, DesktopSettingsCategory.HOME),
+    ("settings_section_listening" to "Listening") to listOf(DesktopSettingsCategory.PLAYBACK, DesktopSettingsCategory.STORAGE),
+    ("settings_section_app" to "App") to listOf(DesktopSettingsCategory.GENERAL),
+    ("settings_section_about" to "About") to listOf(DesktopSettingsCategory.ADVANCED),
+)
+
+/** The open category; kept for the session, so back from one of its pages returns to it. */
+private val desktopSettingsCategory = mutableStateOf(DesktopSettingsCategory.APPEARANCE)
+
+/** The categories down the side of Settings. */
+@Composable
+private fun DesktopSettingsCategoryList(selected: DesktopSettingsCategory, onSelect: (DesktopSettingsCategory) -> Unit) {
+    Column(Modifier.width(220.dp).padding(top = 12.dp, end = 20.dp)) {
+        for ((section, categories) in DESKTOP_SETTINGS_SECTIONS) {
+            Text(
+                DesktopStrings[section.first, section.second].uppercase(),
+                color = DesktopSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 12.dp, top = 10.dp, bottom = 4.dp),
+            )
+            for (category in categories) {
+                val isSelected = category == selected
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isSelected) Color.White.copy(alpha = 0.10f) else Color.Transparent)
+                        .clickable { onSelect(category) }
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        category.icon,
+                        contentDescription = null,
+                        tint = if (isSelected) Color.White else DesktopSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        DesktopStrings[category.key, category.fallback],
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+    }
+}
+
 private enum class DesktopSettingsSection {
     ACCOUNT,
     LISTEN_TOGETHER,
@@ -6332,6 +6752,7 @@ private enum class DesktopSettingsSection {
     PLAYBACK,
     DESKTOP_PLAYBACK,
     APPEARANCE,
+    HOME,
     LYRICS,
     LOCAL_MUSIC,
     STORAGE,
@@ -6395,6 +6816,8 @@ private fun DesktopSettingsScreen(
     onOpenListenTogether: () -> Unit,
     showNerdStats: Boolean,
     onShowNerdStatsChange: (Boolean) -> Unit,
+    showBestPart: Boolean,
+    onShowBestPartChange: (Boolean) -> Unit,
     fullBleedArtwork: Boolean,
     onFullBleedArtworkChange: (Boolean) -> Unit,
     legacyMeshGradient: Boolean,
@@ -6445,6 +6868,19 @@ private fun DesktopSettingsScreen(
     // control, as on the phones: on always verifies afresh, off drops the session.
     var verifying by remember { mutableStateOf<Pair<DesktopSourceConfig, kotlinx.coroutines.Job>?>(null) }
     var verifyError by remember { mutableStateOf<String?>(null) }
+    // A missing class or native library throws with its own binary name as the
+    // message (`com/sun/net/httpserver/HttpServer`, say) — readable to nobody.
+    // ponytail: a plain deny-list of the throw types a missing JDK/native
+    // piece raises, not a classifier; widen it if another one ever surfaces.
+    fun Throwable.userFailureMessage(): String {
+        val msg = message
+        val looksLikeAClassName = this is NoClassDefFoundError ||
+            this is ClassNotFoundException ||
+            this is UnsatisfiedLinkError ||
+            msg.isNullOrBlank() ||
+            (msg.contains('/') && msg.none { it == ' ' })
+        return if (looksLikeAClassName) DesktopStrings["lossless_verify_failed", "Verification failed"] else msg!!
+    }
     fun verifyLossless(config: DesktopSourceConfig) {
         val kind = config.kind
         verifying?.second?.cancel()
@@ -6456,7 +6892,7 @@ private fun DesktopSettingsScreen(
                 .onFailure {
                     if (it !is kotlinx.coroutines.CancellationException) {
                         DesktopTrackLog.log("${kind.label}: verification failed: ${it.message}")
-                        verifyError = it.message ?: DesktopStrings["lossless_verify_failed", "Verification failed"]
+                        verifyError = it.userFailureMessage()
                     }
                 }
         }
@@ -6498,7 +6934,8 @@ private fun DesktopSettingsScreen(
             .filter { it.kind.needsServer && it.isComplete }
             .forEach(onTestSource)
     }
-    DesktopSettingsPageFrame {
+    // Wider by the category list down its side.
+    DesktopSettingsPageFrame(maxWidth = DesktopSettingsPageWidth + 240.dp) {
             Column(Modifier.fillMaxSize()) {
                 val settingsQuery = query
                 Row(
@@ -6521,12 +6958,23 @@ private fun DesktopSettingsScreen(
                     )
                 }
                 CompositionLocalProvider(LocalSettingsQuery provides settingsQuery.trim()) {
+                // Settings in categories, as the phone groups them; a search looks through them all.
+                val searching = settingsQuery.isNotBlank()
+                var category by desktopSettingsCategory
+                val categoryScope = rememberCoroutineScope()
+                Row(Modifier.weight(1f)) {
+                if (!searching) {
+                    DesktopSettingsCategoryList(category) {
+                        category = it
+                        categoryScope.launch { listState.scrollToItem(0) }
+                    }
+                }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     state = listState,
                     contentPadding = PaddingValues(top = 12.dp, bottom = 28.dp),
                 ) {
-            DesktopSettingsSection.entries.forEach { section ->
+            DesktopSettingsSection.entries.filter { searching || it in category.sections }.forEach { section ->
             if (section == DesktopSettingsSection.PLAYBACK) item {
                     SettingsGroup(DesktopStrings["playback", "Playback"]) {
                     if (!automix) {
@@ -6820,6 +7268,9 @@ private fun DesktopSettingsScreen(
                     ) {
                         DesktopArtworkCache.clear()
                         DesktopSignatureImages.clear()
+                        // The artist pages' Apple art and signature answers, so they are looked up afresh.
+                        com.music.laya.data.canvas.AppleArtistArtRepository.clear()
+                        DesktopArtistSignatures.clear()
                         imagesCleared = true
                     }
                 }
@@ -6949,6 +7400,20 @@ private fun DesktopSettingsScreen(
                         systemFont,
                         DesktopAppearanceSettings::setSystemFont,
                     )
+                    val colorBackground by AppSettings.colorBackground.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["color_background", "Colour background"],
+                        DesktopStrings["d_color_background_subtitle", "Soft colours from the playing song's artwork behind every page"],
+                        colorBackground,
+                        AppSettings::setColorBackground,
+                    )
+                    val splashScreen by AppSettings.splashScreen.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["splash_screen", "Splash screen"],
+                        DesktopStrings["d_splash_screen_subtitle", "Show the animated logo when the app starts"],
+                        splashScreen,
+                        AppSettings::setSplashScreen,
+                    )
                     SettingsToggle(
                         DesktopStrings["full_screen_cover_art", "Full-screen cover art"],
                         DesktopStrings["full_screen_cover_art_subtitle", "Runs the cover to the edges of the player instead of a square sleeve"],
@@ -6980,8 +7445,21 @@ private fun DesktopSettingsScreen(
                     }
                 }
             }
+            if (section == DesktopSettingsSection.HOME) item { DesktopHomeSettingsGroup() }
             if (section == DesktopSettingsSection.MISCELLANEOUS) item {
                 SettingsGroup(DesktopStrings["miscellaneous", "Miscellaneous"]) {
+                    val hideAiSongs by AiSongs.hide.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["hide_ai_songs", "Hide AI-generated songs"],
+                        DesktopStrings[
+                            "hide_ai_songs_subtitle",
+                            "Keeps songs from channels on the AiSList blocklist (AiSList, aisloplist.com, CC BY-NC 4.0) out of Home, search and radio",
+                        ],
+                        hideAiSongs,
+                    ) {
+                        AiSongs.hide.value = it
+                        DesktopPersistence().saveBoolean(KEY_HIDE_AI_SONGS, it)
+                    }
                     SettingsToggle(
                         DesktopStrings["d_dont_repeat_songs_in_current_session", "Don\u2019t repeat songs in current session"],
                         DesktopStrings["d_autoplay_wont_suggest_a_song_already_played_or_suggested", "AutoPlay won\u2019t suggest a song already played or suggested this session"],
@@ -7053,7 +7531,10 @@ private fun DesktopSettingsScreen(
                         DesktopSignatureSettings::setEnabled,
                     )
                     var editingSignatureApi by remember { mutableStateOf(false) }
-                    if (signatureEnabled) {
+                    if (signatureEnabled) SettingsUnder(
+                        DesktopStrings["artist_signatures", "Artist signatures"],
+                        DesktopStrings["artist_signatures_subtitle", "Shows a handwritten signature when Apple Music has no title logo"],
+                    ) {
                         // Only the saved address is ever shown; the built-in one stays out of the UI.
                         val signatureUrl by DesktopSignatureSettings.customUrl.collectAsState()
                         val signatureServerOnline by DesktopSignatureSettings.server.online.collectAsState()
@@ -7229,6 +7710,13 @@ private fun DesktopSettingsScreen(
                             kind = DesktopSourceKind.ADDON,
                         )
                     }
+                    val directSourceStream by AppSettings.directSourceStream.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["direct_source_stream", "Direct Source Stream"],
+                        DesktopStrings["direct_source_stream_subtitle", "Play from sources above YouTube from the first note, no mid-song swap"],
+                        directSourceStream,
+                        AppSettings::setDirectSourceStream,
+                    )
                 }
             }
             if (section == DesktopSettingsSection.ACCOUNT) item {
@@ -7247,6 +7735,12 @@ private fun DesktopSettingsScreen(
             if (section == DesktopSettingsSection.ADVANCED) item {
                 SettingsGroup(DesktopStrings["advanced_options", "Advanced options"]) {
                     SettingsToggle(
+                        DesktopStrings["show_best_part", "Best Part button"],
+                        DesktopStrings["show_best_part_subtitle", "A button on the artwork that skips to the part of the song people replay most"],
+                        showBestPart,
+                        onShowBestPartChange,
+                    )
+                    SettingsToggle(
                         DesktopStrings["show_nerd_stats", "Show stats for nerds"],
                         DesktopStrings["show_nerd_stats_subtitle", "Codec, bitrate and sample rate on the player"],
                         showNerdStats,
@@ -7259,6 +7753,7 @@ private fun DesktopSettingsScreen(
                 DesktopSettingsFooter(onLicenses = onOpenLicenses)
             }
         }
+                }
         }
             }
     }
@@ -7495,9 +7990,9 @@ private fun DesktopSourceEditorDialog(
                             )
                             val duplicate = configuredSources.duplicateOf(named.baseUrl, exceptId = named.id)
                             if (duplicate != null) {
-                                message = "Already added as ${duplicate.displayName}"
+                                message = DesktopStrings.format("d_already_added_as", duplicate.displayName, fallback = "Already added as %1\$s")
                             } else {
-                                message = "Addon · ${detected.manifest.displayName}"
+                                message = DesktopStrings.format("d_addon_found", detected.manifest.displayName, fallback = "Addon · %1\$s")
                                 if (thenSave) onSave(named)
                             }
                         }
@@ -7506,7 +8001,7 @@ private fun DesktopSourceEditorDialog(
                                 kind = DesktopSourceKind.CUSTOM_MODULE,
                                 baseUrl = detected.url.ifBlank { candidate.baseUrl },
                             )
-                            message = "Module index · ${detected.moduleCount} modules"
+                            message = DesktopStrings.format("d_module_index_found", detected.moduleCount, fallback = "Module index · %1\$d modules")
                             if (thenSave) onSave(asIndex)
                         }
                         is DesktopDetectedFormat.Unsupported -> message = detected.reason
@@ -8576,6 +9071,17 @@ private fun SettingsGroup(title: String, content: @Composable () -> Unit) {
     }
 }
 
+/**
+ * Rows that belong to the setting above them (its server, its options): when the search finds that
+ * setting, they come along with it rather than being filtered on their own text.
+ */
+@Composable
+private fun SettingsUnder(parentTitle: String, parentSubtitle: String, content: @Composable () -> Unit) {
+    val query = LocalSettingsQuery.current
+    val parentHit = parentTitle.contains(query, ignoreCase = true) || parentSubtitle.contains(query, ignoreCase = true)
+    CompositionLocalProvider(LocalSettingsQuery provides if (parentHit) "" else query) { content() }
+}
+
 /** What the settings field is filtering on, or blank when it is empty. */
 private val LocalSettingsQuery = compositionLocalOf { "" }
 
@@ -8682,6 +9188,87 @@ private fun SettingsToggle(title: String, subtitle: String, checked: Boolean, on
         }
         Spacer(Modifier.width(18.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange, colors = desktopSwitchColors())
+    }
+}
+
+/**
+ * The phone's Home settings: the dials, ported from Melo (GPL-3.0). Everything past the first
+ * switch shapes the Speed Dial, so it goes with it while the dial is off.
+ */
+@Composable
+private fun DesktopHomeSettingsGroup() {
+    val speedDial by AppSettings.homeSpeedDial.collectAsState()
+    val artistDial by AppSettings.homeArtistDial.collectAsState()
+    val luckyTile by AppSettings.homeLuckyTile.collectAsState()
+    val source by AppSettings.homeDialSource.collectAsState()
+    val rows by AppSettings.homeDialRows.collectAsState()
+    val tileStyle by AppSettings.homeDialTileStyle.collectAsState()
+    val labels by AppSettings.homeDialLabels.collectAsState()
+    val pinIcon by AppSettings.homeDialPinIcon.collectAsState()
+    val newTags by AppSettings.homeDialNewReleaseTags.collectAsState()
+    val hidden by AppSettings.hiddenFromDial.collectAsState()
+    SettingsGroup(DesktopStrings["settings_home", "Home"]) {
+        SettingsToggle(
+            DesktopStrings["settings_home_speed_dial", "Speed Dial"],
+            DesktopStrings["settings_home_speed_dial_subtitle", "Your pins and favourites as tiles at the top of Home"],
+            speedDial,
+            AppSettings::setHomeSpeedDial,
+        )
+        if (!speedDial) return@SettingsGroup
+        SettingsToggle(DesktopStrings["settings_home_artist_dial", "Artists page"], "", artistDial, AppSettings::setHomeArtistDial)
+        SettingsToggle(DesktopStrings["settings_home_lucky_tile", "Feeling lucky tile"], "", luckyTile, AppSettings::setHomeLuckyTile)
+        SettingsChoiceRow(
+            DesktopStrings["settings_home_dial_source", "Tile source"],
+            listOf(
+                DesktopStrings["settings_home_dial_source_youtube", "YouTube Music"],
+                DesktopStrings["settings_home_dial_source_history", "Listening history"],
+            ),
+            HomeDialSource.entries.indexOf(source),
+        ) { AppSettings.setHomeDialSource(HomeDialSource.entries[it]) }
+        val rowChoices = AppSettings.HOME_DIAL_ROWS.toList()
+        SettingsChoiceRow(
+            DesktopStrings["settings_home_dial_rows", "Rows per page"],
+            rowChoices.map { "$it" },
+            rowChoices.indexOf(rows),
+        ) { AppSettings.setHomeDialRows(rowChoices[it]) }
+        SettingsChoiceRow(
+            DesktopStrings["settings_home_dial_tile_style", "Tile edge"],
+            listOf(
+                DesktopStrings["settings_home_dial_tile_style_plain", "Plain"],
+                DesktopStrings["settings_home_dial_tile_style_edge", "Edge"],
+                DesktopStrings["settings_home_dial_tile_style_glass", "Glass"],
+            ),
+            HomeDialTileStyle.entries.indexOf(tileStyle),
+        ) { AppSettings.setHomeDialTileStyle(HomeDialTileStyle.entries[it]) }
+        SettingsToggle(DesktopStrings["settings_home_dial_labels", "Show tile titles"], "", labels, AppSettings::setHomeDialLabels)
+        SettingsToggle(DesktopStrings["settings_home_dial_pin_icon", "Show pin badges"], "", pinIcon, AppSettings::setHomeDialPinIcon)
+        SettingsToggle(DesktopStrings["settings_home_dial_new_tags", "Mark new releases"], "", newTags, AppSettings::setHomeDialNewReleaseTags)
+        if (hidden.isNotEmpty()) {
+            SettingsNavigationRow(
+                DesktopStrings.format("settings_home_restore_tiles", hidden.size, fallback = "Restore removed tiles (%1\$d)"),
+                "",
+            ) { hidden.forEach { AppSettings.setHiddenFromDial(it, false) } }
+        }
+    }
+}
+
+/** A titled row of chips, one of [options] picked. */
+@Composable
+private fun SettingsChoiceRow(title: String, options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    if (!settingsRowVisible(title)) return
+    Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEachIndexed { index, label ->
+                FilterChip(
+                    colors = desktopChipColors(),
+                    selected = index == selected,
+                    onClick = { onSelect(index) },
+                    label = { Text(label) },
+                )
+            }
+        }
     }
 }
 
@@ -8808,3 +9395,6 @@ internal object DesktopShortcuts {
     @Volatile
     var handler: ((androidx.compose.ui.input.key.KeyEvent) -> Boolean)? = null
 }
+
+/** How soon a sign-in that couldn't be checked (offline at launch) is checked again. */
+private const val UNVERIFIED_RECHECK_MS = 60_000L

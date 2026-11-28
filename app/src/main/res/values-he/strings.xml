@@ -24,6 +24,7 @@
     <string name="search">חיפוש</string>
     <string name="clear_search">ניקוי חיפוש</string>
     <string name="library">ספרייה</string>
+    <string name="radio">רדיו</string>
     <string name="home">בית</string>
     <string name="play">הפעלה</string>
     <string name="explore">גלה</string>
@@ -200,7 +201,7 @@
     <string name="on_mobile_data">בנתונים סלולריים</string>
     <string name="in_use">בשימוש</string>
     <string name="blocking">חוסם</string>
-    <string name="crossfade">Crossfade</string>
+    <string name="crossfade">מעבר הדרגתי</string>
     <string name="crossfade_subtitle">ממזג רצועה אחת לתוך הבאה</string>
     <string name="automix">Automix [BETA]</string>
     <string name="skip_silence">דילוג על שקט</string>
@@ -472,6 +473,13 @@
     <string name="lyrics_share_description">השורות שבחרת, על כרטיס עם העטיפה.</string>
     <string name="lyrics_share_story">המר לסטורי</string>
     <string name="lyrics_share_story_revert">חזרה לכרטיס</string>
+    <string name="lyrics_share_video">וידאו</string>
+    <string name="lyrics_share_image">תמונה</string>
+    <string name="lyrics_share_saving">שומר…</string>
+    <string name="lyrics_share_gradient">מעבר צבעים</string>
+    <string name="lyrics_share_canvas">קנבס</string>
+    <string name="lyrics_share_show_logo">הצג את הלוגו של Laya</string>
+    <string name="lyrics_share_making_video">יוצר את הסרטון…</string>
     <string name="listening_shape">דפוס ההאזנה שלך</string>
     <string name="member_since">חבר מאז</string>
     <string name="member_since_value">חבר מאז %1$s</string>
@@ -1017,49 +1025,49 @@
     <string name="use_this_profile">השתמש בפרופיל זה</string>
 
 
-    <string name="lyrics_offset">Lyrics offset</string>
+    <string name="lyrics_offset">היסט מילים</string>
 
 
 
 
 
-    <string name="auto_quick_picks">Quick picks</string>
+    <string name="auto_quick_picks">בחירות מהירות</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">אחרונים</string>
 
-    <string name="auto_liked">Liked songs</string>
+    <string name="auto_liked">שירים שאהבתי</string>
 
-    <string name="auto_login_title">Sign in to YouTube on your phone</string>
+    <string name="auto_login_title">התחברו ל-YouTube בטלפון</string>
 
-    <string name="auto_login_subtitle">Open Laya on your phone to sign in</string>
+    <string name="auto_login_subtitle">פתחו את Laya בטלפון כדי להתחבר</string>
 
-    <string name="auto_empty_recents_title">No recent songs</string>
+    <string name="auto_empty_recents_title">אין שירים אחרונים</string>
 
-    <string name="auto_empty_recents_subtitle">Songs you play will appear here</string>
+    <string name="auto_empty_recents_subtitle">שירים שתנגנו יופיעו כאן</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">אין הצעות</string>
 
-    <string name="auto_empty_quick_picks_subtitle">Check your connection and try again</string>
+    <string name="auto_empty_quick_picks_subtitle">בדקו את החיבור ונסו שוב</string>
 
-    <string name="auto_empty_playlists_title">No playlists available</string>
+    <string name="auto_empty_playlists_title">אין פלייליסטים זמינים</string>
 
-    <string name="auto_empty_playlists_subtitle">Check your connection and try again</string>
+    <string name="auto_empty_playlists_subtitle">בדקו את החיבור ונסו שוב</string>
 
-    <string name="auto_empty_liked_title">No liked songs</string>
+    <string name="auto_empty_liked_title">אין שירים שאהבתי</string>
 
-    <string name="auto_empty_liked_subtitle">Tap the heart on a song to save it here</string>
+    <string name="auto_empty_liked_subtitle">הקישו על הלב בשיר כדי לשמור אותו כאן</string>
 
-    <string name="auto_empty_offline_title">No offline songs</string>
+    <string name="auto_empty_offline_title">אין שירים לא מקוונים</string>
 
-    <string name="auto_empty_offline_subtitle">Download songs on your phone to listen here</string>
+    <string name="auto_empty_offline_subtitle">הורידו שירים בטלפון כדי להאזין להם כאן</string>
 
-    <string name="auto_unavailable_title">Content unavailable</string>
+    <string name="auto_unavailable_title">התוכן לא זמין</string>
 
-    <string name="auto_unavailable_subtitle">Reopen the folder and try again</string>
+    <string name="auto_unavailable_subtitle">פתחו את התיקייה מחדש ונסו שוב</string>
 
-    <string name="settings_search_hint">Search settings</string>
+    <string name="settings_search_hint">חיפוש בהגדרות</string>
 
-    <string name="settings_search_empty">No settings match “%1$s”</string>
+    <string name="settings_search_empty">אין הגדרות שתואמות ל-“%1$s”</string>
 
     <string name="prefer_music_only">העדפת גרסת מוזיקה בלבד</string>
 
@@ -1067,162 +1075,162 @@
     <string name="smart_version_alignment">יישור אודיו חכם</string>
     <string name="smart_version_alignment_subtitle">ניתוח צורות הגל כדי למצוא בדיוק את רגע ההשמעה התואם</string>
 
-    <string name="equalizer_footer">Shapes the sound inside Laya, before it reaches the system.</string>
+    <string name="equalizer_footer">מעצב את הצליל בתוך Laya, לפני שהוא מגיע למערכת.</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">דינמי</string>
 
-    <string name="equalizer_manual">Manual</string>
+    <string name="equalizer_manual">ידני</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">גוון</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">הטיה</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">קווי מתאר</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">רחב</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">ממוקד</string>
 
-    <string name="equalizer_broad_footer">Drag left for a warmer sound and right for a brighter one; down scoops the middle, up brings it forward. Broad moves wide stretches of the spectrum at once.</string>
+    <string name="equalizer_broad_footer">גררו שמאלה לצליל חם יותר וימינה לצליל בהיר יותר; למטה מנמיך את הטווח האמצעי, למעלה מקדם אותו. ״רחב״ מזיז קטעים רחבים בספקטרום בבת אחת.</string>
 
-    <string name="equalizer_focused_footer">Drag left for a warmer sound and right for a brighter one; down scoops the middle, up brings it forward. Focused works on narrower stretches, so it changes less around what it moves.</string>
+    <string name="equalizer_focused_footer">גררו שמאלה לצליל חם יותר וימינה לצליל בהיר יותר; למטה מנמיך את הטווח האמצעי, למעלה מקדם אותו. ״ממוקד״ פועל על קטעים צרים יותר, ולכן משנה פחות את מה שסביבו.</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">הגדרה מוכנה</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">תחומי תדר</string>
 
-    <string name="equalizer_bands_footer">Moving a band leaves the preset behind and the curve becomes your own.</string>
+    <string name="equalizer_bands_footer">הזזת פס מבטלת את ההגדרה המוכנה והעקומה הופכת לשלכם.</string>
 
-    <string name="equalizer_reset">Reset all bands</string>
+    <string name="equalizer_reset">איפוס כל הפסים</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">איזון</string>
 
     <string name="equalizer_balance_left">L</string>
 
     <string name="equalizer_balance_right">R</string>
 
-    <string name="equalizer_balance_footer">Shifts the sound towards one ear by quietening the other.</string>
+    <string name="equalizer_balance_footer">מטה את הצליל לאוזן אחת על ידי הנמכת השנייה.</string>
     <string name="equalizer_bitstream_title">לא פועל כרגע</string>
     <string name="equalizer_bitstream_subtitle">הרצועה הזו נשלחת לפלט בלי פענוח</string>
     <string name="equalizer_bitstream_footer">האקולייזר פועל על אודיו מפוענח. הרצועה הזו מועברת כ-bitstream שהמכשיר שלכם מפענח בעצמו, כך שאין כאן דגימות לסנן.</string>
 
-    <string name="system_equalizer">System equalizer</string>
+    <string name="system_equalizer">אקולייזר מערכת</string>
 
-    <string name="system_equalizer_subtitle">Your device\'s own panel</string>
+    <string name="system_equalizer_subtitle">הלוח של המכשיר שלכם</string>
 
-    <string name="system_equalizer_footer">Runs after Laya\'s, on the whole audio session. Using both applies both.</string>
+    <string name="system_equalizer_footer">פועל אחרי זה של Laya, על כל סשן השמע. שימוש בשניהם מפעיל את שניהם.</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">שטוח</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">אקוסטי</string>
 
-    <string name="eq_preset_bass_boost">Bass boost</string>
+    <string name="eq_preset_bass_boost">הגברת בס</string>
 
-    <string name="eq_preset_bass_cut">Bass cut</string>
+    <string name="eq_preset_bass_cut">הנמכת בס</string>
 
-    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_vocal">שירה</string>
 
-    <string name="eq_preset_treble_boost">Treble boost</string>
+    <string name="eq_preset_treble_boost">הגברת גבהים</string>
 
-    <string name="eq_preset_treble_cut">Treble cut</string>
+    <string name="eq_preset_treble_cut">הנמכת גבהים</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">עוצמה</string>
 
-    <string name="eq_preset_spoken_word">Spoken word</string>
+    <string name="eq_preset_spoken_word">דיבור</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">אלקטרוני</string>
 
-    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_rock">רוק</string>
 
-    <string name="eq_preset_hip_hop">Hip-hop</string>
+    <string name="eq_preset_hip_hop">היפ הופ</string>
 
-    <string name="eq_preset_jazz">Jazz</string>
+    <string name="eq_preset_jazz">ג׳אז</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">קלאסי</string>
 
-    <string name="eq_preset_small_speakers">Small speakers</string>
+    <string name="eq_preset_small_speakers">רמקולים קטנים</string>
 
-    <string name="eq_preset_late_night">Late night</string>
+    <string name="eq_preset_late_night">שעת לילה מאוחרת</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">מותאם אישית</string>
 
-    <string name="translation_language">Translation language</string>
+    <string name="translation_language">שפת תרגום</string>
 
-    <string name="translation_language_description">The language the translate button turns lyrics into.</string>
+    <string name="translation_language_description">השפה שאליה כפתור התרגום ממיר מילים.</string>
 
-    <string name="translation_language_app_default">App language</string>
+    <string name="translation_language_app_default">שפת האפליקציה</string>
 
-    <string name="translation_language_subtitle">Follows the app language</string>
+    <string name="translation_language_subtitle">לפי שפת האפליקציה</string>
 
-    <string name="search_languages">Search languages</string>
+    <string name="search_languages">חיפוש שפות</string>
 
-    <string name="no_languages_match">No languages match</string>
+    <string name="no_languages_match">אין שפות תואמות</string>
 
 
 
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_pipeline">צינור שמע</string>
     <string name="cast_dialog_title">Cast</string>
-    <string name="cast_dialog_subtitle">Play on a Chromecast or Google Cast speaker</string>
-    <string name="cast_searching">Looking for devices…</string>
-    <string name="cast_searching_hint">Your phone and the receiver need to be on the same Wi-Fi network.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
-    <string name="cast_stop">Stop casting</string>
-    <string name="cast_track_unsupported">This track can\'t be cast</string>
-    <string name="cast_connect_failed">Couldn\'t connect to the receiver</string>
+    <string name="cast_dialog_subtitle">ניגון ברמקול Chromecast או Google Cast</string>
+    <string name="cast_searching">מחפש מכשירים…</string>
+    <string name="cast_searching_hint">הטלפון והמקלט חייבים להיות באותה רשת Wi-Fi.</string>
+    <string name="cast_device_connecting">מתחבר…</string>
+    <string name="cast_device_connected">שידור</string>
+    <string name="cast_stop">הפסקת שידור</string>
+    <string name="cast_track_unsupported">אי אפשר להעביר את הרצועה הזו</string>
+    <string name="cast_connect_failed">לא ניתן להתחבר למקלט</string>
     <string name="audio_pipeline_subtitle">נתיב האות בזמן אמת, מהמפענח ועד הפלט</string>
 
-    <string name="pipeline_track_info">Track Info</string>
+    <string name="pipeline_track_info">פרטי רצועה</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">מפענח</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">ממיר קצב דגימה</string>
 
     <string name="pipeline_dsp">DSP</string>
 
-    <string name="pipeline_output_device">Output Device</string>
+    <string name="pipeline_output_device">התקן פלט</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">מקור</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">פורמט</string>
 
-    <string name="pipeline_bit_depth">Bit Depth</string>
+    <string name="pipeline_bit_depth">עומק סיביות</string>
 
-    <string name="pipeline_sample_rate">Sample Rate</string>
+    <string name="pipeline_sample_rate">קצב דגימה</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">קצב סיביות</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">ערוצים</string>
 
-    <string name="pipeline_decoder_name">Decoder Name</string>
+    <string name="pipeline_decoder_name">שם מפענח</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">קצב קלט/פלט</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">סוג</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">תדר חיתוך</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">איכות</string>
 
-    <string name="pipeline_pcm_format">PCM Format</string>
+    <string name="pipeline_pcm_format">פורמט PCM</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">הגדרת אקולייזר מוכנה</string>
 
-    <string name="pipeline_stereo_expand">Stereo Expand</string>
+    <string name="pipeline_stereo_expand">הרחבת סטריאו</string>
 
-    <string name="pipeline_buffers">Buffers</string>
+    <string name="pipeline_buffers">מאגרים</string>
 
-    <string name="pipeline_output_api">Output API</string>
+    <string name="pipeline_output_api">API פלט</string>
 
-    <string name="pipeline_device_name">Device Name</string>
+    <string name="pipeline_device_name">שם המכשיר</string>
 
 
 
-    <string name="shared_link">Shared link</string>
+    <string name="shared_link">קישור ששותף</string>
 
-    <string name="song_will_play_next">Song will play next</string>
+    <string name="song_will_play_next">השיר ינוגן הבא</string>
 
-    <string name="song_added_to_queue">Song added to queue</string>
+    <string name="song_added_to_queue">השיר נוסף לתור</string>
     <string name="song_added_to_playlist">נוסף לרשימת ההשמעה</string>
     <string name="song_already_in_playlist">כבר ברשימת ההשמעה</string>
     <plurals name="add_to_playlists_count">
@@ -1235,11 +1243,11 @@
     </plurals>
     <string name="party_queue_full">התור מלא (עד %d שירים במסיבה)</string>
 
-    <string name="paxsenix_api_key">PaxSenix API key</string>
+    <string name="paxsenix_api_key">מפתח API של PaxSenix</string>
 
-    <string name="paxsenix_api_key_configured">PaxSenix API key — configured</string>
+    <string name="paxsenix_api_key_configured">מפתח API של PaxSenix — מוגדר</string>
 
-    <string name="paxsenix_api_key_missing">PaxSenix API key — optional, not configured</string>
+    <string name="paxsenix_api_key_missing">מפתח API של PaxSenix — אופציונלי, לא מוגדר</string>
 
 
 
@@ -1306,6 +1314,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">לא מוגדר — הקש כדי להגדיר את כתובת ה-API</string>
     <string name="artist_signatures_test_failed">לא ניתן היה להתחבר ל-API בכתובת זו</string>
+    <string name="artist_signatures_builtin">שרת מובנה</string>
+    <string name="artist_signatures_online">מקוון</string>
     <string name="search_source_addons">תוספים</string>
     <string name="search_addons_none">אין תוספים מופעלים. אפשר להוסיף אחד בהגדרות ← מקורות.</string>
     <string name="app_icon">סמל האפליקציה</string>
@@ -1405,4 +1415,49 @@
     <string name="lossless_verify_expired_notice">האימות של %1$s פג. הפעילו אותו שוב במקורות כדי להמשיך באיכות ללא אובדן.</string>
     <string name="lossless_verify_expired">האימות פג · הפעילו שוב</string>
     <string name="lossless_verified_until">אומת · עד %1$s</string>
+    <string name="best_part_description">דלג לחלק הכי טוב</string>
+    <string name="show_best_part">כפתור החלק הכי טוב</string>
+    <string name="show_best_part_subtitle">כפתור על העטיפה שמדלג לחלק בשיר שהכי הרבה מאזינים חוזרים אליו</string>
+    <string name="lyrics_share_video_silent">לא ניתן היה להשיג את האודיו של השיר, ולכן לסרטון הזה אין צליל.</string>
+    <string name="choose_in_youtube_music">בחירה ב-YouTube Music</string>
+    <string name="lock_screen_player">נגן במסך הנעילה</string>
+    <string name="lock_screen_player_subtitle">עטיפה, מילים מסונכרנות ופקדים במסך הנעילה בזמן שמוזיקה מתנגנת</string>
+    <string name="lock_screen_player_needs_setup">יש לאשר את הרשאות ההגדרה כדי להפעיל. הקש להגדרה</string>
+    <string name="lock_screen_previous">הקודם</string>
+    <string name="lock_screen_play_pause">הפעלה או השהיה</string>
+    <string name="lock_screen_next">הבא</string>
+    <string name="lock_screen_like">אהבתי</string>
+    <string name="lock_screen_unlock">ביטול נעילה</string>
+    <string name="lock_screen_setup">הגדרת מסך הנעילה</string>
+    <string name="lock_screen_setup_subtitle">יש לאשר את כל אלה כדי להפעיל את הנגן במסך הנעילה</string>
+    <string name="lock_screen_setup_overlay">הצגה מעל אפליקציות אחרות</string>
+    <string name="lock_screen_setup_overlay_subtitle">מאפשר לנגן להיפתח מעל מסך הנעילה</string>
+    <string name="lock_screen_setup_full_screen">התראות במסך מלא</string>
+    <string name="lock_screen_setup_full_screen_subtitle">מאפשר לנגן להיפתח מהתראה מעל מסך הנעילה</string>
+    <string name="lock_screen_setup_battery">סוללה: ללא הגבלות</string>
+    <string name="lock_screen_setup_battery_subtitle">מונע מהמערכת לסגור את הנגן בזמן ההשמעה</string>
+    <string name="lock_screen_setup_manufacturer">הרשאות יצרן</string>
+    <string name="lock_screen_setup_manufacturer_subtitle">בטלפונים של Xiaomi,‏ vivo ודומים, יש לאפשר גם הצגה במסך הנעילה, חלונות קופצים ברקע והפעלה אוטומטית</string>
+    <string name="lock_screen_setup_grant">אישור</string>
+    <string name="lock_screen_setup_open">פתיחת ההגדרות</string>
+    <string name="lock_screen_options">אפשרויות</string>
+    <string name="lock_screen_lyrics_interactive">מילים אינטראקטיביות</string>
+    <string name="lock_screen_lyrics_interactive_subtitle">גלילה במילים והקשה על שורה כדי לקפוץ אליה</string>
+    <string name="lock_screen_progress">סרגל התקדמות</string>
+    <string name="lock_screen_progress_subtitle">הצגת סרגל דילוג עם הזמן שחלף והזמן הכולל</string>
+    <string name="remove_from_history">הסר מההיסטוריה</string>
+    <string name="history_removed">הוסר מההיסטוריה</string>
+    <string name="history_remove_failed">לא ניתן להסיר מההיסטוריה</string>
+    <string name="lock_screen_art_transition">מעבר עטיפה</string>
+    <string name="lock_screen_art_transition_subtitle">ממזג את העטיפה בזו של השיר הבא בזמן ש-Automix ממזג אותם.</string>
+    <string name="all_cache_cleared">כל המטמון נוקה</string>
+    <string name="lossless_expiring_title">הסשן של %1$s מסתיים בקרוב</string>
+    <string name="lossless_expiring_body">מסתיים בעוד %1$d דק׳. הקישו לחידוש.</string>
+    <string name="lossless_renew_failed_body">לא ניתן היה לחדש אוטומטית. מסתיים בעוד %1$d דק׳; הקישו כדי לנסות שוב.</string>
+    <string name="lossless_renewed_until">%1$s חודש עד %2$s</string>
+    <string name="lossless_renew_failed">לא ניתן היה לחדש את %1$s. חדשו בעצמכם מהתוסף.</string>
+    <string name="lossless_channel">סשנים ללא אובדן</string>
+    <string name="direct_source_stream">הזרמה ישירה מהמקור</string>
+    <string name="direct_source_stream_subtitle">ניגון ממקורות שמעל YouTube מהצליל הראשון, בלי החלפה באמצע השיר</string>
+    <string name="direct_source_stream_in_party">כבוי בזמן שאתה במסיבת להאזין ביחד</string>
 </resources>

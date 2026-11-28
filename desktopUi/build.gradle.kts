@@ -54,6 +54,9 @@ kotlin {
             dependsOn(commonMain.get())
         }
         jvmMain.get().dependsOn(jvmSharedMain)
+        // What differs between the two [CMP_DESKTOP]s at source level: 1.12 wraps skia's Shader in Compose's own
+        // (asComposeShader), 1.10 has Compose's Shader *be* skia's, where that call does not exist.
+        jvmSharedMain.kotlin.srcDir(if (CMP_DESKTOP == "1.10.3") "src/jvmCompose110" else "src/jvmCompose112")
 
         commonMain.dependencies {
             api(project(":shared"))

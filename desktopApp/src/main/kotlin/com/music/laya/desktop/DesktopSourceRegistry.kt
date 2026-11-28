@@ -36,6 +36,23 @@ internal data class DesktopSourceDescriptor(
     val skippedByQuality: Boolean = false,
 )
 
+/**
+ * Marks a lookup that a source *failed* rather than answered, so Direct Source Stream can tell
+ * "nobody has this" from "somebody errored" — the desktop's half of the phone's
+ * SourceResolver.SourceFailures. Rides in the coroutine context the lookup's searches inherit.
+ */
+internal class DesktopSourceFailures : kotlin.coroutines.AbstractCoroutineContextElement(DesktopSourceFailures) {
+    companion object Key : kotlin.coroutines.CoroutineContext.Key<DesktopSourceFailures>
+
+    @Volatile
+    var any = false
+}
+
+/** Flags the lookup this runs inside, if it is a Direct Source Stream one, as having hit an error. */
+internal suspend fun noteSourceFailure() {
+    currentCoroutineContext()[DesktopSourceFailures]?.any = true
+}
+
 /** Desktop counterpart of Android's SourceRegistry. */
 internal object DesktopSourceRegistry {
     private interface SourceAdapter {
@@ -106,6 +123,8 @@ internal object DesktopSourceRegistry {
         override val descriptor: DesktopSourceDescriptor
             get() = config.descriptor()
 
+        override fun owns(song: Song): Boolean = DesktopLossless.owns(config.kind, song)
+
         override suspend fun resolve(song: Song, quality: String?): Result<DesktopStream?> =
             DesktopLossless.stream(config, song)
 
@@ -159,7 +178,7 @@ internal object DesktopSourceRegistry {
      * `worthPrefetching`.
      */
     fun mayServeFromAddon(song: Song): Boolean {
-        val addons = playbackAdapters(null).filterIsInstance<AddonAdapter>()
+        val addons = if (directActive()) directSources(null) else playbackAdapters(null).filterIsInstance<AddonAdapter>()
         if (addons.isEmpty()) return false
         if (DesktopAddonSource.parseTrack(song.videoId) != null) return true
         return hasYouTubeOriginal(song) && !song.isVideo && !DesktopOriginalVersion.isPinned(song.videoId)
@@ -235,15 +254,17 @@ internal object DesktopSourceRegistry {
                 it.config.kind == DesktopSourceKind.CUSTOM_MODULE || it.config.kind == DesktopSourceKind.MODULE
             }
             song.videoId.startsWith("jiosaavn:") -> available.firstOrNull { it.config.kind == DesktopSourceKind.JIOSAAVN }
-            else -> null
+            // A Tidal/Qobuz row picked from the Addons search.
+            else -> available.firstOrNull { it is LosslessAdapter && it.owns(song) }
         }
+        val losslessRow = owned is LosslessAdapter
 
         // A row from an addon that is out of the walk only for policy — a download from one whose
         // manifest says `allowDownloads: 0` — is looked up elsewhere, like any other track, rather
         // than refused the way a disabled source's row is.
         val heldBack = addonReference != null && owned == null &&
             configs().any { it.id == addonReference.sourceId && it.enabled && it.isComplete }
-        if (!heldBack && (addonReference != null || moduleReference != null || song.videoId.startsWith("jiosaavn:"))) {
+        if (!heldBack && (addonReference != null || moduleReference != null || losslessRow || song.videoId.startsWith("jiosaavn:"))) {
             if (owned == null) error("The source for this track is disabled or no longer configured")
             // This path has nothing to race.
             DesktopTrackLog.log(
@@ -364,6 +385,9 @@ internal object DesktopSourceRegistry {
         if (higher.isEmpty() || youtube == null) {
             return@runCatching DesktopLiveResolution(resolve(song, quality, excludedSourceId).getOrThrow())
         }
+        if (directActive() && !song.isVideo) {
+            return@runCatching resolveDirect(song, quality, higher, youtube)
+        }
 
         // Both legs are parented to the registry's own scope rather than the caller's.
         DesktopTrackLog.log(
@@ -408,8 +432,161 @@ internal object DesktopSourceRegistry {
         if (pending != null) {
             DesktopTrackLog.log("'${song.title}' started on YouTube while the other sources keep looking")
         }
-        DesktopLiveResolution(youtubeStream, pending)
+        // Whichever of [higher] answers first here is the fastest, not the best — JioSaavn's lossy
+        // 320 routinely beats a lossless Tidal/Qobuz call that still has a license to negotiate. As
+        // in the race above, winning is not the same as being the best copy: chase a better one
+        // behind it instead of settling for the first.
+        val chased = pending?.let { raw ->
+            scope.async { raw.await()?.let { betterThan(it, higher, song, quality)?.await() ?: it } }
+        }
+        DesktopLiveResolution(youtubeStream, chased)
     }
+
+    /**
+     * Whether Direct Source Stream is on and has a source above YouTube to play from — the
+     * desktop's half of Android's DirectSourceGate. Its Listen Together party check is the phone's
+     * alone: the desktop doesn't join parties.
+     */
+    fun directActive(): Boolean =
+        com.music.laya.data.settings.AppSettings.directSourceStream.value && directSources(null).isNotEmpty()
+
+    /** The sources Direct Source Stream plays from: enabled, inside the ceiling, ranked above YouTube. */
+    private fun directSources(quality: String?): List<SourceAdapter> =
+        playbackAdapters(quality).takeWhile { it.config.kind != DesktopSourceKind.YOUTUBE }
+
+    /**
+     * Direct Source Stream's resolve: the sources above YouTube first and alone, YouTube only when
+     * none answers within [DIRECT_LOOKUP_TIMEOUT_MS]. Nothing races, and a source's answer plays to
+     * the end with no upgrade behind it. A YouTube start keeps the lookup still running (and, if it
+     * finds something, the usual better-copy chase) as its upgrade.
+     */
+    private suspend fun resolveDirect(
+        song: Song,
+        quality: String?,
+        higher: List<SourceAdapter>,
+        youtube: SourceAdapter,
+    ): DesktopLiveResolution {
+        // [higher] already leaves out an excluded source; only those ranked above YouTube are direct.
+        val above = directSources(quality).map { it.config.id }.toSet()
+        val direct = higher.filter { it.config.id in above }.ifEmpty { higher }
+        val missedAt = synchronized(directMisses) { directMisses[song.videoId] }
+        if (missedAt != null && System.currentTimeMillis() - missedAt < DIRECT_MISS_KEPT_MS) {
+            DesktopTrackLog.log("direct: no source had '${song.title}' recently; playing it from YouTube")
+            return DesktopLiveResolution(
+                youtube.resolve(song, quality).getOrNull() ?: error("No enabled music source could play this track"),
+            )
+        }
+        DesktopTrackLog.log(
+            "direct: asking ${direct.joinToString { it.descriptor.name }} for '${song.title}' before YouTube",
+        )
+        val failures = DesktopSourceFailures()
+        // Every source asked at once, but answered in the listener's rank order: a quick JioSaavn
+        // 320 must not end the search while a Tidal or Qobuz ranked above it is still looking —
+        // taking the first answer did exactly that, cancelling the lossless search mid-way.
+        val running = direct.map { source ->
+            scope.async(failures) { openBest(source, song, quality)?.takeUnless { cutShort(it, song) } }
+        }
+        val lookup = scope.async(failures) {
+            try {
+                running.firstNotNullOfOrNull { it.await() }.also { found ->
+                    // Only a clean "nobody has it" is remembered: a source that errored may have it
+                    // once it recovers, so the next play asks again.
+                    if (found == null && !failures.any) {
+                        synchronized(directMisses) { directMisses[song.videoId] = System.currentTimeMillis() }
+                    }
+                }
+            } finally {
+                running.forEach { it.cancel() }
+            }
+        }
+        val found = withTimeoutOrNull(DIRECT_LOOKUP_TIMEOUT_MS) { lookup.await() }
+        if (found != null) {
+            DesktopTrackLog.log("direct: '${song.title}' from ${sourceNameFor(found)} at ${found.format.summary.ifBlank { "an unstated format" }}")
+            return DesktopLiveResolution(found)
+        }
+        val still = lookup.takeIf { it.isActive }
+        // Out of time with a higher-ranked source still looking: the best-ranked answer already in
+        // hand plays rather than YouTube, and the higher one swaps in if it lands.
+        val partial = if (still != null) {
+            running.firstNotNullOfOrNull { if (it.isCompleted && !it.isCancelled) it.await() else null }
+        } else {
+            null
+        }
+        if (partial != null) {
+            DesktopTrackLog.log(
+                "direct: '${song.title}' from ${sourceNameFor(partial)} for now; a higher-ranked source is still looking",
+            )
+            return DesktopLiveResolution(partial, scope.async { still?.await()?.takeIf { it.url != partial.url } })
+        }
+        DesktopTrackLog.log(
+            if (still != null) {
+                "no source answered for '${song.title}' within ${DIRECT_LOOKUP_TIMEOUT_MS / 1000}s; starting it on YouTube and still looking"
+            } else {
+                "no source served '${song.title}' directly; playing it from YouTube"
+            },
+        )
+        val stream = youtube.resolve(song, quality).getOrNull()
+            ?: still?.await()
+            ?: error("No enabled music source could play this track")
+        return DesktopLiveResolution(stream, still)
+    }
+
+    /**
+     * Tracks no source had, so a replay goes straight to YouTube rather than waiting another
+     * [DIRECT_LOOKUP_TIMEOUT_MS]. ponytail: process-lifetime and bounded; a source enabled later is
+     * only asked once the entry ages out.
+     */
+    private val directMisses = object : LinkedHashMap<String, Long>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>?) = size > DIRECT_MISSES_KEPT
+    }
+
+    /**
+     * Whether [stream]'s file is too small to hold [song] — a source's 30-second preview under a
+     * full-length row. Nothing auditions a direct answer, so its size is checked with one ranged
+     * request; a manifest, a local file or a server that won't say passes.
+     */
+    private suspend fun cutShort(stream: DesktopStream, song: Song): Boolean {
+        val expectedSec = song.durationText.durationSeconds().toInt().takeIf { it > 0 } ?: return false
+        if (stream.transport != null || !stream.url.startsWith("http") ||
+            stream.url.substringBefore('?').let { it.endsWith(".mpd") || it.endsWith(".m3u8") }
+        ) {
+            return false
+        }
+        val bytes = com.music.laya.data.sources.StreamLengthProbe.bytesOf(stream.url, stream.headers) ?: return false
+        if (!com.music.laya.data.sources.StreamLengthProbe.tooShort(bytes, stream.format.isLossless, stream.format.kbps, expectedSec)) {
+            return false
+        }
+        DesktopTrackLog.log("'${song.title}': ${bytes / 1024}kB can't hold ${expectedSec}s — a preview; looking further")
+        return true
+    }
+
+    /**
+     * Every enabled addon's and verified Tidal/Qobuz catalogue's rows for [query], round-robin so
+     * no catalogue buries the others — the Search page's Addons tab. A slow or failing source costs
+     * only its own rows.
+     */
+    suspend fun searchAddons(query: String): List<Song> = coroutineScope {
+        val sources = playbackAdapters(null).filter { it is AddonAdapter || it is LosslessAdapter }
+        val perSource = sources.map { source ->
+            async {
+                withTimeoutOrNull(ADDON_SEARCH_TIMEOUT_MS) {
+                    runCatching {
+                        when (source) {
+                            is AddonAdapter -> DesktopAddonSource.search(source.config, query, ADDON_SEARCH_LIMIT)
+                                .getOrDefault(emptyList()).mapNotNull { (it as? SearchResult.Track)?.song }
+                            else -> DesktopLossless.search(source.config.kind, query, ADDON_SEARCH_LIMIT)
+                        }
+                    }.getOrDefault(emptyList())
+                } ?: emptyList()
+            }
+        }.map { it.await() }
+        buildList {
+            for (i in 0 until (perSource.maxOfOrNull { it.size } ?: 0)) perSource.forEach { rows -> rows.getOrNull(i)?.let(::add) }
+        }
+    }
+
+    /** Whether the Addons tab has anything to ask. */
+    fun hasAddonSearch(): Boolean = playbackAdapters(null).any { it is AddonAdapter || it is LosslessAdapter }
 
     /**
      * A patient second look for a copy that beats the one now playing, or null when nothing could.
@@ -456,7 +633,8 @@ internal object DesktopSourceRegistry {
      * [openBest] takes these results, and the stream itself is still asked for at arm time.
      */
     fun warmMatches(song: Song, quality: String?) {
-        if (song.isVideo || song.title.isBlank()) return
+        // Direct Source Stream asks for nothing before the track's window opens.
+        if (song.isVideo || song.title.isBlank() || directActive()) return
         val sources = playbackAdapters(quality).filter { it.config.kind != DesktopSourceKind.YOUTUBE }
         if (sources.any { it.owns(song) }) return // played as itself, never matched
         warmed?.second?.values?.forEach { it.cancel() }
@@ -478,7 +656,7 @@ internal object DesktopSourceRegistry {
         sources: List<SourceAdapter>,
         song: Song,
         quality: String?,
-        accept: (DesktopStream) -> Boolean = { true },
+        accept: suspend (DesktopStream) -> Boolean = { true },
     ): DesktopStream? = coroutineScope {
         val running = sources
             .map { source ->
@@ -491,7 +669,7 @@ internal object DesktopSourceRegistry {
                     running.forEach { candidate -> candidate.onAwait { candidate } }
                 }
                 running -= done
-                done.await()?.takeIf(accept)?.let { return@coroutineScope it }
+                done.await()?.let { if (accept(it)) return@coroutineScope it }
             }
             null
         } finally {
@@ -560,7 +738,9 @@ internal object DesktopSourceRegistry {
         val wantsLossless = ceiling(quality) == DesktopAudioQuality.LOSSLESS
         var settleFor: DesktopStream? = null
         for (match in preferred(matches, song, wantsLossless).take(STREAM_ATTEMPTS)) {
-            val stream = source.resolve(match, quality).getOrNull() ?: continue
+            val stream = source.resolve(match, quality)
+                .onFailure { if (it !is kotlinx.coroutines.CancellationException) noteSourceFailure() }
+                .getOrNull() ?: continue
             if (!playableHere(source, stream)) continue
             val served = stream.format
             if (!wantsLossless || served.isLossless || served.isDolbyAtmos) {
@@ -634,6 +814,12 @@ internal object DesktopSourceRegistry {
 
     /** How long the live path waits on the sources before starting on whatever YouTube has. */
     private const val SUBSTITUTE_TIMEOUT_MS = 20_000L
+    /** How long a Direct Source Stream start waits for the sources before falling back to YouTube. */
+    private const val DIRECT_LOOKUP_TIMEOUT_MS = 15_000L
+    private const val DIRECT_MISS_KEPT_MS = 30 * 60_000L
+    private const val DIRECT_MISSES_KEPT = 256
+    private const val ADDON_SEARCH_TIMEOUT_MS = 12_000L
+    private const val ADDON_SEARCH_LIMIT = 20
 
     /**
      * The patient second look's budget. Longer than the race's, because nobody is waiting on the

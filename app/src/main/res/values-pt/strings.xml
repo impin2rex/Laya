@@ -24,6 +24,7 @@
     <string name="search">Pesquisar</string>
     <string name="clear_search">Limpar pesquisa</string>
     <string name="library">Biblioteca</string>
+    <string name="radio">Rádio</string>
     <string name="home">Início</string>
     <string name="play">Tocar</string>
     <string name="explore">Explorar</string>
@@ -473,6 +474,13 @@
     <string name="lyrics_share_description">Os versos que escolheste, compostos num cartão com a capa.</string>
     <string name="lyrics_share_story">Converter em story</string>
     <string name="lyrics_share_story_revert">Voltar ao cartão</string>
+    <string name="lyrics_share_video">Vídeo</string>
+    <string name="lyrics_share_image">Imagem</string>
+    <string name="lyrics_share_saving">Salvando…</string>
+    <string name="lyrics_share_gradient">Gradiente</string>
+    <string name="lyrics_share_canvas">Tela</string>
+    <string name="lyrics_share_show_logo">Mostrar o logo do Laya</string>
+    <string name="lyrics_share_making_video">Criando o vídeo…</string>
     <string name="listening_shape">Seu padrão de escuta</string>
     <string name="member_since">Membro desde</string>
     <string name="member_since_value">Membro desde %1$s</string>
@@ -887,7 +895,7 @@
     <string name="pipeline_loudness">Intensidade</string>
     <string name="pipeline_loudness_gain">Ganho</string>
     <string name="pipeline_loudness_measured">Medida</string>
-    <string name="pipeline_bit_exact">Bit-exact</string>
+    <string name="pipeline_bit_exact">Bit a bit</string>
     <string name="loudness_measuring">Medindo…</string>
     <string name="loudness_gain_db">%1$s dB</string>
     <string name="loudness_lufs">%1$s LUFS</string>
@@ -1017,49 +1025,49 @@
     <string name="use_this_profile">Usar este perfil</string>
 
 
-    <string name="lyrics_offset">Lyrics offset</string>
+    <string name="lyrics_offset">Deslocamento da letra</string>
 
 
 
 
 
-    <string name="auto_quick_picks">Quick picks</string>
+    <string name="auto_quick_picks">Seleções rápidas</string>
 
-    <string name="auto_recents">Recent</string>
+    <string name="auto_recents">Recentes</string>
 
-    <string name="auto_liked">Liked songs</string>
+    <string name="auto_liked">Músicas curtidas</string>
 
-    <string name="auto_login_title">Sign in to YouTube on your phone</string>
+    <string name="auto_login_title">Entre no YouTube no seu celular</string>
 
-    <string name="auto_login_subtitle">Open Laya on your phone to sign in</string>
+    <string name="auto_login_subtitle">Abra o Laya no seu celular para entrar</string>
 
-    <string name="auto_empty_recents_title">No recent songs</string>
+    <string name="auto_empty_recents_title">Nenhuma música recente</string>
 
-    <string name="auto_empty_recents_subtitle">Songs you play will appear here</string>
+    <string name="auto_empty_recents_subtitle">As músicas que você tocar aparecerão aqui</string>
 
-    <string name="auto_empty_quick_picks_title">No suggestions</string>
+    <string name="auto_empty_quick_picks_title">Sem sugestões</string>
 
-    <string name="auto_empty_quick_picks_subtitle">Check your connection and try again</string>
+    <string name="auto_empty_quick_picks_subtitle">Verifique sua conexão e tente novamente</string>
 
-    <string name="auto_empty_playlists_title">No playlists available</string>
+    <string name="auto_empty_playlists_title">Nenhuma playlist disponível</string>
 
-    <string name="auto_empty_playlists_subtitle">Check your connection and try again</string>
+    <string name="auto_empty_playlists_subtitle">Verifique sua conexão e tente novamente</string>
 
-    <string name="auto_empty_liked_title">No liked songs</string>
+    <string name="auto_empty_liked_title">Nenhuma música curtida</string>
 
-    <string name="auto_empty_liked_subtitle">Tap the heart on a song to save it here</string>
+    <string name="auto_empty_liked_subtitle">Toque no coração de uma música para salvá-la aqui</string>
 
-    <string name="auto_empty_offline_title">No offline songs</string>
+    <string name="auto_empty_offline_title">Nenhuma música offline</string>
 
-    <string name="auto_empty_offline_subtitle">Download songs on your phone to listen here</string>
+    <string name="auto_empty_offline_subtitle">Baixe músicas no seu celular para ouvi-las aqui</string>
 
-    <string name="auto_unavailable_title">Content unavailable</string>
+    <string name="auto_unavailable_title">Conteúdo indisponível</string>
 
-    <string name="auto_unavailable_subtitle">Reopen the folder and try again</string>
+    <string name="auto_unavailable_subtitle">Abra a pasta novamente e tente de novo</string>
 
-    <string name="settings_search_hint">Search settings</string>
+    <string name="settings_search_hint">Pesquisar configurações</string>
 
-    <string name="settings_search_empty">No settings match “%1$s”</string>
+    <string name="settings_search_empty">Nenhuma configuração corresponde a “%1$s”</string>
 
     <string name="prefer_music_only">Preferir versão só com música</string>
 
@@ -1067,70 +1075,70 @@
     <string name="smart_version_alignment">Alinhamento de áudio inteligente</string>
     <string name="smart_version_alignment_subtitle">Analisa as formas de onda para encontrar o momento exato de reprodução correspondente</string>
 
-    <string name="equalizer_footer">Shapes the sound inside Laya, before it reaches the system.</string>
+    <string name="equalizer_footer">Molda o som dentro do Laya, antes de ele chegar ao sistema.</string>
 
-    <string name="equalizer_dynamic">Dynamic</string>
+    <string name="equalizer_dynamic">Dinâmico</string>
 
     <string name="equalizer_manual">Manual</string>
 
-    <string name="equalizer_tone">Tone</string>
+    <string name="equalizer_tone">Tom</string>
 
-    <string name="equalizer_tilt">Tilt</string>
+    <string name="equalizer_tilt">Inclinação</string>
 
-    <string name="equalizer_contour">Contour</string>
+    <string name="equalizer_contour">Contorno</string>
 
-    <string name="equalizer_broad">Broad</string>
+    <string name="equalizer_broad">Amplo</string>
 
-    <string name="equalizer_focused">Focused</string>
+    <string name="equalizer_focused">Focado</string>
 
-    <string name="equalizer_broad_footer">Drag left for a warmer sound and right for a brighter one; down scoops the middle, up brings it forward. Broad moves wide stretches of the spectrum at once.</string>
+    <string name="equalizer_broad_footer">Arraste para a esquerda para um som mais quente e para a direita para um mais brilhante; para baixo reduz os médios e para cima os traz para a frente. “Amplo” move trechos largos do espectro de uma vez.</string>
 
-    <string name="equalizer_focused_footer">Drag left for a warmer sound and right for a brighter one; down scoops the middle, up brings it forward. Focused works on narrower stretches, so it changes less around what it moves.</string>
+    <string name="equalizer_focused_footer">Arraste para a esquerda para um som mais quente e para a direita para um mais brilhante; para baixo reduz os médios e para cima os traz para a frente. “Focado” age em trechos mais estreitos, então muda menos o que está ao redor.</string>
 
-    <string name="equalizer_preset">Preset</string>
+    <string name="equalizer_preset">Predefinição</string>
 
-    <string name="equalizer_bands">Bands</string>
+    <string name="equalizer_bands">Bandas</string>
 
-    <string name="equalizer_bands_footer">Moving a band leaves the preset behind and the curve becomes your own.</string>
+    <string name="equalizer_bands_footer">Ao mover uma faixa, você sai da predefinição e a curva passa a ser sua.</string>
 
-    <string name="equalizer_reset">Reset all bands</string>
+    <string name="equalizer_reset">Redefinir todas as faixas</string>
 
-    <string name="equalizer_balance">Balance</string>
+    <string name="equalizer_balance">Balanço</string>
 
     <string name="equalizer_balance_left">L</string>
 
     <string name="equalizer_balance_right">R</string>
 
-    <string name="equalizer_balance_footer">Shifts the sound towards one ear by quietening the other.</string>
+    <string name="equalizer_balance_footer">Desloca o som para um ouvido reduzindo o volume do outro.</string>
     <string name="equalizer_bitstream_title">Inativo no momento</string>
     <string name="equalizer_bitstream_subtitle">Esta faixa é enviada à saída sem decodificação</string>
     <string name="equalizer_bitstream_footer">O equalizador trabalha com áudio decodificado. Esta faixa passa como bitstream para o seu dispositivo decodificar, então não há amostras aqui para filtrar.</string>
 
-    <string name="system_equalizer">System equalizer</string>
+    <string name="system_equalizer">Equalizador do sistema</string>
 
-    <string name="system_equalizer_subtitle">Your device\'s own panel</string>
+    <string name="system_equalizer_subtitle">O painel do próprio dispositivo</string>
 
-    <string name="system_equalizer_footer">Runs after Laya\'s, on the whole audio session. Using both applies both.</string>
+    <string name="system_equalizer_footer">Roda depois do equalizador do Laya, em toda a sessão de áudio. Usando os dois, ambos são aplicados.</string>
 
-    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_flat">Plano</string>
 
-    <string name="eq_preset_acoustic">Acoustic</string>
+    <string name="eq_preset_acoustic">Acústico</string>
 
-    <string name="eq_preset_bass_boost">Bass boost</string>
+    <string name="eq_preset_bass_boost">Reforço de graves</string>
 
-    <string name="eq_preset_bass_cut">Bass cut</string>
+    <string name="eq_preset_bass_cut">Corte de graves</string>
 
     <string name="eq_preset_vocal">Vocal</string>
 
-    <string name="eq_preset_treble_boost">Treble boost</string>
+    <string name="eq_preset_treble_boost">Reforço de agudos</string>
 
-    <string name="eq_preset_treble_cut">Treble cut</string>
+    <string name="eq_preset_treble_cut">Corte de agudos</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">Intensidade</string>
 
-    <string name="eq_preset_spoken_word">Spoken word</string>
+    <string name="eq_preset_spoken_word">Voz falada</string>
 
-    <string name="eq_preset_electronic">Electronic</string>
+    <string name="eq_preset_electronic">Eletrônica</string>
 
     <string name="eq_preset_rock">Rock</string>
 
@@ -1138,91 +1146,91 @@
 
     <string name="eq_preset_jazz">Jazz</string>
 
-    <string name="eq_preset_classical">Classical</string>
+    <string name="eq_preset_classical">Clássica</string>
 
-    <string name="eq_preset_small_speakers">Small speakers</string>
+    <string name="eq_preset_small_speakers">Alto-falantes pequenos</string>
 
-    <string name="eq_preset_late_night">Late night</string>
+    <string name="eq_preset_late_night">Madrugada</string>
 
-    <string name="eq_preset_custom">Custom</string>
+    <string name="eq_preset_custom">Personalizado</string>
 
-    <string name="translation_language">Translation language</string>
+    <string name="translation_language">Idioma da tradução</string>
 
-    <string name="translation_language_description">The language the translate button turns lyrics into.</string>
+    <string name="translation_language_description">O idioma para o qual o botão de traduzir converte a letra.</string>
 
-    <string name="translation_language_app_default">App language</string>
+    <string name="translation_language_app_default">Idioma do app</string>
 
-    <string name="translation_language_subtitle">Follows the app language</string>
+    <string name="translation_language_subtitle">Segue o idioma do app</string>
 
-    <string name="search_languages">Search languages</string>
+    <string name="search_languages">Pesquisar idiomas</string>
 
-    <string name="no_languages_match">No languages match</string>
+    <string name="no_languages_match">Nenhum idioma encontrado</string>
 
 
 
-    <string name="audio_pipeline">Audio Pipeline</string>
+    <string name="audio_pipeline">Cadeia de áudio</string>
     <string name="cast_dialog_title">Cast</string>
-    <string name="cast_dialog_subtitle">Play on a Chromecast or Google Cast speaker</string>
-    <string name="cast_searching">Looking for devices…</string>
-    <string name="cast_searching_hint">Your phone and the receiver need to be on the same Wi-Fi network.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
-    <string name="cast_stop">Stop casting</string>
-    <string name="cast_track_unsupported">This track can\'t be cast</string>
-    <string name="cast_connect_failed">Couldn\'t connect to the receiver</string>
+    <string name="cast_dialog_subtitle">Reproduzir em um Chromecast ou alto-falante Google Cast</string>
+    <string name="cast_searching">Procurando dispositivos…</string>
+    <string name="cast_searching_hint">Seu celular e o receptor precisam estar na mesma rede Wi-Fi.</string>
+    <string name="cast_device_connecting">Conectando…</string>
+    <string name="cast_device_connected">Transmitindo</string>
+    <string name="cast_stop">Parar transmissão</string>
+    <string name="cast_track_unsupported">Esta faixa não pode ser transmitida</string>
+    <string name="cast_connect_failed">Não foi possível conectar ao receptor</string>
     <string name="audio_pipeline_subtitle">Caminho do sinal ao vivo, do decodificador à saída</string>
 
-    <string name="pipeline_track_info">Track Info</string>
+    <string name="pipeline_track_info">Informações da faixa</string>
 
-    <string name="pipeline_decoder">Decoder</string>
+    <string name="pipeline_decoder">Decodificador</string>
 
-    <string name="pipeline_resampler">Resampler</string>
+    <string name="pipeline_resampler">Reamostrador</string>
 
     <string name="pipeline_dsp">DSP</string>
 
-    <string name="pipeline_output_device">Output Device</string>
+    <string name="pipeline_output_device">Dispositivo de saída</string>
 
-    <string name="pipeline_source">Source</string>
+    <string name="pipeline_source">Origem</string>
 
-    <string name="pipeline_format">Format</string>
+    <string name="pipeline_format">Formato</string>
 
-    <string name="pipeline_bit_depth">Bit Depth</string>
+    <string name="pipeline_bit_depth">Profundidade de bits</string>
 
-    <string name="pipeline_sample_rate">Sample Rate</string>
+    <string name="pipeline_sample_rate">Taxa de amostragem</string>
 
-    <string name="pipeline_bitrate">Bitrate</string>
+    <string name="pipeline_bitrate">Taxa de bits</string>
 
-    <string name="pipeline_channels">Channels</string>
+    <string name="pipeline_channels">Canais</string>
 
-    <string name="pipeline_decoder_name">Decoder Name</string>
+    <string name="pipeline_decoder_name">Nome do decodificador</string>
 
-    <string name="pipeline_io_rate">I/O Rate</string>
+    <string name="pipeline_io_rate">Taxa de E/S</string>
 
-    <string name="pipeline_type">Type</string>
+    <string name="pipeline_type">Tipo</string>
 
-    <string name="pipeline_cutoff">Cutoff</string>
+    <string name="pipeline_cutoff">Frequência de corte</string>
 
-    <string name="pipeline_quality">Quality</string>
+    <string name="pipeline_quality">Qualidade</string>
 
-    <string name="pipeline_pcm_format">PCM Format</string>
+    <string name="pipeline_pcm_format">Formato PCM</string>
 
-    <string name="pipeline_eq_preset">EQ Preset</string>
+    <string name="pipeline_eq_preset">Predefinição do EQ</string>
 
-    <string name="pipeline_stereo_expand">Stereo Expand</string>
+    <string name="pipeline_stereo_expand">Expansão estéreo</string>
 
     <string name="pipeline_buffers">Buffers</string>
 
-    <string name="pipeline_output_api">Output API</string>
+    <string name="pipeline_output_api">API de saída</string>
 
-    <string name="pipeline_device_name">Device Name</string>
+    <string name="pipeline_device_name">Nome do dispositivo</string>
 
 
 
-    <string name="shared_link">Shared link</string>
+    <string name="shared_link">Link compartilhado</string>
 
-    <string name="song_will_play_next">Song will play next</string>
+    <string name="song_will_play_next">A música tocará em seguida</string>
 
-    <string name="song_added_to_queue">Song added to queue</string>
+    <string name="song_added_to_queue">Música adicionada à fila</string>
     <string name="song_added_to_playlist">Adicionada à playlist</string>
     <string name="song_already_in_playlist">Já está na playlist</string>
     <plurals name="add_to_playlists_count">
@@ -1235,11 +1243,11 @@
     </plurals>
     <string name="party_queue_full">A fila está cheia (máximo de %d músicas na festa)</string>
 
-    <string name="paxsenix_api_key">PaxSenix API key</string>
+    <string name="paxsenix_api_key">Chave de API do PaxSenix</string>
 
-    <string name="paxsenix_api_key_configured">PaxSenix API key — configured</string>
+    <string name="paxsenix_api_key_configured">Chave de API do PaxSenix — configurada</string>
 
-    <string name="paxsenix_api_key_missing">PaxSenix API key — optional, not configured</string>
+    <string name="paxsenix_api_key_missing">Chave de API do PaxSenix — opcional, não configurada</string>
 
 
 
@@ -1306,7 +1314,9 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">Não configurado — toque para definir a URL da API</string>
     <string name="artist_signatures_test_failed">Não foi possível alcançar a API nesse URL</string>
-    <string name="search_source_addons">Addons</string>
+    <string name="artist_signatures_builtin">Servidor integrado</string>
+    <string name="artist_signatures_online">Online</string>
+    <string name="search_source_addons">Complementos</string>
     <string name="search_addons_none">Nenhum addon ativado. Adicione um em Configurações → Fontes.</string>
     <string name="app_icon">Ícone do app</string>
     <string name="app_icon_default">Padrão</string>
@@ -1405,4 +1415,49 @@
     <string name="lossless_verify_expired_notice">A verificação do %1$s expirou. Ative de novo em Fontes para continuar sem perdas.</string>
     <string name="lossless_verify_expired">Verificação expirada · ative de novo</string>
     <string name="lossless_verified_until">Verificado · até %1$s</string>
+    <string name="best_part_description">Pular para a melhor parte</string>
+    <string name="show_best_part">Botão Melhor parte</string>
+    <string name="show_best_part_subtitle">Um botão na capa que pula para a parte da música mais repetida</string>
+    <string name="lyrics_share_video_silent">Não foi possível obter o áudio da música, então este vídeo está sem som.</string>
+    <string name="choose_in_youtube_music">Escolher no YouTube Music</string>
+    <string name="lock_screen_player">Player na tela de bloqueio</string>
+    <string name="lock_screen_player_subtitle">Capa, letras sincronizadas e controles na tela de bloqueio enquanto a música toca</string>
+    <string name="lock_screen_player_needs_setup">Conceda as permissões da configuração para ativar. Toque para configurar</string>
+    <string name="lock_screen_previous">Anterior</string>
+    <string name="lock_screen_play_pause">Tocar ou pausar</string>
+    <string name="lock_screen_next">Próxima</string>
+    <string name="lock_screen_like">Curtir</string>
+    <string name="lock_screen_unlock">Desbloquear</string>
+    <string name="lock_screen_setup">Configuração da tela de bloqueio</string>
+    <string name="lock_screen_setup_subtitle">Conceda todas estas permissões para ativar o player na tela de bloqueio</string>
+    <string name="lock_screen_setup_overlay">Sobrepor a outros apps</string>
+    <string name="lock_screen_setup_overlay_subtitle">Permite que o player abra sobre a tela de bloqueio</string>
+    <string name="lock_screen_setup_full_screen">Notificações em tela cheia</string>
+    <string name="lock_screen_setup_full_screen_subtitle">Permite abrir o player por uma notificação sobre a tela de bloqueio</string>
+    <string name="lock_screen_setup_battery">Bateria: sem restrições</string>
+    <string name="lock_screen_setup_battery_subtitle">Impede que o sistema feche o player durante a reprodução</string>
+    <string name="lock_screen_setup_manufacturer">Permissões do fabricante</string>
+    <string name="lock_screen_setup_manufacturer_subtitle">Em Xiaomi, vivo e celulares parecidos, permita também Mostrar na tela de bloqueio, janelas pop-up em segundo plano e Início automático</string>
+    <string name="lock_screen_setup_grant">Conceder</string>
+    <string name="lock_screen_setup_open">Abrir configurações</string>
+    <string name="lock_screen_options">Opções</string>
+    <string name="lock_screen_lyrics_interactive">Letras interativas</string>
+    <string name="lock_screen_lyrics_interactive_subtitle">Role a letra e toque em uma linha para ir até ela</string>
+    <string name="lock_screen_progress">Barra de progresso</string>
+    <string name="lock_screen_progress_subtitle">Mostra uma barra de busca com o tempo decorrido e o total</string>
+    <string name="remove_from_history">Remover do histórico</string>
+    <string name="history_removed">Removido do histórico</string>
+    <string name="history_remove_failed">Não foi possível remover do histórico</string>
+    <string name="lock_screen_art_transition">Transição de capa</string>
+    <string name="lock_screen_art_transition_subtitle">Mescla a capa com a da próxima música enquanto o Automix as mixa.</string>
+    <string name="all_cache_cleared">Todo o cache foi limpo</string>
+    <string name="lossless_expiring_title">A sessão do %1$s termina em breve</string>
+    <string name="lossless_expiring_body">Termina em %1$d min. Toque para renovar.</string>
+    <string name="lossless_renew_failed_body">Não foi possível renovar automaticamente. Termina em %1$d min; toque para tentar de novo.</string>
+    <string name="lossless_renewed_until">%1$s renovado até %2$s</string>
+    <string name="lossless_renew_failed">Não foi possível renovar o %1$s. Renove você mesmo pelo complemento.</string>
+    <string name="lossless_channel">Sessões sem perdas</string>
+    <string name="direct_source_stream">Transmissão direta da fonte</string>
+    <string name="direct_source_stream_subtitle">Toca das fontes acima do YouTube desde a primeira nota, sem troca no meio da música</string>
+    <string name="direct_source_stream_in_party">Desativado enquanto você estiver numa festa Ouvir junto</string>
 </resources>

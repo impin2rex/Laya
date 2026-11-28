@@ -58,6 +58,12 @@ object CanvasCache {
      * plain streaming rather than surfacing as a playback error, the same
      * choice [com.music.laya.playback.AudioCache] makes for audio.
      */
+    /** Every clip on disk; one a player is reading stays until it lets go. Blocking: call off the main thread. */
+    fun clear() {
+        if (!::cache.isInitialized) return
+        cache.keys.toList().forEach { runCatching { cache.removeResource(it) } }
+    }
+
     fun dataSourceFactory(upstream: DataSource.Factory): DataSource.Factory =
         CacheDataSource.Factory()
             .setCache(cache)

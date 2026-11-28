@@ -22,6 +22,7 @@
     <string name="search">Ara</string>
     <string name="clear_search">Aramayı temizle</string>
     <string name="library">Kitaplık</string>
+    <string name="radio">Radyo</string>
     <string name="home">Ana sayfa</string>
     <string name="play">Çal</string>
     <string name="explore">Keşfet</string>
@@ -540,6 +541,13 @@
     <string name="lyrics_share_description">Seçtiğin satırlar, kapakla birlikte bir kart üzerine yerleştirildi.</string>
     <string name="lyrics_share_story">Hikâyeye çevir</string>
     <string name="lyrics_share_story_revert">Karta dön</string>
+    <string name="lyrics_share_video">Video</string>
+    <string name="lyrics_share_image">Görsel</string>
+    <string name="lyrics_share_saving">Kaydediliyor…</string>
+    <string name="lyrics_share_gradient">Gradyan</string>
+    <string name="lyrics_share_canvas">Tuval</string>
+    <string name="lyrics_share_show_logo">Laya logosunu göster</string>
+    <string name="lyrics_share_making_video">Video hazırlanıyor…</string>
     <string name="listening_shape">Dinleme örüntün</string>
     <string name="member_since">Üyelik başlangıcı</string>
     <string name="member_since_value">%1$s tarihinden beri üye</string>
@@ -1079,7 +1087,7 @@
 
     <string name="eq_preset_treble_cut">Tiz kısma</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">Ses yüksekliği</string>
 
     <string name="eq_preset_spoken_word">Konuşma</string>
 
@@ -1117,14 +1125,14 @@
 
     <string name="audio_pipeline">Ses Hattı</string>
     <string name="cast_dialog_title">Cast</string>
-    <string name="cast_dialog_subtitle">Play on a Chromecast or Google Cast speaker</string>
-    <string name="cast_searching">Looking for devices…</string>
-    <string name="cast_searching_hint">Your phone and the receiver need to be on the same Wi-Fi network.</string>
-    <string name="cast_device_connecting">Connecting…</string>
-    <string name="cast_device_connected">Casting</string>
-    <string name="cast_stop">Stop casting</string>
-    <string name="cast_track_unsupported">This track can\'t be cast</string>
-    <string name="cast_connect_failed">Couldn\'t connect to the receiver</string>
+    <string name="cast_dialog_subtitle">Chromecast veya Google Cast hoparlöründe çal</string>
+    <string name="cast_searching">Cihazlar aranıyor…</string>
+    <string name="cast_searching_hint">Telefonun ve alıcının aynı Wi-Fi ağında olması gerekir.</string>
+    <string name="cast_device_connecting">Bağlanıyor…</string>
+    <string name="cast_device_connected">Yayınlanıyor</string>
+    <string name="cast_stop">Yayını durdur</string>
+    <string name="cast_track_unsupported">Bu parça yayınlanamıyor</string>
+    <string name="cast_connect_failed">Alıcıya bağlanılamadı</string>
     <string name="audio_pipeline_subtitle">Kod çözücüden çıkışa canlı sinyal yolu</string>
 
     <string name="pipeline_track_info">Parça Bilgisi</string>
@@ -1270,6 +1278,8 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">Yapılandırılmadı — API URL\'sini ayarlamak için dokunun</string>
     <string name="artist_signatures_test_failed">Bu URL\'de API\'ye ulaşılamadı</string>
+    <string name="artist_signatures_builtin">Yerleşik sunucu</string>
+    <string name="artist_signatures_online">Çevrimiçi</string>
     <string name="search_source_addons">Eklentiler</string>
     <string name="search_addons_none">Etkin eklenti yok. Ayarlar → Kaynaklar bölümünden bir tane ekleyin.</string>
     <string name="app_icon">Uygulama simgesi</string>
@@ -1360,4 +1370,49 @@
     <string name="lossless_verify_expired_notice">%1$s doğrulamasının süresi doldu. Kayıpsız dinlemeye devam etmek için Kaynaklar\'da yeniden açın.</string>
     <string name="lossless_verify_expired">Doğrulamanın süresi doldu · yeniden açın</string>
     <string name="lossless_verified_until">Doğrulandı · %1$s tarihine kadar</string>
+    <string name="best_part_description">En iyi bölüme atla</string>
+    <string name="show_best_part">En iyi bölüm düğmesi</string>
+    <string name="show_best_part_subtitle">Kapak görselinde, şarkının en çok tekrar dinlenen bölümüne atlayan bir düğme</string>
+    <string name="lyrics_share_video_silent">Şarkının sesi alınamadı, bu yüzden bu videoda ses yok.</string>
+    <string name="choose_in_youtube_music">YouTube Music’te seç</string>
+    <string name="lock_screen_player">Kilit ekranı oynatıcısı</string>
+    <string name="lock_screen_player_subtitle">Müzik çalarken kilit ekranında kapak, senkronize şarkı sözleri ve kontroller</string>
+    <string name="lock_screen_player_needs_setup">Açmak için kurulum izinlerini verin. Kurmak için dokunun</string>
+    <string name="lock_screen_previous">Önceki</string>
+    <string name="lock_screen_play_pause">Oynat veya duraklat</string>
+    <string name="lock_screen_next">Sonraki</string>
+    <string name="lock_screen_like">Beğen</string>
+    <string name="lock_screen_unlock">Kilidi aç</string>
+    <string name="lock_screen_setup">Kilit ekranı kurulumu</string>
+    <string name="lock_screen_setup_subtitle">Kilit ekranı oynatıcısını açmak için bunların hepsine izin verin</string>
+    <string name="lock_screen_setup_overlay">Diğer uygulamaların üzerinde göster</string>
+    <string name="lock_screen_setup_overlay_subtitle">Oynatıcının kilit ekranının üzerinde açılmasını sağlar</string>
+    <string name="lock_screen_setup_full_screen">Tam ekran bildirimler</string>
+    <string name="lock_screen_setup_full_screen_subtitle">Oynatıcının bir bildirimden kilit ekranının üzerinde açılmasını sağlar</string>
+    <string name="lock_screen_setup_battery">Pil: kısıtlama yok</string>
+    <string name="lock_screen_setup_battery_subtitle">Sistemin çalma sırasında oynatıcıyı kapatmasını önler</string>
+    <string name="lock_screen_setup_manufacturer">Üretici izinleri</string>
+    <string name="lock_screen_setup_manufacturer_subtitle">Xiaomi, vivo ve benzeri telefonlarda Kilit ekranında göster, arka planda açılır pencereler ve Otomatik başlatmaya da izin verin</string>
+    <string name="lock_screen_setup_grant">İzin ver</string>
+    <string name="lock_screen_setup_open">Ayarları aç</string>
+    <string name="lock_screen_options">Seçenekler</string>
+    <string name="lock_screen_lyrics_interactive">Etkileşimli şarkı sözleri</string>
+    <string name="lock_screen_lyrics_interactive_subtitle">Sözleri kaydırın ve bir satıra dokunarak oraya atlayın</string>
+    <string name="lock_screen_progress">İlerleme çubuğu</string>
+    <string name="lock_screen_progress_subtitle">Geçen ve toplam süreyle bir arama çubuğu gösterir</string>
+    <string name="remove_from_history">Geçmişten kaldır</string>
+    <string name="history_removed">Geçmişten kaldırıldı</string>
+    <string name="history_remove_failed">Geçmişten kaldırılamadı</string>
+    <string name="lock_screen_art_transition">Kapak geçişi</string>
+    <string name="lock_screen_art_transition_subtitle">Automix şarkıları karıştırırken kapağı sonraki şarkınınkine geçirir.</string>
+    <string name="all_cache_cleared">Tüm önbellek temizlendi</string>
+    <string name="lossless_expiring_title">%1$s oturumu yakında bitiyor</string>
+    <string name="lossless_expiring_body">%1$d dk içinde bitecek. Yenilemek için dokunun.</string>
+    <string name="lossless_renew_failed_body">Otomatik yenilenemedi. %1$d dk içinde bitecek; tekrar denemek için dokunun.</string>
+    <string name="lossless_renewed_until">%1$s, %2$s saatine kadar yenilendi</string>
+    <string name="lossless_renew_failed">%1$s yenilenemedi. Eklentiden kendiniz yenileyin.</string>
+    <string name="lossless_channel">Kayıpsız oturumlar</string>
+    <string name="direct_source_stream">Doğrudan kaynaktan akış</string>
+    <string name="direct_source_stream_subtitle">YouTube\'un üstündeki kaynaklardan ilk notadan itibaren çal, şarkı ortasında geçiş yok</string>
+    <string name="direct_source_stream_in_party">Birlikte dinle partisindeyken kapalı</string>
 </resources>

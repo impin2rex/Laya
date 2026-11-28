@@ -65,6 +65,7 @@ import com.music.laya.ui.components.thumbnailBorder
 import com.music.laya.ui.haptics.Haptic
 import com.music.laya.ui.haptics.rememberHaptics
 import com.music.laya.ui.player.PlayerDock
+import com.music.laya.ui.player.LocalMiniAutoMixArtwork
 import com.music.laya.ui.player.AndroidMusicVideo
 import com.music.laya.ui.player.MusicVideoEngine
 import androidx.compose.ui.layout.ContentScale
@@ -221,7 +222,8 @@ fun MiniPlayer(
             val miniPlayerVideo by AppSettings.miniPlayerVideo.collectAsStateWithLifecycle()
             val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
             val watchingVideo by MusicVideoChoice.watching.collectAsStateWithLifecycle()
-            val showsVideo = miniPlayerVideo && MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
+            val hidingVideo by MusicVideoChoice.hiding.collectAsStateWithLifecycle()
+            val showsVideo = miniPlayerVideo && MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo, hidingVideo)
             val artWidth by animateDpAsState(
                 targetValue = if (showsVideo) VIDEO_ART_WIDTH else 40.dp,
                 label = "miniArtWidth",
@@ -234,8 +236,11 @@ fun MiniPlayer(
                     .thumbnailBorder(RoundedCornerShape(ART_CORNER))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
-                AsyncImage(
-                    model = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX),
+                val miniArtModel = rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX)
+                // AutoMix's artwork transition, provided by the host that knows the queue.
+                val autoMixArtwork = LocalMiniAutoMixArtwork.current
+                if (autoMixArtwork != null) autoMixArtwork(miniArtModel, Modifier.fillMaxSize()) else AsyncImage(
+                    model = miniArtModel,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
@@ -269,6 +274,21 @@ fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            // Previous, play, next, as Melo's mini player has them.
+            IconButton(
+                onClick = {
+                    haptics.play(Haptic.SkipPrevious)
+                    onPrevious()
+                },
+                enabled = !controlsLocked,
+                modifier = Modifier.size(GLYPH_SLOT),
+            ) {
+                MiniPlayerPreviousGlyph(
+                    tint = MaterialTheme.colorScheme.onBackground
+                        .copy(alpha = if (controlsLocked) 0.3f else 1f),
+                )
+            }
+            Spacer(Modifier.width(TRANSPORT_GAP))
             if (isLoading) {
                 Box(Modifier.size(GLYPH_SLOT), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(

@@ -1,6 +1,7 @@
 package com.music.laya.data.settings
 
 import com.music.laya.data.lyrics.LyricsSource
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.playback.EqLayout
 import com.music.laya.playback.EqualizerPreset
 import com.music.laya.playback.ReverbSettings
@@ -239,6 +240,9 @@ object AppSettings {
      */
     val smartFadeEnabled = MutableStateFlow(false)
 
+    /** AutoMix's artwork transitions (full player, mini players), both opt-in, nested under it. */
+    val autoMixArtwork = MutableStateFlow(AutoMixArtworkPreferences())
+
     /** The CPU budget used by Beat This! and vocal analysis for Automix. */
     val automixPerformanceMode = MutableStateFlow(AutomixPerformanceMode.BALANCED)
     val skipSilence = MutableStateFlow(false)
@@ -370,6 +374,26 @@ object AppSettings {
     /** Put the playing track's codec, bitrate and sample rate on the player. */
     val showNerdStats = MutableStateFlow(false)
 
+    /**
+     * The "Best Part" button on the player's artwork, which skips to the part of
+     * the song listeners replay most. Off until turned on.
+     */
+    val showBestPart = MutableStateFlow(false)
+
+    /**
+     * Android: a full-screen player (artwork, clock, synced lyrics, controls)
+     * over the lock screen when the screen is turned on while music plays.
+     * iOS: the playing lyric line as a Live Activity on the lock screen and in
+     * the Dynamic Island, beside the system's Now Playing card.
+     */
+    val lockScreenPlayer = MutableStateFlow(false)
+
+    /** The lock-screen player's lyrics take taps (seek to the line) and scrolling. */
+    val lockScreenLyricsInteractive = MutableStateFlow(false)
+
+    /** A seek bar with elapsed and total time on the lock-screen player. */
+    val lockScreenProgress = MutableStateFlow(false)
+
     /** Freezes the main player's mesh gradient instead of letting it drift/crossfade. */
     val reduceAnimation = MutableStateFlow(false)
 
@@ -401,10 +425,16 @@ object AppSettings {
     /** Hides the "Playing from" / "Played by" caption at the top of the main player. */
     val hideSongStatus = MutableStateFlow(false)
 
+    /** Draws the Laya mark on a shared lyrics card. */
+    val lyricsCardLogo = MutableStateFlow(true)
+
     val showQueueHistory = MutableStateFlow(false)
 
     /** Swiping a song row plays it next instead of adding it to the end of the queue. */
     val swipeToPlayNext = MutableStateFlow(false)
+
+    /** Keeps AI-generated songs out of feeds, search and radio; on unless turned off. See [com.music.laya.data.aifilter.AiSongs]. */
+    val hideAiSongs = com.music.laya.data.aifilter.AiSongs.hide
 
     /** Once a song has been suggested or played this session, AutoPlay won't offer it again. */
     val dontRepeatSuggestions = MutableStateFlow(false)
@@ -674,6 +704,42 @@ object AppSettings {
      */
     val pinnedPlaylists = MutableStateFlow<List<String>>(emptyList())
 
+    // ---- Home dials (Speed Dial, Mixes, Artists) — ported from Melo (GPL-3.0) ----
+    /** Whether Home leads with the Speed Dial. */
+    val homeSpeedDial = MutableStateFlow(true)
+    /** Melo's colour background: a soft colour from the playing song's artwork behind every page. */
+    val colorBackground = MutableStateFlow(true)
+
+    /**
+     * Direct Source Stream: a YouTube-queued track plays straight from a source ranked
+     * above YouTube (an addon, Tidal, Qobuz…) from its first note, rather than starting
+     * on YouTube and swapping up mid-song; and nothing is fetched for the next track
+     * until the playing one nears its end. Android only — see DirectSourceGate.
+     */
+    val directSourceStream = MutableStateFlow(false)
+    /** The animated logo on a cold start. */
+    val splashScreen = MutableStateFlow(true)
+    /** Whether the Artists page sits below the Speed Dial. */
+    val homeArtistDial = MutableStateFlow(true)
+    /** Whether the Speed Dial carries the dice tile that plays something at random. */
+    val homeLuckyTile = MutableStateFlow(true)
+    /** What fills the Speed Dial after the pins. */
+    val homeDialSource = MutableStateFlow(HomeDialSource.YOUTUBE)
+    /** Tile rows per Speed Dial page (3 columns each). */
+    val homeDialRows = MutableStateFlow(4)
+    /** Whether tiles carry their title. */
+    val homeDialLabels = MutableStateFlow(true)
+    /** Whether pinned tiles show a pin badge. */
+    val homeDialPinIcon = MutableStateFlow(true)
+    /** Whether new releases are tagged "New". */
+    val homeDialNewReleaseTags = MutableStateFlow(true)
+    /** The tiles' rim. */
+    val homeDialTileStyle = MutableStateFlow(HomeDialTileStyle.GLASS)
+    /** The listener's own order for the Artists page, as artist browse ids; unlisted ones follow. */
+    val homeArtistDialOrder = MutableStateFlow<List<String>>(emptyList())
+    /** Taken off the dials with "Remove from dial" (ids), kept off until pinned again. */
+    val hiddenFromDial = MutableStateFlow<Set<String>>(emptySet())
+
     /** How many playlists [pinnedPlaylists] can hold at once. */
     const val MAX_PINNED_PLAYLISTS = 5
 
@@ -868,6 +934,8 @@ object AppSettings {
         exportDownloads.value = prefs.getBoolean(KEY_EXPORT_DOWNLOADS, false)
         crossfadeSeconds.value = prefs.getInt(KEY_CROSSFADE, 0)
         smartFadeEnabled.value = prefs.getBoolean(KEY_SMART_FADE, false)
+        // The artwork transitions have no switch any more: always on.
+        autoMixArtwork.value = AutoMixArtworkPreferences(artTransition = true, miniPlayerTransition = true)
         automixPerformanceMode.value = runCatching {
             AutomixPerformanceMode.valueOf(
                 prefs.getString(KEY_AUTOMIX_PERFORMANCE_MODE, null) ?: AutomixPerformanceMode.BALANCED.name,
@@ -905,6 +973,10 @@ object AppSettings {
         shuffleEnabled.value = prefs.getBoolean(KEY_SHUFFLE_ENABLED, false)
         repeatMode.value = prefs.getInt(KEY_REPEAT_MODE, REPEAT_MODE_OFF)
         showNerdStats.value = prefs.getBoolean(KEY_NERD_STATS, false)
+        showBestPart.value = prefs.getBoolean(KEY_BEST_PART, false)
+        lockScreenPlayer.value = prefs.getBoolean(KEY_LOCK_SCREEN_PLAYER, false)
+        lockScreenLyricsInteractive.value = prefs.getBoolean(KEY_LOCK_SCREEN_LYRICS_INTERACTIVE, false)
+        lockScreenProgress.value = prefs.getBoolean(KEY_LOCK_SCREEN_PROGRESS, false)
         reduceAnimation.value = prefs.getBoolean(KEY_REDUCE_ANIMATION, false)
         systemFont.value = prefs.getBoolean(KEY_SYSTEM_FONT, false)
         onboardingComplete.value = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
@@ -916,8 +988,10 @@ object AppSettings {
         hideVolumeBar.value = prefs.getBoolean(KEY_HIDE_VOLUME_BAR, false)
         hideStatusBarInPlayer.value = prefs.getBoolean(KEY_HIDE_STATUS_BAR_IN_PLAYER, false)
         hideSongStatus.value = prefs.getBoolean(KEY_HIDE_SONG_STATUS, false)
+        lyricsCardLogo.value = prefs.getBoolean(KEY_LYRICS_CARD_LOGO, true)
         showQueueHistory.value = prefs.getBoolean(KEY_SHOW_QUEUE_HISTORY, false)
         swipeToPlayNext.value = prefs.getBoolean(KEY_SWIPE_TO_PLAY_NEXT, false)
+        hideAiSongs.value = prefs.getBoolean(KEY_HIDE_AI_SONGS, true)
         dontRepeatSuggestions.value = prefs.getBoolean(KEY_DONT_REPEAT_SUGGESTIONS, false)
         preferMusicOnly.value = prefs.getBoolean(KEY_PREFER_MUSIC_ONLY, true)
         miniPlayerVideo.value = prefs.getBoolean(KEY_MINI_PLAYER_VIDEO, false)
@@ -1009,6 +1083,22 @@ object AppSettings {
             webdavPassword.value,
         )
         pinnedPlaylists.value = readPinnedPlaylists()
+        homeSpeedDial.value = prefs.getBoolean(KEY_HOME_SPEED_DIAL, true)
+        colorBackground.value = prefs.getBoolean(KEY_COLOR_BACKGROUND, true)
+        directSourceStream.value = prefs.getBoolean(KEY_DIRECT_SOURCE_STREAM, false)
+        splashScreen.value = prefs.getBoolean(KEY_SPLASH_SCREEN, true)
+        homeArtistDial.value = prefs.getBoolean(KEY_HOME_ARTIST_DIAL, true)
+        homeLuckyTile.value = prefs.getBoolean(KEY_HOME_LUCKY_TILE, true)
+        homeDialSource.value = HomeDialSource.entries.firstOrNull { it.name == prefs.getString(KEY_HOME_DIAL_SOURCE, null) }
+            ?: HomeDialSource.YOUTUBE
+        homeDialRows.value = prefs.getInt(KEY_HOME_DIAL_ROWS, 4).coerceIn(HOME_DIAL_ROWS)
+        homeDialLabels.value = prefs.getBoolean(KEY_HOME_DIAL_LABELS, true)
+        homeDialPinIcon.value = prefs.getBoolean(KEY_HOME_DIAL_PIN_ICON, true)
+        homeDialNewReleaseTags.value = prefs.getBoolean(KEY_HOME_DIAL_NEW_TAGS, true)
+        homeDialTileStyle.value = HomeDialTileStyle.entries.firstOrNull { it.name == prefs.getString(KEY_HOME_DIAL_TILE_STYLE, null) }
+            ?: HomeDialTileStyle.GLASS
+        homeArtistDialOrder.value = readIdList(KEY_HOME_ARTIST_DIAL_ORDER)
+        hiddenFromDial.value = readIdList(KEY_HIDDEN_FROM_DIAL).toSet()
         discordToken.value = host.discordToken.orEmpty()
         discordUsername.value = prefs.getString(KEY_DISCORD_USERNAME, "").orEmpty()
         discordName.value = prefs.getString(KEY_DISCORD_NAME, "").orEmpty()
@@ -1258,6 +1348,26 @@ object AppSettings {
         prefs.edit().putBoolean(KEY_NERD_STATS, value).apply()
     }
 
+    fun setShowBestPart(value: Boolean) {
+        showBestPart.value = value
+        prefs.edit().putBoolean(KEY_BEST_PART, value).apply()
+    }
+
+    fun setLockScreenPlayer(value: Boolean) {
+        lockScreenPlayer.value = value
+        prefs.edit().putBoolean(KEY_LOCK_SCREEN_PLAYER, value).apply()
+    }
+
+    fun setLockScreenLyricsInteractive(value: Boolean) {
+        lockScreenLyricsInteractive.value = value
+        prefs.edit().putBoolean(KEY_LOCK_SCREEN_LYRICS_INTERACTIVE, value).apply()
+    }
+
+    fun setLockScreenProgress(value: Boolean) {
+        lockScreenProgress.value = value
+        prefs.edit().putBoolean(KEY_LOCK_SCREEN_PROGRESS, value).apply()
+    }
+
     fun setThemeMode(value: ThemeMode) {
         themeMode.value = value
         prefs.edit().putString(KEY_THEME, value.name).apply()
@@ -1304,6 +1414,16 @@ object AppSettings {
     fun setShowQueueHistory(value: Boolean) {
         showQueueHistory.value = value
         prefs.edit().putBoolean(KEY_SHOW_QUEUE_HISTORY, value).apply()
+    }
+
+    fun setLyricsCardLogo(value: Boolean) {
+        lyricsCardLogo.value = value
+        prefs.edit().putBoolean(KEY_LYRICS_CARD_LOGO, value).apply()
+    }
+
+    fun setHideAiSongs(value: Boolean) {
+        hideAiSongs.value = value
+        prefs.edit().putBoolean(KEY_HIDE_AI_SONGS, value).apply()
     }
 
     fun setSwipeToPlayNext(value: Boolean) {
@@ -1948,6 +2068,39 @@ object AppSettings {
             ?.toMap()
             ?: emptyMap()
 
+    fun setSplashScreen(value: Boolean) { splashScreen.value = value; prefs.edit().putBoolean(KEY_SPLASH_SCREEN, value).apply() }
+    fun setColorBackground(value: Boolean) { colorBackground.value = value; prefs.edit().putBoolean(KEY_COLOR_BACKGROUND, value).apply() }
+    fun setDirectSourceStream(value: Boolean) { directSourceStream.value = value; prefs.edit().putBoolean(KEY_DIRECT_SOURCE_STREAM, value).apply() }
+    fun setHomeSpeedDial(value: Boolean) { homeSpeedDial.value = value; prefs.edit().putBoolean(KEY_HOME_SPEED_DIAL, value).apply() }
+    fun setHomeArtistDial(value: Boolean) { homeArtistDial.value = value; prefs.edit().putBoolean(KEY_HOME_ARTIST_DIAL, value).apply() }
+    fun setHomeLuckyTile(value: Boolean) { homeLuckyTile.value = value; prefs.edit().putBoolean(KEY_HOME_LUCKY_TILE, value).apply() }
+    fun setHomeDialSource(value: HomeDialSource) { homeDialSource.value = value; prefs.edit().putString(KEY_HOME_DIAL_SOURCE, value.name).apply() }
+    fun setHomeDialRows(value: Int) {
+        val rows = value.coerceIn(HOME_DIAL_ROWS)
+        homeDialRows.value = rows
+        prefs.edit().putInt(KEY_HOME_DIAL_ROWS, rows).apply()
+    }
+    fun setHomeDialLabels(value: Boolean) { homeDialLabels.value = value; prefs.edit().putBoolean(KEY_HOME_DIAL_LABELS, value).apply() }
+    fun setHomeDialPinIcon(value: Boolean) { homeDialPinIcon.value = value; prefs.edit().putBoolean(KEY_HOME_DIAL_PIN_ICON, value).apply() }
+    fun setHomeDialNewReleaseTags(value: Boolean) { homeDialNewReleaseTags.value = value; prefs.edit().putBoolean(KEY_HOME_DIAL_NEW_TAGS, value).apply() }
+    fun setHomeDialTileStyle(value: HomeDialTileStyle) { homeDialTileStyle.value = value; prefs.edit().putString(KEY_HOME_DIAL_TILE_STYLE, value.name).apply() }
+    fun setHomeArtistDialOrder(ids: List<String>) {
+        homeArtistDialOrder.value = ids
+        prefs.edit().putString(KEY_HOME_ARTIST_DIAL_ORDER, ids.joinToString(",")).apply()
+    }
+    /** Takes [id] off the dials (true) or puts it back (false). */
+    fun setHiddenFromDial(id: String, hidden: Boolean) {
+        val next = if (hidden) hiddenFromDial.value + id else hiddenFromDial.value - id
+        hiddenFromDial.value = next
+        prefs.edit().putString(KEY_HIDDEN_FROM_DIAL, next.joinToString(",")).apply()
+    }
+    /** The last deal of a dial ([key]), as the dial's own encoding, so the next launch starts with it. */
+    fun savedHomeDial(key: String): String? = prefs.getString(KEY_SAVED_DIAL_PREFIX + key, null)
+    fun saveHomeDial(key: String, encoded: String) { prefs.edit().putString(KEY_SAVED_DIAL_PREFIX + key, encoded).apply() }
+
+    private fun readIdList(key: String): List<String> =
+        prefs.getString(key, null)?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+
     private fun readPinnedPlaylists(): List<String> {
         val stored = prefs.getString(KEY_PINNED_PLAYLISTS, null) ?: return emptyList()
         return stored.split(",").filter { it.isNotBlank() }
@@ -2095,6 +2248,10 @@ object AppSettings {
     private const val KEY_SHUFFLE_ENABLED = "shuffle_enabled"
     private const val KEY_REPEAT_MODE = "repeat_mode"
     private const val KEY_NERD_STATS = "show_nerd_stats"
+    private const val KEY_BEST_PART = "show_best_part"
+    private const val KEY_LOCK_SCREEN_PLAYER = "lock_screen_player"
+    private const val KEY_LOCK_SCREEN_LYRICS_INTERACTIVE = "lock_screen_lyrics_interactive"
+    private const val KEY_LOCK_SCREEN_PROGRESS = "lock_screen_progress"
     private const val KEY_CACHE_LIMIT = "audio_cache_limit_bytes"
     private const val KEY_REDUCE_ANIMATION = "reduce_animation"
     private const val KEY_SYSTEM_FONT = "system_font"
@@ -2107,6 +2264,8 @@ object AppSettings {
     private const val KEY_HIDE_SONG_STATUS = "hide_song_status"
     private const val KEY_SHOW_QUEUE_HISTORY = "show_queue_history"
     private const val KEY_SWIPE_TO_PLAY_NEXT = "swipe_to_play_next"
+    private const val KEY_HIDE_AI_SONGS = "hide_ai_songs"
+    private const val KEY_LYRICS_CARD_LOGO = "lyrics_card_logo"
     private const val KEY_DONT_REPEAT_SUGGESTIONS = "dont_repeat_suggestions"
     private const val KEY_PREFER_MUSIC_ONLY = "prefer_music_only"
     private const val KEY_MINI_PLAYER_VIDEO = "mini_player_video"
@@ -2152,6 +2311,23 @@ object AppSettings {
     private const val KEY_SMB_BASE_PATH = "smb_base_path"
     private const val KEY_SMB_USERNAME = "smb_username"
     private const val KEY_PINNED_PLAYLISTS = "pinned_playlists"
+    private const val KEY_HOME_SPEED_DIAL = "home_speed_dial"
+    private const val KEY_COLOR_BACKGROUND = "color_background"
+    private const val KEY_DIRECT_SOURCE_STREAM = "direct_source_stream"
+    private const val KEY_SPLASH_SCREEN = "splash_screen"
+    private const val KEY_HOME_ARTIST_DIAL = "home_artist_dial"
+    private const val KEY_HOME_LUCKY_TILE = "home_lucky_tile"
+    private const val KEY_HOME_DIAL_SOURCE = "home_dial_source"
+    private const val KEY_HOME_DIAL_ROWS = "home_dial_rows"
+    private const val KEY_HOME_DIAL_LABELS = "home_dial_labels"
+    private const val KEY_HOME_DIAL_PIN_ICON = "home_dial_pin_icon"
+    private const val KEY_HOME_DIAL_NEW_TAGS = "home_dial_new_tags"
+    private const val KEY_HOME_DIAL_TILE_STYLE = "home_dial_tile_style"
+    private const val KEY_HOME_ARTIST_DIAL_ORDER = "home_artist_dial_order"
+    private const val KEY_HIDDEN_FROM_DIAL = "hidden_from_dial"
+    private const val KEY_SAVED_DIAL_PREFIX = "saved_dial_"
+    /** Rows a Speed Dial page may have. */
+    val HOME_DIAL_ROWS = 3..4
 
     private const val KEY_LASTFM_ENABLED = "lastfm_enabled"
     private const val KEY_LASTFM_USERNAME = "lastfm_username"
@@ -2188,5 +2364,13 @@ object AppSettings {
     private const val KEY_LAST_VERSION_CODE = "last_version_code"
 }
 
+/** What fills the Home Speed Dial after the pins. */
+enum class HomeDialSource {
+    /** YouTube Music's own Speed dial shelf, Listen again, Quick picks, then the rest of Home. */
+    YOUTUBE,
+    /** What was played lately: the account's history, then this device's most played. */
+    HISTORY,
+}
 
-
+/** A Speed Dial tile's rim. */
+enum class HomeDialTileStyle { PLAIN, EDGE, GLASS }

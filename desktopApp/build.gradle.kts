@@ -695,6 +695,12 @@ compose.desktop {
                 "java.xml",
                 "jdk.crypto.ec",
                 "jdk.dynalink",
+                // Qobuz/Tidal verification's loopback callback page is a
+                // com.sun.net.httpserver.HttpServer, which lives here, not in
+                // java.base — missing it, the slim runtime throws
+                // NoClassDefFoundError the moment verification is opened,
+                // while development runs work because the full JDK has it.
+                "jdk.httpserver",
                 // JavaFX WebEngine returns JavaScript objects through netscape.javascript.JSObject.
                 // Without this module the slim production runtime crashes in twkExecuteScript,
                 // while development runs work because the full JDK already contains it.

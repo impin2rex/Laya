@@ -16,9 +16,12 @@ internal object IosSourcesHost : SourcesHost {
     override val appVersion: String
         get() = NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
 
-    // Qobuz only: Tidal's streams are segmented manifests, which this player does not play.
+    // Tidal's lossless stream is a DASH manifest; LosslessStore.manifestFile (wired in
+    // MainViewController) rewrites it into an HLS playlist of the same segments before it ever
+    // reaches here, which is what makes it playable at all — see DashToHls.
     override fun supports(kind: SourceKind) =
-        kind == SourceKind.ADDON || kind == SourceKind.YOUTUBE || kind == SourceKind.JIOSAAVN || kind == SourceKind.QOBUZ
+        kind == SourceKind.ADDON || kind == SourceKind.YOUTUBE || kind == SourceKind.JIOSAAVN ||
+            kind == SourceKind.QOBUZ || kind == SourceKind.TIDAL
 
     override fun build(config: SourceConfig): MusicSource? = if (config.kind == SourceKind.JIOSAAVN) JioSaavnSource(config) else null
 

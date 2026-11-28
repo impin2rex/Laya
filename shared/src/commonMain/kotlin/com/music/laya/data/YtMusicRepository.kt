@@ -1,6 +1,7 @@
 package com.music.laya.data
 
 import com.music.laya.data.DebugLog as Log
+import com.music.laya.data.aifilter.AiSongs
 import com.music.laya.data.innertube.Innertube
 import com.music.laya.data.innertube.InnertubeParser
 import com.music.laya.data.model.Account
@@ -11,6 +12,7 @@ import com.music.laya.data.model.ArtistPage
 import com.music.laya.data.model.BrowseType
 import com.music.laya.data.model.HomeFeed
 import com.music.laya.data.model.HomeShelf
+import com.music.laya.data.model.KeyedMix
 import com.music.laya.data.model.LibraryPage
 import com.music.laya.data.model.LibraryState
 import com.music.laya.data.model.LikeStatus
@@ -31,6 +33,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import com.music.laya.platform.ConcurrentMap
 import com.music.laya.platform.ioDispatcher
 
@@ -60,9 +64,13 @@ object YtMusicRepository {
      * shelves the same way the official app does as you scroll; signed out
      * it's empty and there's nothing more to fetch.
      */
-    suspend fun home(): Result<HomeFeed> = call("home") {
-        val home = Innertube.browse("FEmusic_home")
-        HomeFeed(InnertubeParser.parseHome(home), InnertubeParser.continuationToken(home))
+    suspend fun home(params: String? = null): Result<HomeFeed> = call("home") {
+        val home = Innertube.browse("FEmusic_home", params)
+        HomeFeed(
+            InnertubeParser.parseHome(home).withoutAi(),
+            InnertubeParser.continuationToken(home),
+            InnertubeParser.parseHomeChips(home),
+        )
     }
 
     /** Recently played is rendered independently, at the top of the Play page. */
@@ -70,7 +78,7 @@ object YtMusicRepository {
 
     /** Extra Play shelves are independently fetchable so each can appear as soon as it arrives. */
     suspend fun homeSupplement(browseId: String): Result<List<HomeShelf>> = call("home:$browseId") {
-        shelvesOf(browseId)
+        shelvesOf(browseId).withoutAi()
     }
 
     val HOME_SUPPLEMENT_BROWSE_IDS = listOf(
@@ -87,7 +95,7 @@ object YtMusicRepository {
     suspend fun moreHome(token: String): Result<HomeFeed> = call("home:more") {
         val response = Innertube.browseContinuation(token)
         HomeFeed(
-            shelves = InnertubeParser.parseHomeContinuation(response),
+            shelves = InnertubeParser.parseHomeContinuation(response).withoutAi(),
             continuation = InnertubeParser.continuationToken(response),
         )
     }
@@ -138,8 +146,50 @@ object YtMusicRepository {
      * under Today and Yesterday headings that the shelf parser doesn't carry
      * through either.
      */
-    private suspend fun fetchHistory(): List<Song> =
-        InnertubeParser.collectSongsDeep(Innertube.browse(HISTORY)).distinctBy { it.videoId }
+    private suspend fun fetchHistory(): List<Song> {
+        val page = Innertube.browse(HISTORY)
+        val songs = InnertubeParser.collectSongsDeep(page).distinctBy { it.videoId }
+        synchronized(historyLock) {
+            historyTokens = InnertubeParser.historyRemovalTokens(page)
+            lastHistory = Innertube.cookie to songs
+        }
+        return songs
+    }
+
+    /** The last history fetched for the signed-in account (Home's Recents fetches it too), to show while [history] refreshes. */
+    private var lastHistory: Pair<String?, List<Song>>? = null
+
+    fun cachedHistory(): List<Song>? =
+        synchronized(historyLock) { lastHistory }?.takeIf { it.first == Innertube.cookie }?.second
+
+    /** A play just landed in the account's history ([com.music.laya.data.innertube.PlaybackTracker]): it leads the cached copy too. */
+    fun notePlayed(song: Song) = synchronized(historyLock) {
+        val (key, songs) = lastHistory?.takeIf { it.first == Innertube.cookie } ?: return@synchronized
+        lastHistory = key to (listOf(song) + songs.filterNot { it.videoId == song.videoId })
+    }
+
+    private val historyLock = SynchronizedObject()
+
+    /** The last history page's removal tokens, by track — see [InnertubeParser.historyRemovalTokens]. */
+    private var historyTokens: Map<String, List<String>> = emptyMap()
+
+    /** Whether [videoId] can be taken off the account's history: it was on the page last loaded. */
+    fun canRemoveFromHistory(videoId: String): Boolean =
+        synchronized(historyLock) { historyTokens[videoId] }?.isNotEmpty() == true
+
+    /**
+     * Takes [videoIds] off the account's listening history, every play of each, in one request.
+     * Only tracks on the history page last loaded can go: the tokens come from that page.
+     */
+    suspend fun removeFromHistory(videoIds: Collection<String>): Result<Unit> = call("history:remove") {
+        val tokens = synchronized(historyLock) { videoIds.flatMap { historyTokens[it].orEmpty() } }
+        require(tokens.isNotEmpty()) { "Nothing to remove from history" }
+        Innertube.sendFeedback(tokens)
+        synchronized(historyLock) {
+            historyTokens = historyTokens - videoIds.toSet()
+            lastHistory = lastHistory?.let { (key, songs) -> key to songs.filterNot { it.videoId in videoIds } }
+        }
+    }
 
     /**
      * The account's listening history, in the order YouTube Music keeps it.
@@ -162,7 +212,10 @@ object YtMusicRepository {
     /**
      * Recommended discovery tracks for Quick Picks, strictly excluding listening history and recents.
      */
-    suspend fun quickPicks(excludeSongIds: Set<String> = emptySet()): Result<List<Song>> = call("quickPicks") {
+    suspend fun quickPicks(excludeSongIds: Set<String> = emptySet()): Result<List<Song>> =
+        quickPicksUnfiltered(excludeSongIds).map { songs -> AiSongs.keep(songs) { it.videoId } }
+
+    private suspend fun quickPicksUnfiltered(excludeSongIds: Set<String>): Result<List<Song>> = call("quickPicks") {
         val homeRaw = runCatching { Innertube.browse("FEmusic_home") }.getOrNull()
         val shelves = if (homeRaw != null) InnertubeParser.parseHome(homeRaw) else emptyList()
 
@@ -248,7 +301,7 @@ object YtMusicRepository {
     }
 
     private const val HISTORY = "FEmusic_history"
-    private const val RECENT_TITLE = "Recents"
+    const val RECENT_TITLE = "Recents"
 
     /** Enough to scroll through, short of turning the shelf into the history page. */
     private const val RECENT_LIMIT = 20
@@ -260,6 +313,78 @@ object YtMusicRepository {
     suspend fun moodAndGenres(): Result<List<MoodGenreSection>> = call("moods-and-genres") {
         InnertubeParser.parseMoodAndGenres(Innertube.browse("FEmusic_moods_and_genres"))
     }
+
+    /**
+     * The signed-in "Mixed for you" cards, each beside its English title.
+     *
+     * The page says what kind of mix a card is only in its title ("Discover
+     * Mix", "Chill Mix 2"), and YouTube translates those titles. So the page is
+     * read twice when the app is in another language: once in that language,
+     * to show, and once in English, to sort by — the two matched up by the
+     * mix's playlist id, which is the same in both. In English the one request
+     * serves for both. If the English read fails, or a card is missing from
+     * it, that card's own title stands in.
+     */
+    suspend fun mixedForYouKeyed(): Result<List<KeyedMix>> = call("mixedForYouKeyed") {
+        if (Innertube.cookie == null) return@call emptyList()
+        coroutineScope {
+            val shown = async {
+                InnertubeParser.parseTwoRowItemsDeep(Innertube.browse(MIXED_FOR_YOU))
+            }
+            val english = if (Innertube.currentLanguage.startsWith("en")) {
+                null
+            } else {
+                async {
+                    try {
+                        InnertubeParser.parseTwoRowItemsDeep(Innertube.browse(MIXED_FOR_YOU, language = "en"))
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.w(TAG, "mixedForYou in English failed; sorting by shown titles: ${e.message}")
+                        null
+                    }
+                }
+            }
+            val items = shown.await()
+            val englishTitles = english?.await().orEmpty()
+                .associate { (it.browseId ?: it.title) to it.title }
+            items.map { KeyedMix(it, englishTitles[it.browseId ?: it.title] ?: it.title) }
+        }
+    }
+
+    private const val MIXED_FOR_YOU = "FEmusic_mixed_for_you"
+
+    /**
+     * Radio for a listener who is signed out: "Mixed for you" answers 401 without an account,
+     * but every mood in "Moods & moments" (Chill, Commute, Energize…) opens a page of YouTube
+     * Music's own curated playlists, and those need none. One shelf per mood, its playlists in
+     * the page's order, so the Radio page keeps the shape it has signed in.
+     *
+     * Kept for the session once found; each mood's page is [moodGenreShelves]'s, which Explore's
+     * artwork has usually fetched already.
+     */
+    suspend fun moodStations(): Result<List<HomeShelf>> {
+        moodStationsCache?.let { return Result.success(it) }
+        return moodAndGenres().mapCatching { sections ->
+            val moods = sections.firstOrNull()?.items.orEmpty()
+            coroutineScope {
+                moods.map { mood ->
+                    async {
+                        val playlists = moodGenreShelves(mood.browseId, mood.params).getOrNull().orEmpty()
+                            .flatMap { it.items }
+                            .filter { it.browseId != null && it.videoId == null }
+                            .distinctBy { it.browseId }
+                            .take(MOOD_STATION_PLAYLISTS)
+                        HomeShelf(title = mood.title, items = playlists)
+                    }
+                }.awaitAll().filter { it.items.isNotEmpty() }
+            }.also { check(it.isNotEmpty()) { "No mood stations" } }
+        }.onSuccess { moodStationsCache = it }
+    }
+
+    @kotlin.concurrent.Volatile
+    private var moodStationsCache: List<HomeShelf>? = null
+    private const val MOOD_STATION_PLAYLISTS = 12
 
     /**
      * The playlist shelves behind one mood/genre category. This result also
@@ -313,7 +438,7 @@ object YtMusicRepository {
                 Innertube.search(query, filter.params, anonymous),
                 includeVideos = filter == SearchFilter.VIDEOS,
             ).let { page ->
-                SearchPage(page.rows.distinctBy { it.identityKey() }, page.continuation)
+                SearchPage(page.rows.distinctBy { it.identityKey() }.withoutAi(), page.continuation)
             }
         }
 
@@ -323,7 +448,7 @@ object YtMusicRepository {
             Innertube.searchContinuation(token),
             includeVideos = filter == SearchFilter.VIDEOS,
         ).let { page ->
-            SearchPage(page.rows.distinctBy { it.identityKey() }, page.continuation)
+            SearchPage(page.rows.distinctBy { it.identityKey() }.withoutAi(), page.continuation)
         }
     }
 
@@ -333,6 +458,24 @@ object YtMusicRepository {
      */
     suspend fun search(query: String, filter: SearchFilter): Result<List<SearchResult>> =
         searchPage(query, filter).map { it.rows }
+
+    private suspend fun List<SearchResult>.withoutAi(waitMs: Long? = null): List<SearchResult> {
+        val songOf = { row: SearchResult ->
+            when (row) {
+                is SearchResult.TopTrack -> row.song.videoId
+                is SearchResult.Track -> row.song.videoId
+                is SearchResult.Browse -> null
+            }
+        }
+        return if (waitMs == null) AiSongs.keep(this, videoId = songOf) else AiSongs.keep(this, waitMs, songOf)
+    }
+
+    /** These shelves without their AI songs, and without a shelf left empty by that. */
+    private suspend fun List<HomeShelf>.withoutAi(): List<HomeShelf> {
+        if (!AiSongs.hide.value) return this
+        val kept = AiSongs.keep(flatMap { it.items }) { it.videoId }.toHashSet()
+        return map { shelf -> shelf.copy(items = shelf.items.filter { it in kept }) }.filter { it.items.isNotEmpty() }
+    }
 
     private fun SearchResult.identityKey(): String = when (this) {
         is SearchResult.TopTrack -> "v:${song.videoId}"
@@ -368,7 +511,8 @@ object YtMusicRepository {
                 Innertube.searchTypeahead(input),
                 includeVideos = false,
             ).let { page ->
-                SearchPage(page.rows.distinctBy { it.identityKey() }, page.continuation)
+                // Per keystroke: only what is already known, never a wait.
+                SearchPage(page.rows.distinctBy { it.identityKey() }.withoutAi(waitMs = 0), page.continuation)
             }
         }
 
@@ -585,7 +729,12 @@ object YtMusicRepository {
      * seed track itself comes back first, so callers filter what they have.
      */
     suspend fun radio(videoId: String): Result<List<Song>> = call("radio:$videoId") {
-        InnertubeParser.parseWatchQueue(Innertube.next(videoId))
+        // The seed stays: it is the song the listener chose; only what radio adds after it is filtered.
+        // A longer wait than a feed's: radio is mostly fetched ahead of need, and a song let
+        // through unchecked is one the player then has to take back out of the queue.
+        AiSongs.keep(InnertubeParser.parseWatchQueue(Innertube.next(videoId)), waitMs = 12_000) { song ->
+            song.videoId.takeUnless { it == videoId }
+        }
     }
 
     /**
@@ -1041,12 +1190,14 @@ object YtMusicRepository {
 
     /**
      * Artist page. The landing page only lists ~5 songs, so the linked
-     * "Top songs" playlist is fetched to fill the list out, and any linked
-     * full release shelves (Albums, Singles & EPs) are fetched to populate
-     * their complete discography.
+     * "Top songs" playlist is fetched to fill the list out, and the other
+     * shelves' linked full lists are fetched in place of their first cards.
      */
     suspend fun artistPage(browseId: String): Result<ArtistPage> = call("artist:$browseId") {
-        val page = InnertubeParser.parseArtistPage(Innertube.browse(browseId))
+        val parsed = InnertubeParser.parseArtistPage(Innertube.browse(browseId))
+        // No release shelves (Albums, Singles & EPs, Appears on: every card an MPRE… release): their full lists came
+        // back mostly other artists' records. Also takes the top-release card the pages pick from them.
+        val page = parsed.copy(sections = parsed.sections.filterNot { s -> s.items.all { it.browseId?.startsWith("MPRE") == true } })
         coroutineScope {
             val fullSongsDeferred = async {
                 page.moreSongsBrowseId?.let { playlistId ->

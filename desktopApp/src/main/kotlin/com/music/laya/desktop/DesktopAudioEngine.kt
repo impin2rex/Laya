@@ -6,6 +6,7 @@ import com.music.laya.data.settings.MixBlend
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.TrackAnalysisState
 import com.music.laya.data.settings.TransitionWindow
+import com.music.laya.playback.AutoMixVisualFeed
 import com.music.laya.playback.EqCurve
 import com.music.laya.playback.Karaoke
 import com.music.laya.playback.KaraokeProcessor
@@ -83,6 +84,10 @@ class DesktopPlaybackEngine(
                 commands += Command.Reconfigure
             }
         }
+    }
+
+    init {
+        active = this
     }
 
     init {
@@ -828,6 +833,18 @@ class DesktopPlaybackEngine(
     /** The playing track's heard position, on the sink's played-frame count; see [play]. */
     private val playhead = DesktopPlayhead()
     private var fadeRemaining = 0
+
+    /**
+     * The AutoMix pair the artwork dissolves across, published from this audio thread only — see
+     * [AutoMixVisualFeed] — on the blend's own axis: [visualFadeSeconds] long, from its first sample.
+     */
+    private var visualGeneration: Long? = null
+    private var visualFadeSeconds = 0.0
+
+    private fun cancelAutoMixVisual() {
+        AutoMixVisualFeed.cancel(visualGeneration)
+        visualGeneration = null
+    }
     private var fadeTotal = 0
     /** Fade plus any echo/roll/reverb tail. [fadeTotal] remains the nominal fader span. */
     private var transitionTotal = 0
@@ -1084,7 +1101,15 @@ class DesktopPlaybackEngine(
         }
         val progress = ((transitionTotal - fadeRemaining).toFloat() / fadeTotal.coerceAtLeast(1))
         val handoffAt = plan?.let(DesktopTransitionRide::handoffAt) ?: DISPLAY_SWITCH_AT
-        if (!displaySwitched && progress >= handoffAt && fadeRemaining > 0) switchDisplay(incoming)
+        val visualAt = progress.coerceIn(0f, 1f) * visualFadeSeconds
+        if (!displaySwitched && progress >= handoffAt && fadeRemaining > 0) {
+            switchDisplay(incoming)
+            AutoMixVisualFeed.swap(visualGeneration, visualAt, visualFadeSeconds)
+        }
+        if (visualGeneration != null) {
+            AutoMixVisualFeed.advance(visualGeneration, visualAt, visualFadeSeconds)
+            if (progress >= 1f) AutoMixVisualFeed.complete(visualGeneration)
+        }
         if (fadeRemaining <= 0) promoteUpcoming() else publishBlend(playing = true)
         return mixed to count
     }
@@ -1305,6 +1330,8 @@ class DesktopPlaybackEngine(
      * carries out a [prepareNext] that arrived while it ran. Called however the blend ended.
      */
     private fun endBlend() {
+        // Completed already on an ordinary finish; anything else ends the pair where it stood.
+        cancelAutoMixVisual()
         DesktopPlayerSettings.smartMixBlend.value = null
         var had = false
         var next: Song? = null
@@ -1494,6 +1521,7 @@ class DesktopPlaybackEngine(
         if (current !== track) current?.decoder?.close()
         current = track
         fadeRemaining = 0
+        cancelAutoMixVisual()
 
         val decoded = track.decoder.outputFormat
         // Only renegotiate when the device would actually have to change.
@@ -1587,6 +1615,7 @@ class DesktopPlaybackEngine(
     }
 
     private fun performSeek(millis: Long) {
+        cancelAutoMixVisual()
         // Past the midpoint the listener is looking at — and seeking in — the incoming song, so
         // the blend is finished on the spot and the seek lands on that one.
         if (displaySwitched && upcoming != null) promoteUpcoming()
@@ -1819,6 +1848,14 @@ class DesktopPlaybackEngine(
         outgoingFilter.flush()
         incomingFilter.flush()
         blendActive = true
+        // An analysed mix dissolves the artwork with it; a plain crossfade keeps the cut.
+        cancelAutoMixVisual()
+        val outgoing = current
+        if (outgoing != null && isSmartMixInProgress()) {
+            visualFadeSeconds = seconds
+            visualGeneration = AutoMixVisualFeed.arm(listOf(outgoing.song, incoming.song), 0, 1)
+            AutoMixVisualFeed.start(visualGeneration, 0.0)
+        }
     }
 
     /**
@@ -1890,7 +1927,10 @@ class DesktopPlaybackEngine(
         } else {
             duration - transitionSecondsFor(song) * 1_000L
         }
-        if (startMs - positionMs > ADDON_ARM_LEAD_MS) return
+        // Direct Source Stream waits up to 15s for the sources with no race behind it, so it arms
+        // with the phone's 25s window rather than the addon lead.
+        val lead = if (DesktopSourceRegistry.directActive()) DIRECT_ARM_LEAD_MS else ADDON_ARM_LEAD_MS
+        if (startMs - positionMs > lead) return
         // Whichever of this thread and a newer [prepareNext] gets there first owns it.
         if (!awaitingArm.compareAndSet(song, null)) return
         DesktopTrackLog.log(
@@ -2060,12 +2100,20 @@ class DesktopPlaybackEngine(
     }
 
     /** What the device actually accepted, for the settings screen to report. */
+    /** The stream [videoId] is on right now, for the lyrics share video to cut the song from. */
+    internal fun streamOf(videoId: String): DesktopStream? = current?.takeIf { it.song.videoId == videoId }?.stream
+
     fun outputSummary(): String = if (!sink.isOpen) "Not started" else with(sink.format) {
         val depth = if (isFloat) "32-bit float" else "${bytesPerSample * 8}-bit"
         "$depth · ${sampleRate / 1000.0} kHz · ${if (channels == 2) "stereo" else "$channels ch"}"
     }
 
     companion object {
+        /** The window's engine, for the lyrics share; there is only ever the one. */
+        @Volatile
+        internal var active: DesktopPlaybackEngine? = null
+            private set
+
         /** How many times a lossy substitute is asked to be beaten before the question is closed. */
         private const val LOSSLESS_FOLLOW_UPS = 2
 
@@ -2095,6 +2143,7 @@ class DesktopPlaybackEngine(
          * stream to open, and an incoming track that is not ready by the transition misses it.
          */
         private const val ADDON_ARM_LEAD_MS = 15_000L
+        private const val DIRECT_ARM_LEAD_MS = 25_000L
 
         /** How long a better copy waits for the blend into its track to finish: up to a minute. */
         private const val BLEND_WAIT_POLLS = 300

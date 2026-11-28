@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.screens
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -84,7 +86,21 @@ fun TvSearchScreen(
     modifier: Modifier = Modifier,
 ) {
     val query by viewModel.query.collectAsState()
-    val resultsState by viewModel.results.collectAsState()
+    val youTubeResults by viewModel.results.collectAsState()
+    // The Addons tab answers from every enabled addon and Tidal/Qobuz instead of YouTube Music.
+    val searchSource by viewModel.searchSource.collectAsState()
+    val addonResults by viewModel.addonResults.collectAsState()
+    val searchingAddons = searchSource == com.music.laya.ui.SearchSource.ADDONS
+    val resultsState: UiState<List<SearchResult>>? = if (searchingAddons) {
+        when (val state = addonResults) {
+            null -> null
+            UiState.Loading -> UiState.Loading
+            is UiState.Error -> UiState.Error(state.message)
+            is UiState.Success -> UiState.Success(state.data.map { SearchResult.Track(it) })
+        }
+    } else {
+        youTubeResults
+    }
     val filter by viewModel.filter.collectAsState()
     val history by viewModel.searchHistory.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
@@ -170,7 +186,7 @@ fun TvSearchScreen(
                     TvTextField(
                         value = query,
                         onValueChange = viewModel::onQueryChange,
-                        placeholder = "Artists, Songs, Albums and More",
+                        placeholder = stringResource(R.string.tv_search_placeholder),
                         leadingIcon = Icons.Rounded.Search,
                         imeAction = ImeAction.Search,
                         onImeAction = {
@@ -217,7 +233,20 @@ fun TvSearchScreen(
                         }
                     }
                 }
-                if (resultsState != null) {
+                Spacer(modifier = Modifier.height(14.dp))
+                TvSegmented(
+                    options = listOf(
+                        stringResource(R.string.search_source_youtube),
+                        stringResource(R.string.search_source_addons),
+                    ),
+                    selectedIndex = if (searchingAddons) 1 else 0,
+                    onSelect = {
+                        viewModel.setSearchSource(
+                            if (it == 1) com.music.laya.ui.SearchSource.ADDONS else com.music.laya.ui.SearchSource.YOUTUBE,
+                        )
+                    },
+                )
+                if (resultsState != null && !searchingAddons) {
                     Spacer(modifier = Modifier.height(14.dp))
                     TvSegmented(
                         options = SearchFilters.map { it.label },
@@ -283,12 +312,12 @@ fun TvSearchScreen(
             is UiState.Success -> if (deduped.isEmpty()) {
                 item(key = "empty") {
                     TvEmptyState(
-                        title = "No Results",
-                        message = "Nothing matched “$query”. Check the spelling or try other words.",
+                        title = stringResource(R.string.tv_no_results_title),
+                        message = stringResource(R.string.tv_no_results_message, query),
                         modifier = Modifier.height(256.dp),
                     )
                 }
-            } else if (filter == SearchFilter.ALL) {
+            } else if (filter == SearchFilter.ALL && !searchingAddons) {
                 groupedResults(deduped, playResult, openBrowse, onSongMenu = { menuSong = it })
             } else {
                 filteredResults(deduped, playResult, openBrowse, onSongMenu = { menuSong = it })
@@ -326,8 +355,8 @@ private fun LazyListScope.idleContent(
     if (history.isEmpty()) {
         item(key = "idleEmpty") {
             TvEmptyState(
-                title = "Search Laya",
-                message = "Find songs, albums, artists and playlists.",
+                title = stringResource(R.string.tv_search_laya_title),
+                message = stringResource(R.string.tv_search_laya_message),
                 modifier = Modifier.height(240.dp),
             )
         }
@@ -335,8 +364,8 @@ private fun LazyListScope.idleContent(
     }
     item(key = "recentTitle") {
         TvShelfTitle(
-            title = "Recent Searches",
-            trailing = { TvButton(text = "Clear", onClick = onClearHistory) },
+            title = stringResource(R.string.tv_recent_searches),
+            trailing = { TvButton(text = stringResource(R.string.clear), onClick = onClearHistory) },
             modifier = Modifier.padding(top = 6.dp, bottom = 5.dp),
         )
     }
@@ -385,24 +414,24 @@ private fun LazyListScope.groupedResults(
     val browse = results.filterIsInstance<SearchResult.Browse>().map { it.item }
 
     item(key = "top") {
-        TvShelf(title = "Top Results", items = results.take(10), key = { it.resultKey() }) { result ->
+        TvShelf(title = stringResource(R.string.tv_top_results), items = results.take(10), key = { it.resultKey() }) { result ->
             ResultLockup(result, onPlaySong, onOpen, onSongMenu)
         }
     }
     if (songs.isNotEmpty()) {
-        item(key = "songsTitle") { TvShelfTitle(title = "Songs") }
+        item(key = "songsTitle") { TvShelfTitle(title = stringResource(R.string.songs)) }
         songGrid(songs.take(12), onPlaySong, onSongMenu, keyPrefix = "song")
     }
     listOf(
-        BrowseType.ARTIST to "Artists",
-        BrowseType.ALBUM to "Albums",
-        BrowseType.PLAYLIST to "Playlists",
-        BrowseType.OTHER to "More",
+        BrowseType.ARTIST to R.string.artists,
+        BrowseType.ALBUM to R.string.albums,
+        BrowseType.PLAYLIST to R.string.playlists,
+        BrowseType.OTHER to R.string.more,
     ).forEach { (type, title) ->
         val group = browse.filter { it.type == type }
         if (group.isNotEmpty()) {
             item(key = "group:$type") {
-                TvShelf(title = title, items = group, key = { it.browseId }) { item ->
+                TvShelf(title = stringResource(title), items = group, key = { it.browseId }) { item ->
                     TvLockup(
                         title = item.title,
                         subtitle = if (type == BrowseType.ARTIST) null else item.subtitle,

@@ -187,3 +187,4 @@ struct LayaCancelRecognitionIntent: LiveActivityIntent {
         return .result()
     }
 }
+

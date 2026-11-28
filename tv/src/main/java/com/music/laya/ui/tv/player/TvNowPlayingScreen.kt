@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.player
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.layout.padding
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
@@ -153,6 +155,7 @@ fun TvNowPlayingScreen(
     // its own sound with no picture otherwise — until the listener switches to the video.
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsState()
     val watchingVideo by MusicVideoChoice.watching.collectAsState()
+    val hidingVideo by MusicVideoChoice.hiding.collectAsState()
     LaunchedEffect(song.videoId, inParty) {
         alternate = null
         MusicVideoChoice.onTrackChanged(song.videoId)
@@ -178,8 +181,8 @@ fun TvNowPlayingScreen(
     }
     val toggleVideo: (() -> Unit)? = alternate?.let { other -> { swapTo(other) } }
         // No audio version to go to: the switch only puts the video's picture up or away.
-        ?: song.takeIf { it.isVideo && preferMusicOnly }?.let { video -> { MusicVideoChoice.toggle(video.videoId) } }
-    val videoMode = MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo)
+        ?: song.takeIf { it.isVideo }?.let { video -> { MusicVideoChoice.toggle(video) } }
+    val videoMode = MusicVideoChoice.pictureWanted(song, preferMusicOnly, watchingVideo, hidingVideo)
     // The aspect button's choice — see [com.music.laya.data.settings.VideoScale].
     val videoScale by AppSettings.videoScale.collectAsState()
     var videoRendered by remember(song.videoId) { mutableStateOf(false) }
@@ -245,6 +248,14 @@ fun TvNowPlayingScreen(
         if (controlsVisible && !upNextOpen && sheet == null && isPlaying && scrubTarget == null) {
             delay(ControlsTimeoutMs)
             hideControls()
+        }
+    }
+    // Up Next goes back down after the same idle seconds, paused or not (any press restarts the count), and the
+    // player is shown again — as Back would do it, so focus returns to the scrubber.
+    LaunchedEffect(upNextOpen, lastInput) {
+        if (upNextOpen) {
+            delay(ControlsTimeoutMs)
+            upNextOpen = false
         }
     }
     // Focus follows what's on screen: the scrubber when the transport rises,
@@ -342,6 +353,8 @@ fun TvNowPlayingScreen(
             controlsVisible = controlsVisible,
             onSeek = { mediaController?.seekTo(it) },
             subLines = lyricVersions.subLines,
+            queue = playerState.queue,
+            queueIndex = playerState.queueIndex,
             modifier = Modifier.graphicsLayer { alpha = dim },
         )
 
@@ -353,6 +366,8 @@ fun TvNowPlayingScreen(
         ) {
             TvTransport(
                 song = song,
+                lyrics = lyrics,
+                onSeek = { mediaController?.seekTo(it) },
                 isPlaying = isPlaying,
                 isLoading = playerState.isLoading,
                 position = position,
@@ -448,19 +463,21 @@ private fun TvVideoQualityDialog(onDismiss: () -> Unit) {
     val quality by engine.quality.collectAsState()
     // What is on screen when it is lower than the pick: this TV couldn't play the pick.
     val playing = quality.activeHeight
+    val fullHd = stringResource(R.string.tv_full_hd)
+    val hd = stringResource(R.string.tv_hd)
     fun label(height: Int) = when {
         height >= 2160 -> "4K"
         height >= 1440 -> "2K"
-        height >= 1080 -> "Full HD"
-        height >= 720 -> "HD"
+        height >= 1080 -> fullHd
+        height >= 720 -> hd
         else -> "${height}p"
     }
-    com.music.laya.ui.tv.components.TvDialog(title = "Video Quality", onDismissRequest = onDismiss) {
+    com.music.laya.ui.tv.components.TvDialog(title = stringResource(R.string.tv_video_quality_title), onDismissRequest = onDismiss) {
         androidx.compose.foundation.layout.Column(
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(5.dp),
         ) {
             com.music.laya.ui.tv.components.TvListRow(
-                title = "Auto",
+                title = stringResource(R.string.tv_auto),
                 value = if (quality.held == null) playing?.let(::label) else null,
                 trailingIcon = if (quality.held == null) androidx.compose.material.icons.Icons.Rounded.Check else null,
                 modifier = Modifier.tvInitialFocus(),
@@ -476,8 +493,8 @@ private fun TvVideoQualityDialog(onDismiss: () -> Unit) {
                 com.music.laya.ui.tv.components.TvListRow(
                     title = label(height),
                     value = when {
-                        failed -> "Can't play on this TV"
-                        picked && playing != null && playing < height -> "${playing}p playing"
+                        failed -> stringResource(R.string.tv_cant_play_on_tv)
+                        picked && playing != null && playing < height -> stringResource(R.string.tv_playing_height, playing)
                         else -> "${height}p"
                     },
                     trailingIcon = if (picked) androidx.compose.material.icons.Icons.Rounded.Check else null,

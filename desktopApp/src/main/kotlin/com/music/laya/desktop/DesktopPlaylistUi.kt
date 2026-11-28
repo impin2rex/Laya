@@ -76,11 +76,12 @@ import com.music.laya.ui.icons.LayaIcons
 /** Where a track goes: one of the account's playlists, a local one, or a new one. */
 @Composable
 internal fun DesktopPlaylistDialog(
-    song: Song?,
+    /** What is being added: one track, or the queue's whole selection. */
+    songs: List<Song>,
     accountPlaylists: List<UserPlaylist>,
     localPlaylists: List<DesktopPlaylist>,
     signedIn: Boolean,
-    /** Whether [song] is something YouTube can be asked to hold. */
+    /** Whether every one of [songs] is something YouTube can be asked to hold. */
     canUseAccount: Boolean,
     busy: Boolean,
     error: String?,
@@ -89,14 +90,14 @@ internal fun DesktopPlaylistDialog(
     onCreate: (String, PlaylistPrivacy) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var creating by remember { mutableStateOf(song == null) }
+    var creating by remember { mutableStateOf(songs.isEmpty()) }
 
     DesktopDialogFrame(onDismiss = onDismiss) {
         if (creating) {
             NewPlaylistForm(
                 // Nowhere to go back to when the dialog opened onto the form; its own dismiss is
                 // the way out.
-                onBack = if (song == null) null else ({ creating = false }),
+                onBack = if (songs.isEmpty()) null else ({ creating = false }),
                 signedIn = signedIn && canUseAccount,
                 busy = busy,
                 error = error,
@@ -105,13 +106,24 @@ internal fun DesktopPlaylistDialog(
             return@DesktopDialogFrame
         }
 
-        DialogHeading("Add to playlist", song?.let { "${it.title} — ${it.artist}" }.orEmpty())
+        DialogHeading(
+            if (songs.size > 1) {
+                DesktopStrings.plural("d_add_n_songs", songs.size, "Add %1\$d song", "Add %1\$d songs")
+            } else {
+                DesktopStrings["add_to_playlist", "Add to playlist"]
+            },
+            songs.singleOrNull()?.let { "${it.title} — ${it.artist}" }.orEmpty(),
+        )
         error?.let { DialogError(it) }
         DialogAction(LayaIcons.Plus, "New playlist", enabled = !busy) { creating = true }
 
         if (signedIn && !canUseAccount) {
             Text(
-                DesktopStrings["d_this_track_is_not_from_youtube_music_so_it_can_only_go_i", "This track is not from YouTube Music, so it can only go in a playlist kept here."],
+                if (songs.size > 1) {
+                    DesktopStrings["d_some_tracks_not_from_youtube_music", "Some of these tracks are not from YouTube Music, so they can only go in a playlist kept here."]
+                } else {
+                    DesktopStrings["d_this_track_is_not_from_youtube_music_so_it_can_only_go_i", "This track is not from YouTube Music, so it can only go in a playlist kept here."]
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = DesktopSecondary,
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp),

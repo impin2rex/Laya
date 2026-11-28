@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -95,6 +96,8 @@ import com.music.laya.data.model.HEADER_ART_PX
 import com.music.laya.data.model.ROW_ART_PX
 import com.music.laya.data.model.artworkAt
 import com.music.laya.data.lyrics.LyricLine
+import kotlinx.coroutines.flow.first
+import com.music.laya.data.lyrics.LyricsPicks
 import com.music.laya.data.lyrics.LyricsRepository
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.HomeShelf
@@ -112,6 +115,7 @@ import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.delay
 import com.music.laya.data.model.SearchResult
 import com.music.laya.data.model.ShelfItem
+import com.music.laya.data.model.KeyedMix
 import com.music.laya.data.model.Song
 import kotlinx.coroutines.withContext
 import com.music.laya.platform.ioDispatcher
@@ -119,6 +123,8 @@ import com.music.laya.data.model.UiState
 import com.music.laya.ui.LyricsProviderState
 import com.music.laya.ui.components.BottomTab
 import com.music.laya.ui.components.GlassNavBar
+import com.music.laya.ui.player.LocalMiniAutoMixArtwork
+import com.music.laya.ui.player.rememberMiniAutoMixArtwork
 import com.music.laya.ui.components.LocalAppBackdrop
 import com.music.laya.ui.components.LocalLiquidGlassEnabled
 import com.music.laya.ui.components.backdrop.backdrops.layerBackdrop
@@ -133,8 +139,10 @@ import com.music.laya.ui.player.PlayerSheetShape
 import com.music.laya.ui.theme.LayaTheme
 import com.music.laya.ui.utils.guardSheetFromContentTouches
 import com.music.laya.ui.player.NowPlayingScreen
+import com.music.laya.ui.player.QueueActions
 import com.music.laya.ui.screens.DetailScreen
 import com.music.laya.ui.screens.ExploreScreen
+import com.music.laya.ui.screens.MixesScreen
 import com.music.laya.ui.screens.MoodGenrePlaylistsScreen
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -198,10 +206,18 @@ import com.music.laya.data.LikeState
 import com.music.laya.data.model.LibraryPage
 import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.recognize_title
+import com.music.laya.sharedui.resources.radio
 import com.music.laya.sharedui.resources.history_empty
+import com.music.laya.sharedui.resources.history_removed
+import com.music.laya.sharedui.resources.history_remove_failed
 import com.music.laya.sharedui.resources.library_empty
 import com.music.laya.ui.screens.HistoryScreen
 import org.jetbrains.compose.resources.getString
+import com.music.laya.sharedui.resources.artist_label
+import com.music.laya.sharedui.resources.couldnt_find
+import com.music.laya.sharedui.resources.downloaded_songs
+import com.music.laya.sharedui.resources.listen_now
+import com.music.laya.sharedui.resources.something_went_wrong
 
 private fun ShelfItem.toSong() = videoId?.let {
     Song(it, title, InnertubeParser.artistFromSubtitle(subtitle), thumbnailUrl)
@@ -213,6 +229,7 @@ private fun List<ShelfItem>.songs() = mapNotNull { it.toSong() }
 @Composable
 fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val scope = rememberCoroutineScope()
+    val artistLabel = stringResource(Res.string.artist_label)
     // The process singleton: a widget intent may have built it, queue restored, before any UI existed.
     val player = remember { IosPlayer.shared(engine) }
     var tab by remember { mutableIntStateOf(0) }
@@ -220,6 +237,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     // Pushed pages (one global stack; a tab tap clears it) and the long-press menu.
     var stack by remember { mutableStateOf(emptyList<IosPage>()) }
     var menuSong by remember { mutableStateOf<Song?>(null) }
+    // The menu was opened on the account history page: it offers Remove from history.
+    var menuFromHistory by remember { mutableStateOf(false) }
+    LaunchedEffect(menuSong) { if (menuSong == null) menuFromHistory = false }
     val repeat by AppSettings.repeatMode.collectAsState()
     val shuffle by AppSettings.shuffleEnabled.collectAsState()
     val autoplay by AppSettings.autoplay.collectAsState()
@@ -269,6 +289,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     var homePaging by remember { mutableStateOf(false) }
     var homePending by remember { mutableIntStateOf(0) }
     var recentsLoading by remember { mutableStateOf(false) }
+    // Home's mood chips, as MainViewModel.selectHomeChip: the picked chip's feed loads beside Home's own.
+    var homeChips by remember { mutableStateOf<List<MoodGenre>>(emptyList()) }
+    var homeChip by remember { mutableStateOf<MoodGenre?>(null) }
+    var homeChipShelves by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
+    var homeChipJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     fun publishHome(shelves: List<HomeShelf>, prepend: Boolean = false) {
         if (prepend) {
             val titles = shelves.map { it.title.lowercase() }.toSet()
@@ -288,7 +313,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         homePending = 1 + YtMusicRepository.HOME_SUPPLEMENT_BROWSE_IDS.size
         launch {
             YtMusicRepository.home()
-                .onSuccess { homeContinuation = it.continuation; publishHome(it.shelves) }
+                .onSuccess { homeContinuation = it.continuation; homeChips = it.chips; publishHome(it.shelves) }
                 .onFailure { if (home !is UiState.Success) home = UiState.Error(friendly(it)) }
             homePending--
         }
@@ -341,6 +366,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     // Library: same calls MainViewModel.fetchLibrary makes (liked songs beyond page one are synced into LikeState).
     var library by remember { mutableStateOf<UiState<LibraryPage>>(UiState.Loading) }
     var libraryRefreshing by remember { mutableStateOf(false) }
+    var homeRefreshing by remember { mutableStateOf(false) }
     suspend fun loadLibrary() {
         library = YtMusicRepository.library().fold(
             onSuccess = { page ->
@@ -349,22 +375,62 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 }
                 if (page.isEmpty) UiState.Error(getString(Res.string.library_empty)) else UiState.Success(page.copy(likedContinuation = null))
             },
-            onFailure = { UiState.Error(it.message ?: "Error") },
+            onFailure = { UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
         )
     }
     val sessionVersion by IosAuth.sessionVersion.collectAsState()
+    // Radio: the signed-in "Mixed for you" cards, fetched the first time the tab opens
+    // and again for a different account (MainViewModel's onMixesShown).
+    var mixes by remember { mutableStateOf<UiState<List<KeyedMix>>>(UiState.Loading) }
+    var mixesRefreshing by remember { mutableStateOf(false) }
+    suspend fun loadMixes() {
+        mixes = YtMusicRepository.mixedForYouKeyed().fold({ UiState.Success(it) }, { UiState.Error(friendly(it)) })
+    }
+    var mixesLoadedFor by remember { mutableStateOf<Int?>(null) }
+    // Signed out, Radio's stations come from the moods instead (YtMusicRepository.moodStations).
+    var moodStations by remember { mutableStateOf<UiState<List<HomeShelf>>>(UiState.Loading) }
+    LaunchedEffect(tab == 2, signedIn) {
+        if (tab != 2 || signedIn || moodStations is UiState.Success) return@LaunchedEffect
+        moodStations = UiState.Loading
+        moodStations = YtMusicRepository.moodStations().fold({ UiState.Success(it) }, { UiState.Error(friendly(it)) })
+    }
+    LaunchedEffect(tab == 2, signedIn, sessionVersion) {
+        if (!signedIn) mixesLoadedFor = null
+        else if (tab == 2 && mixesLoadedFor != sessionVersion) {
+            mixesLoadedFor = sessionVersion
+            mixes = UiState.Loading
+            loadMixes()
+        }
+    }
     // Keyed on the identity too: switching account or profile keeps signedIn true but changes whose library this is.
     LaunchedEffect(signedIn, sessionVersion) {
         if (signedIn) { library = UiState.Loading; loadLibrary(); loadHome() }
         else { library = UiState.Loading; stack = stack.filterNot { it is IosPage.Account || it is IosPage.History } }
     }
+    /** As MainViewModel.removeFromHistory: the row goes at once and comes back if YouTube refuses. */
+    fun removeFromHistory(songs: List<Song>) {
+        val page = stack.lastOrNull { it is IosPage.History } as? IosPage.History ?: return
+        val ids = songs.mapTo(HashSet()) { it.videoId }
+        val shown = (page.songs as? UiState.Success)?.data ?: return
+        val left = shown.filterNot { it.videoId in ids }
+        scope.launch {
+            val emptied = UiState.Error(getString(Res.string.history_empty))
+            stack = stack.map { if (it === page) IosPage.History(if (left.isEmpty()) emptied else UiState.Success(left)) else it }
+            val removed = YtMusicRepository.removeFromHistory(ids).isSuccess
+            if (!removed) stack = stack.map { if (it is IosPage.History) page else it }
+            IosPlayerHost.messages.value =
+                getString(if (removed) Res.string.history_removed else Res.string.history_remove_failed)
+        }
+    }
     fun openHistory() {
-        val loading = IosPage.History(UiState.Loading)
+        // The last fetch shows at once; the fresh one replaces it.
+        val cached = YtMusicRepository.cachedHistory()?.takeIf { it.isNotEmpty() }
+        val loading = IosPage.History(cached?.let { UiState.Success(it) } ?: UiState.Loading)
         stack = stack + loading
         scope.launch {
             val songs = YtMusicRepository.history().fold(
                 { if (it.isEmpty()) UiState.Error(getString(Res.string.history_empty)) else UiState.Success(it) },
-                { UiState.Error(it.message ?: "Error") },
+                { if (cached != null) UiState.Success(cached) else UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
             )
             stack = stack.map { if (it === loading) IosPage.History(songs) else it }
         }
@@ -410,6 +476,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val downloaded by IosDownloads.savedIds.collectAsState()
     fun canLikeOnLockScreen(song: Song?) = signedIn && song != null && song.localUri == null &&
         song.videoId !in downloaded && SourceRegistry.parseTrackKey(song.videoId) == null
+    // The colour background behind every page follows the playing song's artwork.
+    LaunchedEffect(player.song?.thumbnailUrl) {
+        com.music.laya.ui.theme.AmbientArtwork.url.value =
+            player.song?.thumbnailUrl.artworkAt(com.music.laya.data.model.ROW_ART_PX)
+    }
     LaunchedEffect(player) {
         player.onRemoteLike = { player.song?.takeIf(::canLikeOnLockScreen)?.let { toggleLike(it.videoId) } }
         snapshotFlow { player.song.let { canLikeOnLockScreen(it) to (it != null && isLiked(it.videoId)) } }
@@ -456,7 +527,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                     command == "search" -> {
                         nowPlayingOpen = false
                         stack = emptyList()
-                        tab = 3
+                        tab = 4
                     }
                     // The Control Center control / Shortcuts action: straight to listening.
                     command == "recognize" -> {
@@ -483,6 +554,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    var queuePlaylistSongs by remember { mutableStateOf<List<Song>?>(null) }
     var infoTarget by remember { mutableStateOf<Song?>(null) }
     var sleepPicker by remember { mutableStateOf(false) }
     var testSheet by remember { mutableStateOf<String?>(null) } // only set by the LAYA_OPEN=player-output|pipeline hook
@@ -627,7 +699,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         suggestions = emptyList(); typeahead = emptyList()
         IosSearchHistory.recordAddon(q)
         addonJob?.cancel()
-        val addons = SourceRegistry.active().filterIsInstance<AddonSource>()
+        val addons = SourceRegistry.activeForAddonSearch()
         if (addons.isEmpty()) { addonResults = UiState.Error(noAddons); return }
         addonResults = UiState.Loading
         addonJob = scope.launch {
@@ -653,7 +725,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         results = UiState.Loading
         results = YtMusicRepository.searchPage(query, filter, anonymous).fold(
             { searchContinuation = it.continuation; UiState.Success(it.rows) },
-            { UiState.Error(it.message ?: "Error") },
+            { UiState.Error(it.message ?: getString(Res.string.something_went_wrong)) },
         )
     }
     fun onQueryChange(value: String) {
@@ -719,7 +791,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     // Per-provider picker state, mirroring MainViewModel: hits are kept so choosing one is instant.
     var providerStates by remember(song?.videoId) { mutableStateOf(LyricsSource.entries.associateWith { LyricsProviderState.NOT_FETCHED }) }
     val providerHits = remember(song?.videoId) { mutableMapOf<LyricsSource, LyricsRepository.Result>() }
-    var selectedProvider by remember(song?.videoId) { mutableStateOf<LyricsSource?>(null) }
+    // A provider picked by hand for this track earlier, kept across leaving it and coming back.
+    var selectedProvider by remember(song?.videoId) { mutableStateOf(song?.let { LyricsPicks[it.videoId] }) }
     fun showLyrics(r: LyricsRepository.Result) { lyrics = r.lines; lyricsSource = r.source; lyricsChecked = true }
     fun fetchProvider(s: LyricsSource?) { // null = the automatic lookup across all enabled providers
         val sg = song ?: return
@@ -752,10 +825,18 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     }
     LaunchedEffect(song?.videoId, durationKnown, syncedLyrics, lyricsSourceSet) {
         if (song == null || !durationKnown) return@LaunchedEffect
+        // The hand-picked provider alone, as MainViewModel.loadLyrics; the usual race only on a miss.
+        val pick = selectedProvider?.takeIf { syncedLyrics && it in lyricsSourceSet }
+        if (pick != null) {
+            fetchProvider(pick)
+            snapshotFlow { providerStates[pick] }.first { it == LyricsProviderState.FOUND || it == LyricsProviderState.NOT_FOUND }
+            if (providerStates[pick] == LyricsProviderState.FOUND) return@LaunchedEffect
+        }
         fetchProvider(null)
     }
     fun selectProvider(s: LyricsSource) {
         selectedProvider = s
+        song?.let { LyricsPicks[it.videoId] = s }
         when (providerStates[s]) {
             LyricsProviderState.FOUND -> providerHits[s]?.let(::showLyrics)
             LyricsProviderState.NOT_FETCHED, null -> fetchProvider(s)
@@ -849,7 +930,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
         }
     }
 
-    val replayOpen = stack.lastOrNull() === IosPage.Replay || replayStory != null || showReplayShare || (tab == 2 && stack.isEmpty())
+    val replayOpen = stack.lastOrNull() === IosPage.Replay || replayStory != null || showReplayShare || (tab == 3 && stack.isEmpty())
     val (replay, setReplayPeriod) = rememberReplayState(replayOpen)
     val replayCards = remember(replay.summary) { replay.summary?.takeUnless { it.isEmpty }?.cards().orEmpty() }
     // Debug only: SIMCTL_CHILD_LAYA_SEED_PLAYS=1 fills the listening record with fake plays (never set in normal use).
@@ -891,8 +972,8 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                 }
             }
             what == "downloads" -> stack = stack + IosPage.Detail(IosDownloads.page())
-            what == "search" -> tab = 3
-            what == "library" -> tab = 2
+            what == "search" -> tab = 4
+            what == "library" -> tab = 3
             what == "sources" -> stack = stack + IosPage.Sources
             what == "party" -> stack = stack + IosPage.ListenTogether
             what.startsWith("artist:") -> YtMusicRepository.search(what.removePrefix("artist:"), SearchFilter.ARTISTS).getOrNull()
@@ -908,10 +989,13 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     val homePull = rememberPullToRefreshState()
     val explorePull = rememberPullToRefreshState()
     val libraryPull = rememberPullToRefreshState()
+    val mixesList = rememberLazyListState()
+    val mixesPull = rememberPullToRefreshState()
     val tabs = remember {
         listOf(
             BottomTab("Home", Icons.Filled.Home),
             BottomTab("Explore", Icons.Filled.Explore),
+            BottomTab("Radio", Icons.Filled.Radio),
             BottomTab("Library", Icons.Filled.LibraryMusic),
             BottomTab("Search", Icons.Filled.Search),
         )
@@ -923,13 +1007,18 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
     LayaTheme(darkTheme = darkTheme, systemFont = systemFont) {
         // The glass samples this layer; opaque like Android's, so it has something to blur.
         val windowBackground = MaterialTheme.colorScheme.background
+        // Melo's colour background behind every page (drawn in its own layer below), inside the layer
+        // the glass samples. iOS's icons all draw the gradient logo.
+        val ambient = com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false))
         val appBackdrop = rememberLayerBackdrop(onDraw = remember(windowBackground) { { drawRect(windowBackground); drawContent() } })
-        CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer) {
+        CompositionLocalProvider(LocalLiquidGlassEnabled provides true, LocalAppBackdrop provides appBackdrop, LocalImageSharer provides IosImageSharer, com.music.laya.ui.share.LocalVideoSharer provides IosVideoSharer) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 // In landscape the notch and Dynamic Island sit on a side edge; keep pages, tab bar and mini player clear of it.
                 BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
                     val noPadding = PaddingValues(bottom = barHeight)
                     Box(Modifier.fillMaxSize().layerBackdrop(appBackdrop).nestedScroll(navBarScroll)) {
+                        // In a layer of its own, so its drift redraws only itself, not the pages over it.
+                        com.music.laya.ui.theme.AmbientBackgroundLayer(ambient, Modifier.matchParentSize())
                         // A detail page draws its own header up under the status bar (as Android's edge to edge does), so only the other pages are inset here.
                         // Pages that draw behind the status bar themselves (Android's edge-to-edge detail and Replay).
                         val onDetail = stack.lastOrNull() is IosPage.Detail || stack.lastOrNull() === IosPage.Replay
@@ -986,7 +1075,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                             onSectionItemClick = { item ->
                                                 item.browseId?.let { openDetail(it, item.title, item.subtitle, item.thumbnailUrl, BrowseType.ALBUM) }
                                             },
-                                            onArtistClick = { id, name -> openDetail(id, name, "Artist", null, BrowseType.ARTIST) },
+                                            onArtistClick = { id, name -> openDetail(id, name, artistLabel, null, BrowseType.ARTIST) },
                                             onAddSuggested = {}, // needs sign-in
                                             contentPadding = noPadding,
                                             activeShelf = activeShelf,
@@ -1012,7 +1101,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         // Android starts a station off the tapped track; AutoPlay carries on as the radio here.
                                         onPlaySong = { player.play(listOf(it), 0) },
                                         onOpenArtist = { id, name ->
-                                            if (id != null) openDetail(id, name, "Artist", null, BrowseType.ARTIST)
+                                            if (id != null) openDetail(id, name, artistLabel, null, BrowseType.ARTIST)
                                             else scope.launch {
                                                 YtMusicRepository.search(name, SearchFilter.ARTISTS).getOrNull()
                                                     ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
@@ -1079,7 +1168,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         currentSong = song,
                                         isPlaying = player.isPlaying,
                                         onSongClick = { songs, i -> player.play(songs, i) },
-                                        onSongLongPress = { menuSong = it },
+                                        onSongLongPress = { menuSong = it; menuFromHistory = true },
                                         onSongSwipe = ::swipe,
                                         onRetry = { stack = stack.dropLast(1); openHistory() },
                                         contentPadding = PaddingValues(top = 56.dp, bottom = barHeight),
@@ -1120,11 +1209,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 },
                                 onItemLongPress = { it.toSong()?.let { s -> menuSong = s } },
                                 onRetry = { scope.launch { home = UiState.Loading; loadHome() } },
-                                refreshing = false,
-                                onRefresh = { scope.launch { loadHome() } },
+                                refreshing = homeRefreshing,
+                                onRefresh = { scope.launch { homeRefreshing = true; loadHome(); homeRefreshing = false } },
                                 pullState = homePull,
                                 contentPadding = noPadding,
-                                title = "Listen now",
+                                title = stringResource(Res.string.listen_now),
                                 signedIn = signedIn,
                                 onSignIn = { showLogin = true },
                                 currentSong = song,
@@ -1132,6 +1221,25 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 onLoadMore = ::loadMoreHome,
                                 loadingMore = homePaging || homePending > 0,
                                 recentlyPlayedLoading = recentsLoading,
+                                dials = com.music.laya.ui.home.HomeDialInputs(
+                                    chips = homeChips,
+                                    selectedChip = homeChip,
+                                    onSelectChip = { picked ->
+                                        homeChip = picked
+                                        homeChipJob?.cancel()
+                                        if (picked != null) {
+                                            homeChipShelves = UiState.Loading
+                                            homeChipJob = scope.launch {
+                                                YtMusicRepository.home(picked.params)
+                                                    .onSuccess { homeChipShelves = UiState.Success(it.shelves) }
+                                                    .onFailure { homeChipShelves = UiState.Error(friendly(it)) }
+                                            }
+                                        }
+                                    },
+                                    chipShelves = homeChipShelves,
+                                    library = (library as? UiState.Success)?.data,
+                                    onHistory = if (signedIn) ({ openHistory() }) else null,
+                                ),
                             )
                             1 -> ExploreScreen(
                                 state = explore,
@@ -1143,7 +1251,22 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                 pullState = explorePull,
                                 contentPadding = noPadding,
                             )
-                            2 -> LibraryScreen(
+                            2 -> MixesScreen(
+                                title = stringResource(Res.string.radio),
+                                state = mixes,
+                                signedIn = signedIn,
+                                listState = mixesList,
+                                // A mix opens as the playlist it is, as its card does on Home.
+                                onItemClick = ::openShelfItem,
+                                onRetry = { scope.launch { mixes = UiState.Loading; loadMixes() } },
+                                onSignIn = { showLogin = true },
+                                moodStations = moodStations,
+                                refreshing = mixesRefreshing,
+                                onRefresh = { scope.launch { mixesRefreshing = true; loadMixes(); mixesRefreshing = false } },
+                                pullState = mixesPull,
+                                contentPadding = noPadding,
+                            )
+                            3 -> LibraryScreen(
                                 signedIn = signedIn,
                                 state = library,
                                 listState = libraryList,
@@ -1175,7 +1298,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     LibraryLink(
                                         item = ShelfItem(
                                             title = stringResource(Res.string.downloads),
-                                            subtitle = "Downloaded songs",
+                                            subtitle = stringResource(Res.string.downloaded_songs),
                                             thumbnailUrl = null,
                                             videoId = null,
                                             browseId = DOWNLOADS_BROWSE_ID,
@@ -1287,7 +1410,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     Modifier.align(Alignment.TopStart).fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    if (tab == 3) {
+                                    if (tab == 4) {
                                         SearchField(
                                             query = query,
                                             onQueryChange = ::onQueryChange,
@@ -1321,13 +1444,17 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                     } else Spacer(Modifier.weight(1f))
                                     IosTopPill(
                                         account = account,
-                                        onHistory = if (tab == 2 && signedIn) ({ openHistory() }) else null,
+                                        onHistory = if (tab == 3 && signedIn) ({ openHistory() }) else null,
                                         onAccount = { stack = stack + IosPage.Settings },
                                     )
                                 }
                             } else {
                                 IconButton(
-                                    onClick = { stack = stack.dropLast(1) },
+                                    // A settings category closes before Settings itself does.
+                                    onClick = {
+                                        val onSettings = stack.lastOrNull() === IosPage.Settings
+                                        if (!(onSettings && com.music.laya.ui.screens.SettingsPages.closePage())) stack = stack.dropLast(1)
+                                    },
                                     modifier = Modifier.align(Alignment.TopStart).then(if (onDetail) Modifier.windowInsetsPadding(WindowInsets.statusBars) else Modifier).padding(8.dp)
                                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape),
                                 ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
@@ -1342,6 +1469,9 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             }
                         }
                     }
+                    // AutoMix's artwork transition in the docked mini player, owned here where the queue is known.
+                    val miniAutoMixArtwork = rememberMiniAutoMixArtwork(song, player.queue, player.index)
+                    CompositionLocalProvider(LocalMiniAutoMixArtwork provides miniAutoMixArtwork) {
                     GlassNavBar(
                         tabs = tabs,
                         selectedIndex = tab,
@@ -1360,6 +1490,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             barHeight = with(density) { it.height.toDp() }
                         },
                     )
+                    }
 
                     AnimatedVisibility(
                         visible = !onboardingComplete,
@@ -1390,13 +1521,16 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                             onAddToQueue = { player.addToQueue(m) },
                             // Pushed over whatever is under the player, which closes so the page is seen.
                             onOpenAlbum = { sheetMotion.close(); openDetail(it, m.albumName ?: m.title, m.artist, m.thumbnailUrl, BrowseType.ALBUM) },
-                            onOpenArtist = { sheetMotion.close(); openDetail(it, m.artist, "Artist", null, BrowseType.ARTIST) },
+                            onOpenArtist = { sheetMotion.close(); openDetail(it, m.artist, artistLabel, null, BrowseType.ARTIST) },
                             liked = if (signedIn) isLiked(m.videoId) else null,
                             onToggleLike = { toggleLike(m.videoId) },
                             disliked = if (signedIn) isDisliked(m.videoId) else null,
                             onToggleDislike = { toggleDislike(m.videoId) },
                             onAddToPlaylist = if (signedIn) ({ playlistTarget = m }) else null,
                             onSongInfo = { infoTarget = m },
+                            onRemoveFromHistory = if (menuFromHistory && YtMusicRepository.canRemoveFromHistory(m.videoId)) {
+                                { removeFromHistory(listOf(m)) }
+                            } else null,
                             // Android: sleep timer and Copy log are the player menu's own rows.
                             sleepStatus = player.sleepMinutes?.let { "$it min" } ?: if (player.sleepAfterTrack) "End of track" else null,
                             onSleepTimer = if (nowPlayingOpen) ({ sleepPicker = true }) else null,
@@ -1413,6 +1547,7 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                         )
                     }
                     playlistTarget?.let { IosPlaylistPicker(it, onDismiss = { playlistTarget = null }, notify = IosPlayerHost::showMessage) }
+                    queuePlaylistSongs?.let { IosPlaylistPicker(it, onDismiss = { queuePlaylistSongs = null }, notify = IosPlayerHost::showMessage) }
                     infoTarget?.let { IosSongInfoDialog(it, onDismiss = { infoTarget = null }) }
                     if (sleepPicker) IosSleepTimerDialog(player, onDismiss = { sleepPicker = false })
                     testSheet?.let { which ->
@@ -1517,6 +1652,14 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         onRemoveFromQueue = player::removeAt,
                                         onMoveInQueue = player::move,
                                         onClearQueue = player::clearUserQueue,
+                                        queueActions = remember(player, signedIn) {
+                                            QueueActions(
+                                                remove = { player.removeEntries(it) },
+                                                undo = { player.undoRemoval(it) },
+                                                moveToUserQueue = { player.moveToUserQueue(it) },
+                                                addToPlaylist = if (signedIn) ({ queuePlaylistSongs = it }) else null,
+                                            )
+                                        },
                                         onOpenMenu = { menuSong = song },
                                         onOpenAlbum = { id ->
                                             sheetMotion.close()
@@ -1527,11 +1670,11 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
                                         onOpenArtist = { id, name ->
                                             sheetMotion.close()
                                             val known = id ?: song.artistId?.takeIf { name == song.artist }
-                                            if (known != null) openDetail(known, name, "Artist", null, BrowseType.ARTIST)
+                                            if (known != null) openDetail(known, name, artistLabel, null, BrowseType.ARTIST)
                                             else scope.launch {
                                                 YtMusicRepository.findArtistPageId(name).getOrNull()
-                                                    ?.let { openDetail(it, name, "Artist", null, BrowseType.ARTIST) }
-                                                    ?: IosPlayerHost.showMessage("Couldn't find $name")
+                                                    ?.let { openDetail(it, name, artistLabel, null, BrowseType.ARTIST) }
+                                                    ?: IosPlayerHost.showMessage(Res.string.couldnt_find, name)
                                             }
                                         },
                                         onOpenPlaybackSource = {},

@@ -23,6 +23,7 @@
     <string name="search">Rechercher</string>
     <string name="clear_search">Effacer la recherche</string>
     <string name="library">Bibliothèque</string>
+    <string name="radio">Radio</string>
     <string name="home">Accueil</string>
     <string name="play">Lecture</string>
     <string name="explore">Explorer</string>
@@ -512,6 +513,13 @@
     <string name="lyrics_share_description">Les lignes que vous avez choisies, mises en page sur une carte avec la pochette.</string>
     <string name="lyrics_share_story">Convertir en story</string>
     <string name="lyrics_share_story_revert">Revenir à la carte</string>
+    <string name="lyrics_share_video">Vidéo</string>
+    <string name="lyrics_share_image">Image</string>
+    <string name="lyrics_share_saving">Enregistrement…</string>
+    <string name="lyrics_share_gradient">Dégradé</string>
+    <string name="lyrics_share_canvas">Toile</string>
+    <string name="lyrics_share_show_logo">Afficher le logo Laya</string>
+    <string name="lyrics_share_making_video">Création de la vidéo…</string>
     <string name="listening_shape">Votre profil d\'écoute</string>
     <string name="member_since">Membre depuis</string>
     <string name="member_since_value">Membre depuis %1$s</string>
@@ -886,7 +894,7 @@
     <string name="pipeline_loudness">Intensité</string>
     <string name="pipeline_loudness_gain">Gain</string>
     <string name="pipeline_loudness_measured">Mesurée</string>
-    <string name="pipeline_bit_exact">Bit-exact</string>
+    <string name="pipeline_bit_exact">Exact au bit près</string>
     <string name="loudness_measuring">Mesure…</string>
     <string name="loudness_gain_db">%1$s dB</string>
     <string name="loudness_lufs">%1$s LUFS</string>
@@ -1125,7 +1133,7 @@
 
     <string name="eq_preset_treble_cut">Atténuation des aigus</string>
 
-    <string name="eq_preset_loudness">Loudness</string>
+    <string name="eq_preset_loudness">Intensité</string>
 
     <string name="eq_preset_spoken_word">Parole</string>
 
@@ -1305,7 +1313,9 @@
     <string name="artist_signatures_url_hint">https://signatures.example.com</string>
     <string name="artist_signatures_unconfigured">Non configuré — touchez pour définir l\'URL de l\'API</string>
     <string name="artist_signatures_test_failed">Impossible de joindre l\'API à cette URL</string>
-    <string name="search_source_addons">Addons</string>
+    <string name="artist_signatures_builtin">Serveur intégré</string>
+    <string name="artist_signatures_online">En ligne</string>
+    <string name="search_source_addons">Modules complémentaires</string>
     <string name="search_addons_none">Aucun addon n\'est activé. Ajoutez-en un dans Réglages → Sources.</string>
     <string name="app_icon">Icône de l\'app</string>
     <string name="app_icon_default">Par défaut</string>
@@ -1404,4 +1414,49 @@
     <string name="lossless_verify_expired_notice">La vérification de %1$s a expiré. Réactivez-le dans Sources pour garder le sans perte.</string>
     <string name="lossless_verify_expired">Vérification expirée · réactivez-le</string>
     <string name="lossless_verified_until">Vérifié · jusqu\'au %1$s</string>
+    <string name="best_part_description">Aller au meilleur passage</string>
+    <string name="show_best_part">Bouton « Meilleur passage »</string>
+    <string name="show_best_part_subtitle">Un bouton sur la pochette qui saute au passage du morceau le plus réécouté</string>
+    <string name="lyrics_share_video_silent">Impossible de récupérer l’audio du titre, cette vidéo est donc sans son.</string>
+    <string name="choose_in_youtube_music">Choisir dans YouTube Music</string>
+    <string name="lock_screen_player">Lecteur sur l’écran de verrouillage</string>
+    <string name="lock_screen_player_subtitle">Pochette, paroles synchronisées et commandes sur l’écran de verrouillage pendant la lecture</string>
+    <string name="lock_screen_player_needs_setup">Accordez les autorisations de configuration pour l’activer. Appuyez pour configurer</string>
+    <string name="lock_screen_previous">Précédent</string>
+    <string name="lock_screen_play_pause">Lecture ou pause</string>
+    <string name="lock_screen_next">Suivant</string>
+    <string name="lock_screen_like">J’aime</string>
+    <string name="lock_screen_unlock">Déverrouiller</string>
+    <string name="lock_screen_setup">Configuration de l’écran de verrouillage</string>
+    <string name="lock_screen_setup_subtitle">Accordez toutes ces autorisations pour activer le lecteur sur l’écran de verrouillage</string>
+    <string name="lock_screen_setup_overlay">Afficher par-dessus les autres apps</string>
+    <string name="lock_screen_setup_overlay_subtitle">Permet d’ouvrir le lecteur par-dessus l’écran de verrouillage</string>
+    <string name="lock_screen_setup_full_screen">Notifications plein écran</string>
+    <string name="lock_screen_setup_full_screen_subtitle">Permet d’ouvrir le lecteur depuis une notification sur l’écran de verrouillage</string>
+    <string name="lock_screen_setup_battery">Batterie : aucune restriction</string>
+    <string name="lock_screen_setup_battery_subtitle">Empêche le système de fermer le lecteur pendant la lecture</string>
+    <string name="lock_screen_setup_manufacturer">Autorisations du fabricant</string>
+    <string name="lock_screen_setup_manufacturer_subtitle">Sur Xiaomi, vivo et téléphones similaires, autorisez aussi Afficher sur l’écran de verrouillage, les fenêtres pop-up en arrière-plan et le démarrage automatique</string>
+    <string name="lock_screen_setup_grant">Autoriser</string>
+    <string name="lock_screen_setup_open">Ouvrir les paramètres</string>
+    <string name="lock_screen_options">Options</string>
+    <string name="lock_screen_lyrics_interactive">Paroles interactives</string>
+    <string name="lock_screen_lyrics_interactive_subtitle">Faites défiler les paroles et touchez une ligne pour y aller</string>
+    <string name="lock_screen_progress">Barre de progression</string>
+    <string name="lock_screen_progress_subtitle">Affiche une barre de lecture avec le temps écoulé et la durée totale</string>
+    <string name="remove_from_history">Retirer de l\'historique</string>
+    <string name="history_removed">Retiré de l\'historique</string>
+    <string name="history_remove_failed">Impossible de retirer de l\'historique</string>
+    <string name="lock_screen_art_transition">Transition de pochette</string>
+    <string name="lock_screen_art_transition_subtitle">Fond la pochette dans celle du titre suivant pendant que Automix les mixe.</string>
+    <string name="all_cache_cleared">Tout le cache a été vidé</string>
+    <string name="lossless_expiring_title">La session %1$s se termine bientôt</string>
+    <string name="lossless_expiring_body">Se termine dans %1$d min. Touchez pour la renouveler.</string>
+    <string name="lossless_renew_failed_body">Renouvellement automatique impossible. Se termine dans %1$d min ; touchez pour réessayer.</string>
+    <string name="lossless_renewed_until">%1$s renouvelé jusqu’à %2$s</string>
+    <string name="lossless_renew_failed">Impossible de renouveler %1$s. Renouvelez-le vous-même depuis le module.</string>
+    <string name="lossless_channel">Sessions sans perte</string>
+    <string name="direct_source_stream">Lecture directe depuis la source</string>
+    <string name="direct_source_stream_subtitle">Lit depuis les sources au-dessus de YouTube dès la première note, sans changement en cours de morceau</string>
+    <string name="direct_source_stream_in_party">Désactivé pendant une session Écouter ensemble</string>
 </resources>

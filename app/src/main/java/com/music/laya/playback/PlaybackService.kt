@@ -1,8 +1,13 @@
 package com.music.laya.playback
 
+import com.music.laya.data.settings.MusicVideoChoice
+import com.music.laya.data.aifilter.AiSongs
+import android.app.KeyguardManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
@@ -91,6 +96,7 @@ import com.music.laya.playback.audio.PcmEncoding
 import com.music.laya.playback.audio.SourceDescriptor
 import com.music.laya.playback.audio.bluetooth.BluetoothAudioTracker
 import com.music.laya.playback.audio.bluetooth.BluetoothTelemetry
+import com.music.laya.LockScreenActivity
 import com.music.laya.MainActivity
 import com.music.laya.data.listentogether.ListenTogether
 import com.music.laya.data.listentogether.partyQueueIndexOf
@@ -101,7 +107,9 @@ import com.music.laya.data.innertube.InnertubeParser
 import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.lyrics.EmbeddedLyrics
 import com.music.laya.data.lyrics.LyricLine
+import com.music.laya.data.lyrics.LyricsPicks
 import com.music.laya.data.lyrics.LyricsRepository
+import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.NOTIFICATION_ART_PX
 import com.music.laya.data.model.PlaybackSourceType
 import com.music.laya.data.model.SearchFilter
@@ -207,6 +215,12 @@ const val EXTRA_SWAP_MEDIA_ITEM = "laya.swap.media_item"
 
 /** How long a preload of the next track waits for read-ahead's lossless lookup before racing. */
 private const val PRELOAD_WARM_UP_WAIT_MS = 20_000L
+/** How often [PlaybackService.driveDirectWindow] checks whether the next track's window has opened. */
+private const val DIRECT_WINDOW_STEP_MS = 500L
+/** How long the playhead must run on its own after a seek before the direct window may open. */
+private const val DIRECT_SEEK_SETTLE_MS = 2_000L
+/** Closer than this to the blend, the direct window opens without waiting for a seek to settle. */
+private const val DIRECT_URGENT_MS = 10_000L
 
 /** Start playing once the swapped-in version is in place: the caller paused while it resolved. */
 const val EXTRA_SWAP_PLAY = "laya.swap.play"
@@ -216,6 +230,22 @@ const val EXTRA_SWAP_PLAY = "laya.swap.play"
 private const val WATCH_SESSION_FOREGROUND_MS = 6 * 60 * 60 * 1000L
 
 const val ACTION_TOGGLE_FAVORITE = "com.music.laya.action.TOGGLE_FAVORITE"
+
+/**
+ * The playing track's lyrics as the service fetched them, published for the
+ * lock-screen player so it needs no lookup of its own. Null while there are none.
+ */
+object ServiceLyrics {
+    val lines = kotlinx.coroutines.flow.MutableStateFlow<List<LyricLine>?>(null)
+
+    /**
+     * What the app's own player settled on for a track — its automatic pick or the provider picked by
+     * hand — once its lookup has finished: the lock screen shows that rather than [lines], so the two
+     * never disagree (the service's lookup can land on another provider). Null lines: none found.
+     */
+    data class Shown(val videoId: String, val lines: List<LyricLine>?)
+    val shown = kotlinx.coroutines.flow.MutableStateFlow<Shown?>(null)
+}
 
 /** Session command used by the media notification's and the 4×1 widget's Shuffle button. */
 const val ACTION_TOGGLE_SHUFFLE = "com.music.laya.action.TOGGLE_SHUFFLE"
@@ -823,6 +853,7 @@ class PlaybackService : MediaLibraryService() {
     private val upgradeQualityCommand = SessionCommand(ACTION_UPGRADE_QUALITY, Bundle.EMPTY)
     private val swapVersionCommand = SessionCommand(ACTION_SWAP_VERSION, Bundle.EMPTY)
     private val queueDragCommand = SessionCommand(ACTION_QUEUE_DRAG, Bundle.EMPTY)
+    private val queueScreenEdits = QueueScreenEdits()
 
     private var favoriteActionJob: Job? = null
     private var stationActionJob: Job? = null
@@ -878,7 +909,9 @@ class PlaybackService : MediaLibraryService() {
     private val sessionSongHistory = mutableListOf<Song>()
 
     private var serviceLyricsJob: Job? = null
-    private var serviceLyrics: List<LyricLine>? = null
+    private var serviceLyrics: List<LyricLine>?
+        get() = ServiceLyrics.lines.value
+        set(value) { ServiceLyrics.lines.value = value }
     private var lastPublishedSubtitle: String? = null
     private var lyricsTickerJob: Job? = null
 
@@ -1009,6 +1042,7 @@ class PlaybackService : MediaLibraryService() {
         ) {
             val exoPlayer = player ?: return
             if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                lastSeekAt = SystemClock.elapsedRealtime()
                 if (exoPlayer.isPlaying) pushDiscordPresence(exoPlayer)
                 updateLyricSubtitle()
                 // The watch extrapolates its progress ring from the last
@@ -1185,7 +1219,29 @@ class PlaybackService : MediaLibraryService() {
                 // its old seed memoized. Detect that state at its source and
                 // make the current track eligible for a fresh load.
                 refreshAutoplayIfQueueEmpty()
+                checkQueuedAutoplayForAi()
             }
+        }
+    }
+
+    /**
+     * Has what radio and AutoPlay lined up looked up, and drops any already known to be
+     * AI-generated. [YtMusicRepository.radio] filters what it can before handing songs over;
+     * this catches the ones whose lookup was still in flight then. The listener's own picks stay.
+     */
+    private fun checkQueuedAutoplayForAi() {
+        val queue = mediaSession?.player ?: return
+        val upcoming = (queue.currentMediaItemIndex + 1 until queue.mediaItemCount).map(queue::getMediaItemAt)
+        AiSongs.request(upcoming.filter { it.fromAutoplay }.map { it.mediaId })
+        dropAiAutoplay(AiSongs.flagged.value)
+    }
+
+    private fun dropAiAutoplay(flagged: Set<String>) {
+        if (!AiSongs.hide.value || flagged.isEmpty()) return
+        val queue = mediaSession?.player ?: return
+        for (index in queue.mediaItemCount - 1 downTo queue.currentMediaItemIndex + 1) {
+            val item = queue.getMediaItemAt(index)
+            if (item.fromAutoplay && item.mediaId in flagged) queue.removeMediaItem(index)
         }
     }
 
@@ -1390,6 +1446,14 @@ class PlaybackService : MediaLibraryService() {
         }
 
         bluetoothTracker.start()
+        // A provider picked by hand mid-song: redo the lookup so the lock screen follows it.
+        scope.launch(Dispatchers.Main) { LyricsPicks.version.drop(1).collect { loadLyricsForCurrentTrack() } }
+        androidx.core.content.ContextCompat.registerReceiver(
+            this,
+            screenOnReceiver,
+            IntentFilter(Intent.ACTION_SCREEN_ON),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         scope.launch {
             bluetoothTracker.telemetry.collect {
                 applyOutputRoute()
@@ -1415,6 +1479,9 @@ class PlaybackService : MediaLibraryService() {
                 val directYouTube =
                     dataSpec.uri.getQueryParameter(DIRECT_YOUTUBE_PARAMETER) == "1"
                 val sourceMediaId = mediaIdIn(dataSpec.uri)
+                // Direct Source Stream: held until it is about to play, the
+                // same as a YouTube row — see [DirectSourceGate].
+                sourceMediaId?.let { id -> runBlocking(about) { DirectSourceGate.awaitOpen(id) } }
                 // A swapped-in upgrade, exactly as for a YouTube row below:
                 // this URL is what the player agreed to when it took the swap,
                 // and every re-open has to arrive at the same bytes.
@@ -1526,6 +1593,16 @@ class PlaybackService : MediaLibraryService() {
             }
             val videoId = dataSpec.uri.getQueryParameter("v")
                 ?: return@Resolver dataSpec
+            // Direct Source Stream holds every open of a track neither playing
+            // nor next inside the window: read-ahead and ExoPlayer's early
+            // preparation alike. Not Automix's Opus reads, which measure the
+            // next track ahead on purpose and never touch a source.
+            if (!AutomixAnalysisSource.requestsYouTubeOpus(
+                    dataSpec.uri.getQueryParameter(AutomixAnalysisSource.OPUS_QUERY_PARAMETER),
+                )
+            ) {
+                runBlocking(about) { DirectSourceGate.awaitOpen(videoId) }
+            }
             // An explicit rollback is not a preference for a different
             // candidate: it means this exact YouTube rendition, immediately.
             // Answer it before StreamChoice, the module race and a pending
@@ -1905,6 +1982,7 @@ class PlaybackService : MediaLibraryService() {
         exoPlayer.addAnalyticsListener(formatListener)
 
         reportProgress()
+        watchDirectWindow()
 
         val controller = createCrossfadeController()
         crossfade = controller
@@ -1951,7 +2029,7 @@ class PlaybackService : MediaLibraryService() {
     private suspend fun resolveForCast(item: MediaItem): CastStream? = withContext(Dispatchers.IO) {
         val uri = item.localConfiguration?.uri ?: return@withContext null
         val resolver = streamResolver ?: return@withContext null
-        val resolved = resolver.resolveDataSpec(DataSpec(uri)).uri
+        val resolved = DirectSourceGate.ungated { resolver.resolveDataSpec(DataSpec(uri)) }.uri
         if (resolved.scheme != "http" && resolved.scheme != "https") {
             null
         } else {
@@ -3545,6 +3623,22 @@ class PlaybackService : MediaLibraryService() {
             .apply { if (isTv) putExtra(PlayerDeepLink.EXTRA_OPEN_PLAYER, true) },
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
+
+    /**
+     * Puts the lock-screen player up as the screen comes on over a locked
+     * keyguard with music playing. On screen-on rather than screen-off, so a
+     * phone put down and never woken has nothing started for it. See
+     * [LockScreenActivity.show] for how it gets there from the background.
+     */
+    private val screenOnReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (!AppSettings.lockScreenPlayer.value || isTv) return
+            val p = player ?: return
+            val playing = p.isPlaying || (p.playWhenReady && p.playbackState == Player.STATE_BUFFERING)
+            val locked = getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
+            if (playing && locked) LockScreenActivity.show(this@PlaybackService)
+        }
+    }
 
     /** Android TV / Google TV: the same test as the TV build's DeviceType.isTv. */
     private val isTv: Boolean by lazy {
@@ -5418,6 +5512,39 @@ class PlaybackService : MediaLibraryService() {
     }
 
     /** What [resolveWithModulePriority] settled on. */
+    /**
+     * Direct Source Stream's resolve: the higher-ranked sources first and alone,
+     * YouTube only when none of them answers in time — see [DirectSourceGate].
+     * Nothing races; a source's answer plays to the end. A YouTube start is the
+     * one case handed to [QualityUpgrade].
+     */
+    private suspend fun resolveDirect(videoId: String, target: TrackMatcher.Target): Resolved {
+        val direct = runCatching { DirectSourceGate.lookup(videoId, target) }
+            .onFailure { if (it is CancellationException) throw it }
+            .getOrNull()
+        if (direct != null) return Resolved.Module(direct)
+        val running = DirectSourceGate.stillLooking(videoId)
+        TrackLog.d(
+            "Laya",
+            if (running != null) {
+                "no source answered for '${target.title}' within " +
+                    "${DirectSourceGate.LOOKUP_TIMEOUT_MS / 1000}s; starting it on YouTube and still looking"
+            } else {
+                "no source served '${target.title}' directly; playing it from YouTube"
+            },
+            about = videoId,
+        )
+        val url = try {
+            StreamResolver.resolve(videoId)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            // YouTube can't serve it either: a lookup still running is all that's left.
+            return Resolved.Module(running?.await() ?: throw e)
+        }
+        DirectSourceGate.startedOnYouTube(videoId, target)
+        return Resolved.YouTube(url)
+    }
+
     private sealed interface Resolved {
         data class Module(val stream: SourceStream) : Resolved
         data class YouTube(val url: String) : Resolved
@@ -5479,6 +5606,7 @@ class PlaybackService : MediaLibraryService() {
         if (StreamChoice.substitutesRefused(videoId)) {
             return Resolved.YouTube(StreamResolver.resolve(videoId))
         }
+        if (DirectSourceGate.isActive()) return resolveDirect(videoId, target)
         NerdStats.onLosslessRaceStart(videoId)
         // Both legs are parented to the service's scope rather than to the
         // caller, so neither inherits whose track this is — see
@@ -6273,11 +6401,81 @@ class PlaybackService : MediaLibraryService() {
         }
     }
 
+    /** When the listener last seeked, so [driveDirectWindow] can tell a scrub from playback. */
+    private var lastSeekAt = 0L
+
+    /** The last reason [driveDirectWindow] held back, logged once per change. */
+    private var lastWindowReason: String? = null
+
+    /** Ticks [driveDirectWindow] for as long as the service runs. */
+    private fun watchDirectWindow() {
+        scope.launch {
+            while (isActive) {
+                driveDirectWindow()
+                delay(DIRECT_WINDOW_STEP_MS)
+            }
+        }
+    }
+
+    /**
+     * Direct Source Stream's read-ahead, and the only one it has.
+     *
+     * Tells [DirectSourceGate] what is audible, then opens the next track once
+     * the playing one is within [DirectSourceGate.WINDOW_MS] of its transition
+     * (the planned crossfade/Automix start, else the file end). Opening it
+     * releases ExoPlayer's own preparation of the next item and reads it ahead.
+     * Only while playing, and only once the playhead has run on its own for
+     * [DIRECT_SEEK_SETTLE_MS] since the last seek.
+     */
+    private fun driveDirectWindow() {
+        val exoPlayer = player ?: return
+        DirectSourceGate.onPlaying(
+            buildSet {
+                exoPlayer.currentMediaItem?.mediaId?.let(::add)
+                if (crossfade?.isTransitioning() == true) spare?.currentMediaItem?.mediaId?.let(::add)
+            },
+        )
+        fun why(reason: String) {
+            if (reason != lastWindowReason) TrackLog.d("Laya", "direct window: $reason")
+            lastWindowReason = reason
+        }
+        if (!DirectSourceGate.isActive()) return why("inactive")
+        if (!exoPlayer.isPlaying) return why("not playing")
+        val current = exoPlayer.currentMediaItem ?: return why("no current item")
+        val nextIndex = exoPlayer.nextMediaItemIndex
+        if (nextIndex == C.INDEX_UNSET) return why("no next item")
+        val next = exoPlayer.getMediaItemAt(nextIndex)
+        val duration = exoPlayer.duration
+        if (duration == C.TIME_UNSET || duration <= 0L) return why("no duration")
+        val boundary = crossfade?.plannedTransitionFor(current.mediaId) ?: duration
+        val speed = exoPlayer.playbackParameters.speed.coerceAtLeast(0.25f)
+        val remaining = ((boundary - exoPlayer.currentPosition) / speed).toLong()
+        if (remaining > DirectSourceGate.WINDOW_MS) return why("waiting for the window")
+        // A scrub through the last stretch shouldn't fetch every track it passes, so a seek
+        // settles first — except when the blend is this close: a resume or a jump that lands
+        // there needs the next track now, or Automix runs out of time and cuts instead.
+        if (remaining > DIRECT_URGENT_MS && SystemClock.elapsedRealtime() - lastSeekAt < DIRECT_SEEK_SETTLE_MS) {
+            return why("settling after seek")
+        }
+        if (!DirectSourceGate.openNext(next.mediaId)) return why("already open for ${next.mediaId}")
+        TrackLog.d("Laya", "direct window open: ${next.mediaId} with ${remaining}ms to the transition", about = next.mediaId)
+        val song = next.toSong()
+        AudioCache.noteSongs(listOf(song))
+        AudioCache.prefetchQueue(listOf(AudioCache.Upcoming(song.videoId, TrackMatcher.targetOf(song))))
+    }
+
     /**
      * Hands the cache the queue ahead of the one playing: [AudioCache.QUEUE_DEPTH]
      * tracks is more than it does anything with, but it decides that, not this.
      */
     private fun prefetchAround(player: ExoPlayer) {
+        // Direct Source Stream reads ahead from its own window instead — see
+        // [driveDirectWindow]. Whatever ordinary read-ahead had running goes.
+        if (DirectSourceGate.isActive()) {
+            driveDirectWindow()
+            if (preferredPrefetchRequest != null) cancelPrefetch()
+            return
+        }
         val nextIndex = player.nextMediaItemIndex
         val upcomingSongs = if (nextIndex != C.INDEX_UNSET) {
             val end = (nextIndex + AudioCache.QUEUE_DEPTH - 1).coerceAtMost(player.mediaItemCount - 1)
@@ -6333,8 +6531,37 @@ class PlaybackService : MediaLibraryService() {
                 }
                 .getOrDefault(next)
             if (preferredPrefetchRequest != request) return@launch
+            if (preferred.videoId != next.videoId) queueAudioVersion(next, preferred)
             warm(listOf(preferred) + upcomingSongs.drop(1))
         }
+    }
+
+    /**
+     * Puts [audio], the audio release found for the queued [video], in the video's place.
+     *
+     * "Prefer music-only" otherwise swaps a video only once it has started playing, so the
+     * transition into it was always into a video, which AutoMix never mixes (see
+     * [CrossfadeController]): the queue had to hold the audio release before the transition,
+     * not after it. Same target as the player's own switch, keeping the row's place in the
+     * queue; the video copy is remembered ([keptVersion]) so switching back is exact.
+     * Not in a party, whose track is everyone's (see [smoothSwapCurrentTrackVersion]).
+     */
+    private fun queueAudioVersion(video: Song, audio: Song) {
+        if (!MusicVideoChoice.swapAheadWanted(video, ListenTogether.state.value.inParty)) return
+        val live = player ?: return
+        val index = live.nextMediaItemIndex.takeIf { it != C.INDEX_UNSET } ?: return
+        val queued = live.getMediaItemAt(index)
+        if (queued.mediaId != video.videoId || !queued.isVideo) return
+        val target = MusicVideoChoice.audioInPlaceOf(video, audio)
+        val item = QueueShuffle.withQueueMetadata(
+            target.toMediaItem(),
+            newEntryId = queued.queueEntryId,
+            newCanonicalIndex = queued.canonicalIndex,
+            newTier = queued.queueTier,
+            newContextCycleId = queued.contextCycleId,
+        )
+        TrackLog.d("Laya", "music-only: queued '${audio.title}' (${audio.videoId}) in place of the video", about = video.videoId)
+        live.replaceMediaItem(index, keptVersion(queued, item))
     }
 
     /** Stops both rendition selection and byte read-ahead, and makes resume retry. */
@@ -6975,6 +7202,10 @@ class PlaybackService : MediaLibraryService() {
 
     private fun observeSettings() {
         scope.launch {
+            // A lookup that lands after its song was queued, or the filter turned back on.
+            combine(AiSongs.hide, AiSongs.flagged) { _, flagged -> flagged }.collect(::dropAiAutoplay)
+        }
+        scope.launch {
             AppSettings.skipSilence.collect { on -> eachPlayer { it.skipSilenceEnabled = on } }
         }
         scope.launch {
@@ -7570,6 +7801,13 @@ class PlaybackService : MediaLibraryService() {
      */
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
+        // The lock-screen player runs in a task of its own, and closing it
+        // removes that task: not the listener swiping the app away.
+        if (rootIntent?.component?.className == LockScreenActivity::class.java.name ||
+            LockScreenActivity.closedRecently()
+        ) {
+            return
+        }
         if (AppSettings.stopOnTaskRemoved.value) {
             // A receiver left playing with nothing on the phone to drive it
             // would run out its few queued tracks and stop on its own anyway;
@@ -7594,6 +7832,7 @@ class PlaybackService : MediaLibraryService() {
         castPlayback.release()
         closeAudioEffectSession()
         bluetoothTracker.stop()
+        runCatching { unregisterReceiver(screenOnReceiver) }
         audioManager?.unregisterAudioDeviceCallback(outputDeviceCallback)
         partySync?.stop()
         partySync = null
@@ -7706,16 +7945,21 @@ class PlaybackService : MediaLibraryService() {
                 lines = EmbeddedLyrics.forUri(this@PlaybackService, localUri)
             }
             if (lines == null) {
-                val found = LyricsRepository.lyrics(
-                    videoId = currentSong.videoId,
-                    title = currentSong.title,
-                    artist = currentSong.artist,
-                    durationMs = trackDurationMs,
-                    album = currentSong.albumName,
-                    sources = AppSettings.lyricsSources.value,
-                    order = AppSettings.lyricsSourceOrder.value,
-                    prioritizeSyllableSync = AppSettings.prioritizeSyllableSync.value,
-                )
+                suspend fun ask(sources: Set<LyricsSource>, order: List<LyricsSource>, syllables: Boolean) =
+                    LyricsRepository.lyrics(
+                        videoId = currentSong.videoId,
+                        title = currentSong.title,
+                        artist = currentSong.artist,
+                        durationMs = trackDurationMs,
+                        album = currentSong.albumName,
+                        sources = sources,
+                        order = order,
+                        prioritizeSyllableSync = syllables,
+                    )
+                // The provider picked by hand in the player, so the lock screen shows the same lyrics.
+                val pick = LyricsPicks[currentSong.videoId]?.takeIf { it in AppSettings.lyricsSources.value }
+                val found = pick?.let { ask(setOf(it), listOf(it), false) }
+                    ?: ask(AppSettings.lyricsSources.value, AppSettings.lyricsSourceOrder.value, AppSettings.prioritizeSyllableSync.value)
                 lines = found?.lines
             }
             withContext(Dispatchers.Main) {
@@ -8292,6 +8536,9 @@ class PlaybackService : MediaLibraryService() {
                 .add(upgradeQualityCommand)
                 .add(swapVersionCommand)
                 .add(queueDragCommand)
+                .add(SessionCommand(ACTION_QUEUE_REMOVE_ENTRIES, Bundle.EMPTY))
+                .add(SessionCommand(ACTION_QUEUE_UNDO_REMOVAL, Bundle.EMPTY))
+                .add(SessionCommand(ACTION_QUEUE_MOVE_TO_USER, Bundle.EMPTY))
                 .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
@@ -8316,6 +8563,14 @@ class PlaybackService : MediaLibraryService() {
             customCommand: SessionCommand,
             args: Bundle,
         ): ListenableFuture<SessionResult> {
+            // The queue screen's edits answer with a result: a removal's Undo token, or refusal.
+            when (customCommand.customAction) {
+                ACTION_QUEUE_REMOVE_ENTRIES -> return Futures.immediateFuture(queueScreenEdits.remove(session.player, args))
+                ACTION_QUEUE_UNDO_REMOVAL -> return Futures.immediateFuture(queueScreenEdits.undo(session.player, args))
+                ACTION_QUEUE_MOVE_TO_USER -> return Futures.immediateFuture(
+                    queueScreenEdits.moveToUser(session.player, args, AppSettings.swipeToPlayNext.value),
+                )
+            }
             when (customCommand.customAction) {
                 ACTION_START_BOUNDED_CONTEXT -> startBoundedContext(args)
                 ACTION_CLEAR_BOUNDED_CONTEXT -> clearBoundedContext()

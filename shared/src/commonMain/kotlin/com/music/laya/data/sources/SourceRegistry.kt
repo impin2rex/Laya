@@ -192,6 +192,10 @@ object SourceRegistry {
             .sortedBy { it.kind.rank }
             .mapNotNull { instances[it.id] }
 
+    /** What Search's Addons tab asks: the enabled addons and lossless sources (Tidal, Qobuz). */
+    fun activeForAddonSearch(): List<MusicSource> =
+        active().filter { it is AddonSource || it is LosslessSource }
+
     /**
      * [active], minus the addons whose manifest said `allowDownloads: 0`. A
      * download walks this instead, so the next source in line serves it.

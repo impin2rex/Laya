@@ -155,8 +155,12 @@ internal class DesktopAudioDecoder : DesktopSampleSource {
         av_dict_set(options, "reconnect_delay_max", "5", 0)
         av_dict_set(options, "rw_timeout", "15000000", 0)
         // A manifest saved to disk (Tidal's DASH) may only fetch file/crypto/data by default; its
-        // segments are https.
-        if (transport != null && url.startsWith("/")) {
+        // segments are https. `startsWith("/")` told a saved manifest's local path from an addon's
+        // own network HLS/DASH url (which needs no widening) — true for every macOS/Linux path, but
+        // never for a Windows one ("C:\…"), so the widening never ran there: every Tidal FLAC track
+        // failed to open with EINVAL, consistently, only on Windows. A URI scheme is what actually
+        // tells the two apart, on any OS.
+        if (transport != null && !url.contains("://")) {
             av_dict_set(options, "protocol_whitelist", "file,http,https,tcp,tls,crypto,data", 0)
         }
 

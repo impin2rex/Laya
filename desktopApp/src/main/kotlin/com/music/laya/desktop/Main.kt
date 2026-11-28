@@ -1,5 +1,6 @@
 package com.music.laya.desktop
 
+import com.music.laya.data.aifilter.AiSongs
 import androidx.compose.runtime.CompositionLocalProvider
 import com.music.laya.ui.player.PlayerPlatform
 import com.music.laya.data.DebugLog
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -33,6 +35,11 @@ fun main() {
     DesktopWebCookies.install()
     DesktopLossless.install()
     DesktopWindowVisibility.install()
+    // The shared settings the desktop reads (the Home dials, colour background, splash): without
+    // a store their setters threw. A node of their own, apart from the desktop's other preferences.
+    // A properties file, not java.util.prefs: Preferences refuses values over 8 KB, and the
+    // saved Home dial is longer than that.
+    com.music.laya.data.settings.AppSettings.init(desktopAppSettingsStore(), com.music.laya.data.settings.AppSettingsHost())
     // The player is the phone's, from the shared UI module; this is what it reads underneath.
     PlayerPlatform.install(DesktopPlayerHost)
     com.music.laya.ui.AppUi.install(DesktopAppUiHost)
@@ -42,6 +49,7 @@ fun main() {
         DesktopTrackLog.log("$tag/$level: $message" + (error?.let { " (${it.message})" } ?: ""))
     }
     LyricsTranslation.cacheDir = DesktopMediaCache.directory.toOkioPath()
+    AiSongs.warmUp()
     // The Spotify library both apps share, on the tokens the web player mints in JavaFX.
     SpotifyLibrary.auth = SpotifyLibrary.Auth {
         DesktopSpotifyToken.accessToken()?.let { SpotifyLibrary.Tokens(it, DesktopSpotifyToken.clientToken()) }
@@ -53,6 +61,8 @@ fun main() {
     TrackLog.echo = { level, tag, message, error ->
         DesktopTrackLog.log("$tag/$level: $message" + (error?.let { " (${it.message})" } ?: ""))
     }
+    // On unless the listener turned it off; see AiSongs.
+    AiSongs.hide.value = DesktopPersistence().boolean(KEY_HIDE_AI_SONGS, true)
     StreamResolver.maxKbps = {
         DesktopStreamClient.ceiling.get() ?: DesktopSourceRegistry.ceiling(null).maxKbps
     }
@@ -185,7 +195,10 @@ private fun desktopMain() = application {
             LocalDesktopWindowActions provides actions,
             LocalDesktopWindowScope provides this,
         ) {
-            LayaDesktopApp()
+            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                LayaDesktopApp()
+                com.music.laya.ui.components.ColdStartSplash()
+            }
         }
     }
     DesktopPictureInPictureWindow()
@@ -196,3 +209,29 @@ private fun desktopMain() = application {
 // NowPlayingScreen). Narrower and short, it falls back to the portrait player, which needs height.
 private const val MIN_WINDOW_WIDTH_DP = 560.0
 private const val MIN_WINDOW_HEIGHT_DP = 400.0
+
+/** Desktop's own key for [AiSongs.hide], which the phone keeps in AppSettings. */
+internal const val KEY_HIDE_AI_SONGS = "hide_ai_songs"
+
+/** The shared settings, kept in `~/.config/laya/app-settings.properties` and written on each change. */
+private fun desktopAppSettingsStore(): com.russhwolf.settings.Settings {
+    val dir = java.nio.file.Path.of(
+        System.getenv("XDG_CONFIG_HOME")?.takeIf(String::isNotBlank) ?: "${System.getProperty("user.home")}/.config",
+        "laya",
+    )
+    val file = dir.resolve("app-settings.properties")
+    val properties = java.util.Properties()
+    runCatching { java.nio.file.Files.newInputStream(file).use(properties::load) }
+    return com.russhwolf.settings.PropertiesSettings(properties) { changed ->
+        // One writer at a time: settings change from more than one thread.
+        synchronized(properties) { runCatching {
+            java.nio.file.Files.createDirectories(dir)
+            val temp = dir.resolve("app-settings.properties.tmp")
+            java.nio.file.Files.newOutputStream(temp).use { changed.store(it, null) }
+            java.nio.file.Files.move(
+                temp, file,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+            )
+        } }
+    }
+}

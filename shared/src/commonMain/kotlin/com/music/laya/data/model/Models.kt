@@ -434,6 +434,13 @@ data class ShelfItem(
     val browseId: String?,
 )
 
+/**
+ * A "Mixed for you" card and its English title, which is what says what kind
+ * of mix it is whatever language [item] is shown in — see
+ * [com.music.laya.data.YtMusicRepository.mixedForYouKeyed].
+ */
+data class KeyedMix(val item: ShelfItem, val englishTitle: String)
+
 /** The signed-in Google account, as YouTube Music reports it. */
 data class Account(
     val name: String,
@@ -511,6 +518,8 @@ private fun HomeShelf.browseKeys(): Set<String> = items.mapNotNullTo(HashSet()) 
 data class HomeFeed(
     val shelves: List<HomeShelf>,
     val continuation: String?,
+    /** Home's mood chips (Relax, Workout…): each reloads Home filtered, by its params. First page only. */
+    val chips: List<MoodGenre> = emptyList(),
 )
 
 /** One server-defined group of the buttons shown on Explore. */

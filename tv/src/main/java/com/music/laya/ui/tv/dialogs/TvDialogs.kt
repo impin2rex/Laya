@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.dialogs
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -179,28 +181,28 @@ fun TvAccountDialog(
             )
         }
         AccountDialogMode.SignInChoose -> TvDialog(
-            title = "Sign In to YouTube Music",
-            message = "Your library, playlists and recommendations follow your account.",
+            title = stringResource(R.string.tv_sign_in_ytm_title),
+            message = stringResource(R.string.tv_sign_in_ytm_message),
             onDismissRequest = backFromSignIn,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 TvListRow(
-                    title = "Sign In on This TV",
-                    subtitle = "Use the remote to sign in to Google.",
+                    title = stringResource(R.string.tv_sign_in_on_tv),
+                    subtitle = stringResource(R.string.tv_sign_in_on_tv_sub),
                     leadingIcon = Icons.Rounded.Tv,
                     modifier = Modifier.tvInitialFocus(),
                     onClick = { mode = AccountDialogMode.SignInTv },
                 )
                 TvListRow(
-                    title = "Sign In with Your Phone",
-                    subtitle = "Scan a code with a phone on the same Wi-Fi.",
+                    title = stringResource(R.string.tv_sign_in_phone),
+                    subtitle = stringResource(R.string.tv_sign_in_phone_sub),
                     leadingIcon = Icons.Rounded.PhoneAndroid,
                     onClick = { mode = AccountDialogMode.SignInPhone },
                 )
             }
             Spacer(modifier = Modifier.height(14.dp))
             TvDialogButton(
-                text = if (googleAccounts.isNotEmpty() || signedIn) "Back" else "Not Now",
+                text = if (googleAccounts.isNotEmpty() || signedIn) stringResource(R.string.back) else stringResource(R.string.tv_not_now),
                 onClick = backFromSignIn,
             )
         }
@@ -229,7 +231,8 @@ private fun TvProfileSwitcher(
     var unlockError by remember { mutableStateOf<String?>(null) }
     var unlockSettingsError by remember { mutableStateOf<String?>(null) }
 
-    val allProfiles = remember(googleAccounts) {
+    val personalLabel = stringResource(R.string.personal)
+    val allProfiles = remember(googleAccounts, personalLabel) {
         googleAccounts.flatMap { account ->
             if (account.profiles.isNotEmpty()) {
                 val personal = account.profiles.filterNot { it.isBrandAccount }
@@ -239,7 +242,7 @@ private fun TvProfileSwitcher(
                 listOf(
                     account to YouTubeProfile(
                         profileId = "default:${account.accountId}",
-                        name = account.name.ifBlank { "Personal" },
+                        name = account.name.ifBlank { personalLabel },
                         handle = account.email,
                     )
                 )
@@ -275,8 +278,8 @@ private fun TvProfileSwitcher(
     val unlockPair = pendingUnlockProfile
     if (unlockPair != null) {
         TvPinDialog(
-            title = "Enter 4-Digit PIN",
-            message = "Profile is locked. Enter PIN for ${unlockPair.second.name}",
+            title = stringResource(R.string.tv_enter_pin),
+            message = stringResource(R.string.tv_pin_locked_message, unlockPair.second.name),
             errorMessage = unlockError,
             throttleKey = unlockPair.second.profileId,
             onPinEntered = { entered ->
@@ -287,7 +290,7 @@ private fun TvProfileSwitcher(
                     pendingUnlockProfile = null
                     onSelectProfile(account, profile)
                 } else {
-                    unlockError = "Incorrect PIN. Try again."
+                    unlockError = context.getString(R.string.tv_pin_incorrect_retry)
                 }
                 correct
             },
@@ -301,8 +304,8 @@ private fun TvProfileSwitcher(
     val unlockSettingsPair = pendingUnlockSettingsProfile
     if (unlockSettingsPair != null) {
         TvPinDialog(
-            title = "Enter 4-Digit PIN",
-            message = "Profile is locked. Enter PIN for ${unlockSettingsPair.second.name}",
+            title = stringResource(R.string.tv_enter_pin),
+            message = stringResource(R.string.tv_pin_locked_message, unlockSettingsPair.second.name),
             errorMessage = unlockSettingsError,
             throttleKey = unlockSettingsPair.second.profileId,
             onPinEntered = { entered ->
@@ -313,7 +316,7 @@ private fun TvProfileSwitcher(
                     pendingUnlockSettingsProfile = null
                     selectedAccountForSettings = account to profile
                 } else {
-                    unlockSettingsError = "Incorrect PIN. Try again."
+                    unlockSettingsError = context.getString(R.string.tv_pin_incorrect_retry)
                 }
                 correct
             },
@@ -363,7 +366,7 @@ private fun TvProfileSwitcher(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
-                    text = if (allProfiles.isEmpty()) "Sign In" else "Who's watching?",
+                    text = if (allProfiles.isEmpty()) stringResource(R.string.tv_sign_in) else stringResource(R.string.tv_whos_watching),
                     style = TvType.Title.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold),
                     color = TvGlass.TextPrimary,
                     textAlign = TextAlign.Center,
@@ -373,9 +376,9 @@ private fun TvProfileSwitcher(
 
                 Text(
                     text = if (allProfiles.isEmpty()) {
-                        "Nobody is signed in. Add a YouTube Music account to access your music."
+                        stringResource(R.string.tv_nobody_signed_in)
                     } else {
-                        "Choose a profile to switch your library, playlists and recommendations."
+                        stringResource(R.string.tv_choose_profile)
                     },
                     style = TvType.Callout,
                     color = TvGlass.TextSecondary,
@@ -443,7 +446,7 @@ private fun TvProfileSwitcher(
                     Spacer(modifier = Modifier.height(28.dp))
 
                     TvButton(
-                        text = "Cancel",
+                        text = stringResource(R.string.cancel),
                         onClick = onDismiss,
                     )
                 }
@@ -505,7 +508,7 @@ private fun TvProfileCard(
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = profile.name.ifBlank { account.name.ifBlank { "Account" } },
+            text = profile.name.ifBlank { account.name.ifBlank { stringResource(R.string.tv_account) } },
             style = TvType.CardTitle.copy(fontWeight = FontWeight.Bold),
             color = if (focused) TvGlass.OnPlatter else TvGlass.TextPrimary,
             maxLines = 1,
@@ -517,7 +520,7 @@ private fun TvProfileCard(
 
         val handleOrEmail = profile.handle.ifBlank {
             account.email.ifBlank {
-                if (profile.isBrandAccount) "Brand account" else ""
+                if (profile.isBrandAccount) stringResource(R.string.brand_account) else ""
             }
         }
         if (handleOrEmail.isNotBlank()) {
@@ -560,7 +563,7 @@ private fun TvProfileSettingsButton(
     ) {
         Icon(
             imageVector = Icons.Rounded.Settings,
-            contentDescription = "Account Settings",
+            contentDescription = stringResource(R.string.tv_account_settings),
             tint = if (focused) TvGlass.OnPlatter else TvGlass.TextPrimary,
             modifier = Modifier.size(18.dp),
         )
@@ -576,6 +579,7 @@ private fun TvAccountSettingsDialog(
     onSignOut: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     var isLocked by remember { mutableStateOf(TvSettings.isProfileLocked(profile.profileId)) }
     var pinMode by remember { mutableStateOf<PinMode?>(null) }
     var tempPin by remember { mutableStateOf("") }
@@ -584,8 +588,8 @@ private fun TvAccountSettingsDialog(
     when (pinMode) {
         PinMode.Set -> {
             TvPinDialog(
-                title = "Set 4-Digit PIN",
-                message = "Create a 4-digit PIN for ${profile.name}",
+                title = stringResource(R.string.tv_set_pin),
+                message = stringResource(R.string.tv_set_pin_message, profile.name),
                 errorMessage = pinError,
                 onPinEntered = { entered ->
                     tempPin = entered
@@ -598,8 +602,8 @@ private fun TvAccountSettingsDialog(
         }
         PinMode.Confirm -> {
             TvPinDialog(
-                title = "Confirm 4-Digit PIN",
-                message = "Re-enter your 4-digit PIN",
+                title = stringResource(R.string.tv_confirm_pin),
+                message = stringResource(R.string.tv_reenter_pin),
                 errorMessage = pinError,
                 onPinEntered = { entered ->
                     if (entered == tempPin) {
@@ -609,7 +613,7 @@ private fun TvAccountSettingsDialog(
                         pinError = null
                         true
                     } else {
-                        pinError = "PINs did not match. Try again."
+                        pinError = context.getString(R.string.tv_pins_mismatch)
                         pinMode = PinMode.Set
                         false
                     }
@@ -619,8 +623,8 @@ private fun TvAccountSettingsDialog(
         }
         PinMode.Remove -> {
             TvPinDialog(
-                title = "Turn Off App Lock",
-                message = "Enter current 4-digit PIN to remove lock",
+                title = stringResource(R.string.tv_turn_off_app_lock),
+                message = stringResource(R.string.tv_enter_pin_remove_lock),
                 errorMessage = pinError,
                 throttleKey = profile.profileId,
                 onPinEntered = { entered ->
@@ -631,7 +635,7 @@ private fun TvAccountSettingsDialog(
                         pinMode = null
                         pinError = null
                     } else {
-                        pinError = "Incorrect PIN"
+                        pinError = context.getString(R.string.tv_pin_incorrect)
                     }
                     correct
                 },
@@ -640,8 +644,8 @@ private fun TvAccountSettingsDialog(
         }
         PinMode.SignOut -> {
             TvPinDialog(
-                title = "Sign Out",
-                message = "Enter 4-digit PIN to sign out ${profile.name}",
+                title = stringResource(R.string.tv_sign_out),
+                message = stringResource(R.string.tv_sign_out_message, profile.name),
                 errorMessage = pinError,
                 throttleKey = profile.profileId,
                 onPinEntered = { entered ->
@@ -653,7 +657,7 @@ private fun TvAccountSettingsDialog(
                         onSignOut()
                         onDismiss()
                     } else {
-                        pinError = "Incorrect PIN"
+                        pinError = context.getString(R.string.tv_pin_incorrect)
                     }
                     correct
                 },
@@ -667,7 +671,7 @@ private fun TvAccountSettingsDialog(
                 account.profiles.isEmpty()
 
             TvDialog(
-                title = profile.name.ifBlank { account.name.ifBlank { "Account Settings" } },
+                title = profile.name.ifBlank { account.name.ifBlank { stringResource(R.string.tv_account_settings) } },
                 message = profile.handle.ifBlank { account.email.ifBlank { null } },
                 onDismissRequest = onDismiss,
             ) {
@@ -685,9 +689,9 @@ private fun TvAccountSettingsDialog(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     TvListRow(
-                        title = "App Lock (4-Digit PIN)",
-                        subtitle = if (isLocked) "Profile lock is On" else "Profile lock is Off",
-                        value = if (isLocked) "On" else "Off",
+                        title = stringResource(R.string.tv_app_lock),
+                        subtitle = if (isLocked) stringResource(R.string.tv_profile_lock_on) else stringResource(R.string.tv_profile_lock_off),
+                        value = if (isLocked) stringResource(R.string.tv_on) else stringResource(R.string.off),
                         leadingIcon = if (isLocked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
                         onClick = {
                             pinError = null
@@ -697,8 +701,8 @@ private fun TvAccountSettingsDialog(
 
                     if (isFirstProfile) {
                         TvListRow(
-                            title = "Sign Out",
-                            subtitle = "Remove this account from TV",
+                            title = stringResource(R.string.tv_sign_out),
+                            subtitle = stringResource(R.string.tv_remove_account_from_tv),
                             destructive = true,
                             leadingIcon = Icons.AutoMirrored.Rounded.Logout,
                             onClick = {
@@ -717,7 +721,7 @@ private fun TvAccountSettingsDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                TvDialogButton(text = "Done", onClick = onDismiss, initialFocus = true)
+                TvDialogButton(text = stringResource(R.string.done), onClick = onDismiss, initialFocus = true)
             }
         }
     }
@@ -732,6 +736,7 @@ private fun TvPinDialog(
     onPinEntered: (String) -> Boolean,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     var pin by remember { mutableStateOf("") }
     var localError by remember { mutableStateOf(errorMessage) }
     var throttleText by remember { mutableStateOf<String?>(null) }
@@ -768,7 +773,7 @@ private fun TvPinDialog(
             isInputBlocked = true
             val sec = ceil(remainingMs / 1000.0).toInt()
             val timeStr = TvPinThrottle.formatDuration(sec)
-            throttleText = "Try again in $timeStr"
+            throttleText = context.getString(R.string.tv_try_again_in, timeStr)
             delay(remainingMs)
             isInputBlocked = false
             throttleText = null
@@ -785,11 +790,11 @@ private fun TvPinDialog(
             if (!success) {
                 pin = ""
                 val delayMs = throttleKey?.let { TvPinThrottle.recordFailure(it) } ?: 0L
-                localError = errorMessage ?: "Incorrect PIN"
+                localError = errorMessage ?: context.getString(R.string.tv_pin_incorrect)
                 if (delayMs > 0L) {
                     val sec = ceil(delayMs / 1000.0).toInt()
                     val timeStr = TvPinThrottle.formatDuration(sec)
-                    throttleText = "Try again in $timeStr"
+                    throttleText = context.getString(R.string.tv_try_again_in, timeStr)
                     isInputBlocked = true
                     cooldownTrigger = System.currentTimeMillis()
                 } else {
@@ -908,7 +913,11 @@ private fun TvPinDialog(
 
                 val displayError = when {
                     throttleText != null -> {
-                        val base = localError
+                        val base = when (localError) {
+                            stringResource(R.string.tv_pin_incorrect_retry) -> stringResource(R.string.tv_pin_incorrect)
+                            stringResource(R.string.tv_pins_mismatch) -> stringResource(R.string.tv_pins_mismatch_base)
+                            else -> localError
+                        }
                             ?.removeSuffix(".")
                             ?.replace(Regex("\\.?\\s*Try again\\.?$", RegexOption.IGNORE_CASE), "")
                             ?.trim()
@@ -1011,7 +1020,7 @@ private fun TvPinDialog(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 TvButton(
-                    text = "Cancel",
+                    text = stringResource(R.string.cancel),
                     onClick = onDismiss,
                     modifier = Modifier.focusRequester(cancelFocusRequester),
                 )
@@ -1039,7 +1048,7 @@ private fun TvPhoneSignIn(viewModel: MainViewModel, onBack: () -> Unit) {
         onDispose { TvAuthServer.stop() }
     }
 
-    TvDialog(title = "Sign In with Your Phone", width = 576.dp, onDismissRequest = onBack) {
+    TvDialog(title = stringResource(R.string.tv_sign_in_phone), width = 576.dp, onDismissRequest = onBack) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(29.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -1055,13 +1064,13 @@ private fun TvPhoneSignIn(viewModel: MainViewModel, onBack: () -> Unit) {
                 if (link != null) TvQrCodeView(content = link, size = 147.dp) else TvActivityIndicator(color = Color.Black)
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                TvStep(1, "Connect your phone to the same Wi-Fi as this TV.")
-                TvStep(2, "Scan the code, or open ${url ?: "the address shown here"}.")
-                TvStep(3, "Follow the steps on your phone. This TV signs in by itself.")
+                TvStep(1, stringResource(R.string.tv_step_wifi))
+                TvStep(2, stringResource(R.string.tv_scan_or_open, url ?: stringResource(R.string.tv_step_address_fallback)))
+                TvStep(3, stringResource(R.string.tv_step_follow))
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
-        TvDialogButton(text = "Back", onClick = onBack, initialFocus = true, modifier = Modifier.width(256.dp))
+        TvDialogButton(text = stringResource(R.string.back), onClick = onBack, initialFocus = true, modifier = Modifier.width(256.dp))
     }
 }
 
@@ -1110,19 +1119,19 @@ private fun TvGoogleSignIn(viewModel: MainViewModel, onBack: () -> Unit, onSigne
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Sign In to YouTube Music",
+                        text = stringResource(R.string.tv_sign_in_ytm_title),
                         style = TvType.Headline,
                         color = TvGlass.TextPrimary,
                     )
                     Text(
-                        text = "Press Back for Done or Cancel",
+                        text = stringResource(R.string.tv_press_back_hint),
                         style = TvType.Caption,
                         color = TvGlass.TextTertiary,
                     )
                 }
-                TvButton(text = "Cancel", onClick = onBack)
+                TvButton(text = stringResource(R.string.cancel), onClick = onBack)
                 Spacer(modifier = Modifier.width(10.dp))
-                TvButton(text = "Done", isPrimary = true, onClick = { capture++ }, modifier = Modifier.focusRequester(doneFocus))
+                TvButton(text = stringResource(R.string.done), isPrimary = true, onClick = { capture++ }, modifier = Modifier.focusRequester(doneFocus))
             }
             Box(
                 modifier = Modifier
@@ -1152,19 +1161,19 @@ fun TvDiscordDialog(onDismiss: () -> Unit) {
     var token by remember { mutableStateOf(savedToken) }
 
     TvDialog(
-        title = "Discord",
-        message = "Show what you're listening to in your Discord status.",
+        title = stringResource(R.string.discord),
+        message = stringResource(R.string.tv_discord_message),
         onDismissRequest = onDismiss,
     ) {
         TvTextField(
             value = token,
             onValueChange = { token = it },
-            placeholder = "Discord Token",
+            placeholder = stringResource(R.string.tv_discord_token),
             modifier = Modifier.tvInitialFocus(),
         )
         Spacer(modifier = Modifier.height(16.dp))
         TvDialogButton(
-            text = if (enabled) "Turn Off" else "Turn On",
+            text = if (enabled) stringResource(R.string.tv_turn_off) else stringResource(R.string.tv_turn_on),
             enabled = enabled || token.isNotBlank(),
             onClick = {
                 AppSettings.setDiscordToken(token)
@@ -1173,7 +1182,7 @@ fun TvDiscordDialog(onDismiss: () -> Unit) {
             },
         )
         Spacer(modifier = Modifier.height(6.dp))
-        TvDialogButton(text = "Cancel", onClick = onDismiss)
+        TvDialogButton(text = stringResource(R.string.cancel), onClick = onDismiss)
     }
 }
 
@@ -1185,46 +1194,46 @@ fun TvScrobbleDialog(onDismiss: () -> Unit) {
     val listenBrainzToken by AppSettings.listenBrainzToken.collectAsState()
 
     TvDialog(
-        title = "Scrobbling",
-        message = "Connect these on the Laya phone app; the TV uses the same accounts.",
+        title = stringResource(R.string.scrobbling),
+        message = stringResource(R.string.tv_scrobbling_message),
         onDismissRequest = onDismiss,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             TvListRow(
-                title = "Last.fm",
-                value = if (lastfmEnabled && lastfmUser.isNotBlank()) lastfmUser else "Not Connected",
+                title = stringResource(R.string.tv_lastfm),
+                value = if (lastfmEnabled && lastfmUser.isNotBlank()) lastfmUser else stringResource(R.string.tv_not_connected),
                 enabled = false,
                 onClick = {},
             )
             TvListRow(
-                title = "ListenBrainz",
-                value = if (listenBrainzEnabled && listenBrainzToken.isNotBlank()) "Connected" else "Not Connected",
+                title = stringResource(R.string.tv_listenbrainz),
+                value = if (listenBrainzEnabled && listenBrainzToken.isNotBlank()) stringResource(R.string.connected) else stringResource(R.string.tv_not_connected),
                 enabled = false,
                 onClick = {},
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        TvDialogButton(text = "OK", onClick = onDismiss, initialFocus = true)
+        TvDialogButton(text = stringResource(R.string.tv_ok), onClick = onDismiss, initialFocus = true)
     }
 }
 
 @Composable
 fun TvAboutDialog(onDismiss: () -> Unit) {
-    TvDialog(title = "Laya", message = "Version ${BuildConfig.VERSION_NAME}", onDismissRequest = onDismiss) {
+    TvDialog(title = stringResource(R.string.app_name), message = stringResource(R.string.tv_version, BuildConfig.VERSION_NAME), onDismissRequest = onDismiss) {
         TvAppMark(size = 77.dp, modifier = Modifier.padding(bottom = 21.dp))
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            TvListRow(title = "Pintu Das", value = "Maintainer", enabled = false, onClick = {})
-            TvListRow(title = "Nithyanantha", value = "TV App", enabled = false, onClick = {})
+            TvListRow(title = "Pintu Das", value = stringResource(R.string.tv_maintainer), enabled = false, onClick = {})
+            TvListRow(title = "Nithyanantha", value = stringResource(R.string.tv_tv_app), enabled = false, onClick = {})
         }
         Spacer(modifier = Modifier.height(14.dp))
         Text(
-            text = "Free software under the GNU GPL v3. Not affiliated with YouTube or Google.",
+            text = stringResource(R.string.tv_about_footer),
             style = TvType.Caption,
             color = TvGlass.TextTertiary,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(18.dp))
-        TvDialogButton(text = "OK", onClick = onDismiss, initialFocus = true)
+        TvDialogButton(text = stringResource(R.string.tv_ok), onClick = onDismiss, initialFocus = true)
     }
 }
 
@@ -1235,17 +1244,21 @@ fun TvRefreshRateDialog(onDismiss: () -> Unit) {
     val current by TvRefreshRateController.preference.collectAsState()
 
     TvDialog(
-        title = "Refresh Rate",
-        message = "Now ${capabilities.currentPhysicalWidth} × ${capabilities.currentPhysicalHeight} at " +
+        title = stringResource(R.string.tv_refresh_rate),
+        message = stringResource(
+            R.string.tv_refresh_now,
+            capabilities.currentPhysicalWidth,
+            capabilities.currentPhysicalHeight,
             String.format(java.util.Locale.US, "%.0f Hz", capabilities.actualRefreshRateHz),
+        ),
         onDismissRequest = onDismiss,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             TvRefreshRatePreference.entries.forEach { preference ->
                 val supported = preference != TvRefreshRatePreference.SMOOTH_60 || capabilities.is60HzSupported
                 TvListRow(
-                    title = preference.label,
-                    subtitle = preference.description,
+                    title = stringResource(preference.label),
+                    subtitle = stringResource(preference.description),
                     trailingIcon = if (preference == current) Icons.Rounded.Check else null,
                     enabled = supported,
                     modifier = if (preference == current) Modifier.tvInitialFocus() else Modifier,
@@ -1264,12 +1277,12 @@ fun TvThemeDialog(onDismiss: () -> Unit) {
     val currentId by TvSettings.tvTheme.collectAsState()
     val current = AppThemeOption.fromId(currentId)
 
-    TvDialog(title = "Appearance", onDismissRequest = onDismiss) {
+    TvDialog(title = stringResource(R.string.appearance), onDismissRequest = onDismiss) {
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             AppThemeOption.entries.forEach { theme ->
                 TvListRow(
-                    title = theme.title,
-                    subtitle = theme.description,
+                    title = stringResource(theme.title),
+                    subtitle = stringResource(theme.description),
                     trailingIcon = if (theme == current) Icons.Rounded.Check else null,
                     modifier = if (theme == current) Modifier.tvInitialFocus() else Modifier,
                     onClick = {
@@ -1295,8 +1308,8 @@ fun TvLyricsSourcesDialog(onDismiss: () -> Unit) {
     val order = remember(savedOrder) { LyricsSource.ordered(savedOrder) }
 
     TvDialog(
-        title = "Lyrics Sources",
-        message = "Select to turn a source on or off. Press Left or Right to move it up or down; the first is asked first.",
+        title = stringResource(R.string.tv_lyrics_sources),
+        message = stringResource(R.string.tv_lyrics_sources_message),
         width = 512.dp,
         onDismissRequest = onDismiss,
     ) {
@@ -1335,16 +1348,16 @@ fun TvLyricsSourcesDialog(onDismiss: () -> Unit) {
             }
             item(key = "wordFirst") {
                 TvListRow(
-                    title = "Prefer Word-Synced",
-                    subtitle = "Hold out for word-by-word lyrics before settling for line-by-line.",
-                    value = if (wordFirst) "On" else "Off",
+                    title = stringResource(R.string.tv_prefer_word_synced),
+                    subtitle = stringResource(R.string.tv_prefer_word_synced_sub),
+                    value = if (wordFirst) stringResource(R.string.tv_on) else stringResource(R.string.off),
                     onClick = { AppSettings.setPrioritizeSyllableSync(!wordFirst) },
                 )
             }
         }
         Spacer(modifier = Modifier.height(14.dp))
-        TvDialogButton(text = "Reset to Default", onClick = AppSettings::resetLyricsSourceSettings)
+        TvDialogButton(text = stringResource(R.string.tv_reset_to_default), onClick = AppSettings::resetLyricsSourceSettings)
         Spacer(modifier = Modifier.height(6.dp))
-        TvDialogButton(text = "Done", onClick = onDismiss)
+        TvDialogButton(text = stringResource(R.string.done), onClick = onDismiss)
     }
 }

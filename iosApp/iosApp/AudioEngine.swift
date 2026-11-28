@@ -38,6 +38,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     /// Loader per queued item; an item's loader must live as long as the item.
     private var loaders: [ObjectIdentifier: ChunkedResourceLoader] = [:]
+    /// The same, for the items playing a Tidal playlist (PlaylistResourceLoader, or SegmentedResourceLoader under the DSP).
+    private var playlists: [ObjectIdentifier: PlaylistBacked] = [:]
     private var speed: Float = 1
     /// Racing through a silent stretch (see EqualizerTap.listen).
     private var skipping = false
@@ -119,7 +121,34 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// Kotlin calls from its IO threads as well as main, and a deck's queue and the fade state below are main-only.
     /// Every call goes through main's FIFO, so their order is kept.
     private func onMain(_ body: @escaping () -> Void) {
-        if Thread.isMainThread { body() } else { DispatchQueue.main.async(execute: body) }
+        let run = { [weak self] in
+            guard let self else { return }
+            if self.building { self.deferred.append(body) } else { body() }
+        }
+        if Thread.isMainThread { run() } else { DispatchQueue.main.async(execute: run) }
+    }
+
+    /// AVURLAsset's init is a synchronous call into mediaserverd, which stalls for seconds while the analysis readers
+    /// (Automix, karaoke) keep it busy. Made on the main thread, that stall got the app killed by the scene-update
+    /// watchdog (0x8BADF00D, 10 s), so items are built here and handed back to the main thread.
+    private let builder = DispatchQueue(label: "laya.engine.items", qos: .userInitiated)
+    /// A play's item is being built: commands that arrive meanwhile wait in [deferred] and run in order after it.
+    private var building = false
+    private var deferred: [() -> Void] = []
+
+    private func drainDeferred() {
+        while !building, !deferred.isEmpty { deferred.removeFirst()() }
+    }
+
+    private func buildOffMain(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64,
+                              then: @escaping (BuiltItem?) -> Void) {
+        let started = CACurrentMediaTime()
+        builder.async { [weak self] in
+            let built = self?.buildItem(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes)
+            let took = CACurrentMediaTime() - started
+            if took > 1 { print("AudioEngine: item took \(String(format: "%.1f", took))s to build (mediaserverd busy)") }
+            DispatchQueue.main.async { then(built) }
+        }
     }
 
     func setListener(listener: AudioEngineListener?) {
@@ -131,18 +160,24 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     private func playOnMain(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
-        stop()
+        stopNow()
         IosDsp.shared.reset()
         setSkipping(false)
-        guard let item = makeItem(url: url, headers: headers, mimeType: mimeType,
-                                  contentLength: contentLength, chunkBytes: chunkBytes) else {
-            listener?.onError(message: "Bad stream URL", httpStatus: 0)
-            return
+        building = true
+        buildOffMain(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes) { [weak self] built in
+            guard let self else { return }
+            self.building = false
+            if let built {
+                built.install()
+                self.activateSession()
+                self.becomeCurrent(built.item)
+                self.player.insert(built.item, after: nil)
+                self.go()
+            } else {
+                self.listener?.onError(message: "Bad stream URL", httpStatus: 0)
+            }
+            self.drainDeferred()
         }
-        activateSession()
-        becomeCurrent(item)
-        player.insert(item, after: nil)
-        go()
     }
 
     func setNext(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
@@ -154,6 +189,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         clearNextOnMain()
         guard currentItem != nil else { return }
         pendingNext = PendingNext(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes)
+        // A Tidal playlist takes many seconds to open as a stream and cue partway in (measured: made 11 s ahead of a
+        // blend after a seek, still not ready 17 s later, "window missed"), where its assembled file opens and cues
+        // in milliseconds. Fetched now, the file is in hand long before the item is made (buildItem takes it when
+        // cached), so a seek toward the end finds the incoming deck ready, as Android's standby is.
+        // ponytail: the whole next track is fetched up front, skipped or not; gate on the plan if data use matters.
+        if let playlist = URL(string: url), playlist.isFileURL, playlist.pathExtension.lowercased() == "m3u8" {
+            DispatchQueue.global(qos: .utility).async { _ = HlsAssembly.assemble(playlist: playlist) }
+        }
         materializeNextIfDue()
     }
 
@@ -163,6 +206,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// so a track queued at the start of the current one opened a second connection to the same host for minutes;
     /// addon CDNs answer that with HTTP 429. Android's player likewise loads the next item only near the end.
     private var pendingNext: PendingNext?
+    /// What [nextItem] was made from, so a source swap can put it back to waiting (see beginSwap).
+    private var madeNext: PendingNext?
 
     private func materializeNextIfDue(force: Bool = false) {
         guard let p = pendingNext, let current = currentItem, swapItem == nil else { return }
@@ -178,9 +223,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         guard let item = makeItem(url: p.url, headers: p.headers, mimeType: p.mimeType,
                                   contentLength: p.contentLength, chunkBytes: p.chunkBytes) else { return }
         nextItem = item
+        madeNext = p
         fadeSkipped = false
         place(item)
         updateFadeTimer()
+        print("AudioEngine: next track's item made at \(current.currentTime().seconds)s (parked=\(parked), blend due \(Double(transition.startMs) / 1000)s)")
     }
 
     func clearNext() { onMain { self.clearNextOnMain() } }
@@ -197,6 +244,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func dropItem(_ item: AVPlayerItem) {
         loaders.removeValue(forKey: ObjectIdentifier(item))?.cancelAll()
+        playlists.removeValue(forKey: ObjectIdentifier(item))
     }
 
     func pause() { onMain { self.pauseOnMain() } }
@@ -212,9 +260,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     func resume() {
-        activateSession()
-        go()
-        reportProgress()
+        onMain {
+            self.activateSession()
+            self.go()
+            self.reportProgress()
+        }
     }
 
     func seekTo(positionMs: Int64) { onMain { self.seekOnMain(positionMs: positionMs) } }
@@ -243,13 +293,18 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             guard let self else { return }
             if self.seekingToMs == positionMs { self.seekingToMs = nil }
             if self.resumeAfterSeek { self.resumeAfterSeek = false; self.go() }
+            // A seek toward the end: the next track loads now, not on the next half-second check, so a blend just ahead
+            // of where it landed finds the incoming deck ready (Android's standby is prepared long before).
+            self.materializeNextIfDue()
             print("AudioEngine: seek landed requested=\(Double(positionMs) / 1000)s currentTime=\(self.player.currentTime().seconds)s")
             self.reportProgress()
             self.updateNowPlayingTiming()
         }
     }
 
-    func stop() {
+    func stop() { onMain { self.stopNow() } }
+
+    private func stopNow() {
         cancelSwap(resume: false)
         pendingNext = nil
         for deck in [player, idle] { deck.pause(); deck.removeAllItems(); deck.volume = appGain }
@@ -266,6 +321,7 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         nextItem = nil
         loaders.values.forEach { $0.cancelAll() }
         loaders.removeAll()
+        playlists.removeAll()
         pendingSeekMs = nil
         seekingToMs = nil
         reopening = nil
@@ -312,12 +368,24 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         EqualizerTuning.onSkipping = { [weak self] on in DispatchQueue.main.async { self?.setSkipping(on) } }
         if !skipSilence { setSkipping(false) }
         if EqualizerTuning.wanted { [currentItem, nextItem].forEach { $0.map(EqualizerTap.attach) } }
+        tapPlaylist()
+    }
+
+    /// The DSP just came on over a Tidal playlist, which no tap reaches: swap to the same track as a streamed file
+    /// (makeItem picks SegmentedResourceLoader now), at the position reached, as a better source arrives.
+    private func tapPlaylist() {
+        guard Self.streamsTidalAsFile, EqualizerTuning.wanted, swapItem == nil, let item = currentItem,
+              let hls = playlists[ObjectIdentifier(item)] as? PlaylistResourceLoader,
+              SegmentedResourceLoader.serves(hls.source) else { return }
+        swapOnMain(url: hls.source.absoluteString, headers: [:], mimeType: "application/vnd.apple.mpegurl",
+                   contentLength: 0, chunkBytes: 0)
     }
 
     func setEqualizer(gainsDb: [KotlinFloat], qs: [KotlinFloat], preampDb: Float, balance: Float) {
         func floats(_ a: [KotlinFloat]) -> [Float] { a.map { $0.floatValue } }
         EqualizerTuning.set(gains: floats(gainsDb), qs: floats(qs), preampDb: preampDb, balance: balance)
         if EqualizerTuning.wanted { [currentItem, nextItem].forEach { $0.map(EqualizerTap.attach) } }
+        tapPlaylist()
     }
 
     func setNowPlaying(title: String, artist: String, album: String?, artworkUrl: String?) {
@@ -425,6 +493,12 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                 String(Int(session.ioBufferDuration * 1000))]
     }
 
+    func setCacheLimit(bytes: Int64) { StreamCache.shared.setCap(bytes) }
+    func clearCache() {
+        StreamCache.shared.clear()
+        HlsAssembly.clearAll()
+    }
+
     /// The app's own level ("In-app volume"): each deck's volume is this times its own swap fade. Crossfades run in the taps.
     private var appGain: Float = 1
 
@@ -451,17 +525,67 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     /// on disk. Measured on a no-SEEKTABLE FLAC through a resource loader: -2 s to +4 s off without, under 30 ms with.
     private static let precise: [String: Any] = [AVURLAssetPreferPreciseDurationAndTimingKey: true]
 
+    /// Whether a Tidal playlist plays as one streamed file (SegmentedResourceLoader) while the DSP is on, so the taps
+    /// run from the first note. Off: measured on device, that item took 40.8 s to become ready (tapped 17:29:30,
+    /// ready 17:30:10), 2 s short of fetching the whole track, where the playlist itself starts at once. So the
+    /// playlist plays first, dry, and the equaliser and reverb join when the assembled file takes over.
+    private static let streamsTidalAsFile = false
+
+    /// An item and what registering it takes (its loader, its playlist, its DSP tap): built anywhere, installed on main.
+    private struct BuiltItem { let item: AVPlayerItem; let install: () -> Void }
+
     private func makeItem(url: String, headers: [String: String], mimeType: String,
                           contentLength: Int64, chunkBytes: Int64) -> AVPlayerItem? {
+        guard let built = buildItem(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes)
+        else { return nil }
+        built.install()
+        return built.item
+    }
+
+    /// Touches no engine state, so it may run off the main thread (see [builder]); [BuiltItem.install] does that part.
+    private func buildItem(url: String, headers: [String: String], mimeType: String,
+                           contentLength: Int64, chunkBytes: Int64) -> BuiltItem? {
         guard let source = URL(string: url) else { return nil }
         // A downloaded or imported file: AVFoundation reads it directly.
         if source.isFileURL {
+            // Except an HLS playlist, which it will not open from a file URL at all — Tidal's
+            // rewritten manifest goes through a loader so the same bytes arrive under our scheme.
+            if source.pathExtension.lowercased() == "m3u8" {
+                // Assembled already (by an earlier play, or by the analysis of this one): read that
+                // instead. It is the same audio, and it cues and seeks at once where the playlist cannot.
+                if let assembled = HlsAssembly.cached(for: source) {
+                    let item = AVPlayerItem(asset: AVURLAsset(url: assembled))
+                    item.preferredForwardBufferDuration = 30
+                    return BuiltItem(item: item) { self.prepare(item) }
+                }
+                // Under the DSP, the same segments as one streamed file: a tap never runs on an HLS stream, so on
+                // the playlist the equaliser and reverb would wait for the assembled file.
+                let asset: AVURLAsset
+                let playlist: PlaylistBacked
+                if Self.streamsTidalAsFile, EqualizerTuning.wanted, let segmented = SegmentedResourceLoader(file: source) {
+                    asset = AVURLAsset(url: segmented.proxyURL)
+                    asset.resourceLoader.setDelegate(segmented, queue: segmented.queue)
+                    playlist = segmented
+                } else {
+                    guard let hls = PlaylistResourceLoader(file: source) else { return nil }
+                    asset = AVURLAsset(url: hls.proxyURL)
+                    asset.resourceLoader.setDelegate(hls, queue: hls.queue)
+                    playlist = hls
+                }
+                let item = AVPlayerItem(asset: asset)
+                item.preferredForwardBufferDuration = 30
+                return BuiltItem(item: item) {
+                    self.prepare(item)
+                    self.playlists[ObjectIdentifier(item)] = playlist
+                    // Audio starts now off the playlist; the file takes over behind it (see assemble).
+                    self.assemble(source, under: item)
+                }
+            }
             let flac = (try? FileHandle(forReadingFrom: source))
                 .map { h in defer { try? h.close() }; return h.readData(ofLength: 4) == Data("fLaC".utf8) } ?? false
             let item = AVPlayerItem(asset: AVURLAsset(url: source, options: flac ? Self.precise : nil))
             item.preferredForwardBufferDuration = 30
-            prepare(item)
-            return item
+            return BuiltItem(item: item) { self.prepare(item) }
         }
         let loader = ChunkedResourceLoader(
             source: source,
@@ -476,13 +600,46 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         asset.resourceLoader.setDelegate(loader, queue: loader.queue)
         let item = AVPlayerItem(asset: asset)
         item.preferredForwardBufferDuration = 30
-        prepare(item)
-        adopt(loader, for: item)
-        return item
+        return BuiltItem(item: item) {
+            self.prepare(item)
+            self.adopt(loader, for: item)
+        }
+    }
+
+    /// Fetches [playlist]'s segments into one file behind the playing playlist and hands it over at the
+    /// position reached, by the same swap a better source arrives on (watchUpgrade).
+    ///
+    /// A playlist starts instantly but cues like the network stream it is: AVPlayer must fetch the
+    /// segments at an offset before it can sound there, which is why seeking into a Tidal track stalls
+    /// and why the automix blend never lines up — it has to start the incoming track partway in, and the
+    /// deck is not ready in time, so the plan slides forward until the track has run out. The assembled
+    /// file cues in milliseconds, so once it is in hand there is nothing left to wait for.
+    private func assemble(_ playlist: URL, under item: AVPlayerItem) {
+        DispatchQueue.global(qos: .utility).async { [weak self, weak item] in
+            guard let file = HlsAssembly.assemble(playlist: playlist) else { return }
+            DispatchQueue.main.async {
+                guard let self, let item else { return }
+                self.playlists[ObjectIdentifier(item)]?.assembled = file // checkStuckEnd retries a skipped hand-over
+                guard self.player.currentItem === item else { return }
+                self.handOverToFile(file, from: item)
+            }
+        }
+    }
+
+    /// Swaps the playing playlist for its assembled [file], unless something is mid-flight that owns the
+    /// decks: a fade, a parked hand-over or a swap already running. Those each end on their own, and the
+    /// playlist plays correctly meanwhile — only its seeking is dear.
+    private func handOverToFile(_ file: URL, from item: AVPlayerItem) {
+        guard fade == nil, !parked, swapItem == nil, reopening == nil, seekingToMs == nil,
+              item.status == .readyToPlay else { return }
+        print("AudioEngine: Tidal playlist assembled; taking over from the file at \(item.currentTime().seconds)s")
+        swapOnMain(url: file.absoluteString, headers: [:], mimeType: "audio/mp4", contentLength: 0, chunkBytes: 0)
     }
 
     /// The precise copy of the playing item while it takes over (see reopenPrecise).
     private var reopening: AVPlayerItem?
+    /// When checkStuckEnd may next retry a skipped playlist-to-file hand-over.
+    private var nextHandOverTry: CFTimeInterval = 0
     /// Paused for a reopen: playback goes on once its seek lands.
     private var resumeAfterSeek = false
 
@@ -526,6 +683,17 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         // AVFoundation reads some fragmented MP4s as twice their length (see ChunkedResourceLoader.durationHint), so
         // the real end arrives as a failure. That is the track ending, not breaking: move on rather than retry it.
         if atStatedEnd(item) { return endByHint(item) }
+        // The streamed-file form of a Tidal playlist didn't take (no sizes from the CDN, or AVPlayer refused the file):
+        // play the playlist itself from where it was, rather than report a failure Kotlin answers with YouTube.
+        if let segmented = playlists[ObjectIdentifier(item)] as? SegmentedResourceLoader {
+            SegmentedResourceLoader.refuse(segmented.key)
+            let at = Int64(max(0, item.currentTime().seconds) * 1000)
+            print("AudioEngine: streamed Tidal file failed (\(message)); playing the playlist from \(at) ms")
+            playOnMain(url: segmented.source.absoluteString, headers: [:], mimeType: "application/vnd.apple.mpegurl",
+                       contentLength: 0, chunkBytes: 0)
+            if at > 1000 { seekOnMain(positionMs: at) }
+            return
+        }
         guard failedItems.insert(ObjectIdentifier(item)).inserted else { return }
         let ns = item.error as NSError?
         let under = ns?.userInfo[NSUnderlyingErrorKey] as? NSError
@@ -559,6 +727,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         if let item = currentItem, item === player.currentItem, fade == nil, seekingToMs == nil, item.status == .readyToPlay,
            let loader = loaders[ObjectIdentifier(item)], loader.estimatedSeek, loader.flacOnDisk {
             return reopenPrecise(item, loader, at: Int64(item.currentTime().seconds * 1000))
+        }
+        // A Tidal playlist whose file is in but whose hand-over was skipped (a blend, a seek, a swap in flight, or it
+        // finished while the track sat on the idle deck): try again. Until it lands nothing taps the audio — an HLS
+        // stream takes no MTAudioProcessingTap — so the equaliser and reverb stay silent on it. Every 3 s at most.
+        if let item = currentItem, item === player.currentItem, swapItem == nil,
+           let file = playlists[ObjectIdentifier(item)]?.assembled, CACurrentMediaTime() >= nextHandOverTry {
+            nextHandOverTry = CACurrentMediaTime() + 3
+            handOverToFile(file, from: item)
         }
         guard let item = player.currentItem, item === currentItem, seekingToMs == nil, fade == nil,
               player.timeControlStatus != .paused else { stuckAt = -1; lastWatchedPosition = -1; return }
@@ -719,6 +895,11 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
             becomeCurrent(now)
             listener?.onAdvancedToNext()
         }
+        // A playlist queued earlier was assembled while it waited its turn: now that it is the one
+        // playing, the swap that was skipped back then is worth making.
+        if let playlist = playlists[ObjectIdentifier(now)]?.source, let file = HlsAssembly.cached(for: playlist) {
+            handOverToFile(file, from: now)
+        }
     }
 
     /// The stream's stated length when it has one (googlevideo's dur=, a FLAC's STREAMINFO), else AVFoundation's,
@@ -766,10 +947,28 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
 
     private func swapOnMain(url: String, headers: [String: String], mimeType: String, contentLength: Int64, chunkBytes: Int64) {
         cancelSwap()
-        guard fade == nil, !parked, let old = currentItem, player.currentItem === old, old.status == .readyToPlay,
-              let item = makeItem(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes)
-        else { return print("AudioEngine: source swap skipped") }
-        clearNextOnMain() // Kotlin queues it again once the swap is in
+        func ready(_ old: AVPlayerItem) -> Bool {
+            fade == nil && !parked && currentItem === old && player.currentItem === old && old.status == .readyToPlay
+        }
+        guard let old = currentItem, ready(old) else { return print("AudioEngine: source swap skipped") }
+        let asked = swapGen
+        buildOffMain(url: url, headers: headers, mimeType: mimeType, contentLength: contentLength, chunkBytes: chunkBytes) { [weak self] built in
+            guard let self, let built else { return print("AudioEngine: source swap skipped") }
+            // A seek, a pause, a blend or another swap while it was built (each bumps swapGen): the old copy plays on.
+            guard asked == self.swapGen, ready(old) else { return print("AudioEngine: source swap dropped; playback moved on") }
+            built.install()
+            self.beginSwap(built.item)
+        }
+    }
+
+    private func beginSwap(_ item: AVPlayerItem) {
+        // The swap needs the idle deck and retires the playing one, so the queued track's item cannot stay; the track
+        // itself does, and is made again once the swap is in (swapCommit) or gives up (cancelSwap). Dropped outright, it
+        // was lost for good on the swaps Kotlin never hears of (a Tidal playlist handing over to its assembled file,
+        // tapPlaylist): the track then ran out with nothing queued, and the next one started cold, with no blend.
+        let queued = pendingNext ?? (nextItem != nil ? madeNext : nil)
+        clearNextOnMain()
+        pendingNext = queued
         swapItem = item
         swapGen += 1
         let gen = swapGen
@@ -786,6 +985,9 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
                     self.swapAlign(item, deck, gen, attempt: 0)
                 } else if item.status == .failed {
                     print("AudioEngine: source swap failed to load; staying on the playing copy")
+                    if let segmented = self.playlists[ObjectIdentifier(item)] as? SegmentedResourceLoader {
+                        SegmentedResourceLoader.refuse(segmented.key) // so the next DSP change doesn't try it again
+                    }
                     self.cancelSwap()
                 }
             }
@@ -866,8 +1068,8 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
     }
 
     private func cancelSwap(resume: Bool = true) {
+        swapGen += 1 // also drops a swap whose item is still being built
         guard let item = swapItem else { return }
-        swapGen += 1
         swapItem = nil
         swapObservation = nil
         idle.pause()
@@ -1002,12 +1204,14 @@ final class AVAudioEngineImpl: NSObject, AudioEngine {
         let length = planned ? Double(transition.fadeMs) / 1000 : min(Double(transition.fadeMs) / 1000, duration / 3)
         let start = planned ? Double(transition.startMs) / 1000 : duration - length
         guard position >= start else { return }
-        if position - start > 1 { // arrived late (a seek into the window): no fade for this pair
+        // Arrived late (a seek into the window, or the incoming deck still loading): the blend joins where it has got
+        // to, as Android's begins on any tick past its start. Only with too little of it left is it given up.
+        if position - start > max(1, length * 0.75) {
             fadeSkipped = true
-            print("Crossfade: window missed (at \(position)s, due \(start)s); gapless")
+            print("Crossfade: window missed (at \(position)s, due \(start)s, \(length)s long, incoming status=\(item.status.rawValue)); gapless")
             return abandonRamp()
         }
-        guard item.status == .readyToPlay else { return } // still loading; the window allows a second of grace
+        guard item.status == .readyToPlay else { return } // still loading: joins late once it is ready
         // The blend starts on the incoming tempo, however the ramp went.
         IosTransition.shared.finishRamp()
         let nowMs = Int64(CACurrentMediaTime() * 1000)

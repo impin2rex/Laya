@@ -35,6 +35,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -95,6 +96,14 @@ object Innertube {
      */
     private const val WEB_REMIX_VERSION = "1.20250101.01.00"
     private const val WEB_REMIX_CLIENT_ID = "67"
+
+    /**
+     * The Android Music client, which is the only one YouTube serves its timed
+     * lyrics to — see [browseMobile]. Everything else in the app keeps asking
+     * as the web client.
+     */
+    private const val ANDROID_MUSIC_CLIENT_ID = "21"
+    private const val ANDROID_MUSIC_VERSION = "7.21.50"
 
     private const val TAG = "Laya"
 
@@ -522,8 +531,37 @@ object Innertube {
 
     // ---- Public API ---------------------------------------------------------
 
-    suspend fun browse(browseId: String, params: String? = null): JsonObject =
-        postMusic("browse") {
+    /**
+     * @param language an `hl` to ask in instead of the app's own — for a caller
+     *   that needs YouTube's titles in one fixed language to read them, rather
+     *   than to show them.
+     */
+    suspend fun browse(browseId: String, params: String? = null, language: String? = null): JsonObject =
+        postMusic("browse", language = language) {
+            put("browseId", browseId)
+            params?.let { put("params", it) }
+        }
+
+    /**
+     * The same page as [browse], asked as the Android Music client.
+     *
+     * YouTube Music only hands out its timed lyrics to the mobile clients: the
+     * web client is answered with the plain `musicDescriptionShelfRenderer`,
+     * while the phone gets an `elementRenderer` carrying `timedLyricsModel`.
+     * The lyrics tab's own page is the only thing this is needed for, so it
+     * stays a separate call rather than changing the identity of the rest.
+     *
+     * Anonymous on purpose: lyrics are not tied to an account, and an Android
+     * client context paired with a web session's cookie is not a combination
+     * Google recognises.
+     */
+    suspend fun browseMobile(browseId: String, params: String? = null): JsonObject =
+        postMusicAnonymous(
+            endpoint = "browse",
+            clientId = ANDROID_MUSIC_CLIENT_ID,
+            clientName = "ANDROID_MUSIC",
+            clientVersion = ANDROID_MUSIC_VERSION,
+        ) {
             put("browseId", browseId)
             params?.let { put("params", it) }
         }
@@ -601,6 +639,45 @@ object Innertube {
         put("playlistId", "RDAMVM$videoId")
         put("isAudioOnly", true)
     }
+
+    /**
+     * youtube.com's own `next` answer for [videoId], asked as the plain WEB
+     * client: only its watch page carries the "Most replayed" heat markers
+     * the player's Best Part button reads ([com.music.laya.data.bestpart.BestPart]).
+     *
+     * Anonymous on purpose: no cookie, no visitor id, so a lookup never puts a
+     * watch-page visit on the listener's history. One retry, since a miss only
+     * costs the button.
+     */
+    suspend fun webNext(videoId: String): JsonObject = withRetry(attempts = 2) {
+        client.post("$YOUTUBE_ORIGIN/youtubei/v1/next") {
+            contentType(ContentType.Application.Json)
+            parameter("prettyPrint", "false")
+            header("User-Agent", WEB_USER_AGENT)
+            header("Origin", YOUTUBE_ORIGIN)
+            header("Referer", "$YOUTUBE_ORIGIN/")
+            header("X-YouTube-Client-Name", WEB_CLIENT_ID)
+            header("X-YouTube-Client-Version", WEB_CLIENT_VERSION)
+            header("Accept-Language", acceptLanguageHeader)
+            setBody(
+                buildJsonObject {
+                    putJsonObject("context") {
+                        putJsonObject("client") {
+                            put("clientName", "WEB")
+                            put("clientVersion", WEB_CLIENT_VERSION)
+                            put("hl", currentLanguage)
+                            put("gl", currentRegion)
+                        }
+                    }
+                    put("videoId", videoId)
+                },
+            )
+        }.body<JsonObject>()
+    }
+
+    /** Kept in step with the WEB entry in [PlayerClient]; `next` is lenient about an old version. */
+    private const val WEB_CLIENT_VERSION = "2.20260708.00.00"
+    private const val WEB_CLIENT_ID = "1"
 
     /** Timed caption transcript used as a last-resort lyrics source. */
     suspend fun transcript(videoId: String): JsonObject = postMusic("get_transcript") {
@@ -939,10 +1016,26 @@ object Innertube {
      * There is no video-id form of this call; the token *is* the request.
      */
     suspend fun sendFeedback(token: String) {
+        sendFeedback(listOf(token))
+    }
+
+    /**
+     * Several feedback tokens in one request — taking a selection off the history. Throws when
+     * YouTube says any of them was not processed.
+     */
+    suspend fun sendFeedback(tokens: List<String>) {
         requireSession()
-        postMusic("feedback") {
-            putJsonArray("feedbackTokens") { add(token) }
+        val response = postMusic("feedback") {
+            putJsonArray("feedbackTokens") { tokens.forEach { add(it) } }
         }
+        response["error"]?.let { error ->
+            val message = error.jsonObject["message"]?.jsonPrimitive?.contentOrNull
+            error("YouTube Music refused the change: ${message ?: error}")
+        }
+        val refused = response["feedbackResponses"]?.jsonArray.orEmpty().count {
+            it.jsonObject["isProcessed"]?.jsonPrimitive?.contentOrNull == "false"
+        }
+        if (refused > 0) error("YouTube Music did not take $refused of ${tokens.size} changes")
     }
 
     /**
@@ -1097,8 +1190,11 @@ object Innertube {
     private suspend fun postMusic(
         endpoint: String,
         query: Map<String, String> = emptyMap(),
+        /** The `hl` to ask in; the app's own language when null. */
+        language: String? = null,
         bodyExtras: JsonObjectBuilder.() -> Unit,
     ): JsonObject {
+        val hl = language ?: currentLanguage
         // This is the common authenticated request path: Home, Library,
         // likes, playlists, account menus and all their continuations pass
         // through it. Waiting here makes restoration process-wide rather than
@@ -1110,8 +1206,8 @@ object Innertube {
             client.post("$MUSIC_BASE/$endpoint") {
                 contentType(ContentType.Application.Json)
                 parameter("prettyPrint", "false")
-                parameter("hl", currentLanguage)
-                header("Accept-Language", acceptLanguageHeader)
+                parameter("hl", hl)
+                header("Accept-Language", language ?: acceptLanguageHeader)
                 query.forEach { (key, value) -> parameter(key, value) }
                 header("X-Origin", MUSIC_ORIGIN)
                 header("Origin", MUSIC_ORIGIN)
@@ -1137,7 +1233,7 @@ object Innertube {
                             putJsonObject("client") {
                                 put("clientName", "WEB_REMIX")
                                 put("clientVersion", clientVersion)
-                                put("hl", currentLanguage)
+                                put("hl", hl)
                                 put("gl", currentRegion)
                                 visitorData?.let { put("visitorData", it) }
                             }
@@ -1174,9 +1270,12 @@ object Innertube {
      */
     private suspend fun postMusicAnonymous(
         endpoint: String,
+        /** Which client to ask as; the web one unless a caller needs another. */
+        clientId: String = WEB_REMIX_CLIENT_ID,
+        clientName: String = "WEB_REMIX",
+        clientVersion: String = webRemixVersion,
         bodyExtras: JsonObjectBuilder.() -> Unit,
     ): JsonObject {
-        val clientVersion = webRemixVersion
         return withRetry {
             client.post("$MUSIC_BASE/$endpoint") {
                 contentType(ContentType.Application.Json)
@@ -1184,7 +1283,7 @@ object Innertube {
                 header("X-Origin", MUSIC_ORIGIN)
                 header("Origin", MUSIC_ORIGIN)
                 header("Referer", "$MUSIC_ORIGIN/")
-                header("X-YouTube-Client-Name", WEB_REMIX_CLIENT_ID)
+                header("X-YouTube-Client-Name", clientId)
                 header("X-YouTube-Client-Version", clientVersion)
                 header("Accept-Language", acceptLanguageHeader)
                 parameter("hl", currentLanguage)
@@ -1194,7 +1293,7 @@ object Innertube {
                     buildJsonObject {
                         putJsonObject("context") {
                             putJsonObject("client") {
-                                put("clientName", "WEB_REMIX")
+                                put("clientName", clientName)
                                 put("clientVersion", clientVersion)
                                 put("hl", currentLanguage)
                                 put("gl", currentRegion)

@@ -14,6 +14,14 @@ import com.music.laya.data.model.ArtistCredit
 import com.music.laya.data.model.CreditSegment
 import com.music.laya.data.model.creditSegments
 import com.music.laya.sharedui.resources.*
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.semantics.Role
+import com.music.laya.data.bestpart.BestPart
+import com.music.laya.data.lyrics.LyricLine
+import com.music.laya.playback.PlaybackPosition
 
 import org.jetbrains.compose.resources.DrawableResource
 import androidx.compose.animation.animateContentSize
@@ -344,13 +352,30 @@ internal fun PlaybackQualityLabel(
 }
 
 /**
- * Stats for nerds, on the foot of the sleeve: the measured stream, and under
- * it what Automix's analysis is doing. Nothing at all while the setting is off.
+ * The foot of the sleeve: stats for nerds while that setting is on, and under
+ * them the Best Part button while there is one to offer. Either can be there
+ * without the other; with neither, nothing is drawn.
  */
 @Composable
-internal fun SleeveNerdStats(song: Song, modifier: Modifier = Modifier) {
+internal fun SleeveNerdStats(
+    song: Song,
+    modifier: Modifier = Modifier,
+    /** The button under the stats; nothing where the player offers none. */
+    bestPart: @Composable () -> Unit = {},
+) {
     val showNerdStats by PlayerSettings.showNerdStats.collectAsStateWithLifecycle()
-    if (!showNerdStats) return
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier,
+    ) {
+        if (showNerdStats) NerdStatsLines(song)
+        bestPart()
+    }
+}
+
+/** Stats for nerds: the measured stream, and under it what Automix's analysis is doing. */
+@Composable
+private fun NerdStatsLines(song: Song) {
     val nerdStats by NerdStats.current.collectAsStateWithLifecycle()
     val smartFadeOn by PlayerSettings.smartFadeEnabled.collectAsStateWithLifecycle()
     val smartAnalysis by PlayerSettings.smartAnalysis.collectAsStateWithLifecycle()
@@ -376,10 +401,7 @@ internal fun SleeveNerdStats(song: Song, modifier: Modifier = Modifier) {
             blurRadius = 4f,
         ),
     )
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier,
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         nerdStats?.describe()?.let { stats ->
             Text(
                 text = stats,
@@ -424,6 +446,144 @@ internal fun SleeveNerdStats(song: Song, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/**
+ * One track's Best Part: where it starts, and whether its pill is up.
+ *
+ * The pill has its moment ([BEST_PART_INTRO_MS]) and then goes for the rest of the track. Worked
+ * out here, once for the player, rather than inside the pill: the pill is not drawn while the
+ * lyrics or the queue cover the sleeve, and its few seconds must not start over when they close.
+ */
+@Immutable
+internal data class BestPartUi(
+    val startMs: Long? = null,
+    /** The pill, on the sleeve. */
+    val pillVisible: Boolean = false,
+    /** The listener took the pill: the best part has been heard. */
+    val onTaken: () -> Unit = {},
+)
+
+@Composable
+internal fun rememberBestPart(song: Song, position: PlaybackPosition, lyrics: List<LyricLine>?): BestPartUi {
+    val enabled by PlayerSettings.showBestPart.collectAsStateWithLifecycle()
+    val at by produceState<Long?>(null, song.videoId, lyrics, enabled) {
+        value = if (enabled) BestPart.startFor(song, lyrics) else null
+    }
+    // Remembered per track: having been heard is what puts the pill away.
+    var heard by remember(song.videoId) { mutableStateOf(false) }
+    // The pill has had its moment, and does not come back this track.
+    var settled by remember(song.videoId) { mutableStateOf(false) }
+    val start = at
+    // Through derivedStateOf, so this recomposes as the playhead crosses the
+    // best part, not on every tick of it.
+    val ahead by remember(start, position) {
+        derivedStateOf { start != null && position.positionMs < start - BEST_PART_SLACK_MS }
+    }
+    val reaching by remember(start, position) {
+        // Only a playhead inside the best part counts as hearing it: further on
+        // is a skip past it, and a seek back should bring the button back.
+        derivedStateOf {
+            start != null && position.positionMs in (start - BEST_PART_SLACK_MS)..(start + BEST_PART_HEARD_MS)
+        }
+    }
+    LaunchedEffect(reaching) { if (reaching) heard = true }
+    // Not while Automix is mixing into the next track: what is ahead then is
+    // the next song, not this one's best part.
+    val mixing by PlayerSettings.smartMixInProgress.collectAsStateWithLifecycle()
+    val offered = start != null && ahead && !heard && !mixing
+    LaunchedEffect(start, offered) {
+        if (start == null) return@LaunchedEffect
+        if (offered) delay(BEST_PART_INTRO_MS)
+        settled = true
+    }
+    return BestPartUi(
+        startMs = start,
+        pillVisible = offered && !settled,
+        onTaken = {
+            heard = true
+            settled = true
+        },
+    )
+}
+
+/**
+ * "Best Part": a pill on the artwork that skips to the part of the song people
+ * replay most, read off YouTube's "Most replayed" curve ([BestPart]).
+ *
+ * Up for a few seconds once there is one ahead ([rememberBestPart]), then it
+ * goes. A track with no curve (a local file, a video too new to chart, no
+ * answer) never shows it, rather than guessing.
+ */
+@Composable
+internal fun BestPartPill(
+    bestPart: BestPartUi,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val start = bestPart.startMs
+    val haptics = rememberHaptics()
+    AnimatedVisibility(
+        visible = bestPart.pillVisible,
+        // The room it takes opens and closes around the fade, so the stats over it glide.
+        enter = expandVertically(tween(BEST_PART_FADE_MS)) +
+            fadeIn(tween(BEST_PART_FADE_MS, delayMillis = BEST_PART_FADE_MS / 2)),
+        exit = fadeOut(tween(BEST_PART_FADE_MS)) +
+            shrinkVertically(tween(BEST_PART_FADE_MS, delayMillis = BEST_PART_FADE_MS / 2)),
+        modifier = modifier,
+    ) {
+        val description = stringResource(Res.string.best_part_description)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .clip(CircleShape)
+                // A dark slab with a light rim: reads as glass on any cover.
+                .background(Color.Black.copy(alpha = 0.38f))
+                .border(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.42f),
+                        1f to Color.White.copy(alpha = 0.14f),
+                    ),
+                    shape = CircleShape,
+                )
+                .clickable(role = Role.Button) {
+                    val target = start ?: return@clickable
+                    haptics.play(Haptic.Tap)
+                    bestPart.onTaken()
+                    onSeek(target)
+                }
+                .semantics { contentDescription = description }
+                .padding(start = 12.dp, end = 15.dp, top = 7.dp, bottom = 7.dp),
+        ) {
+            Icon(
+                imageVector = LayaIcons.MusicNote,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(15.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = stringResource(Res.string.best_part),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.W700,
+                color = Color.White,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** Just short of the best part already counts as there, so the pill doesn't flash back on a late reading. */
+private const val BEST_PART_SLACK_MS = 400L
+
+/** How far into the best part a playhead still counts as having heard it. */
+private const val BEST_PART_HEARD_MS = 20_000L
+
+private const val BEST_PART_FADE_MS = 280
+
+/** How long the pill stays up before it goes. */
+private const val BEST_PART_INTRO_MS = 3_000L
 
 /**
  * Previous, play/pause, next.

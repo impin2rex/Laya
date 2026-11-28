@@ -121,9 +121,9 @@ private fun DownloadRow(item: DesktopDownloadItem) {
                 is DesktopDownloadState.Running -> Column {
                     Text(
                         if (state.fraction > 0f) {
-                            "Downloading · ${(state.fraction * 100).toInt()}%"
+                            DesktopStrings.format("d_downloading_percent", (state.fraction * 100).toInt(), fallback = "Downloading · %1\$d%%")
                         } else {
-                            "Downloading"
+                            DesktopStrings["d_downloading", "Downloading"]
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = DesktopSecondary,

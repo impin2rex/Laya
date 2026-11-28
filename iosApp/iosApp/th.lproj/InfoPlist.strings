@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "Laya ฟังผ่านไมโครโฟนเมื่อคุณค้นหาด้วยเสียงหรือระบุเพลงที่กำลังเล่นอยู่ใกล้ ๆ";
+"NSSpeechRecognitionUsageDescription" = "Laya แปลงสิ่งที่คุณพูดเป็นการค้นหาเพลง ศิลปิน อัลบั้ม และเพลย์ลิสต์";
+"NSPhotoLibraryAddUsageDescription" = "Laya บันทึกการ์ด Replay และเนื้อเพลงของคุณลงในคลังรูปภาพเมื่อคุณแตะบันทึก";
+"NSLocalNetworkUsageDescription" = "Laya ค้นหา Chromecast และลำโพง Google Cast ใน Wi-Fi ของคุณ เพื่อให้คุณเล่นเพลงบนอุปกรณ์เหล่านั้นได้";

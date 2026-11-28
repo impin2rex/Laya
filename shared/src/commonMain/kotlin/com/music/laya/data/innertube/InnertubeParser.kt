@@ -137,6 +137,14 @@ object InnertubeParser {
             }
             .distinct()
 
+    /**
+     * Every card on a page of two-row items, wherever it sits — a carousel on
+     * Home, a grid on a "More" page such as Mixed for you. Used where the
+     * caller wants the cards and not the shelves they came in.
+     */
+    fun parseTwoRowItemsDeep(root: JsonElement): List<ShelfItem> =
+        collectRenderers(root, "musicTwoRowItemRenderer").mapNotNull(::parseTwoRowItem)
+
     /** Depth-first collection of a named renderer, preserving document order. */
     private fun collectRenderers(root: JsonElement, name: String): List<JsonObject> {
         val out = mutableListOf<JsonObject>()
@@ -203,6 +211,22 @@ object InnertubeParser {
                 ?: section.o("gridRenderer")?.let(::gridShelf)
         }
     }
+
+    /**
+     * Home's chip cloud (Relax, Workout, Energise…). Each chip browses FEmusic_home again with its
+     * own params, which is Home filtered to that mood. The chip already selected has no endpoint.
+     */
+    fun parseHomeChips(response: JsonObject): List<MoodGenre> =
+        response.o("contents")
+            .o("singleColumnBrowseResultsRenderer").a("tabs")?.firstOrNull()
+            .o("tabRenderer").o("content").o("sectionListRenderer").o("header")
+            .o("chipCloudRenderer").a("chips").orEmpty()
+            .mapNotNull { chip ->
+                val renderer = chip.o("chipCloudChipRenderer") ?: return@mapNotNull null
+                val browse = renderer.o("navigationEndpoint").o("browseEndpoint") ?: return@mapNotNull null
+                val title = renderer.o("text").runs().ifBlank { return@mapNotNull null }
+                MoodGenre(title, browse.s("browseId") ?: "FEmusic_home", browse.s("params"))
+            }
 
     /**
      * Seasonal mood pages (Hanukkah, Christmas) lay their playlists out as
@@ -504,6 +528,44 @@ object InnertubeParser {
         }
         walk(root)
         return out.values.toList()
+    }
+
+    /**
+     * The history page's "Remove from history" token for each of its rows, by track: a track played
+     * three times is three rows, each with its own token, and taking it off the history takes all of
+     * them. The item is told apart by its icon, which no translation of the page changes, or failing
+     * that by being the row's only plain feedback item.
+     */
+    fun historyRemovalTokens(root: JsonElement): Map<String, List<String>> {
+        val out = LinkedHashMap<String, MutableList<String>>()
+        fun walk(node: JsonElement) {
+            when (node) {
+                is JsonObject -> {
+                    (node["musicResponsiveListItemRenderer"] as? JsonObject)?.let { row ->
+                        val videoId = row.o("playlistItemData").s("videoId")
+                            ?: row.o("overlay").o("musicItemThumbnailOverlayRenderer").o("content")
+                                .o("musicPlayButtonRenderer").o("playNavigationEndpoint")
+                                .o("watchEndpoint").s("videoId")
+                        // Library add/remove are toggle items, so a history row's one plain feedback item
+                        // is its removal: taken by that when the icon is not the one expected.
+                        val feedback = row.o("menu").o("menuRenderer").a("items").orEmpty().mapNotNull { item ->
+                            val service = item.o("menuServiceItemRenderer") ?: return@mapNotNull null
+                            val token = service.o("serviceEndpoint").o("feedbackEndpoint").s("feedbackToken")
+                                ?: return@mapNotNull null
+                            service.o("icon").s("iconType") to token
+                        }
+                        val token = feedback.firstOrNull { it.first == "REMOVE_FROM_HISTORY" }?.second
+                            ?: feedback.singleOrNull()?.second
+                        if (videoId != null && token != null) out.getOrPut(videoId) { mutableListOf() } += token
+                    }
+                    node.values.forEach(::walk)
+                }
+                is JsonArray -> node.forEach(::walk)
+                else -> Unit
+            }
+        }
+        walk(root)
+        return out
     }
 
     /** A playlist page's own tracks, the ones YouTube suggests adding, and the token for the rest. */

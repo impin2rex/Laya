@@ -31,6 +31,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,6 +46,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import com.music.laya.download.FlacFromMp4
 import okio.BufferedSink
 import okio.FileSystem
 import okio.Path
@@ -56,6 +60,19 @@ import platform.Foundation.NSURL
 import platform.Foundation.NSURLIsExcludedFromBackupKey
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.timeIntervalSince1970
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.download_failed_generic
+import com.music.laya.sharedui.resources.download_http_failed
+import com.music.laya.sharedui.resources.download_no_length
+import com.music.laya.sharedui.resources.download_no_youtube_match
+import com.music.laya.sharedui.resources.download_stalled
+import com.music.laya.sharedui.resources.download_stopped
+import com.music.laya.sharedui.resources.download_stopped_of
+import com.music.laya.sharedui.resources.download_waiting_wifi
+import org.jetbrains.compose.resources.getPluralString
+import org.jetbrains.compose.resources.getString
+import com.music.laya.sharedui.resources.downloads
+import com.music.laya.sharedui.resources.song_count_plural
 
 /** Where a track is between "not on this device" and "on it" (Android's DownloadState). */
 internal sealed interface IosDownloadState {
@@ -105,6 +122,13 @@ internal object IosDownloads {
             fs.createDirectories(it)
             // A transfer cut off by the app being killed leaves its .part behind.
             fs.list(it).filter { f -> f.name.endsWith(".part") }.forEach { f -> fs.delete(f) }
+            // A file the index no longer names: a song saved again in another format (m4a, then flac) left
+            // the old one behind, kept for good. Skipped when the index can't be read, so nothing saved is lost.
+            val index = it / "index.json"
+            runCatching { json.decodeFromString(ListSerializer(Entry.serializer()), fs.read(index) { readUtf8() }) }.getOrNull()?.let { entries ->
+                val named = entries.flatMapTo(hashSetOf("index.json")) { e -> listOfNotNull(e.file, e.artwork) }
+                fs.list(it).filter { f -> f.name !in named && !f.name.startsWith("index.json") }.forEach { f -> fs.delete(f) }
+            }
             NSURL.fileURLWithPath(it.toString()).setResourceValue(true, NSURLIsExcludedFromBackupKey, null)
         }
     }
@@ -155,15 +179,18 @@ internal object IosDownloads {
     /** The Downloads page, newest first. */
     fun page(): DetailPage {
         val songs = saved.value.values.filter(::onDisk).sortedByDescending { it.added }.map(::localSong)
-        return DetailPage(DOWNLOADS_BROWSE_ID, "Downloads", if (songs.size == 1) "1 song" else "${songs.size} songs", songs.firstOrNull()?.thumbnailUrl, UiState.Success(songs))
+        return DetailPage(DOWNLOADS_BROWSE_ID, blocking { getString(Res.string.downloads) }, blocking { getPluralString(Res.plurals.song_count_plural, songs.size, songs.size) }, songs.firstOrNull()?.thumbnailUrl, UiState.Success(songs))
     }
+
+    // ponytail: page() is called from composition and click handlers alike, so it reads its two labels synchronously.
+    private fun <T> blocking(block: suspend () -> T): T = kotlinx.coroutines.runBlocking { block() }
 
     // ---- Asking -------------------------------------------------------------
 
     fun enqueue(song: Song) {
         val id = song.videoId
         if (id in jobs || fileUrl(id) != null) return
-        if (!AppSettings.downloadsAllowedNow) return fail(id, "Waiting for Wi-Fi (see Settings, Downloads)")
+        if (!AppSettings.downloadsAllowedNow) { scope.launch { fail(id, getString(Res.string.download_waiting_wifi)) }; return }
         set(id, IosDownloadState.Queued)
         jobs[id] = scope.launch {
             try {
@@ -174,7 +201,7 @@ internal object IosDownloads {
                 throw e
             } catch (e: Throwable) {
                 TrackLog.w("Laya", "download of $id failed: ${e.message}", about = id)
-                fail(id, e.message?.takeIf { it.length < 80 } ?: "Download failed")
+                fail(id, e.message?.takeIf { it.length < 80 } ?: getString(Res.string.download_failed_generic))
             } finally {
                 jobs.remove(id)
             }
@@ -257,17 +284,24 @@ internal object IosDownloads {
     private suspend fun routeFor(song: Song, quality: DownloadQuality): Route {
         fromSources(song, quality)?.let { (stream, ext) ->
             val format = stream.format
+            val playlist = isLocalPlaylist(stream.url)
             return Route(
                 ext, if (format.isDolbyAtmos) "DOLBY" else if (ext == "flac") "FLAC" else null,
-            ) { sink, progress -> fetchDirect(stream.url, stream.headers, sink, progress) }
+            ) { sink, progress ->
+                if (playlist) fetchSegments(stream.url, sink, progress)
+                else fetchDirect(stream.url, stream.headers, sink, progress)
+            }
         }
-        val ytId = youtubeSeedFor(song) ?: error("No YouTube match for this track")
+        val ytId = youtubeSeedFor(song) ?: error(getString(Res.string.download_no_youtube_match))
         // m4a only: AVPlayer can't play the WebM/Opus rungs.
         val stream = StreamResolver.resolveForDownload(ytId, quality.maxKbps, requireM4a = true)
         return Route("m4a", if (stream.kbps > 0) "AAC · ${stream.kbps} kbps" else null) { sink, progress -> fetchRanged(stream.url, sink, progress) }
     }
 
-    /** Android's fromSources: bounded, and null is not a failure, just YouTube's turn. Manifests (HLS/DASH) are not assembled on iOS. */
+    /**
+     * Android's fromSources: bounded, and null is not a failure, just YouTube's turn. A remote manifest
+     * is still nobody's job here; the local playlist [DashToHls] writes for Tidal is assembled instead.
+     */
     private suspend fun fromSources(song: Song, quality: DownloadQuality): Pair<SourceStream, String>? {
         val stream = withTimeoutOrNull(SOURCE_LOOKUP_MS) {
             try {
@@ -279,6 +313,8 @@ internal object IosDownloads {
                 null
             }
         } ?: return null
+        // Its segments hold FLAC frames, which [FlacFromMp4] writes out as a native FLAC file.
+        if (isLocalPlaylist(stream.url)) return stream to "flac"
         val path = stream.url.substringBefore('?').lowercase()
         if (path.endsWith(".m3u8") || path.endsWith(".mpd")) return null
         val ext = when (stream.format.codec?.lowercase()?.trim()) {
@@ -301,7 +337,7 @@ internal object IosDownloads {
         val total = Url(url).parameters["clen"]?.toLongOrNull()?.takeIf { it > 0 } ?: client.get(url) {
             headers.forEach { (k, v) -> header(k, v) }
             header("Range", "bytes=0-0")
-        }.headers["Content-Range"]?.substringAfter('/', "")?.toLongOrNull() ?: error("Track unavailable: no length to fetch")
+        }.headers["Content-Range"]?.substringAfter('/', "")?.toLongOrNull() ?: error(getString(Res.string.download_no_length))
         var pos = 0L
         while (pos < total) {
             val len = minOf(CHUNK_BYTES, PlayerClient.rangeBytesFor(url), total - pos)
@@ -309,13 +345,61 @@ internal object IosDownloads {
                 headers.forEach { (k, v) -> header(k, v) }
                 header("Range", "bytes=$pos-${pos + len - 1}")
             }
-            if (r.status.value !in 200..299) error("Download failed (HTTP ${r.status.value})")
+            if (r.status.value !in 200..299) error(getString(Res.string.download_http_failed, r.status.value))
             val bytes = r.bodyAsBytes()
-            if (bytes.isEmpty() || bytes.size > len) error("Download stalled at ${pos}B")
+            if (bytes.isEmpty() || bytes.size > len) error(getString(Res.string.download_stalled, pos))
             sink.write(bytes)
             pos += bytes.size
             progress(pos, total)
         }
+    }
+
+    /** The playlist [DashToHls] wrote for a Tidal stream, saved where only this device can see it. */
+    private fun isLocalPlaylist(url: String) =
+        url.startsWith("file://") && url.substringBefore('?').lowercase().endsWith(".m3u8")
+
+    /**
+     * An HLS playlist's segments written out as the native FLAC they hold, by the same [FlacFromMp4]
+     * Android files its manifest downloads with: the frames are kept bit for bit and only the container
+     * changes, so what lands on disk is a `.flac` any player opens rather than an MP4 wearing the name.
+     *
+     * A window at a time, in playlist order, so a track arrives in a few seconds while only a window of
+     * it is ever held in memory. The frames spill to a file first because STREAMINFO goes in front of
+     * them and stated the total sample count, which is only known once the last segment is in. Progress
+     * counts segments: their lengths are stated nowhere up front, and the bar only wanted a fraction.
+     */
+    private suspend fun fetchSegments(playlist: String, sink: BufferedSink, progress: (Long, Long) -> Unit) {
+        val text = fs.read(playlist.removePrefix("file://").toPath()) { readUtf8() }
+        // Without the init segment the media segments describe no track at all.
+        val initial = INIT_SEGMENT.find(text)?.groupValues?.get(1) ?: error(getString(Res.string.download_failed_generic))
+        val media = text.lineSequence().map { it.trim() }.filter { it.startsWith("http") }.toList()
+        if (media.isEmpty()) error(getString(Res.string.download_failed_generic))
+        val total = media.size + 1L
+        val stream = FlacFromMp4.open(fetchPart(initial))
+        progress(1, total)
+
+        val spill = dir / "${playlist.substringAfterLast('/')}.frames"
+        try {
+            var ticks = 0L
+            var done = 1L
+            fs.sink(spill).buffer().use { frames ->
+                media.chunked(SEGMENT_WINDOW).forEach { window ->
+                    coroutineScope { window.map { async { fetchPart(it) } }.awaitAll() }.forEach { bytes ->
+                        ticks += stream.frames(bytes, frames)
+                        progress(++done, total)
+                    }
+                }
+            }
+            fs.source(spill).buffer().use { frames -> stream.finish(ticks, frames, sink) }
+        } finally {
+            fs.delete(spill, mustExist = false)
+        }
+    }
+
+    private suspend fun fetchPart(url: String): ByteArray {
+        val r = client.get(url)
+        if (r.status.value !in 200..299) error(getString(Res.string.download_http_failed, r.status.value))
+        return r.bodyAsBytes().also { if (it.isEmpty()) error(getString(Res.string.download_stopped, 0L)) }
     }
 
     /**
@@ -332,8 +416,8 @@ internal object IosDownloads {
                     headers.forEach { (k, v) -> header(k, v) }
                     if (written > 0) header("Range", "bytes=$written-")
                 }.execute { r ->
-                    if (written > 0 && r.status.value != 206) error("Download stopped at ${written}B")
-                    if (r.status.value !in 200..299) error("Download failed (HTTP ${r.status.value})")
+                    if (written > 0 && r.status.value != 206) error(getString(Res.string.download_stopped, written))
+                    if (r.status.value !in 200..299) error(getString(Res.string.download_http_failed, r.status.value))
                     if (written == 0L) total = r.contentLength()?.takeIf { it > 0 }
                     val channel = r.bodyAsChannel()
                     val buffer = ByteArray(64 * 1024)
@@ -345,7 +429,7 @@ internal object IosDownloads {
                         total?.let { progress(written, it) }
                     }
                 }
-                if (total != null && written < total!!) error("Download stopped at ${written}B of $total")
+                if (total != null && written < total!!) error(getString(Res.string.download_stopped_of, written, total.toString()))
                 return
             } catch (e: CancellationException) {
                 throw e
@@ -357,6 +441,10 @@ internal object IosDownloads {
     }
 
     private const val RESUMES = 3
+
+    /** Segments in the air at once while a playlist is assembled (see fetchSegments). */
+    private const val SEGMENT_WINDOW = 8
+    private val INIT_SEGMENT = Regex("""#EXT-X-MAP:URI="([^"]+)"""")
 }
 
 private const val COVER_PX = 544

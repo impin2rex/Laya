@@ -1,5 +1,7 @@
 package com.music.laya.ios
 
+import com.music.laya.data.settings.MusicVideoChoice
+import com.music.laya.data.aifilter.AiSongs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,8 +18,11 @@ import com.music.laya.data.YtMusicRepository
 import com.music.laya.data.innertube.PlaybackTracker
 import com.music.laya.data.innertube.PlayerClient
 import com.music.laya.data.innertube.StreamResolver
+import com.music.laya.data.model.QueueEntryIdentity
 import com.music.laya.data.model.QueueTier
 import com.music.laya.data.model.Song
+import com.music.laya.data.model.entryIdentityAt
+import com.music.laya.playback.AutoMixVisualFeed
 import com.music.laya.data.model.artworkAt
 import com.music.laya.data.settings.AppSettings
 import com.music.laya.data.settings.SmartAnalysis
@@ -34,6 +39,7 @@ import com.music.laya.data.sources.SourceRegistry
 import com.music.laya.data.sources.SourceResolver
 import com.music.laya.data.sources.SourceStream
 import com.music.laya.data.sources.StreamFormat
+import com.music.laya.data.sources.StreamRequest
 import com.music.laya.data.sources.TrackMatcher
 import com.music.laya.playback.youtubeSeedFor
 import com.music.laya.platform.ioDispatcher
@@ -47,6 +53,7 @@ import com.music.laya.data.settings.EqualizerMode
 import com.music.laya.playback.QueueBuilder
 import com.music.laya.playback.manualCurve
 import com.music.laya.playback.toneCurve
+import com.music.laya.playback.QueueEdits
 import com.music.laya.playback.QueueTimeline
 import com.music.laya.playback.QueueTimeline.asQueueEntry
 import com.music.laya.ui.player.RepeatModes
@@ -59,7 +66,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import com.music.laya.playback.karaoke.KaraokeNative
-import com.music.laya.playback.smart.VersionAlignment
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
@@ -74,37 +80,14 @@ import kotlinx.coroutines.withContext
 import platform.Foundation.NSDate
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.cant_cast_track
+import com.music.laya.sharedui.resources.couldnt_play_song
+import com.music.laya.sharedui.resources.no_better_copy
+import com.music.laya.sharedui.resources.switch_to_youtube_failed
 
 /** Android's rule: googlevideo in bounded ranges (it throttles one long read), any other host in one open request. */
 private fun chunkBytesFor(url: String) = PlayerClient.rangeBytesFor(url)
-/** How far an addon copy of a YouTube track sits from the YouTube cut its lyrics are timed to; added to the listener's own lyrics offset. */
-internal object IosLyricsAlign {
-    val offsetMs = MutableStateFlow(0)
-}
-
-/** Seconds of each cut the version alignment compares (Android's AudioDecoder.decodeRegion reads the same 45). */
-private const val ALIGN_SECONDS = 45
-
-/** The first [ALIGN_SECONDS] of [src] as 44.1 kHz mono, or null when it can't be decoded. Blocks; worker threads only. */
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-private fun pcmHead(src: Opened, native: KaraokeNative): FloatArray? {
-    val pcm = native.openPcm(src.url, src.headers, src.mime, src.length, chunkBytesFor(src.url)) ?: return null
-    try {
-        val want = ALIGN_SECONDS * 44_100
-        val out = FloatArray(want)
-        val block = FloatArray(16_384 * 2)
-        var n = 0
-        while (n < want) {
-            val frames = block.usePinned { pcm.read(it.addressOf(0), minOf(16_384, want - n)) }
-            if (frames <= 0) break
-            for (i in 0 until frames) out[n + i] = (block[2 * i] + block[2 * i + 1]) / 2
-            n += frames
-        }
-        return if (n >= 5 * 44_100) out.copyOf(n) else null
-    } finally {
-        pcm.close()
-    }
-}
 
 /** Retries of one broken track before it is left paused for the listener; reset by a different track or a quiet minute. */
 private const val MAX_RECOVERIES = 3
@@ -116,9 +99,16 @@ private const val MAX_AUTOPLAY = 10
 private const val SUBSTITUTE_TIMEOUT_MS = 20_000L
 /** Android's UPGRADE_MIN_REMAINING_MS: an upgrade this close to the end is not worth the swap. */
 private const val UPGRADE_MIN_REMAINING_MS = 20_000L
+/** Android's DirectSourceGate.WINDOW_MS: how far ahead of a transition the next track may be resolved. */
+private const val DIRECT_WINDOW_MS = 25_000L
+/** Android's DirectSourceGate.LOOKUP_TIMEOUT_MS: how long a start waits on the sources before YouTube. */
+private const val DIRECT_LOOKUP_TIMEOUT_MS = 15_000L
+private const val DIRECT_MISS_KEPT_MS = 30 * 60_000L
 
 /** Android's DEFAULT_SMART_FALLBACK_SECONDS: the fade a pair gets before it is analysed, when the slider says Off. */
 private const val DEFAULT_SMART_FALLBACK_SECONDS = 6.0
+/** How far ahead of an Automix blend its artwork pair is armed, for the incoming cover's decode. */
+private const val AUTOMIX_VISUAL_ARM_LEAD_SEC = 8.0
 
 /** Tracks kept queued on the receiver after the playing one (Android CastPlayback.AHEAD), so it moves on alone with the phone asleep. */
 private const val CAST_AHEAD = 3
@@ -133,6 +123,10 @@ private class Opened(
     val format: StreamFormat? = null,
     /** A better copy that may still arrive (a lossless search that outlasted the quick answer). */
     val pending: Deferred<SourceStream?>? = null,
+    /** The source serving it, so the second look ([SourceResolver.upgradeFor]) doesn't ask it again. */
+    val sourceConfigId: String? = null,
+    /** Direct Source Stream's answer: plays to the end, no second look. */
+    val direct: Boolean = false,
 )
 
 private class KaraokeSource(val url: String, val headers: Map<String, String>, val mime: String, val length: Long)
@@ -153,6 +147,10 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
          */
         fun shared(engine: AudioEngine): IosPlayer =
             instance ?: IosPlayer(engine, CoroutineScope(SupervisorJob() + Dispatchers.Main)).also { instance = it }
+
+        /** What [videoId] was last opened from, for the lyrics share video to cut the song from. */
+        internal fun shareStream(videoId: String): IosShareStream? =
+            instance?.streams?.get(videoId)?.let { IosShareStream(it.url, it.headers, it.mime, it.length, chunkBytesFor(it.url)) }
     }
 
     var queue by mutableStateOf(emptyList<Song>()); private set
@@ -199,8 +197,23 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private var lastSavedAt = 0L
     private val party = IosPartySync(scope, this)
 
+    /**
+     * Drops upcoming radio/AutoPlay songs known to be AI-generated, when the filter is on: the ones
+     * whose lookup was still in flight when [YtMusicRepository.radio] handed them over. The
+     * listener's own picks stay. True when the queue changed (and [queueChanged] has run for it).
+     */
+    private fun dropAiAutoplay(flagged: Set<String>): Boolean {
+        if (!AiSongs.hide.value || flagged.isEmpty() || locked()) return false
+        val kept = queue.filterIndexed { i, s -> i <= index || !(s.fromAutoplay && s.videoId in flagged) }
+        if (kept.size == queue.size) return false
+        queue = kept
+        queueChanged()
+        return true
+    }
+
     init {
         engine.setListener(this)
+        scope.launch { combine(AiSongs.hide, AiSongs.flagged) { _, flagged -> flagged }.collect { dropAiAutoplay(it) } }
         IosCast.player = this
         IosMusicVideo.player = this
         IosScrobbler.attach(scope)
@@ -279,15 +292,21 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                     ),
                 )
                 engine.setTransition(-1, fadeMs, 0, 1f, 1f)
+                transitionAtMs = if (fadeMs > 0 && durationMs > 0) durationMs - fadeMs else -1
             }
         }
     }
 
     private fun noTransition() {
+        if (IosTransition.live == null) cancelAutoMixVisual()
         AppSettings.smartTransitionWindow.value = null
         IosTransition.setPlan(null)
         engine.setTransition(-1, 0, 0, 1f, 1f)
+        transitionAtMs = -1
     }
+
+    /** Where the queued track's fade is due to start in this one (ms), or -1 for none: Direct Source's window counts to it. */
+    private var transitionAtMs = -1L
 
     // ---- Automix (Android's CrossfadeController.considerSmartTransition; the blend itself is rendered by IosTransition) ----
 
@@ -308,6 +327,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private fun automix(positionMs: Long) {
         val cur = song ?: return
         val next = queue.getOrNull(autoNext())
+        // A restored queue not started yet has its saved length but nothing loaded: no plan, no "analysed" in nerd stats.
+        if (pendingMs != null) return
         val dur = durationMs.takeIf { it > 0 } ?: return
         // A video's own audio only; one switched to its audio release mixes as music.
         if (next == null || cur.isVideo || next.isVideo) {
@@ -349,10 +370,33 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                 outAnalysis = a, inAnalysis = b, inDurationSec = secondsOf(next),
             ),
         )
+        transitionAtMs = (plan.transitionStart * 1000).toLong()
         engine.setTransition(
             (plan.transitionStart * 1000).toLong(), plan.fadeMs, (plan.incomingCueTime * 1000).toLong(),
             plan.incomingPlaybackRate.toFloat(), plan.outgoingPlaybackRate.toFloat(),
         )
+        armAutoMixVisual(autoNext(), plan.transitionStart, positionMs)
+    }
+
+    /**
+     * Arms the artwork's AutoMix pair a few seconds ahead of the blend, so the incoming cover can be decoded before
+     * the reveal (Android arms it with the standby player). Never while a blend runs: after its handoff this is the
+     * next pair being planned, and the one on screen is still dissolving.
+     */
+    private fun armAutoMixVisual(nextIndex: Int, startSec: Double, positionMs: Long) {
+        if (IosTransition.live != null) return
+        val armed = AutoMixVisualFeed.pending(IosTransition.visualGeneration)
+        if (armed != null) {
+            if (armed.outgoing.identity == queue.entryIdentityAt(index) && armed.incoming.identity == queue.entryIdentityAt(nextIndex)) return
+            cancelAutoMixVisual()
+        }
+        if (positionMs / 1000.0 < startSec - AUTOMIX_VISUAL_ARM_LEAD_SEC) return
+        IosTransition.visualGeneration = AutoMixVisualFeed.arm(queue, index, nextIndex)
+    }
+
+    private fun cancelAutoMixVisual() {
+        AutoMixVisualFeed.cancel(IosTransition.visualGeneration)
+        IosTransition.visualGeneration = null
     }
 
     /** A host that holds the controls takes them from every listener: the call does nothing. */
@@ -393,7 +437,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun setPlaying(play: Boolean) {
         if (party.handleLockedPlayPause(play)) return
         val at = pendingMs
-        if (!play) pauseOut() else if (at != null) start(index, at) else resumeOut()
+        if (!play) { cancelAutoMixVisual(); pauseOut() } else if (at != null) start(index, at) else resumeOut()
         party.onLocalIntent()
     }
 
@@ -402,6 +446,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     fun seekTo(ms: Long) = intent { rawSeek(ms) }
 
     private fun rawSeek(ms: Long) {
+        cancelAutoMixVisual()
         if (pendingMs != null) { pendingMs = ms; position.seeks++; position.report(ms); return }
         if (IosCast.active) { castSeekAt = NSDate().timeIntervalSinceReferenceDate; IosCast.native?.seekTo(ms) } else
         engine.seekTo(ms)
@@ -424,6 +469,57 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         queue = queue.toMutableList().apply { removeAt(i) }
         if (i < index) index--
         queueChanged()
+    }
+
+    private class Removal(val token: Long, val before: List<Song>, val removed: List<Int>)
+    private var lastRemoval: Removal? = null
+    private var removalTokens = 0L
+
+    /** The queue screen's removal: rows by identity, one Undo token for the lot. Null when nothing went. */
+    fun removeEntries(entries: List<QueueEntryIdentity>): Long? {
+        var token: Long? = null
+        intent {
+            val before = queue
+            val indices = QueueEdits.resolve(before, entries, QueueEdits.songKey).filter { it != index }
+            if (indices.isEmpty()) return@intent
+            val (kept, at) = QueueEdits.remove(before, index, indices)
+            queue = kept
+            index = at
+            token = ++removalTokens
+            lastRemoval = Removal(removalTokens, before, indices)
+            queueChanged()
+        }
+        return token
+    }
+
+    /** Puts back what [removeEntries] answered [token] for, unless the queue has moved on too far. */
+    fun undoRemoval(token: Long): Boolean {
+        val removal = lastRemoval?.takeIf { it.token == token } ?: return false
+        lastRemoval = null
+        var done = false
+        intent {
+            val (restored, at) = QueueEdits.restore(removal.before, removal.removed, queue, index, QueueEdits.sameSong)
+                ?: return@intent
+            queue = restored
+            index = at
+            done = true
+            queueChanged()
+        }
+        return done
+    }
+
+    /** A swipe into Next in queue: its head or tail, per the swipe setting. */
+    fun moveToUserQueue(entry: QueueEntryIdentity): Boolean {
+        var done = false
+        intent {
+            val from = QueueEdits.resolve(queue, listOf(entry), QueueEdits.songKey).singleOrNull() ?: return@intent
+            val (moved, at) = QueueEdits.moveToUserQueue(queue, index, from, AppSettings.swipeToPlayNext.value) ?: return@intent
+            queue = moved
+            index = at
+            done = true
+            queueChanged()
+        }
+        return done
     }
 
     fun move(from: Int, to: Int) = intent {
@@ -507,6 +603,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun queueChanged() {
+        if (dropAiAutoplay(AiSongs.flagged.value)) return
+        AiSongs.request(queue.drop(index + 1).filter { it.fromAutoplay }.map { it.videoId })
         IosPlayerStore.saveQueue(queue, index)
         announce()
         preResolveNext()
@@ -555,6 +653,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             sourceName = config?.displayName ?: "Source",
             format = stream.format,
             pending = pending,
+            sourceConfigId = stream.sourceConfigId,
         )
     }
 
@@ -601,11 +700,31 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                 }
             } else null
             val late = CompletableDeferred<SourceStream?>()
+            val askedAt = com.music.laya.platform.currentTimeMillis()
             val stream = withTimeoutOrNull(SUBSTITUTE_TIMEOUT_MS * 6) { SourceResolver.resolve(configId, trackId, target, mix, late) }
-                ?: error("No enabled source could serve ${song.title}")
+            TrackLog.d(
+                "Laya",
+                "iOS resolve of '${song.title}' (${SourceRegistry.config(configId)?.displayName ?: configId}) took " +
+                    "${com.music.laya.platform.currentTimeMillis() - askedAt}ms → ${stream?.format?.summary ?: "nothing"}",
+                about = song.videoId,
+            )
+            stream ?: error("No enabled source could serve ${song.title}")
             return fromSource(stream, late.takeIf { !it.isCompleted })
         }
         if (!SourceResolver.canSubstituteForYouTube()) return youtube(song.videoId)
+        if (directActive()) {
+            // Direct Source Stream (Android's DirectSourceGate): the sources are waited for and their answer plays
+            // from the first note. YouTube only when nothing answered in time; a lookup still going swaps in later.
+            val lookup = directLookup(song, target)
+            val found = withTimeoutOrNull(DIRECT_LOOKUP_TIMEOUT_MS) { runCatching { lookup.await() }.getOrNull() }
+            if (found != null) {
+                val o = fromSource(found)
+                return Opened(o.url, o.headers, o.mime, o.length, o.sourceName, o.format, sourceConfigId = o.sourceConfigId, direct = true)
+            }
+            val onYouTube = youtube(song.videoId)
+            return if (lookup.isActive) Opened(onYouTube.url, onYouTube.headers, onYouTube.mime, onYouTube.length, onYouTube.sourceName, pending = lookup)
+            else onYouTube
+        }
         if (patient) {
             val warmed = runCatching { SourceResolver.prefetchSubstitute(target, patient = true) }.getOrNull()
             return warmed?.let { fromSource(it) } ?: youtube(song.videoId)
@@ -631,7 +750,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     private suspend fun resolveInto(song: Song, next: Boolean) = withContext(ioDispatcher) {
         val o = open(song, patient = next)
         hand(song, o, next)
-        if (!next && o.pending != null) watchUpgrade(song, o)
+        if (!next) watchUpgrade(song, o)
     }
 
     /** Gives the engine [o] and records what it is, for Karaoke and the nerd stats. */
@@ -648,7 +767,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         )
         NerdStats.recordSource(song.videoId, o.sourceName)
         o.format?.let { NerdStats.onSourceStream(song.videoId, it, o.sourceName) }
-        if (!next) { alignLyrics(song, o); playingOpened = song.videoId to o } else queuedOpened = song.videoId to o
+        if (!next) playingOpened = song.videoId to o else queuedOpened = song.videoId to o
         if (next) { syncTransition(); engine.setNext(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url)) } // plan first: the engine parks the track by it
         else if (swap) engine.swapCurrent(o.url, o.headers, o.mime, o.length, chunkBytesFor(o.url))
         else {
@@ -665,54 +784,107 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
      */
     private var handing = false
 
-    private var alignJob: Job? = null
-    /** What the engine was last handed as the next track, so its lyrics are aligned when it starts by itself. */
+    /** What the engine was last handed as the next track, for the second look when it starts by itself. */
     @Volatile private var queuedOpened: Pair<String, Opened>? = null
 
-    /**
-     * Lyrics are timed to the YouTube cut. When another release plays instead (an addon's copy of a YouTube track),
-     * measure how far it sits from YouTube's with the shared Android alignment math and shift the lyrics by it.
-     * Both heads are read through PcmReader; the addon's comes from the StreamCache file the player already fills.
-     */
-    private fun alignLyrics(song: Song, o: Opened) {
-        alignJob?.cancel()
-        IosLyricsAlign.offsetMs.value = 0
-        val native = IosKaraoke.native ?: return
-        if (o.sourceName == "YouTube" || o.sourceName == "Downloaded" || SourceRegistry.parseTrackKey(song.videoId) != null) return
-        alignJob = scope.launch(ioDispatcher) {
-            val yt = runCatching { youtube(song.videoId) }.getOrNull() ?: return@launch
-            val ytPcm = pcmHead(yt, native) ?: return@launch println("IosPlayer: version alignment: no YouTube audio for ${song.title}")
-            val addonPcm = pcmHead(o, native) ?: return@launch println("IosPlayer: version alignment: no ${o.sourceName} audio for ${song.title}")
-            val a = VersionAlignment.align(ytPcm, 44_100.0, 0.0, addonPcm, 44_100.0, 0.0)
-            println("IosPlayer: version alignment ${o.sourceName} vs YouTube for ${song.title}: offset=${a.offsetMs} lag=${a.correlation.lagFrames} conf=${a.correlation.confidence} ${a.why ?: ""}")
-            if (this@IosPlayer.song?.videoId == song.videoId) {
-                IosLyricsAlign.offsetMs.value = a.offsetMs?.toInt() ?: 0
-                println("IosPlayer: lyrics offset applied ${IosLyricsAlign.offsetMs.value} ms")
+    /** Direct Source Stream is on and has a source above YouTube to stream from; never in a party. */
+    private fun directActive(): Boolean =
+        AppSettings.directSourceStream.value && !ListenTogether.state.value.inParty && SourceResolver.directSources().isNotEmpty()
+
+    /** One lookup per track, shared by the next-track prefetch and the play itself. */
+    private val directLookups = com.music.laya.platform.ConcurrentMap<String, Deferred<SourceStream?>>()
+    /** Tracks no source had (a clean miss), so a later play doesn't wait out the lookup again. ponytail: session-long. */
+    private val directMissed = com.music.laya.platform.ConcurrentMap<String, Long>()
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun directLookup(song: Song, target: TrackMatcher.Target): Deferred<SourceStream?> {
+        val now = com.music.laya.platform.currentTimeMillis()
+        directMissed[song.videoId]?.let { at -> if (now - at < DIRECT_MISS_KEPT_MS) return CompletableDeferred(null) }
+        directLookups[song.videoId]?.takeIf { !it.isCompleted || runCatching { it.getCompleted() }.getOrNull() != null }?.let { return it }
+        if (directLookups.size > 32) directLookups.clear()
+        if (directMissed.size > 256) directMissed.clear()
+        return scope.async(ioDispatcher) {
+            // A row queued without a runtime can't be held to one; YouTube's is one metadata call away.
+            val withLength = if (target.durationSec != null) target else target.copy(
+                durationSec = withTimeoutOrNull(5_000) {
+                    YtMusicRepository.trackLinks(song.videoId).getOrNull()?.durationText?.let(TrackMatcher::secondsOf)
+                },
+            )
+            // ponytail: no preview-size check here (Android's StreamLengthProbe is JVM-only); the runtime match covers most.
+            val answer = runCatching { SourceResolver.directStream(withLength) }.getOrNull()
+            if (answer != null && answer.stream == null && !answer.errored) {
+                directMissed[song.videoId] = com.music.laya.platform.currentTimeMillis()
             }
-        }
+            answer?.stream
+        }.also { directLookups[song.videoId] = it }
     }
 
     /**
      * Swaps to the better copy a source lands on while [song] is playing, at the same position and without a break
      * in the audio ([AudioEngine.swapCurrent]). Only when it is the same recording (runtime within the resolver's drift).
+     *
+     * Two steps, as Android's QualityUpgrade.lookAgain: the quick lookup still running when playback started gets
+     * first refusal; then, if what plays is still short of a lossless request, every source is asked again with every
+     * module waited for ([SourceResolver.upgradeFor]). The quick race gives up on a slow Tidal or Qobuz backend to
+     * start the audio; without this second look the track stayed on JioSaavn's 320 or YouTube for its whole length.
      */
     private fun watchUpgrade(song: Song, o: Opened) {
         upgradeJob?.cancel()
         upgradeJob = scope.launch {
-            NerdStats.onLosslessRaceStart(song.videoId) // the player's "Upgrading quality" label, as on Android
-            val better = try { runCatching { o.pending?.await() }.getOrNull() } finally { NerdStats.onLosslessRaceEnd(song.videoId) }
-                ?: return@launch
-            if (this@IosPlayer.song?.videoId != song.videoId) return@launch
-            if (!SourceResolver.worthSwapping(better.format, o.format)) return@launch
-            if (!SourceResolver.sameRecordingAs(better.durationSec, durationMs.takeIf { it > 0 }?.let { (it / 1000).toInt() })) return@launch
-            if (durationMs - position.positionMs < UPGRADE_MIN_REMAINING_MS) return@launch
-            val opened = withContext(ioDispatcher) { fromSource(better) }
-            if (this@IosPlayer.song?.videoId != song.videoId) return@launch
-            hand(song, opened, next = false, swap = true) // the engine crossfades it in at the position it has reached
-            preResolveNext() // the swap dropped the engine's queued item
+            var playing = o
+            o.pending?.let { pending ->
+                NerdStats.onLosslessRaceStart(song.videoId) // the player's "Upgrading quality" label, as on Android
+                val better = try { runCatching { pending.await() }.getOrNull() } finally { NerdStats.onLosslessRaceEnd(song.videoId) }
+                if (better != null) swapIn(song, better, o.format)?.let { playing = it }
+            }
+            if (this@IosPlayer.song?.videoId != song.videoId || !wantsSecondLook(song, playing)) return@launch
+            val found = lookAgain(song, playing, byHand = false) ?: return@launch
+            swapIn(song, found, playing.format)
         }
     }
 
+    /** Whether [playing] is still short of what the connection asks for, and the sources may be asked again. */
+    private fun wantsSecondLook(song: Song, playing: Opened): Boolean {
+        if (playing.direct || playing.sourceName == "Downloaded" || IosOriginalVersion.isPinned(song.videoId)) return false
+        if (SourceRegistry.parseTrackKey(song.videoId) != null || !SourceResolver.canSubstituteForYouTube()) return false
+        if (SourceResolver.requestForNow() !is StreamRequest.Lossless) return false
+        val f = playing.format
+        return f?.isLossless != true && f?.isDolbyAtmos != true
+    }
+
+    /** The patient search, matched against the runtime the engine reports (Android's effectiveTargetDuration). */
+    private suspend fun lookAgain(song: Song, playing: Opened, byHand: Boolean): SourceStream? {
+        val playingSec = withTimeoutOrNull(10_000) {
+            while (durationMs <= 0) delay(250)
+            (durationMs / 1000).toInt()
+        } ?: return null
+        val target = TrackMatcher.targetOf(song)
+        val expected = target.durationSec
+        val sec = if (expected != null && TrackMatcher.isSevereMismatch(expected, playingSec)) expected else playingSec
+        NerdStats.onLosslessRaceStart(song.videoId)
+        return try {
+            withContext(ioDispatcher) {
+                withTimeoutOrNull(SUBSTITUTE_TIMEOUT_MS * 2) {
+                    runCatching {
+                        SourceResolver.upgradeFor(target.copy(durationSec = sec), playing = playing.format, servedBy = playing.sourceConfigId, byHand = byHand)
+                    }.getOrNull()
+                }
+            }
+        } finally { NerdStats.onLosslessRaceEnd(song.videoId) }
+    }
+
+    /** Swaps [better] in under [song] if it beats [current] and is the same recording; the copy handed, or null. */
+    private suspend fun swapIn(song: Song, better: SourceStream, current: StreamFormat?): Opened? {
+        if (this.song?.videoId != song.videoId) return null
+        if (!SourceResolver.worthSwapping(better.format, current)) return null
+        if (!SourceResolver.sameRecordingAs(better.durationSec, durationMs.takeIf { it > 0 }?.let { (it / 1000).toInt() })) return null
+        if (durationMs - position.positionMs < UPGRADE_MIN_REMAINING_MS) return null
+        val opened = withContext(ioDispatcher) { fromSource(better) }
+        if (this.song?.videoId != song.videoId) return null
+        hand(song, opened, next = false, swap = true) // the engine crossfades it in at the position it has reached
+        preResolveNext() // the swap dropped the engine's queued item
+        return opened
+    }
 
     /** What the engine was last handed for the playing track — the copy a switch away keeps. */
     private var playingOpened: Pair<String, Opened>? = null
@@ -793,7 +965,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) return@onFailure
                 IosOriginalVersion.unpin(s.videoId)
-                IosPlayerHost.showMessage("Couldn't switch ${s.title} to YouTube")
+                IosPlayerHost.showMessage(Res.string.switch_to_youtube_failed, s.title)
             }
         }
     }
@@ -810,14 +982,21 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         upgradeJob = scope.launch {
             try {
                 val late = CompletableDeferred<SourceStream?>()
-                val better = withContext(ioDispatcher) {
+                val quick = withContext(ioDispatcher) {
                     withTimeoutOrNull(SUBSTITUTE_TIMEOUT_MS) { SourceResolver.substituteForYouTube(TrackMatcher.targetOf(s), late) ?: late.await() }
                 }
+                // Short of lossless (or nothing): the patient search, every module waited for, as Android's by-hand upgrade.
+                val current = playingOpened?.takeIf { it.first == s.videoId }?.second
+                val patient = if (quick == null || (SourceResolver.requestForNow() is StreamRequest.Lossless &&
+                        quick.format.isLossless != true && !quick.format.isDolbyAtmos)) {
+                    current?.let { lookAgain(s, it, byHand = true) }
+                } else null
+                val better = patient ?: quick
                 NerdStats.onLosslessRaceEnd(s.videoId)
                 if (song?.videoId != s.videoId) return@launch
                 if (durationMs - position.positionMs < UPGRADE_MIN_REMAINING_MS) return@launch
                 if (better == null || !SourceResolver.sameRecordingAs(better.durationSec, durationMs.takeIf { it > 0 }?.let { (it / 1000).toInt() })) {
-                    IosPlayerHost.showMessage("No better copy of ${s.title}")
+                    IosPlayerHost.showMessage(Res.string.no_better_copy, s.title)
                     return@launch
                 }
                 val o = withContext(ioDispatcher) { fromSource(better) }
@@ -829,6 +1008,12 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     }
 
     private fun start(i: Int, fromMs: Long = 0) {
+        cancelAutoMixVisual()
+        // The last pair's seek-bar marker and nerd stats' "analysed": automix() states this pair's once the track
+        // reports a length.
+        AppSettings.smartTransitionWindow.value = null
+        AppSettings.smartAnalysis.value = SmartAnalysis()
+        transitionAtMs = -1
         // A track starting: what the last one's versions were playing is no longer wanted.
         versionOpened.clear()
         val song = queue.getOrNull(i) ?: return
@@ -856,7 +1041,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
                     println("IosPlayer: ${it.message ?: it}")
                     if (it is StreamResolver.PermanentlyUnplayableException) {
                         isLoading = false
-                        IosPlayerHost.showMessage("Can't play ${song.title}")
+                        IosPlayerHost.showMessage(Res.string.couldnt_play_song, song.title)
                     } else recover(song, it.message ?: "resolve failed", 0)
                 }
                 .onSuccess { if (fromMs > 0) engine.seekTo(fromMs); announce(); preResolveNext(); topUpAutoplay() }
@@ -891,7 +1076,39 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         nextJob?.cancel()
         preloaded = autoNext()
         val upcoming = queue.getOrNull(preloaded) ?: return engine.clearNext()
-        nextJob = scope.launch { runCatching { resolveInto(upcoming, next = true) } }
+        val at = preloaded
+        nextJob = scope.launch {
+            runCatching {
+                // Direct Source Stream: nothing is fetched for the next track until it is within the window of playing.
+                if (directActive() && SourceRegistry.parseTrackKey(upcoming.videoId) == null) {
+                    // Android's automix_opus reads: Automix measures YouTube's copy now, while the play waits for the
+                    // window, or the next track is analysed too late to blend. The play's copy replaces it in hand().
+                    if (AppSettings.smartFadeEnabled.value && !upcoming.isVideo && streams[upcoming.videoId] == null) {
+                        runCatching { youtube(upcoming.videoId) }.getOrNull()?.let { yt ->
+                            if (streams[upcoming.videoId] == null) streams[upcoming.videoId] = KaraokeSource(yt.url, yt.headers, yt.mime, yt.length)
+                        }
+                    }
+                    // Counted to the fade, as Android's gate. Under Automix only until this track has loaded: the
+                    // lookup alone took most of the window (measured: a seek 14 s ahead of a blend, Tidal queued and
+                    // ready 4.5 s after it began, "window missed"). The engine still fetches no audio for the next
+                    // track until it is near (materializeNextIfDue), which a seek near the end triggers at once.
+                    while (durationMs <= 0 || (!AppSettings.smartFadeEnabled.value &&
+                            transitionAtMs.takeIf { it > 0 }.let { it ?: durationMs } - position.positionMs > DIRECT_WINDOW_MS)) delay(1_000)
+                }
+                // "Prefer music-only": the next video becomes its audio release now, before the
+                // transition, so AutoMix (which never mixes into a video) can blend into it.
+                val audio = if (MusicVideoChoice.swapAheadWanted(upcoming, ListenTogether.state.value.inParty)) {
+                    YtMusicRepository.resolveAudio(upcoming).takeIf { it.videoId != upcoming.videoId }
+                } else null
+                val next = if (audio != null && queue.getOrNull(at) === upcoming) {
+                    MusicVideoChoice.audioInPlaceOf(upcoming, audio).also { swapped ->
+                        queue = queue.toMutableList().also { it[at] = swapped }
+                        IosPlayerStore.saveQueue(queue, index)
+                    }
+                } else upcoming
+                resolveInto(next, next = true)
+            }
+        }
     }
 
     // ---- Cast (Android's CastPlayback): this queue stays, the receiver owns the clock ----
@@ -921,7 +1138,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         startJob = scope.launch {
             val item = castItem(s, patient = false)
             if (item == null || !IosCast.active || song?.videoId != s.videoId) {
-                if (item == null) { IosPlayerHost.showMessage("This track can't be cast"); castLoading = null; isLoading = false }
+                if (item == null) { IosPlayerHost.showMessage(Res.string.cant_cast_track); castLoading = null; isLoading = false }
                 return@launch
             }
             native.load(item, at, play)
@@ -956,7 +1173,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
     internal fun castStatus(mediaId: String?, positionMs: Long, durationMs: Long, state: Int) {
         val loading = castLoading
         if (loading != null) {
-            if (state == 5) { castLoading = null; isLoading = false; IosPlayerHost.showMessage("This track can't be cast"); return }
+            if (state == 5) { castLoading = null; isLoading = false; IosPlayerHost.showMessage(Res.string.cant_cast_track); return }
             if (mediaId != loading || state !in 1..2) return
             castLoading = null
             castReconcile()
@@ -1009,6 +1226,8 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         }
         if (handing && isLoading) return
         position.report(positionMs)
+        // A blend starts the incoming track at its cue, well past 0: a jump the lyrics must take, not steer towards.
+        if (advanced) { advanced = false; position.seeks++ }
         this.durationMs = durationMs
         this.isPlaying = isPlaying
         isLoading = isBuffering
@@ -1019,6 +1238,9 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         val now = NSDate().timeIntervalSinceReferenceDate.toLong()
         if (pendingMs == null && song != null && (!isPlaying || now - lastSavedAt >= 5)) { lastSavedAt = now; saveState() }
     }
+
+    /** Set by [onAdvancedToNext] until the new track's first reading (see [onProgress]). */
+    private var advanced = false
 
     private var lastListenTickAt = 0L
     /** Last position reported to PlaybackTracker, which closes a play out on it. */
@@ -1083,13 +1305,17 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
         index = preloaded
         if (sleepAfterTrack) { cancelSleep(); engine.pause() }
         NerdStats.onTrackTransition(song?.videoId)
-        // A gapless or blended start never went through hand(next = false): align its lyrics here, or clear the last
-        // track's shift.
+        // A gapless or blended start never went through hand(next = false): what it plays is noted here.
         val queued = queuedOpened?.takeIf { it.first == song?.videoId }?.second
         queuedOpened = null
         val now = song
-        if (now != null && queued != null) alignLyrics(now, queued) else { alignJob?.cancel(); IosLyricsAlign.offsetMs.value = 0 }
+        if (now != null && queued != null) {
+            playingOpened = now.videoId to queued
+            watchUpgrade(now, queued) // a gapless start gets the second look a tapped one does
+        }
         position.report(0)
+        advanced = true
+        transitionAtMs = -1 // the last track's fade; this one's is planned on its ticks
         IosPlayerStore.saveQueue(queue, index)
         announce()
         preResolveNext()
@@ -1140,7 +1366,7 @@ class IosPlayer(private val engine: AudioEngine, private val scope: CoroutineSco
             isLoading = false
             isPlaying = false
             pendingMs = at // Play tries again from here
-            IosPlayerHost.showMessage("Couldn't play ${failed.title}")
+            IosPlayerHost.showMessage(Res.string.couldnt_play_song, failed.title)
             return
         }
         TrackLog.w("Laya", "playback broke ($reason); retry $recoverCount at ${at} ms", about = failed.videoId)

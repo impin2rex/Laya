@@ -74,6 +74,15 @@ class LosslessExpiryTest {
 
     private fun enabled(config: SourceConfig) = SourceRegistry.configs.value.first { it.id == config.id }.enabled
 
+    /**
+     * Qobuz verified, as a source switched on always is: with no session behind it the watcher turns the
+     * switch off at once and silently (LosslessSource.watchExpiry), and there is no loss left to report.
+     */
+    private fun qobuzVerified() {
+        store["zarz_session_qobuz-web"] = record(future)
+        LosslessProvider.Qobuz.session.reload()
+    }
+
     // --- The session ---
 
     @Test
@@ -159,6 +168,7 @@ class LosslessExpiryTest {
 
     @Test
     fun `a lost session switches its source off and is reported once`() = runBlocking {
+        qobuzVerified()
         val qobuz = qobuzOn(enabled = true)
         val notified = mutableListOf<LosslessProvider>()
         LosslessSource.watchExpiry(this) { notified += it }
@@ -207,6 +217,7 @@ class LosslessExpiryTest {
     @Test
     fun `on a capped quality the source goes off at once but the notice waits for Lossless`() = runBlocking {
         quality(AudioQuality.HIGH)
+        qobuzVerified()
         val qobuz = qobuzOn(enabled = true)
         val notified = mutableListOf<LosslessProvider>()
         LosslessSource.watchExpiry(this) { notified += it }

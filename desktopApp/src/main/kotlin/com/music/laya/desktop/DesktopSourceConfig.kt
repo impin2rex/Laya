@@ -6,19 +6,19 @@ import java.net.URI
 /** The kinds of source this build knows how to talk to. */
 @Serializable
 internal enum class DesktopSourceKind(
-    val label: String,
-    val detail: String,
-    val labels: List<String>,
+    private val labelEn: String,
+    private val detailEn: String,
+    private val labelsEn: List<String>,
     val needsServer: Boolean,
     val supportsLossless: Boolean,
     val rank: Int,
 ) {
     /** An addon server the user pointed at themselves. */
     ADDON(
-        label = "Addon",
-        detail = "An addon server you host or were given a link to. Searched and streamed over " +
+        labelEn = "Addon",
+        detailEn = "An addon server you host or were given a link to. Searched and streamed over " +
             "plain HTTP — no code is downloaded or run.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res"),
+        labelsEn = listOf("FLAC", "Lossless", "Hi-Res"),
         needsServer = true,
         supportsLossless = true,
         rank = 0,
@@ -26,9 +26,9 @@ internal enum class DesktopSourceKind(
 
     /** A module index the user pointed at themselves. */
     CUSTOM_MODULE(
-        label = DesktopStrings["d_custom_module", "Custom module"],
-        detail = "Your own compatible module index. Tried before the built-in one.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
+        labelEn = DesktopStrings["d_custom_module", "Custom module"],
+        detailEn = "Your own compatible module index. Tried before the built-in one.",
+        labelsEn = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
         needsServer = true,
         supportsLossless = true,
         rank = 0,
@@ -36,60 +36,76 @@ internal enum class DesktopSourceKind(
 
     /** A module index seeded from a build-time URL. */
     MODULE(
-        label = DesktopStrings["d_module_source", "Module source"],
-        detail = "JavaScript modules for FLAC, lossless, Hi-Res and more.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
+        labelEn = DesktopStrings["d_module_source", "Module source"],
+        detailEn = "JavaScript modules for FLAC, lossless, Hi-Res and more.",
+        labelsEn = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
         needsServer = true,
         supportsLossless = true,
         rank = 1,
     ),
     /** Built-in Tidal through the SpotiFLAC extensions' broker; see [DesktopLossless]. */
     TIDAL(
-        label = "Tidal",
-        detail = "Lossless FLAC from Tidal",
-        labels = listOf("FLAC", "Lossless"),
+        labelEn = "Tidal",
+        detailEn = "Lossless FLAC from Tidal",
+        labelsEn = listOf("FLAC", "Lossless"),
         needsServer = false,
         supportsLossless = true,
         rank = 1,
     ),
     QOBUZ(
-        label = "Qobuz",
-        detail = "Lossless and Hi-Res FLAC from Qobuz",
-        labels = listOf("FLAC", "Lossless", "Hi-Res"),
+        labelEn = "Qobuz",
+        detailEn = "Lossless and Hi-Res FLAC from Qobuz",
+        labelsEn = listOf("FLAC", "Lossless", "Hi-Res"),
         needsServer = false,
         supportsLossless = true,
         rank = 1,
     ),
     JIOSAAVN(
-        label = "JioSaavn",
-        detail = "High Quality · 320kbps",
-        labels = listOf("High Quality", "320kbps"),
+        labelEn = "JioSaavn",
+        detailEn = "High Quality · 320kbps",
+        labelsEn = listOf("High Quality", "320kbps"),
         needsServer = false,
         supportsLossless = false,
         rank = 2,
     ),
     YOUTUBE(
-        label = "YouTube Music",
-        detail = "Lossy · Full catalogue · Radio",
-        labels = listOf("Lossy", "Full catalogue", "Radio"),
+        labelEn = "YouTube Music",
+        detailEn = "Lossy · Full catalogue · Radio",
+        labelsEn = listOf("Lossy", "Full catalogue", "Radio"),
         needsServer = false,
         supportsLossless = false,
         rank = 3,
     ),
+    ;
+
+    /** The name, in the language in force when it is read. */
+    val label: String get() = DesktopStrings["d_src_label_${name.lowercase()}", labelEn]
+
+    /** The one-line description, resolved at display time. */
+    val detail: String get() = DesktopStrings["d_src_detail_${name.lowercase()}", detailEn]
+
+    /** The capability chips; those with no catalogue entry (FLAC, 320kbps…) read as written. */
+    val labels: List<String>
+        get() = labelsEn.map { DesktopStrings["d_tag_${it.lowercase().replace(Regex("[^a-z0-9]+"), "_")}", it] }
 }
 
 /** The stream ceiling in force, as the rungs the settings sheet offers. */
 internal enum class DesktopAudioQuality(
     /** Ceiling for the YouTube ladder. */
     val maxKbps: Int,
-    val label: String,
-    val detail: String,
+    private val labelEn: String,
+    private val detailEn: String,
 ) {
     LOW(64, "Low", "~64 kbps · smallest download"),
     MEDIUM(Int.MAX_VALUE, "Medium", "Best available · ~171 kbps Opus"),
     HIGH(Int.MAX_VALUE, "High", "JioSaavn up to 320kbps, YouTube fallback"),
     LOSSLESS(Int.MAX_VALUE, "Lossless", "Your addons + JioSaavn, bit-exact where available"),
     ;
+
+    val label: String
+        get() = DesktopStrings[if (this == LOSSLESS) "d_tag_lossless" else "d_q_label_${name.lowercase()}", labelEn]
+
+    val detail: String get() = DesktopStrings["d_q_detail_${name.lowercase()}", detailEn]
 
     /** Whether a stream started under this ceiling may be served by [kind]. */
     fun permits(kind: DesktopSourceKind): Boolean = when (this) {

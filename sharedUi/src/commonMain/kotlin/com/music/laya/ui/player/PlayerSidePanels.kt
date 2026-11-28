@@ -146,6 +146,7 @@ fun QueueSidePanel(
     onMove: (Int, Int) -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
+    actions: QueueActions? = null,
 ) {
     InlineQueue(
         queue = queue,
@@ -156,6 +157,7 @@ fun QueueSidePanel(
         onRemove = onRemove,
         onMove = onMove,
         onClear = onClear,
+        actions = actions,
         modifier = modifier,
     )
 }

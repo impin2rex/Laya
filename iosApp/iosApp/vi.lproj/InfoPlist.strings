@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "Laya lắng nghe qua micrô khi bạn tìm kiếm bằng giọng nói hoặc nhận diện bài hát đang phát gần đó.";
+"NSSpeechRecognitionUsageDescription" = "Laya chuyển lời bạn nói thành tìm kiếm bài hát, nghệ sĩ, album và danh sách phát.";
+"NSPhotoLibraryAddUsageDescription" = "Laya lưu thẻ Replay và lời bài hát vào thư viện ảnh khi bạn nhấn Lưu.";
+"NSLocalNetworkUsageDescription" = "Laya tìm các thiết bị Chromecast và loa Google Cast trên Wi-Fi của bạn để bạn có thể phát nhạc trên đó.";

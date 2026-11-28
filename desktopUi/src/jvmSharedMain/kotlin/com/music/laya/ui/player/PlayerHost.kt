@@ -11,6 +11,7 @@ import com.music.laya.data.lyrics.LyricLine
 import com.music.laya.data.lyrics.LyricsSource
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AudioQuality
+import com.music.laya.playback.AutoMixArtworkPreferences
 import com.music.laya.data.settings.LastPlayerScreen
 import com.music.laya.data.settings.SmartAnalysis
 import com.music.laya.data.settings.MixBlend
@@ -264,8 +265,12 @@ interface PlayerSettingsSource {
     val reduceDynamicBlur: StateFlow<Boolean>
     val reverbEnabled: StateFlow<Boolean>
     val showNerdStats: StateFlow<Boolean>
+    /** Whether the "Best Part" button is offered on the artwork. */
+    val showBestPart: StateFlow<Boolean>
     val smartAnalysis: StateFlow<SmartAnalysis>
     val smartFadeEnabled: StateFlow<Boolean>
+    /** AutoMix's artwork transitions, both opt-in under AutoMix itself. */
+    val autoMixArtwork: StateFlow<AutoMixArtworkPreferences>
     /** True only while an analysed Automix transition is audibly mixing two tracks. */
     val smartMixInProgress: StateFlow<Boolean>
     /** The Automix blend in flight, for the scrubber's beat glow; null between blends. */
@@ -349,6 +354,13 @@ enum class CanvasContentMode {
     FIT_PORTRAIT,
 }
 
+/**
+ * An AutoMix reveal laid over a clip: the clip is cut through the organic mask as [progress] (the
+ * eased 0..1 reveal, read in drawing) climbs, hidden at 0 and whole at 1. [generation] seeds the
+ * mask, so the clip and the stills of one mix share a pattern.
+ */
+class CanvasOrganicReveal(val generation: Long, val progress: () -> Float)
+
 /** Everything [CanvasArtworkPlayer] is asked, handed to the platform's decoder as one value. */
 class CanvasVideoSpec(
     val canvas: CanvasArtwork,
@@ -366,6 +378,7 @@ class CanvasVideoSpec(
     val bottomFade: Float,
     val bottomFadeEndPx: Float?,
     val pausedForTransition: Boolean,
+    val organicReveal: CanvasOrganicReveal? = null,
 )
 
 /**
@@ -390,6 +403,7 @@ fun CanvasArtworkPlayer(
     bottomFade: Float = 0f,
     bottomFadeEndPx: Float? = null,
     pausedForTransition: Boolean = false,
+    organicReveal: CanvasOrganicReveal? = null,
 ) {
     PlayerPlatform.host.CanvasVideo(
         CanvasVideoSpec(
@@ -408,6 +422,7 @@ fun CanvasArtworkPlayer(
             bottomFade = bottomFade,
             bottomFadeEndPx = bottomFadeEndPx,
             pausedForTransition = pausedForTransition,
+            organicReveal = organicReveal,
         ),
         modifier,
     )

@@ -111,7 +111,7 @@ struct LayaProvider: TimelineProvider {
     var wantsTiles = false
 
     func placeholder(in context: Context) -> LayaEntry {
-        entry(LayaWidgetSnapshot(mediaId: "", title: "Song title", artist: "Artist", hasPrevious: true, hasNext: true), context, images: false)
+        entry(LayaWidgetSnapshot(mediaId: "", title: String(localized: "Song title"), artist: String(localized: "Artist"), hasPrevious: true, hasNext: true), context, images: false)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (LayaEntry) -> Void) {

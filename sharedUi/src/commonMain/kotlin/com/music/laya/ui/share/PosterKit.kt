@@ -58,6 +58,40 @@ interface ImageSharer {
 val LocalImageSharer = staticCompositionLocalOf<ImageSharer?> { null }
 
 /**
+ * What the lyrics share's video needs from the platform: an H.264/AAC MP4 encoder, and the
+ * system's share sheet and photo library for the file it writes. The frames are common code.
+ */
+interface VideoSharer {
+    /**
+     * Writes [frames] frames of [width] x [height] at [fps] to an MP4 and returns its path, or
+     * null when nothing could be written. [frame] fills its buffer with frame `index` as ARGB
+     * ints, row by row. The audio is [song]'s, cut to [segments] (track milliseconds, laid end
+     * to end), or none where the platform has no copy of the song to cut it from.
+     */
+    suspend fun encode(
+        song: com.music.laya.data.model.Song,
+        width: Int,
+        height: Int,
+        fps: Int,
+        frames: Int,
+        segments: List<Pair<Long, Long>>,
+        frame: suspend (index: Int, argb: IntArray) -> Unit,
+    ): String?
+
+    /** Whether the last [encode] had to leave the song out (its audio could not be fetched), for a notice. */
+    fun lastEncodeSilent(): Boolean = false
+
+    /** Opens the system share sheet on the video at [path]. */
+    suspend fun share(path: String): Boolean
+
+    /** Adds the video at [path] to the photo library (or the platform's videos folder). */
+    suspend fun save(path: String, name: String): Boolean
+}
+
+/** Null where no video can be made, so the share sheet offers the picture alone. */
+val LocalVideoSharer = staticCompositionLocalOf<VideoSharer?> { null }
+
+/**
  * An Android `Paint` for text, as a value: a face, a size in pixels, a colour, a tracking and
  * an alignment. The cards are laid out in 1080-wide pixels exactly as the phone's canvas
  * renderer does, so the numbers carry over unchanged.

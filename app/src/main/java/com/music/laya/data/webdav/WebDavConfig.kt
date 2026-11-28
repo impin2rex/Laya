@@ -92,4 +92,9 @@ object WebDavConfig {
 
 /** Publishes the saved server's credentials to the shared HTTP client. */
 fun WebDavAuth.update(url: String, username: String, password: String) =
-    update(WebDavConfig.hostOf(url), WebDavConfig.basicAuthHeader(username, password))
+    update(
+        runCatching { java.net.URI(WebDavConfig.normalizeUrl(url)) }.getOrNull()
+            ?.takeIf { !it.host.isNullOrBlank() && it.scheme != null }
+            ?.let { WebDavAuth.originOf(it.scheme, it.host, it.port) },
+        WebDavConfig.basicAuthHeader(username, password),
+    )

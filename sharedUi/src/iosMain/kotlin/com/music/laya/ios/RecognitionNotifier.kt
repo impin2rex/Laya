@@ -66,6 +66,14 @@ object RecognitionNotifier {
     /** The center keeps only a weak reference to its delegate. */
     private val delegate = Delegate()
 
+    /**
+     * Only the delegate, from the app delegate's launch: a tap that cold-starts Laya is handed to whichever delegate
+     * is set by the end of launch, and [install] runs later, with the UI.
+     */
+    fun installDelegate() {
+        center.delegate = delegate
+    }
+
     fun install() {
         if (installed) return
         installed = true
@@ -162,7 +170,10 @@ private class Delegate : NSObject(), UNUserNotificationCenterDelegateProtocol {
         didReceiveNotificationResponse: UNNotificationResponse,
         withCompletionHandler: () -> Unit,
     ) {
-        if (didReceiveNotificationResponse.notification.request.identifier == RecognitionNotifier.ID) {
+        val identifier = didReceiveNotificationResponse.notification.request.identifier
+        if (IosLosslessReminders.handleTap(identifier)) {
+            // A lossless session reminder: renewed, and the outcome shown, by IosLosslessReminders.
+        } else if (identifier == RecognitionNotifier.ID) {
             IosWidgets.perform(
                 if (didReceiveNotificationResponse.actionIdentifier == RecognitionNotifier.ACTION_RETRY) "recognize" else "recognize_open",
             )

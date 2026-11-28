@@ -59,6 +59,19 @@ data class LyricsShareLine(
     val text: String,
     val subText: String?,
     val isGap: Boolean = false,
+    /**
+     * Where the line is sung in the track, when the lyrics are synced: the
+     * share video plays this stretch of the song and lights the line for it.
+     * Null for unsynced lyrics and for gap markers.
+     */
+    val startMs: Long? = null,
+    val endMs: Long? = null,
+    /**
+     * The line as the panel animates it — word and syllable stamps included —
+     * so the share video can sweep the words the way the player does. Null for
+     * unsynced lyrics.
+     */
+    val timing: LyricLine? = null,
 )
 
 /**
@@ -243,6 +256,7 @@ internal fun rememberLyricsPicker(
     val share: () -> Unit = {
         val source = lines.orEmpty()
         val chosen = picks.sorted()
+        val synced = source.any { it.timeMs > 0L }
         val picked = buildList {
             chosen.forEachIndexed { position, index ->
                 // A jump over unchosen lines is marked on the card, so the
@@ -253,10 +267,14 @@ internal fun rememberLyricsPicker(
                 }
                 val line = source.getOrNull(index) ?: return@forEachIndexed
                 val sub = subLines?.getOrNull(index)?.text
+                val window = if (synced) singWindow(source, index, chosen.getOrNull(position + 1)) else null
                 add(
                     LyricsShareLine(
                         text = line.text,
                         subText = sub?.takeIf { it.isNotBlank() && it != line.text },
+                        startMs = window?.first,
+                        endMs = window?.second,
+                        timing = line.takeIf { synced },
                     ),
                 )
             }
@@ -396,3 +414,100 @@ private fun RowScope.PickAction(
         )
     }
 }
+
+/**
+ * The stretch of the track line [index] of [lines] is sung over, for the share
+ * video: from its stamp to the next line's, so a run of picked lines plays as
+ * one unbroken take. The last line of a run (when [nextPicked] isn't the line
+ * right after it) stops where the provider says it was sung until, or at the
+ * next stamp — but never runs on through a long instrumental after it.
+ */
+fun singWindow(lines: List<LyricLine>, index: Int, nextPicked: Int?): Pair<Long, Long>? {
+    val line = lines.getOrNull(index) ?: return null
+    val start = line.timeMs.coerceAtLeast(0L)
+    val nextStamp = lines.getOrNull(index + 1)?.timeMs?.takeIf { it > start }
+    val end = if (nextPicked == index + 1 && nextStamp != null) {
+        nextStamp
+    } else {
+        val tail = line.sungUntilMs?.takeIf { it > start }?.plus(SHARE_TAIL_MS)
+            ?: nextStamp
+            ?: (start + SHARE_LINE_FALLBACK_MS)
+        minOf(tail, nextStamp ?: Long.MAX_VALUE, start + SHARE_LINE_MAX_MS)
+    }
+    return start to end
+}
+
+/** A beat of air after a line's own end, so its last word isn't clipped. */
+private const val SHARE_TAIL_MS = 400L
+
+/** A last line with nothing after it to time it by. */
+private const val SHARE_LINE_FALLBACK_MS = 5_000L
+
+/** Longest one line is held for when it ends a run: no minute-long outros. */
+private const val SHARE_LINE_MAX_MS = 9_000L
+
+/**
+ * The picked lines on the share video's clock: which stretches of the track
+ * play, back to back, and when each line is lit in the result. Every platform's
+ * encoder reads the same one, so a frame shows the same moment everywhere.
+ */
+class ShareTimeline(
+    /** Start and end of each stretch of the track, in track milliseconds. */
+    val segments: List<Pair<Long, Long>>,
+    /** Each sung line — its index in the request — and when it is lit, in output μs. */
+    val windows: List<LineWindow>,
+    val durationMs: Long,
+) {
+    /** Where in the track the video is at [outputUs]: the stretches laid end to end. */
+    fun trackMsAt(outputUs: Long): Long {
+        var left = (outputUs / 1000).coerceAtLeast(0L)
+        for ((start, end) in segments) {
+            val length = end - start
+            if (left < length) return start + left
+            left -= length
+        }
+        return segments.lastOrNull()?.second ?: 0L
+    }
+
+    /** How many frames the video runs to at [fps]: enough to cover the whole of the audio. */
+    fun frameCount(fps: Int): Int = ((durationMs * fps + 999) / 1000).toInt().coerceAtLeast(1)
+
+    /** The track moment frame [index] shows at [fps]. */
+    fun trackMsAtFrame(index: Int, fps: Int): Long = trackMsAt(index * 1_000_000L / fps)
+}
+
+class LineWindow(val line: Int, val fromUs: Long, val toUs: Long)
+
+/**
+ * The timeline for [lines], or null when they carry no timing (unsynced
+ * lyrics). Lines that run on from each other share one stretch, so a verse
+ * plays as one take; a skip ("(...)" on the card) cuts straight to the next.
+ * Capped at [MAX_SHARE_MS], a story's limit.
+ */
+fun shareTimeline(lines: List<LyricsShareLine>): ShareTimeline? {
+    val segments = mutableListOf<Pair<Long, Long>>()
+    val windows = mutableListOf<LineWindow>()
+    var cursor = 0L
+    lines.forEachIndexed { index, line ->
+        val start = line.startMs ?: return@forEachIndexed
+        val room = MAX_SHARE_MS - cursor
+        if (room <= MIN_LINE_MS) return@forEachIndexed
+        val end = minOf(line.endMs ?: return@forEachIndexed, start + room)
+        if (end - start < MIN_LINE_MS) return@forEachIndexed
+        val last = segments.lastOrNull()
+        if (last != null && last.second == start) {
+            segments[segments.lastIndex] = last.first to end
+        } else {
+            segments += start to end
+        }
+        windows += LineWindow(index, cursor * 1000, (cursor + end - start) * 1000)
+        cursor += end - start
+    }
+    return if (windows.isEmpty()) null else ShareTimeline(segments, windows, cursor)
+}
+
+/** Instagram's limit for one story clip. */
+const val MAX_SHARE_MS = 60_000L
+
+/** Shorter than this and a "line" is a stamp glitch, not something sung. */
+private const val MIN_LINE_MS = 300L

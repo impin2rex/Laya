@@ -300,6 +300,14 @@ object QualityUpgrade {
         // overruled — see [askByHand].
         if (mediaId !in handAsked && uri.getQueryParameter(MARKER) != null) return false
         if (mediaId in asked || mediaId in refused || pending.containsKey(mediaId)) return false
+        // Direct Source Stream never swaps a source's answer on its own. A track
+        // it had to start on YouTube is still looked for; asking by hand always
+        // works, that is the listener overruling the copy.
+        if (mediaId !in handAsked && DirectSourceGate.isActive() &&
+            !(StreamChoice.of(mediaId) != null && !StreamChoice.isSubstitute(mediaId))
+        ) {
+            return false
+        }
         // Same widening as [settledForLess]: a track playing off the cache is
         // worth a second look whenever anything outranks YouTube, not only
         // when lossless was asked for.

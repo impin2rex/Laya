@@ -59,24 +59,38 @@ internal object DesktopLossless {
         val provider = provider(kind)
         if (!provider.session.verified.value || song.title.isBlank() || song.isVideo) return emptyList()
         for (query in DesktopTrackMatcher.queries(song)) {
-            val candidates = runCatching { provider.search(query, 10) }
-                .onFailure { DesktopTrackLog.log("${provider.label}: search '$query' failed: ${it.message}") }
-                .getOrDefault(emptyList()).map { track ->
-                Song(
-                    videoId = "$PREFIX${provider.id}:${track.id}",
-                    title = track.title,
-                    artist = track.artist,
-                    albumName = track.album,
-                    thumbnailUrl = track.coverUrl,
-                    durationText = track.durationSec?.let { "${it / 60}:${(it % 60).toString().padStart(2, '0')}" },
-                    sourceQuality = "LOSSLESS",
-                    isExplicit = track.explicit,
-                )
-            }
+            val candidates = runCatching { search(kind, query, 10) }
+                .onFailure {
+                    DesktopTrackLog.log("${provider.label}: search '$query' failed: ${it.message}")
+                    noteSourceFailure()
+                }
+                .getOrDefault(emptyList())
             DesktopTrackMatcher.ranked(candidates, song).ifEmpty { null }?.let { return it }
         }
         return emptyList()
     }
+
+    /** [kind]'s catalogue rows for [query], as playable songs; none while unverified. Throws on a failed search. */
+    suspend fun search(kind: DesktopSourceKind, query: String, limit: Int): List<Song> {
+        val provider = provider(kind)
+        if (!provider.session.verified.value || query.isBlank()) return emptyList()
+        return provider.search(query, limit).map { track ->
+            Song(
+                videoId = "$PREFIX${provider.id}:${track.id}",
+                title = track.title,
+                artist = track.artist,
+                albumName = track.album,
+                thumbnailUrl = track.coverUrl,
+                durationText = track.durationSec?.let { "${it / 60}:${(it % 60).toString().padStart(2, '0')}" },
+                sourceQuality = "LOSSLESS",
+                isExplicit = track.explicit,
+            )
+        }
+    }
+
+    /** Whether [song] is a row from [kind]'s catalogue, picked from the Addons search. */
+    fun owns(kind: DesktopSourceKind, song: Song): Boolean =
+        song.videoId.startsWith("$PREFIX${provider(kind).id}:")
 
     suspend fun stream(config: DesktopSourceConfig, song: Song): Result<DesktopStream?> = runCatching {
         val provider = provider(config.kind)

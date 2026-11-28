@@ -19,6 +19,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 
+@kotlinx.serialization.Serializable
 data class ArtistSignature(
     val imageUrl: String,
     val aspect: Float,
@@ -44,8 +45,17 @@ object ArtistSignatureRepository {
     private val cache = LinkedHashMap<String, Entry>()
     private val guard = SynchronizedObject()
 
+    private val disk = LookupStore("artist_signatures", ArtistSignature.serializer())
+
+    /** Memory first, then what an earlier run kept on disk (moved into memory). */
     private fun lookupCached(key: String): Entry? =
         synchronized(guard) { cache.remove(key)?.also { cache[key] = it } }
+            ?: disk.get(key)?.let { Entry(it.getOrNull()) }?.also { entry ->
+                synchronized(guard) {
+                    cache[key] = entry
+                    if (cache.size > CACHE_SIZE) cache.remove(cache.keys.first())
+                }
+            }
 
     private val _updates = MutableStateFlow(0)
 
@@ -90,6 +100,7 @@ object ArtistSignatureRepository {
                 // The class only: a message would carry the server's address.
                 .onFailure { Log.d(TAG, "lookup failed for $artistName: ${it::class.simpleName}") }
                 .getOrNull()
+                ?.also { disk.put(key, it.signature) }
         } ?: return null
         Log.d(TAG, "settled for $artistName: ${entry.signature != null}")
         synchronized(guard) {
@@ -104,6 +115,7 @@ object ArtistSignatureRepository {
     /** Forgets everything, e.g. after the base URL changes. */
     fun clear() {
         synchronized(guard) { cache.clear() }
+        disk.clear()
         _updates.value++
     }
 

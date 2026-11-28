@@ -303,8 +303,10 @@ fun SongRow(
      * It has to be the colour of the page the row is *on*, not the theme's
      * background — an album page tinted from its sleeve would otherwise drag a
      * black band across itself on every swipe.
+     * The reveal is clipped to the strip the row has slid off, so transparent
+     * (the default) is right for any page over the colour background.
      */
-    rowBackground: Color = MaterialTheme.colorScheme.background,
+    rowBackground: Color = Color.Transparent,
     /**
      * Drawn in place of the artwork, for lists where every row would otherwise
      * repeat the same cover — an album's own track listing.
@@ -825,7 +827,7 @@ fun PullToRefresh(
  * mesh is the card, and white type is what sits on colour.
  */
 @Composable
-fun SignInBanner(onSignIn: () -> Unit, modifier: Modifier = Modifier) {
+fun SignInBanner(onSignIn: () -> Unit, modifier: Modifier = Modifier, title: String? = null) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.98f else 1f, spring(stiffness = 900f), label = "signInScale")
@@ -852,7 +854,7 @@ fun SignInBanner(onSignIn: () -> Unit, modifier: Modifier = Modifier) {
         )
         Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 18.dp)) {
             Text(
-                text = stringResource(Res.string.sign_in_youtube_music),
+                text = title ?: stringResource(Res.string.sign_in_youtube_music),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.W800,
                 color = Color.White,

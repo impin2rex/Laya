@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.music.laya.ui.player.CanvasContentMode
 import com.music.laya.ui.player.CanvasVideoSpec
+import com.music.laya.ui.player.canvasOrganicReveal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -240,7 +241,9 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     // server, and a busy one held the main thread until the watchdog killed the app (0x8BADF00D). Not cancellable
     // while it is built, so a clip made for a song already gone is still released, not leaked with its connection.
     val clip by produceState<CanvasPlayer?>(null, spec.canvas.url) {
-        val made = withContext(NonCancellable + Dispatchers.Default) { CanvasPlayer(spec.canvas.url) }
+        // From disk when this clip was shown before; fetched once otherwise, streamed only when it can't be.
+        val source = withContext(Dispatchers.Default) { IosClipCache.fileFor(spec.canvas.url) } ?: spec.canvas.url
+        val made = withContext(NonCancellable + Dispatchers.Default) { CanvasPlayer(source) }
         value = made
         awaitDispose { made.release() }
     }
@@ -300,7 +303,7 @@ internal fun IosCanvasVideo(spec: CanvasVideoSpec, modifier: Modifier) {
     Canvas(modifier.onSizeChanged { viewSize = it; clip?.viewSize = it }.graphicsLayer {
         this.alpha = if (current.contentMode == CanvasContentMode.FIT_PORTRAIT && aspect <= 0f) 0f else alpha * current.presentationAlpha()
         if (current.bottomFade > 0.001f) compositingStrategy = CompositingStrategy.Offscreen
-    }) {
+    }.canvasOrganicReveal(spec.organicReveal)) {
         val f = frame ?: return@Canvas
         val (off, size) = placement(IntSize(f.width, f.height), this.size, current.contentMode, current.alignPortraitTop)
         clipRect { drawImage(f, srcOffset = IntOffset.Zero, srcSize = IntSize(f.width, f.height), dstOffset = off, dstSize = size) }

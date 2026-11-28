@@ -3,6 +3,13 @@ package com.music.laya.ios
 import com.music.laya.data.settings.VideoScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.rounded.Lock
+import com.music.laya.sharedui.resources.Res
+import com.music.laya.sharedui.resources.all_cache_cleared
+import com.music.laya.sharedui.resources.image_cache_cleared
+import com.music.laya.sharedui.resources.song_cache_cleared
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.Modifier
 import com.music.laya.data.canvas.CanvasArtwork
 import com.music.laya.data.canvas.CanvasRepository
@@ -24,9 +31,13 @@ import com.music.laya.ui.player.SystemVolume
 import com.music.laya.ui.screens.SettingsHost
 import dev.chrisbanes.haze.HazeState
 import platform.Foundation.NSBundle
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 
 /** Everything not overridden is hidden on iOS; Phase 5/6 fill in accounts, Listen Together, downloads. */
 internal object IosSettingsHost : SettingsHost {
@@ -36,14 +47,45 @@ internal object IosSettingsHost : SettingsHost {
     override val hasLiquidGlassOption = false
     override val party = IosParty.info
     override val hasDownloads = true
+    override val hasSongCache = true
     override val hasExportDownloads = false // no shared Music folder on iOS; downloads stay in the app
     override val musicVideoInMiniPlayer = true
+    override val hasDirectSourceStream = true // IosPlayer.open: the sources' copy from the first note
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
     override val appIconRow: (@Composable () -> Unit)?
         get() = if (IosAppIcon.supported) ({ IosAppIconPicker() }) else null
     @Composable
     override fun versionName() =
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
+
+    override fun clearSongCache() {
+        IosSongCache.clear()
+        IosPlayerHost.showMessage(Res.string.song_cache_cleared)
+    }
+
+    override fun clearImageCache() {
+        clearImages()
+        IosPlayerHost.showMessage(Res.string.image_cache_cleared)
+    }
+
+    /** Songs, assembled analysis tracks, canvas and artist clips, artwork, artist art and signature answers, HTTP responses; downloads stay. */
+    override fun clearAllCache() {
+        IosSongCache.clear()
+        clearImages()
+        MainScope().launch(kotlinx.coroutines.Dispatchers.Default) {
+            IosClipCache.clear()
+            com.music.laya.data.canvas.AppleArtistArtRepository.clear()
+            com.music.laya.data.canvas.ArtistSignatureRepository.clear()
+        }
+        platform.Foundation.NSURLCache.sharedURLCache.removeAllCachedResponses()
+        IosPlayerHost.showMessage(Res.string.all_cache_cleared)
+    }
+
+    private fun clearImages() {
+        val loader = coil3.SingletonImageLoader.get(coil3.PlatformContext.INSTANCE)
+        loader.memoryCache?.clear()
+        MainScope().launch(kotlinx.coroutines.Dispatchers.Default) { loader.diskCache?.clear() }
+    }
 }
 
 internal object IosAppUiHost : AppUiHost {
@@ -135,6 +177,11 @@ internal object IosPlayerHost : PlayerHost {
     val messages = MutableStateFlow<String?>(null)
     override fun showMessage(message: String) { messages.value = message }
 
+    /** [showMessage] for a catalogue string, resolved off the caller's thread of control. */
+    fun showMessage(res: StringResource, vararg args: Any) {
+        MainScope().launch { messages.value = getString(res, *args) }
+    }
+
     @Composable
     override fun AudioPipelineDialog(hazeState: HazeState, isPlaying: Boolean, onDismiss: () -> Unit) = IosAudioPipeline(hazeState, onDismiss)
 }
@@ -152,9 +199,9 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val lastPlayerScreen get() = AppSettings.lastPlayerScreen
     override val legacyMeshGradient get() = AppSettings.legacyMeshGradient
     override val lyricsBlur get() = AppSettings.lyricsBlur
-    /** The listener's offset plus the measured shift between the playing cut and YouTube's (see IosPlayer.alignLyrics). */
-    override val lyricsOffsetMs: StateFlow<Int> = kotlinx.coroutines.flow.combine(AppSettings.lyricsOffsetMs, IosLyricsAlign.offsetMs) { a, b -> a + b }
-        .stateIn(kotlinx.coroutines.MainScope(), kotlinx.coroutines.flow.SharingStarted.Eagerly, AppSettings.lyricsOffsetMs.value)
+    // The listener's own offset alone, as Android: the lyrics are looked up by the playing copy's length, so they
+    // are timed to it, and shifting them by its distance from YouTube's cut put them off.
+    override val lyricsOffsetMs: StateFlow<Int> get() = AppSettings.lyricsOffsetMs
     override val lyricsSourceOrder get() = AppSettings.lyricsSourceOrder
     override val meteredConnection get() = AppSettings.meteredConnection
     override val preferUsbDac get() = AppSettings.preferUsbDac
@@ -163,6 +210,7 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val reduceDynamicBlur get() = AppSettings.reduceDynamicBlur
     override val reverbEnabled get() = AppSettings.reverbEnabled
     override val showNerdStats get() = AppSettings.showNerdStats
+    override val showBestPart get() = AppSettings.showBestPart
     override val smartAnalysis get() = AppSettings.smartAnalysis
     override val smartFadeEnabled get() = AppSettings.smartFadeEnabled
     override val smartMixInProgress get() = AppSettings.smartMixInProgress
@@ -174,6 +222,6 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val versionAlignmentInProgress get() = AppSettings.versionAlignmentInProgress
 
     override fun setLastPlayerScreen(value: LastPlayerScreen) = AppSettings.setLastPlayerScreen(value)
-    override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value - IosLyricsAlign.offsetMs.value)
+    override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value)
     override fun setReverbEnabled(value: Boolean) = AppSettings.setReverbEnabled(value)
 }

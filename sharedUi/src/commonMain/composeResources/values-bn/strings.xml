@@ -127,6 +127,9 @@
     <string name="downloaded">ডাউনলোড হয়েছে</string>
     <string name="explore">এক্সপ্লোর</string>
     <string name="library">লাইব্রেরি</string>
+    <string name="mixes_yours">আপনার মিক্স</string>
+    <string name="mixes_none">এখনও কোনো মিক্স নেই। শুনতে থাকুন, YouTube Music আপনার জন্য মিক্স বানাবে।</string>
+    <string name="radio">রেডিও</string>
     <string name="library_sign_in_description">আপনার পছন্দের গান, প্লেলিস্ট আর YouTube Music হিস্ট্রি দেখতে Google অ্যাকাউন্টে সাইন ইন করুন।</string>
     <string name="new_playlist">নতুন প্লেলিস্ট</string>
     <string name="on_device">ডিভাইসে</string>
@@ -169,7 +172,7 @@
     <string name="shelf_quick_picks">কুইক পিকস</string>
     <string name="shelf_recents">সাম্প্রতিক</string>
     <string name="shelf_recommended_music_videos">সাজেস্ট করা মিউজিক ভিডিও</string>
-    <string name="shelf_shorts">Shorts</string>
+    <string name="shelf_shorts">শর্টস</string>
     <string name="shelf_similar_to">%1$s-এর মতো</string>
     <string name="shelf_single">সিঙ্গল</string>
     <string name="shelf_song_item">গান</string>
@@ -623,6 +626,13 @@
     <string name="lyrics_share_description">আপনার বাছাই করা লাইনগুলো, কভারসহ একটা কার্ডে সাজানো।</string>
     <string name="lyrics_share_story">স্টোরি বানান</string>
     <string name="lyrics_share_story_revert">কার্ডে ফিরে যান</string>
+    <string name="lyrics_share_video">ভিডিও</string>
+    <string name="lyrics_share_image">ছবি</string>
+    <string name="lyrics_share_saving">সংরক্ষণ হচ্ছে…</string>
+    <string name="lyrics_share_gradient">গ্রেডিয়েন্ট</string>
+    <string name="lyrics_share_canvas">ক্যানভাস</string>
+    <string name="lyrics_share_show_logo">Laya লোগো দেখান</string>
+    <string name="lyrics_share_making_video">ভিডিও তৈরি হচ্ছে…</string>
     <string name="lyrics_share_title">লিরিক্স শেয়ার করুন</string>
     <string name="member_since_value">%1$s থেকে সদস্য</string>
     <string name="midday">দুপুর</string>
@@ -730,4 +740,216 @@
     <string name="lossless_verify_expired_notice">%1$s যাচাইয়ের মেয়াদ শেষ। লসলেস চালিয়ে যেতে সোর্সে আবার চালু করুন।</string>
     <string name="lossless_verify_expired">যাচাইয়ের মেয়াদ শেষ · আবার চালু করুন</string>
     <string name="lossless_verified_until">যাচাই করা হয়েছে · %1$s পর্যন্ত</string>
+    <string name="automix_art_transition">আর্ট ট্রানজিশন</string>
+    <string name="automix_art_transition_subtitle">Automix-এর সময় ট্র্যাকের মধ্যে কভার আর্ট মসৃণভাবে মিশ্রিত করে।</string>
+    <string name="automix_mini_art_transition">মিনি-প্লেয়ার আর্ট ট্রানজিশন</string>
+    <string name="automix_mini_art_transition_subtitle">Automix-এর সময় মিনি-প্লেয়ারে আর্টওয়ার্ক ট্রানজিশন দেখায়।</string>
+    <string name="artist_signatures_builtin">বিল্ট-ইন সার্ভার</string>
+    <string name="artist_signatures_online">অনলাইন</string>
+    <string name="accounts">অ্যাকাউন্ট</string>
+    <string name="add_account">অ্যাকাউন্ট যোগ করুন</string>
+    <string name="brand_account">ব্র্যান্ড অ্যাকাউন্ট</string>
+    <string name="account_profiles_help">একটা Google অ্যাকাউন্টে ব্যক্তিগত আর ব্র্যান্ড প্রোফাইল থাকতে পারে। প্রত্যেকটার নিজস্ব লাইব্রেরি, পছন্দ আর হিস্ট্রি আছে।</string>
+    <string name="scrobbling">স্ক্রবলিং</string>
+    <string name="scrobbling_footer">আপনার শোনা গান Last.fm আর ListenBrainz-এ স্ক্রবল করুন।</string>
+    <string name="listenbrainz_token">ListenBrainz টোকেন</string>
+    <string name="listenbrainz_token_description">স্ক্রবলিং চালু করতে আপনার ListenBrainz ইউজার টোকেন পেস্ট করুন।</string>
+    <string name="api_token">API টোকেন</string>
+    <string name="lastfm_login">Last.fm লগইন</string>
+    <string name="lastfm_login_description">স্ক্রবলিং চালু করতে আপনার Last.fm অ্যাকাউন্টে সাইন ইন করুন।</string>
+    <string name="signed_in_as">%1$s হিসেবে সাইন ইন করা আছে</string>
+    <string name="tap_to_sign_in">সাইন ইন করতে ট্যাপ করুন</string>
+    <string name="username">ইউজারনেম</string>
+    <string name="password">পাসওয়ার্ড</string>
+    <string name="login_failed">লগইন হয়নি</string>
+    <string name="scrobble_tracks">গান স্ক্রবল করুন</string>
+    <string name="scrobble_tracks_subtitle">আপনার Last.fm টাইমলাইনে শোনা গানের হিসেব রাখুন</string>
+    <string name="lastfm_now_playing_subtitle">আপনি কী শুনছেন তা Last.fm-এ আপডেট করুন</string>
+    <string name="scrobble_primary_artist_only">শুধু মূল শিল্পীকে স্ক্রবল করুন</string>
+    <string name="scrobble_primary_artist_only_subtitle">গানে একাধিক শিল্পীর নাম থাকলে প্রথম শিল্পীকে ব্যবহার করুন</string>
+    <string name="listen_together_ping">%1$d ms</string>
+    <string name="video_quality_auto">স্বয়ংক্রিয়</string>
+    <string name="add_to_queue">কিউতে যোগ করুন</string>
+    <string name="queue_select_all">সব বেছে নিন</string>
+    <string name="queue_add_to_playlist">প্লেলিস্ট</string>
+    <string name="queue_selection_remove">সরান</string>
+    <string name="audio_output_bluetooth_airplay">Bluetooth ও AirPlay ডিভাইস</string>
+    <string name="audio_output_bluetooth_airplay_subtitle">AirPods, স্পিকার বা AirPlay রিসিভার বেছে নিন</string>
+    <string name="best_part">সেরা অংশ</string>
+    <string name="best_part_description">সেরা অংশে যান</string>
+    <string-array name="lyrics_intro_lines"><item>বিট ধরা পড়ছে</item>
+        <item>গান শুরু হচ্ছে</item>
+        <item>গরম হচ্ছে</item>
+        <item>মেজাজ তৈরি হচ্ছে</item>
+        <item>আগে বেস, পরে কথা</item>
+        <item>একটু অপেক্ষা করুন</item>
+        <item>বিল্ড-আপটা অনুভব করুন</item>
+        <item>আপাতত শুধু গ্রুভ</item>
+        <item>হুক আসছে</item>
+        <item>একটু শ্বাস নিতে দিন</item>
+        <item>ভোকাল আসছে</item>
+        <item>প্রথম সুর এসে গেছে</item></string-array>
+    <string-array name="lyrics_loading_lines"><item>গানের কথা আনা হচ্ছে</item>
+        <item>কথাগুলো খোঁজা হচ্ছে</item>
+        <item>স্তবকগুলো আনা হচ্ছে</item>
+        <item>গানের কথা লোড হচ্ছে</item>
+        <item>লিরিক শিট দেখা হচ্ছে</item>
+        <item>গানের বই খোঁজা হচ্ছে</item>
+        <item>গানের কথা সাজানো হচ্ছে</item>
+        <item>কথাগুলো আসছে</item>
+        <item>আর্কাইভ দেখা হচ্ছে</item>
+        <item>সঠিক কথা খোঁজা হচ্ছে</item>
+        <item>গানের কথা জোড়া লাগছে</item>
+        <item>প্রায় কথাগুলো পেয়ে গেছি</item></string-array>
+    <string name="show_best_part">সেরা অংশ বোতাম</string>
+    <string name="show_best_part_subtitle">আর্টওয়ার্কের একটি বোতাম, যা গানের সবচেয়ে বেশি আবার শোনা অংশে নিয়ে যায়</string>
+    <string name="enter_token_to_enable">চালু করতে আপনার টোকেন দিন</string>
+    <string name="lastfm_api_key">API কী</string>
+    <string name="lastfm_api_secret">শেয়ার্ড সিক্রেট</string>
+    <string name="lastfm_own_credentials">এই বিল্ডে Last.fm অ্যাপের ক্রেডেনশিয়াল নেই: আপনার নিজের API অ্যাকাউন্টের কী ও শেয়ার্ড সিক্রেটও পেস্ট করুন।</string>
+    <string name="search_source_youtube">YouTube</string>
+    <string name="video_quality">ভিডিওর মান</string>
+    <string name="switch_to_audio">অডিওতে যান</string>
+    <string name="switch_to_video">ভিডিওতে যান</string>
+    <string name="audio_short">অডিও</string>
+    <string name="queue_selected_count">%1$d টি নির্বাচিত</string>
+    <string name="queue_select">নির্বাচন</string>
+    <string name="queue_close_selection">নির্বাচন মোড বন্ধ করুন</string>
+    <string name="queue_add_all_to_playlist">সব প্লেলিস্টে যোগ করুন</string>
+    <string name="queue_removed_song">%1$s সরানো হয়েছে</string>
+    <string name="queue_undo_action">পূর্বাবস্থায়</string>
+    <string name="queue_cleared">কিউ খালি করা হয়েছে</string>
+    <plurals name="queue_removed_count"><item quantity="one">%1$d টি গান সরানো হয়েছে</item>
+        <item quantity="other">%1$d টি গান সরানো হয়েছে</item></plurals>
+    <string name="lyrics_share_video_silent">গানের অডিও পাওয়া যায়নি, তাই এই ভিডিওতে শব্দ নেই।</string>
+    <string name="top_result">সেরা ফলাফল</string>
+    <string name="loading">লোড হচ্ছে…</string>
+    <string name="no_playlists">কোনো প্লেলিস্ট নেই</string>
+    <string name="listen_now">এখনই শুনুন</string>
+    <string name="sleep_timer">স্লিপ টাইমার</string>
+    <string name="song_info">গানের তথ্য</string>
+    <string name="done">হয়ে গেছে</string>
+    <string name="upgrade_quality">কোয়ালিটি বাড়ান</string>
+    <string name="cast_subtitle">Chromecast বা Google Cast স্পিকারে চালান</string>
+    <string name="cast_searching">ডিভাইস খোঁজা হচ্ছে…</string>
+    <string name="cast_searching_hint">আপনার ফোন আর রিসিভার একই Wi-Fi নেটওয়ার্কে থাকতে হবে।</string>
+    <string name="downloaded_songs">ডাউনলোড করা গান</string>
+    <string name="added_to_named_playlist">%1$s-এ যোগ করা হয়েছে</string>
+    <string name="add_to_playlist_failed">%1$s-এ যোগ করা যায়নি</string>
+    <string name="pipeline_route">রুট</string>
+    <string name="pipeline_io_buffer">I/O বাফার</string>
+    <string name="pipeline_surround_channels">%1$d (সারাউন্ড)</string>
+    <string name="cant_cast_track">এই ট্র্যাকটি কাস্ট করা যাবে না</string>
+    <string name="couldnt_play_song">%1$s চালানো যায়নি</string>
+    <string name="switch_to_youtube_failed">%1$s YouTube-এ পরিবর্তন করা যায়নি</string>
+    <string name="no_better_copy">%1$s-এর কোনো ভালো কপি নেই</string>
+    <string name="revert_to_original">অরিজিনালে ফিরুন</string>
+    <string name="undo_dislike">অপছন্দ ফিরিয়ে নিন</string>
+    <string name="dislike">অপছন্দ</string>
+    <string name="open_album">অ্যালবাম খুলুন</string>
+    <string name="open_artist">শিল্পীর পেজ খুলুন</string>
+    <string name="song_info_album">অ্যালবাম</string>
+    <string name="song_info_release_date">প্রকাশের তারিখ</string>
+    <string name="song_info_views">প্লে / ভিউ</string>
+    <string name="song_info_likes">পছন্দ</string>
+    <string name="song_info_comments">মন্তব্য</string>
+    <string name="after_this_song">এই গানের পরে</string>
+    <string name="turn_off_timer">টাইমার বন্ধ করুন</string>
+    <string name="copy_log">লগ কপি করুন</string>
+    <string name="pipeline_track_info">গানের তথ্য</string>
+    <string name="pipeline_source">সোর্স</string>
+    <string name="pipeline_format">ফরম্যাট</string>
+    <string name="pipeline_bit_depth">বিট ডেপথ</string>
+    <string name="pipeline_sample_rate">স্যাম্পল রেট</string>
+    <string name="pipeline_bitrate">বিটরেট</string>
+    <string name="pipeline_channels">চ্যানেল</string>
+    <string name="pipeline_resampler">রিস্যাম্পলার</string>
+    <string name="pipeline_io_rate">I/O রেট</string>
+    <string name="pipeline_output_device">আউটপুট ডিভাইস</string>
+    <string name="pipeline_device_name">ডিভাইসের নাম</string>
+    <string name="couldnt_find">%1$s খুঁজে পাওয়া যায়নি</string>
+    <string name="no_tracks_here">এখানে কোনো গান নেই</string>
+    <string name="nothing_to_explore">এই মুহূর্তে এক্সপ্লোর করার মতো কিছু নেই</string>
+    <string name="artist_label">শিল্পী</string>
+    <plurals name="minute_count">
+        <item quantity="one">%1$d মিনিট</item>
+        <item quantity="other">%1$d মিনিট</item>
+    </plurals>
+    <string name="download_waiting_wifi">Wi-Fi-এর অপেক্ষায় (সেটিংস, ডাউনলোড দেখুন)</string>
+    <string name="download_failed_generic">ডাউনলোড ব্যর্থ হয়েছে</string>
+    <string name="download_no_youtube_match">এই ট্র্যাকের জন্য YouTube-এ কোনো মিল পাওয়া যায়নি</string>
+    <string name="download_no_length">ট্র্যাকটি অনুপলব্ধ: আনার মতো দৈর্ঘ্য নেই</string>
+    <string name="download_http_failed">ডাউনলোড ব্যর্থ হয়েছে (HTTP %1$d)</string>
+    <string name="download_stalled">%1$dB-এ ডাউনলোড আটকে গেছে</string>
+    <string name="download_stopped">%1$dB-এ ডাউনলোড বন্ধ হয়েছে</string>
+    <string name="download_stopped_of">%2$s-এর মধ্যে %1$dB-এ ডাউনলোড বন্ধ হয়েছে</string>
+    <string name="ios_speaker_name">iPhone স্পিকার</string>
+    <plurals name="song_count_plural">
+        <item quantity="one">%1$dটি গান</item>
+        <item quantity="other">%1$dটি গান</item>
+    </plurals>
+    <string name="hide_ai_songs">AI-তৈরি গান লুকান</string>
+    <string name="hide_ai_songs_subtitle">AiSList ব্লকলিস্টের চ্যানেলের গান (AiSList, aisloplist.com, CC BY-NC 4.0) হোম, সার্চ ও রেডিও থেকে বাদ রাখে</string>
+    <string name="lock_screen_player">লক স্ক্রিন প্লেয়ার</string>
+    <string name="remove_from_history">ইতিহাস থেকে সরান</string>
+    <string name="history_removed">ইতিহাস থেকে সরানো হয়েছে</string>
+    <string name="history_remove_failed">ইতিহাস থেকে সরানো যায়নি</string>
+    <string name="settings_home">হোম</string>
+    <string name="settings_home_speed_dial">স্পিড ডায়াল</string>
+    <string name="settings_home_speed_dial_subtitle">আপনার পিন ও প্রিয়গুলো হোমের উপরে টাইল হিসেবে</string>
+    <string name="settings_home_artist_dial">শিল্পী পাতা</string>
+    <string name="settings_home_lucky_tile">এলোমেলো টাইল</string>
+    <string name="settings_home_dial_source">টাইলের উৎস</string>
+    <string name="settings_home_dial_source_youtube">YouTube Music</string>
+    <string name="settings_home_dial_source_history">শোনার ইতিহাস</string>
+    <string name="settings_home_dial_rows">প্রতি পাতায় সারি</string>
+    <string name="settings_home_dial_tile_style">টাইলের কিনারা</string>
+    <string name="settings_home_dial_tile_style_plain">সাধারণ</string>
+    <string name="settings_home_dial_tile_style_edge">কিনারা</string>
+    <string name="settings_home_dial_tile_style_glass">কাচ</string>
+    <string name="settings_home_dial_labels">টাইলের শিরোনাম দেখান</string>
+    <string name="settings_home_dial_pin_icon">পিন ব্যাজ দেখান</string>
+    <string name="settings_home_dial_new_tags">নতুন রিলিজ চিহ্নিত করুন</string>
+    <string name="settings_home_restore_tiles">সরানো টাইল ফিরিয়ে আনুন (%1$d)</string>
+    <string name="home_chip_all">সব</string>
+    <string name="home_speed_dial">স্পিড ডায়াল</string>
+    <string name="home_history_tile">ইতিহাস</string>
+    <string name="home_dial_new">নতুন</string>
+    <string name="home_dial_remove">ডায়াল থেকে সরান</string>
+    <string name="home_dial_pin">পিন করুন</string>
+    <string name="home_dial_unpin">আনপিন করুন</string>
+    <string name="home_dial_more">আরও বিকল্প</string>
+    <string name="home_for_you">আপনার জন্য</string>
+    <string name="back">ফিরে যান</string>
+    <string name="settings_section_look">চেহারা</string>
+    <string name="settings_section_listening">শোনা</string>
+    <string name="settings_section_app">অ্যাপ</string>
+    <string name="settings_section_about">সম্পর্কে</string>
+    <string name="settings_category_general">সাধারণ</string>
+    <string name="settings_category_appearance_subtitle">থিম, প্লেয়ার, আর্টওয়ার্ক ও লিরিক্স</string>
+    <string name="settings_category_home_subtitle">স্পিড ডায়াল, মিক্স ও শিল্পী পেজ</string>
+    <string name="settings_category_playback_subtitle">সাউন্ড কোয়ালিটি, সোর্স, ক্রসফেড ও ইকুয়ালাইজার</string>
+    <string name="settings_category_storage_subtitle">ডাউনলোড, লোকাল মিউজিক ও ক্যাশে</string>
+    <string name="settings_category_general_subtitle">ভাষা, কিউ, প্লেয়ার ও পারফরম্যান্স</string>
+    <string name="settings_category_data_subtitle">রিপ্লে, এক্সপোর্ট ও ইমপোর্ট</string>
+    <string name="settings_category_advanced_subtitle">অ্যালাইনমেন্ট, বেস্ট পার্ট, নার্ড স্ট্যাটস ও অ্যাপ আইকন</string>
+    <string name="color_background">রঙিন ব্যাকগ্রাউন্ড</string>
+    <string name="color_background_subtitle">প্রতিটি পেজের পেছনে বাজতে থাকা গানের হালকা রঙ</string>
+    <string name="splash_screen">স্প্ল্যাশ স্ক্রিন</string>
+    <string name="splash_screen_subtitle">অ্যাপ চালু হলে অ্যানিমেটেড লোগো</string>
+    <string name="clear_all_cache">সব ক্যাশ মুছুন</string>
+    <string name="clear_all_cache_subtitle">ক্যাশ করা গান, ভিডিও, ছবি ও অস্থায়ী ফাইলের জায়গা খালি করে</string>
+    <string name="clear_all_cache_title">সব ক্যাশ মুছবেন?</string>
+    <string name="clear_all_cache_warning">ক্যাশ করা গান, ভিডিও ক্লিপ, ছবি ও অস্থায়ী ফাইল মুছে যাবে। ডাউনলোড থাকবে। পরের বার চালালে সব আবার স্ট্রিম হবে।</string>
+    <string name="all_cache_cleared">সব ক্যাশ মুছে ফেলা হয়েছে</string>
+    <string name="song_cache_cleared">গানের ক্যাশ মুছে ফেলা হয়েছে</string>
+    <string name="image_cache_cleared">ছবির ক্যাশ মুছে ফেলা হয়েছে</string>
+    <string name="lossless_expiring_title">%1$s সেশন শীঘ্রই শেষ হবে</string>
+    <string name="lossless_expiring_body">%1$d মিনিটে শেষ হবে। নবায়ন করতে ট্যাপ করুন।</string>
+    <string name="lossless_renew_failed_body">নিজে থেকে নবায়ন করা যায়নি। %1$d মিনিটে শেষ হবে; আবার চেষ্টা করতে ট্যাপ করুন।</string>
+    <string name="lossless_renewed_until">%1$s %2$s পর্যন্ত নবায়ন হয়েছে</string>
+    <string name="lossless_renew_failed">%1$s নবায়ন করা যায়নি। অ্যাডঅন থেকে নিজে নবায়ন করুন।</string>
+    <string name="direct_source_stream">সরাসরি সোর্স স্ট্রিম</string>
+    <string name="direct_source_stream_subtitle">প্রথম সুর থেকেই YouTube-এর উপরের সোর্স থেকে চালান, গানের মাঝে বদল ছাড়াই</string>
+    <string name="direct_source_stream_in_party">একসাথে শুনুন পার্টিতে থাকার সময় বন্ধ</string>
 </resources>

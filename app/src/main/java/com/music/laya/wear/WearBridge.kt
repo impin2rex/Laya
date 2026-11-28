@@ -411,7 +411,9 @@ object WearBridge {
                 val opened = factory?.let { f ->
                     val ds = f.createDataSource().also { source = it }
                     runCatching {
-                        ds.open(
+                        // The watch reads what *it* is playing; holding it for the
+                        // phone's Direct Source Stream window would stall it.
+                        com.music.laya.playback.DirectSourceGate.ungated { ds.open(
                             DataSpec.Builder()
                                 .setUri(
                                     // An addon track's cache entry is named by
@@ -431,7 +433,7 @@ object WearBridge {
                                 .setPosition(position)
                                 .setLength(if (length < 0) C.LENGTH_UNSET.toLong() else length)
                                 .build(),
-                        )
+                        ) }
                     }.onFailure { Log.w(TAG, "stream open failed: ${it.message}") }.getOrNull()
                 }
                 val ds = source

@@ -1,5 +1,12 @@
 package com.music.laya.ui.tv.screens
 
+import com.music.laya.ui.tv.components.TvTabPill
+import com.music.laya.data.model.MoodGenre
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +47,29 @@ import com.music.laya.ui.tv.components.TvLockup
 import com.music.laya.ui.tv.components.TvShelf
 import com.music.laya.ui.tv.components.TvShelfPlaceholder
 import com.music.laya.ui.tv.dialogs.TvSongMenu
+import com.music.laya.data.home.DialEntry
+import com.music.laya.data.home.DialKind
+import com.music.laya.data.home.dialId
+import com.music.laya.data.home.dialKind
+import com.music.laya.data.settings.AppSettings
+import com.music.laya.ui.home.HomeDials
+import com.music.laya.ui.home.LuckyDiceFace
+import com.music.laya.ui.home.rememberLuckyDice
+import com.music.laya.ui.home.rememberHomeDials
+import com.music.laya.ui.tv.components.TvDialog
+import com.music.laya.ui.tv.components.TvDialogList
+import com.music.laya.ui.tv.components.TvListRow
+import com.music.laya.ui.tv.theme.TvGlass
+import com.music.laya.ui.tv.theme.TvType
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 import com.music.laya.ui.tv.theme.TvDimensions
 import kotlinx.coroutines.launch
 
@@ -55,8 +85,52 @@ fun TvHomeScreen(
     val loadingMore by viewModel.homeLoadingMore.collectAsState()
     val scope = rememberCoroutineScope()
     var menuSong by remember { mutableStateOf<Song?>(null) }
+    val chips by viewModel.homeChips.collectAsState()
+    val chip by viewModel.homeChip.collectAsState()
+    val chipShelves by viewModel.homeChipShelves.collectAsState()
+    BackHandler(enabled = chip != null) { viewModel.selectHomeChip(null) }
+    val playSong: (Song) -> Unit = { song ->
+        scope.launch { mediaController?.playSongs(listOf(song), 0) }
+        onNavigateToNowPlaying()
+    }
 
-    when (val state = homeState) {
+    // The phone's Home dials (ported from Melo), dealt by the same shared state, as shelves.
+    val speedDialOn by AppSettings.homeSpeedDial.collectAsState()
+    val refreshing by viewModel.refreshing.collectAsState()
+    val recentsLoading by viewModel.homeRecentlyPlayedLoading.collectAsState()
+    val library by viewModel.library.collectAsState()
+    val dials = if (speedDialOn) {
+        rememberHomeDials(
+            shelves = (homeState as? UiState.Success)?.data.orEmpty(),
+            chipShelves = if (chip != null) (chipShelves as? UiState.Success)?.data.orEmpty() else null,
+            library = (library as? UiState.Success)?.data,
+            settled = homeState is UiState.Success && MainViewModel.Feed.HOME !in refreshing && !recentsLoading,
+        )
+    } else null
+    val openItem: (ShelfItem) -> Unit = { openShelfItem(it, playSong, onNavigateToDetail) }
+
+    // Home's mood chips over the feed, as the phone has them, then the dials; back returns to all of Home.
+    val chipRow: (@Composable () -> Unit)? = if (chips.isEmpty() && dials == null) null else {
+        {
+            Column(verticalArrangement = Arrangement.spacedBy(TvDimensions.ShelfSpacing - 11.dp)) {
+                if (chips.isNotEmpty()) TvHomeChips(chips, chip, viewModel::selectHomeChip)
+                if (dials != null) TvHomeDials(dials, chip?.title, openItem, onSongMenu = { menuSong = it })
+            }
+        }
+    }
+
+    if (chip != null) {
+        val picked = chipShelves
+        TvShelfFeed(
+            shelves = (picked as? UiState.Success)?.data.orEmpty(),
+            loadingMore = picked is UiState.Loading,
+            onPlaySong = playSong,
+            onSongMenu = { menuSong = it },
+            onNavigateToDetail = onNavigateToDetail,
+            header = chipRow,
+            modifier = modifier,
+        )
+    } else when (val state = homeState) {
         is UiState.Loading -> TvShelvesLoading(modifier)
         is UiState.Error -> TvErrorState(
             message = state.message,
@@ -66,8 +140,8 @@ fun TvHomeScreen(
         is UiState.Success -> {
             if (state.data.isEmpty()) {
                 TvEmptyState(
-                    title = "Nothing Here Yet",
-                    message = "Sign in from Settings, or check your connection, to see your recommendations.",
+                    title = stringResource(R.string.tv_nothing_here_title),
+                    message = stringResource(R.string.tv_nothing_here_signin_message),
                     modifier = modifier,
                 )
             } else {
@@ -75,10 +149,8 @@ fun TvHomeScreen(
                     shelves = state.data,
                     loadingMore = loadingMore,
                     onNearEnd = { viewModel.loadMoreHome() },
-                    onPlaySong = { song ->
-                        scope.launch { mediaController?.playSongs(listOf(song), 0) }
-                        onNavigateToNowPlaying()
-                    },
+                    onPlaySong = playSong,
+                    header = chipRow,
                     onSongMenu = { menuSong = it },
                     onNavigateToDetail = onNavigateToDetail,
                     picksFirst = true,
@@ -97,6 +169,157 @@ fun TvHomeScreen(
             onDismiss = { menuSong = null },
         )
     }
+}
+
+/** Home's mood chips, one focusable pill each; picking the one already picked returns to all of Home. */
+@Composable
+private fun TvHomeChips(chips: List<MoodGenre>, selected: MoodGenre?, onSelect: (MoodGenre?) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = TvDimensions.SafeMarginHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+    ) {
+        items(chips, key = { it.browseId + it.params }) { chip ->
+            val isSelected = chip == selected
+            TvTabPill(
+                label = chip.title,
+                selected = isSelected,
+                onClick = { onSelect(if (isSelected) null else chip) },
+            )
+        }
+    }
+}
+
+/**
+ * Home's dials as remote-friendly shelves: the Speed Dial (the picked mood's title while one is
+ * picked), then Artists. Long press a tile to take it off the dial or pin a playlist.
+ */
+@Composable
+private fun TvHomeDials(
+    dials: HomeDials,
+    chipTitle: String?,
+    onOpen: (ShelfItem) -> Unit,
+    onSongMenu: (Song) -> Unit,
+) {
+    val labels by AppSettings.homeDialLabels.collectAsState()
+    val pinIcon by AppSettings.homeDialPinIcon.collectAsState()
+    val newTags by AppSettings.homeDialNewReleaseTags.collectAsState()
+    val lucky by AppSettings.homeLuckyTile.collectAsState()
+    val withArtists by AppSettings.homeArtistDial.collectAsState()
+    var menu by remember { mutableStateOf<DialEntry?>(null) }
+    val dice = rememberLuckyDice()
+    val reduceMotion by AppSettings.reduceAnimation.collectAsState() // as the phone's: no chase, the face just changes
+    val scope = rememberCoroutineScope()
+    // null stands for the dice: a random pick from what was played and what YouTube picked.
+    val speedTiles: List<DialEntry?> =
+        (if (lucky && chipTitle == null && dials.luckyPool.isNotEmpty()) listOf(null) else emptyList()) + dials.speedDial
+
+    Column(verticalArrangement = Arrangement.spacedBy(TvDimensions.ShelfSpacing - 11.dp)) {
+        if (dials.speedDial.isNotEmpty()) {
+            TvShelf(
+                title = chipTitle ?: stringResource(R.string.tv_home_speed_dial),
+                items = speedTiles,
+                key = { it?.item?.dialId ?: "lucky" },
+            ) { entry ->
+                if (entry == null) {
+                    // The phone's die: the light chases round it while the pick is found, then it lands.
+                    TvLockup(
+                        title = "",
+                        subtitle = null,
+                        artworkUrl = null,
+                        width = 150.dp,
+                        onClick = { scope.launch { dice.roll(reduced = reduceMotion, onRoll = { dials.luckyPool.randomOrNull() }, onPick = onOpen) } },
+                        overlay = { LuckyDiceFace(dice, dark = true, modifier = Modifier.fillMaxSize()) },
+                    )
+                } else {
+                    TvDialTile(entry, labels, pinIcon, newTags, onOpen) { menu = entry }
+                }
+            }
+        }
+        if (withArtists && chipTitle == null && dials.artists.isNotEmpty()) {
+            TvShelf(
+                title = stringResource(R.string.artists),
+                items = dials.artists,
+                key = { it.item.dialId },
+            ) { entry ->
+                TvLockup(
+                    title = if (labels) entry.item.title else "",
+                    subtitle = null,
+                    artworkUrl = entry.item.thumbnailUrl,
+                    circle = true,
+                    width = 120.dp,
+                    onClick = { onOpen(entry.item) },
+                    onLongClick = { menu = entry },
+                )
+            }
+        }
+    }
+
+    menu?.let { entry ->
+        val item = entry.item
+        val dismiss = { menu = null }
+        TvDialog(onDismissRequest = dismiss, title = item.title) {
+            TvDialogList {
+                TvListRow(
+                    title = stringResource(R.string.tv_home_dial_remove),
+                    onClick = { AppSettings.setHiddenFromDial(item.dialId, true); dismiss() },
+                )
+                val browseId = item.browseId
+                if (item.dialKind == DialKind.PLAYLIST && browseId != null) {
+                    TvListRow(
+                        title = stringResource(if (entry.pinned) R.string.tv_home_dial_unpin else R.string.tv_home_dial_pin),
+                        onClick = {
+                            // Pinning brings back a tile taken off the dial.
+                            if (AppSettings.togglePinnedPlaylist(browseId)) AppSettings.setHiddenFromDial(item.dialId, false)
+                            dismiss()
+                        },
+                    )
+                }
+                item.toSong()?.let { song ->
+                    TvListRow(title = stringResource(R.string.tv_home_dial_more), onClick = { dismiss(); onSongMenu(song) })
+                }
+            }
+        }
+    }
+}
+
+/** A Speed Dial or Mixes tile: the artwork, its pin badge and "New" tag as set, the title if shown. */
+@Composable
+private fun TvDialTile(
+    entry: DialEntry,
+    labels: Boolean,
+    pinIcon: Boolean,
+    newTags: Boolean,
+    onOpen: (ShelfItem) -> Unit,
+    onLongClick: () -> Unit,
+) {
+    TvLockup(
+        title = if (labels) entry.item.title else "",
+        subtitle = null,
+        artworkUrl = entry.item.thumbnailUrl,
+        width = 150.dp,
+        onClick = { onOpen(entry.item) },
+        onLongClick = onLongClick,
+        overlay = {
+            if (entry.pinned && pinIcon) {
+                Icon(
+                    Icons.Rounded.PushPin, null, tint = Color.White,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(22.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape).padding(4.dp),
+                )
+            }
+            if (entry.isNewRelease && newTags) {
+                Text(
+                    stringResource(R.string.tv_home_dial_new),
+                    style = TvType.Caption,
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.TopStart).padding(6.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+        },
+    )
 }
 
 /** Placeholder shelves while a feed loads. */

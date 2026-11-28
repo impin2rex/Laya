@@ -35,7 +35,11 @@ interface SettingsHost {
     val hasDownloads: Boolean get() = false
     /** false hides "Export compatible downloads" (the Music/Laya folder), which only Android has. */
     val hasExportDownloads: Boolean get() = true
+    /** Whether this platform's player implements Direct Source Stream (Android only). */
+    val hasDirectSourceStream: Boolean get() = false
     val hasSongCache: Boolean get() = false
+    /** false hides "Show cache folder": only Android lists cached songs as a library folder. */
+    val hasCacheFolder: Boolean get() = false
     val hasBackgroundService: Boolean get() = false
     /**
      * false hides the rows that only drive Android's playback service: streaming quality ceilings,
@@ -51,6 +55,8 @@ interface SettingsHost {
     /** false hides the Liquid Glass switch: it gates Android's own nav bar, which iOS replaces with the always-glass GlassNavBar. */
     val hasLiquidGlassOption: Boolean get() = true
     val appIconRow: (@Composable () -> Unit)? get() = null
+    /** Android only: the lock-screen player's switch and the permissions it needs. */
+    val lockScreenRow: (@Composable () -> Unit)? get() = null
 
     @Composable fun versionName(): String = ""
     @Composable fun appLanguageName(): String = ""
@@ -62,6 +68,8 @@ interface SettingsHost {
 
     fun clearSongCache() {}
     fun clearImageCache() {}
+    /** Song, video and image caches and leftover temporary files: everything the app can fetch again. */
+    fun clearAllCache() {}
 }
 
 private val NO_PARTY = MutableStateFlow(PartyInfo(null, 0))

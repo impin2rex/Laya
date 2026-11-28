@@ -49,8 +49,26 @@ object AppleArtistArtRepository {
     private val cache = LinkedHashMap<String, Entry>()
     private val guard = SynchronizedObject()
 
+    // v2: namesakes are told apart by their songs; v1's answers took the first of them.
+    private val disk = LookupStore("apple_artist_art_v2", AppleArtistArt.serializer())
+
+    /** Memory first, then what an earlier run kept on disk (moved into memory). */
     private fun lookupCached(key: String): Entry? =
         synchronized(guard) { cache.remove(key)?.also { cache[key] = it } }
+            ?: disk.get(key)?.let { Entry(it.getOrNull()) }?.also { remember(key, it) }
+
+    private fun remember(key: String, entry: Entry) = synchronized(guard) {
+        cache.remove(key)
+        cache[key] = entry
+        if (cache.size > CACHE_SIZE) cache.remove(cache.keys.first())
+    }
+
+    /** Clear all cache: memory and disk, so the next visit asks Apple again. */
+    fun clear() {
+        synchronized(guard) { cache.clear() }
+        disk.clear()
+        _updates.value++
+    }
 
     private val _updates = MutableStateFlow(0)
 
@@ -68,8 +86,15 @@ object AppleArtistArtRepository {
      */
     fun cached(artistName: String): AppleArtistArt? = lookupCached(artistName.normalized())?.art
 
-    /** The header art for [artistName], or null when Apple has none. Never throws. */
-    suspend fun artFor(artistName: String): AppleArtistArt? {
+    /**
+     * The header art for [artistName], or null when Apple has none. Never throws.
+     *
+     * [songTitles] are the artist's songs as the page lists them, null while they are still
+     * loading. Apple often has several artists under one name (there are four "KK"s), and only a
+     * song both catalogues share says which is meant: with no songs yet, such a name answers null
+     * without remembering it, to be asked again once they are in.
+     */
+    suspend fun artFor(artistName: String, songTitles: List<String>? = null): AppleArtistArt? {
         val key = artistName.normalized()
         if (key.isEmpty()) return null
         lookupCached(key)?.let { return it.art }
@@ -77,40 +102,59 @@ object AppleArtistArtRepository {
         // Null here is a network hiccup, not an answer — only a settled result
         // (including a genuine "no logo") is worth remembering.
         val entry = withContext(ioDispatcher) {
-            runCatching { lookup(artistName, key) }
+            runCatching { lookup(artistName, key, songTitles) }
                 .onFailure { Log.d(TAG, "lookup failed for $artistName: $it") }
                 .getOrNull()
+                ?.also { disk.put(key, it.art) }
         } ?: return null
-        synchronized(guard) {
-            cache[key] = entry
-            if (cache.size > CACHE_SIZE) cache.remove(cache.keys.first())
-        }
+        remember(key, entry)
         _updates.value++
         return entry.art
     }
 
-    private fun lookup(artistName: String, key: String): Entry? {
+    private fun lookup(artistName: String, key: String, songTitles: List<String>?): Entry? {
         val search = get(
             "https://itunes.apple.com/search?term=${artistName.encodeURLParameter()}" +
                 "&entity=musicArtist&limit=5",
         ) ?: return null
         val results = (Json.parseToJsonElement(search) as? JsonObject)?.get("results") as? JsonArray
-        var page: String? = null
-        for (r in results.orEmpty().filterIsInstance<JsonObject>()) {
-            if (r.string("artistName").normalized() == key) {
-                // The link carries the artist's slug; the bare id answers with
-                // a redirect to it, one more round trip for the same page.
-                page = r.string("artistLinkUrl").substringBefore('?').takeIf { it.isNotBlank() }
-                    ?: (r["artistId"] as? JsonPrimitive)?.longOrNull?.takeIf { it > 0 }
-                        ?.let { "https://music.apple.com/us/artist/$it" }
-                break
+        val namesakes = results.orEmpty().filterIsInstance<JsonObject>()
+            .filter { it.string("artistName").normalized() == key }
+        val artist = when {
+            namesakes.size <= 1 -> namesakes.firstOrNull()
+            // Undecided until the page's songs are in; null is not remembered.
+            songTitles == null -> return null
+            else -> {
+                val wanted = songTitles.map { it.songKey() }.filter { it.isNotEmpty() }.toSet()
+                // A page with no songs to go on keeps Apple's own ranking. Otherwise, no song in
+                // common with any of them: YouTube's own picture beats a stranger's.
+                if (wanted.isEmpty()) namesakes.first() else namesakes.firstOrNull { sharesSong(it, wanted) }
             }
+        }
+        // The link carries the artist's slug; the bare id answers with
+        // a redirect to it, one more round trip for the same page.
+        val page = artist?.let { r ->
+            r.string("artistLinkUrl").substringBefore('?').takeIf { it.isNotBlank() }
+                ?: (r["artistId"] as? JsonPrimitive)?.longOrNull?.takeIf { it > 0 }
+                    ?.let { "https://music.apple.com/us/artist/$it" }
         }
         if (page == null) return Entry(null)
 
         val html = get(page) ?: return null
         return Entry(parse(html))
     }
+
+    /** Whether Apple's [artist] has a song titled like one of [wanted] (see [songKey]). */
+    private fun sharesSong(artist: JsonObject, wanted: Set<String>): Boolean {
+        val id = (artist["artistId"] as? JsonPrimitive)?.longOrNull ?: return false
+        val body = get("https://itunes.apple.com/lookup?id=$id&entity=song&limit=200") ?: return false
+        val tracks = (Json.parseToJsonElement(body) as? JsonObject)?.get("results") as? JsonArray ?: return false
+        return tracks.filterIsInstance<JsonObject>().any { it.string("trackName").songKey() in wanted }
+    }
+
+    /** A song title without what versions add to it: "Dil Ibaadat (From "Tum Mile")" is "dilibaadat". */
+    private fun String.songKey(): String =
+        substringBefore('(').substringBefore('[').substringBefore(" - ").normalized()
 
     private fun parse(html: String): AppleArtistArt? {
         val marker = html.indexOf("id=\"serialized-server-data\"")

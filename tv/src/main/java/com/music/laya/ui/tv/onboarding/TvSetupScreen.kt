@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.onboarding
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -104,20 +106,20 @@ fun TvSetupScreen(
     ) { current ->
         when (current) {
             SetupStep.Welcome -> TvSetupPage(
-                title = "Welcome to Laya",
-                message = "Your music, made for the big screen.",
+                title = stringResource(R.string.tv_welcome_title),
+                message = stringResource(R.string.tv_welcome_message),
                 hero = { TvAppMark(size = 106.dp) },
             ) {
-                TvSetupButton("Continue", initialFocus = true) { step = SetupStep.SignIn }
-                TvSetupButton("Set Up Later") { finish() }
+                TvSetupButton(stringResource(R.string.tv_continue), initialFocus = true) { step = SetupStep.SignIn }
+                TvSetupButton(stringResource(R.string.tv_set_up_later)) { finish() }
             }
             SetupStep.SignIn -> TvSignInStep(
                 viewModel = viewModel,
                 onContinue = { step = SetupStep.Appearance },
             )
             SetupStep.Appearance -> TvSetupPage(
-                title = "Choose a Look",
-                message = "You can change this later in Settings.",
+                title = stringResource(R.string.tv_choose_a_look),
+                message = stringResource(R.string.tv_change_later),
                 hero = {
                     Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
                         AppThemeOption.entries.forEach { option ->
@@ -131,15 +133,15 @@ fun TvSetupScreen(
                     }
                 },
             ) {
-                TvSetupButton("Continue") {
+                TvSetupButton(stringResource(R.string.tv_continue)) {
                     TvSettings.setTvTheme(theme.id)
                     step = SetupStep.Preferences
                 }
             }
             SetupStep.Preferences -> TvPreferencesStep(onContinue = { step = SetupStep.Done })
             SetupStep.Done -> TvSetupPage(
-                title = "You're All Set",
-                message = "Find music in Home and Explore. Everything you save is in Library.",
+                title = stringResource(R.string.tv_all_set_title),
+                message = stringResource(R.string.tv_all_set_message),
                 hero = {
                     Icon(
                         imageVector = Icons.Rounded.CheckCircle,
@@ -149,7 +151,7 @@ fun TvSetupScreen(
                     )
                 },
             ) {
-                TvSetupButton("Start Listening", initialFocus = true) { finish() }
+                TvSetupButton(stringResource(R.string.tv_start_listening), initialFocus = true) { finish() }
             }
         }
     }
@@ -216,19 +218,19 @@ private fun TvSignInStep(viewModel: MainViewModel, onContinue: () -> Unit) {
     }
 
     TvSetupPage(
-        title = if (signedIn) "Signed In" else "Sign In to YouTube Music",
+        title = if (signedIn) stringResource(R.string.tv_signed_in) else stringResource(R.string.tv_sign_in_ytm_title),
         message = if (signedIn) {
-            "Laya will use ${account?.name ?: "your account"}'s library and recommendations."
+            stringResource(R.string.tv_laya_will_use, account?.name ?: stringResource(R.string.tv_your_account))
         } else {
-            "Bring your library, playlists and recommendations. You can also do this later in Settings."
+            stringResource(R.string.tv_bring_library)
         },
         hero = { TvAppMark(size = 77.dp) },
     ) {
         if (signedIn) {
-            TvSetupButton("Continue", initialFocus = true, onClick = onContinue)
+            TvSetupButton(stringResource(R.string.tv_continue), initialFocus = true, onClick = onContinue)
         } else {
-            TvSetupButton("Sign In", initialFocus = true) { signingIn = true }
-            TvSetupButton("Not Now", onClick = onContinue)
+            TvSetupButton(stringResource(R.string.tv_sign_in), initialFocus = true) { signingIn = true }
+            TvSetupButton(stringResource(R.string.tv_not_now), onClick = onContinue)
         }
     }
 
@@ -246,32 +248,32 @@ private fun TvPreferencesStep(onContinue: () -> Unit) {
     val spatial by TvSettings.spatialAudioEnabled.collectAsState()
 
     TvSetupPage(
-        title = "Listening",
-        message = "Select a row to turn it on or off.",
+        title = stringResource(R.string.activity_listening),
+        message = stringResource(R.string.tv_select_row_hint),
         hero = {
             Column(
                 modifier = Modifier.width(416.dp),
                 verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 TvListRow(
-                    title = "Synced Lyrics",
-                    value = if (lyrics) "On" else "Off",
+                    title = stringResource(R.string.tv_synced_lyrics),
+                    value = if (lyrics) stringResource(R.string.tv_on) else stringResource(R.string.off),
                     modifier = Modifier.tvInitialFocus(),
                     onClick = { AppSettings.setSyncedLyrics(!lyrics) },
                 )
                 TvListRow(
-                    title = "Motion Artwork",
-                    value = if (canvas) "On" else "Off",
+                    title = stringResource(R.string.tv_motion_artwork),
+                    value = if (canvas) stringResource(R.string.tv_on) else stringResource(R.string.off),
                     onClick = { AppSettings.setAnimatedCanvas(!canvas) },
                 )
                 TvListRow(
-                    title = "Automix",
-                    value = if (automix) "On" else "Off",
+                    title = stringResource(R.string.tv_automix),
+                    value = if (automix) stringResource(R.string.tv_on) else stringResource(R.string.off),
                     onClick = { AppSettings.setSmartFadeEnabled(!automix) },
                 )
                 TvListRow(
-                    title = "Spatial Audio",
-                    value = if (spatial) "On" else "Off",
+                    title = stringResource(R.string.tv_spatial_audio),
+                    value = if (spatial) stringResource(R.string.tv_on) else stringResource(R.string.off),
                     onClick = {
                         TvSettings.setSpatialAudioEnabled(!spatial)
                         TvSpatialAudioEngine.setEnabled(!spatial)
@@ -280,7 +282,7 @@ private fun TvPreferencesStep(onContinue: () -> Unit) {
             }
         },
     ) {
-        TvSetupButton("Continue", onClick = onContinue)
+        TvSetupButton(stringResource(R.string.tv_continue), onClick = onContinue)
     }
 }
 
@@ -333,7 +335,7 @@ private fun TvThemeSwatch(
             if (selected) {
                 Icon(
                     imageVector = Icons.Rounded.CheckCircle,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.selected),
                     tint = Color.White,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -344,7 +346,7 @@ private fun TvThemeSwatch(
         }
         Spacer(modifier = Modifier.height(11.dp))
         Text(
-            text = option.title,
+            text = stringResource(option.title),
             style = TvType.CardTitle,
             color = if (focused || selected) TvGlass.TextPrimary else TvGlass.TextSecondary,
         )

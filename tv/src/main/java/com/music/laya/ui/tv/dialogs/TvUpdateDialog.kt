@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv.dialogs
 
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,10 +57,10 @@ fun TvUpdateDialog(update: AppUpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
     val notes = remember(update.notes) { update.notes?.let(::plainNotes) }
 
     TvDialog(
-        title = "Laya ${update.version} Is Available",
+        title = stringResource(R.string.tv_update_available_title, update.version),
         message = when {
-            update.apkUrl == null -> "Scan the code with your phone to get this update from GitHub."
-            state is DownloadState.Ready -> "Downloaded. Select Install Now to update."
+            update.apkUrl == null -> stringResource(R.string.tv_update_scan)
+            state is DownloadState.Ready -> stringResource(R.string.tv_update_downloaded)
             state is DownloadState.Failed -> (state as DownloadState.Failed).message
             else -> null
         },
@@ -68,7 +70,7 @@ fun TvUpdateDialog(update: AppUpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
         if (update.apkUrl == null) {
             TvQrCodeView(content = update.releaseUrl, size = 147.dp)
             Spacer(modifier = Modifier.height(21.dp))
-            TvDialogButton(text = "OK", onClick = onDismiss, initialFocus = true)
+            TvDialogButton(text = stringResource(R.string.tv_ok), onClick = onDismiss, initialFocus = true)
         } else {
             TvUpdateControls(state, notes, onDismiss)
         }
@@ -97,21 +99,21 @@ private fun TvUpdateControls(state: DownloadState, notes: String?, onDismiss: ()
         when (val s = state) {
             DownloadState.Idle -> {
                 TvDialogButton(
-                    text = "Download and Install",
+                    text = stringResource(R.string.tv_download_and_install),
                     onClick = { downloadScope.launch { AppUpdateChecker.downloadApk(context) } },
                     initialFocus = true,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                TvDialogButton(text = "Not Now", onClick = onDismiss)
+                TvDialogButton(text = stringResource(R.string.tv_not_now), onClick = onDismiss)
             }
 
             is DownloadState.Downloading -> {
                 TvDownloadProgress(fraction = s.fraction)
                 Spacer(modifier = Modifier.height(21.dp))
-                TvDialogButton(text = "Hide", onClick = onDismiss, initialFocus = true)
+                TvDialogButton(text = stringResource(R.string.tv_hide), onClick = onDismiss, initialFocus = true)
                 Spacer(modifier = Modifier.height(6.dp))
                 TvDialogButton(
-                    text = "Cancel Download",
+                    text = stringResource(R.string.tv_cancel_download),
                     destructive = true,
                     onClick = AppUpdateChecker::cancelDownload,
                 )
@@ -119,23 +121,23 @@ private fun TvUpdateControls(state: DownloadState, notes: String?, onDismiss: ()
 
             is DownloadState.Ready -> {
                 TvDialogButton(
-                    text = "Install Now",
+                    text = stringResource(R.string.install_now),
                     onClick = { AppUpdateChecker.installApk(context, s.file) },
                     initialFocus = true,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                TvDialogButton(text = "Not Now", onClick = onDismiss)
+                TvDialogButton(text = stringResource(R.string.tv_not_now), onClick = onDismiss)
             }
 
             is DownloadState.Failed -> {
                 TvDialogButton(
-                    text = "Try Again",
+                    text = stringResource(R.string.try_again),
                     onClick = { downloadScope.launch { AppUpdateChecker.downloadApk(context) } },
                     initialFocus = true,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 TvDialogButton(
-                    text = "Not Now",
+                    text = stringResource(R.string.tv_not_now),
                     onClick = {
                         AppUpdateChecker.resetDownload()
                         onDismiss()
@@ -165,7 +167,7 @@ private fun TvDownloadProgress(fraction: Float) {
     )
     Spacer(modifier = Modifier.height(10.dp))
     Text(
-        text = "Downloading… ${(fraction * 100).toInt()}%",
+        text = stringResource(R.string.tv_downloading, (fraction * 100).toInt()),
         style = TvType.Caption,
         color = TvGlass.TextSecondary,
     )

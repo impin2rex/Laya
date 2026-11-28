@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.Undo
+import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Equalizer
@@ -57,7 +59,13 @@ import com.music.laya.data.model.LikeStatus
 import com.music.laya.data.model.PlaylistPrivacy
 import com.music.laya.data.model.Song
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.data.NerdStats
+import com.music.laya.playback.OriginalVersion
+import com.music.laya.playback.QualityUpgrade
 import com.music.laya.playback.SleepTimer
+import com.music.laya.playback.canRevertToOriginal
+import com.music.laya.playback.revertToOriginal
+import com.music.laya.playback.upgradeQuality
 import com.music.laya.playback.beginRadioQueue
 import com.music.laya.playback.commitRadioQueue
 import com.music.laya.playback.playSongs
@@ -126,6 +134,15 @@ fun TvSongActionMenuDialog(
     val sleepDeadline by SleepTimer.deadline.collectAsState()
     val sleepAfterTrack by SleepTimer.afterTrack.collectAsState()
     val nerdStats by AppSettings.showNerdStats.collectAsState()
+    val pinnedToOriginal by OriginalVersion.pinned.collectAsState()
+    val upgradesInFlight by NerdStats.racingLossless.collectAsState()
+    val playingItem = mediaController?.currentMediaItem?.takeIf { it.mediaId == song.videoId }
+    val playingThis = playingItem != null
+    // "Known": an unresolved track playing off the disk cache answers false and keeps the revert on offer.
+    val playingYouTubesOwn = playingItem != null && QualityUpgrade.isKnownToBePlayingYouTubesOwn(
+        song.videoId,
+        playingItem.localConfiguration?.uri?.let(QualityUpgrade::cacheTag),
+    )
 
     when (sheet) {
         SongSheet.Playlist -> {
@@ -162,9 +179,38 @@ fun TvSongActionMenuDialog(
                 .heightIn(max = 288.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
+            // The phone's version row (MainActivity's onRollbackToOriginal / onUpgradeQuality), for the song
+            // playing: back to YouTube's own upload from a substituted copy, or a fresh look for a better one
+            // from YouTube's own. Never both; nothing for a saved file, which no stream chose.
+            if (playingThis && song.localUri == null) {
+                val onOriginal = song.videoId in pinnedToOriginal || playingYouTubesOwn
+                when {
+                    onOriginal -> item {
+                        TvListRow(
+                            title = stringResource(R.string.upgrade_quality),
+                            trailingIcon = Icons.Rounded.HighQuality,
+                            enabled = song.videoId !in upgradesInFlight,
+                            onClick = {
+                                mediaController?.upgradeQuality()
+                                onDismiss()
+                            },
+                        )
+                    }
+                    song.canRevertToOriginal() -> item {
+                        TvListRow(
+                            title = stringResource(R.string.revert_to_original),
+                            trailingIcon = Icons.AutoMirrored.Rounded.Undo,
+                            onClick = {
+                                mediaController?.revertToOriginal()
+                                onDismiss()
+                            },
+                        )
+                    }
+                }
+            }
             item {
                 TvListRow(
-                    title = "Play Next",
+                    title = stringResource(R.string.tv_play_next),
                     trailingIcon = Icons.AutoMirrored.Rounded.QueueMusic,
                     modifier = Modifier.tvInitialFocus(),
                     onClick = {
@@ -175,7 +221,7 @@ fun TvSongActionMenuDialog(
             }
             item {
                 TvListRow(
-                    title = "Play Last",
+                    title = stringResource(R.string.tv_play_last),
                     trailingIcon = Icons.AutoMirrored.Rounded.PlaylistPlay,
                     onClick = {
                         mediaController?.addMediaItem(song.toMediaItem())
@@ -185,7 +231,7 @@ fun TvSongActionMenuDialog(
             }
             item {
                 TvListRow(
-                    title = "Start Station",
+                    title = stringResource(R.string.tv_start_station),
                     trailingIcon = Icons.Rounded.Radio,
                     onClick = {
                         val controller = mediaController
@@ -196,7 +242,7 @@ fun TvSongActionMenuDialog(
             }
             item {
                 TvListRow(
-                    title = if (isLiked) "Unlove" else "Love",
+                    title = if (isLiked) stringResource(R.string.tv_unlove) else stringResource(R.string.tv_love),
                     trailingIcon = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                     onClick = {
                         onToggleLike()
@@ -206,7 +252,7 @@ fun TvSongActionMenuDialog(
             }
             item {
                 TvListRow(
-                    title = "Add to Playlist…",
+                    title = stringResource(R.string.tv_add_to_playlist_ellipsis),
                     trailingIcon = Icons.AutoMirrored.Rounded.PlaylistAdd,
                     onClick = { sheet = SongSheet.Playlist },
                 )
@@ -214,7 +260,7 @@ fun TvSongActionMenuDialog(
             if (onOpenAlbum != null) {
                 item {
                     TvListRow(
-                        title = "Go to Album",
+                        title = stringResource(R.string.tv_go_to_album),
                         trailingIcon = Icons.Rounded.Album,
                         onClick = {
                             onDismiss()
@@ -226,7 +272,7 @@ fun TvSongActionMenuDialog(
             if (onOpenArtist != null) {
                 item {
                     TvListRow(
-                        title = "Go to Artist",
+                        title = stringResource(R.string.tv_go_to_artist),
                         trailingIcon = Icons.Rounded.Person,
                         onClick = {
                             onDismiss()
@@ -244,23 +290,23 @@ fun TvSongActionMenuDialog(
             }
             item {
                 TvListRow(
-                    title = "Equalizer",
+                    title = stringResource(R.string.equalizer),
                     trailingIcon = Icons.Rounded.Equalizer,
                     onClick = { sheet = SongSheet.Equalizer },
                 )
             }
             item {
                 TvListRow(
-                    title = "Sleep Timer",
-                    value = if (sleepDeadline != null || sleepAfterTrack) "On" else "Off",
+                    title = stringResource(R.string.tv_sleep_timer),
+                    value = if (sleepDeadline != null || sleepAfterTrack) stringResource(R.string.tv_on) else stringResource(R.string.off),
                     trailingIcon = Icons.Rounded.Timer,
                     onClick = { sheet = SongSheet.Sleep },
                 )
             }
             item {
                 TvListRow(
-                    title = "Stats for Nerds",
-                    value = if (nerdStats) "On" else "Off",
+                    title = stringResource(R.string.tv_stats_for_nerds),
+                    value = if (nerdStats) stringResource(R.string.tv_on) else stringResource(R.string.off),
                     trailingIcon = Icons.Rounded.Info,
                     onClick = { AppSettings.setShowNerdStats(!nerdStats) },
                 )
@@ -356,6 +402,7 @@ fun TvAddToPlaylistDialog(
     viewModel: MainViewModel,
     onDismiss: () -> Unit,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val playlists by viewModel.playlists.collectAsState()
     val loading by viewModel.playlistsLoading.collectAsState()
     var creating by remember { mutableStateOf(false) }
@@ -366,34 +413,34 @@ fun TvAddToPlaylistDialog(
     val done = result
     when {
         done != null -> TvDialog(title = done, onDismissRequest = onDismiss) {
-            TvDialogButton(text = "OK", onClick = onDismiss, initialFocus = true)
+            TvDialogButton(text = stringResource(R.string.tv_ok), onClick = onDismiss, initialFocus = true)
         }
         creating -> TvDialog(
-            title = "New Playlist",
-            message = "It will be private, with this song in it.",
+            title = stringResource(R.string.tv_new_playlist_title),
+            message = stringResource(R.string.tv_new_playlist_message),
             onDismissRequest = { creating = false },
         ) {
             val create = {
                 if (name.isNotBlank()) {
                     viewModel.createPlaylist(name.trim(), PlaylistPrivacy.PRIVATE, song)
-                    result = "Added to “${name.trim()}”"
+                    result = context.getString(R.string.tv_added_to, name.trim())
                 }
             }
             TvTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = "Playlist Name",
+                placeholder = stringResource(R.string.tv_playlist_name),
                 capitalization = KeyboardCapitalization.Words,
                 imeAction = ImeAction.Done,
                 onImeAction = create,
                 modifier = Modifier.tvInitialFocus(),
             )
             Spacer(modifier = Modifier.size(16.dp))
-            TvDialogButton(text = "Create", enabled = name.isNotBlank(), onClick = create)
+            TvDialogButton(text = stringResource(R.string.tv_create), enabled = name.isNotBlank(), onClick = create)
             Spacer(modifier = Modifier.size(6.dp))
-            TvDialogButton(text = "Cancel", onClick = { creating = false })
+            TvDialogButton(text = stringResource(R.string.cancel), onClick = { creating = false })
         }
-        else -> TvDialog(title = "Add to Playlist", message = song.title, onDismissRequest = onDismiss) {
+        else -> TvDialog(title = stringResource(R.string.tv_add_to_playlist), message = song.title, onDismissRequest = onDismiss) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -402,7 +449,7 @@ fun TvAddToPlaylistDialog(
             ) {
                 item {
                     TvListRow(
-                        title = "New Playlist…",
+                        title = stringResource(R.string.tv_new_playlist_ellipsis),
                         trailingIcon = Icons.AutoMirrored.Rounded.PlaylistAdd,
                         modifier = Modifier.tvInitialFocus(),
                         onClick = { creating = true },
@@ -422,9 +469,9 @@ fun TvAddToPlaylistDialog(
                         onClick = {
                             viewModel.addToPlaylists(listOf(playlist), song) { added, already, _ ->
                                 result = when {
-                                    added > 0 -> "Added to “${playlist.title}”"
-                                    already > 0 -> "Already in “${playlist.title}”"
-                                    else -> "Couldn't add to “${playlist.title}”"
+                                    added > 0 -> context.getString(R.string.tv_added_to, playlist.title)
+                                    already > 0 -> context.getString(R.string.tv_already_in, playlist.title)
+                                    else -> context.getString(R.string.tv_couldnt_add_to, playlist.title)
                                 }
                             }
                         },
@@ -442,11 +489,11 @@ fun TvSleepTimerDialog(onDismiss: () -> Unit) {
     val afterTrack by SleepTimer.afterTrack.collectAsState()
     val active = deadline != null || afterTrack
 
-    TvDialog(title = "Sleep Timer", message = "Stop playing music after", onDismissRequest = onDismiss) {
+    TvDialog(title = stringResource(R.string.tv_sleep_timer), message = stringResource(R.string.tv_sleep_timer_message), onDismissRequest = onDismiss) {
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             listOf(15, 30, 45, 60).forEachIndexed { index, minutes ->
                 TvListRow(
-                    title = "$minutes Minutes",
+                    title = stringResource(R.string.tv_minutes, minutes),
                     modifier = if (index == 0) Modifier.tvInitialFocus() else Modifier,
                     onClick = {
                         SleepTimer.start(minutes)
@@ -455,7 +502,7 @@ fun TvSleepTimerDialog(onDismiss: () -> Unit) {
                 )
             }
             TvListRow(
-                title = "End of Current Song",
+                title = stringResource(R.string.tv_end_of_current_song),
                 trailingIcon = if (afterTrack) Icons.Rounded.Check else null,
                 onClick = {
                     SleepTimer.startAfterTrack()
@@ -464,7 +511,7 @@ fun TvSleepTimerDialog(onDismiss: () -> Unit) {
             )
             if (active) {
                 TvListRow(
-                    title = "Turn Off Timer",
+                    title = stringResource(R.string.tv_turn_off_timer),
                     destructive = true,
                     onClick = {
                         SleepTimer.cancel()

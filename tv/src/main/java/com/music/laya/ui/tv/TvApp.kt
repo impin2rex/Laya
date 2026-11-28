@@ -1,5 +1,7 @@
 package com.music.laya.ui.tv
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -76,6 +78,7 @@ import com.music.laya.ui.tv.dialogs.TvUpdateDialog
 import com.music.laya.ui.tv.player.TvNowPlayingScreen
 import com.music.laya.ui.tv.screens.TvDetailScreen
 import com.music.laya.ui.tv.screens.TvExploreScreen
+import com.music.laya.ui.tv.screens.TvRadioScreen
 import com.music.laya.ui.tv.screens.TvHomeScreen
 import com.music.laya.ui.tv.screens.TvLibraryScreen
 import com.music.laya.ui.tv.screens.TvSearchScreen
@@ -85,12 +88,13 @@ import com.music.laya.ui.tv.theme.TvThemeColors
 import kotlinx.coroutines.delay
 
 /** The tabs of the top bar. Now Playing is a tab too, but it opens the player rather than a page. */
-enum class TvDestination(val label: String) {
-    HOME("Home"),
-    EXPLORE("Explore"),
-    LIBRARY("Library"),
-    SEARCH("Search"),
-    SETTINGS("Settings"),
+enum class TvDestination(@StringRes val label: Int) {
+    HOME(R.string.home),
+    EXPLORE(R.string.explore),
+    RADIO(R.string.radio),
+    LIBRARY(R.string.library),
+    SEARCH(R.string.search),
+    SETTINGS(R.string.settings),
 }
 
 /** A pushed album, playlist or artist page. */
@@ -201,6 +205,13 @@ fun TvApp(
             .fillMaxSize()
             .tvCanvas(playerState.song?.thumbnailUrl),
     ) {
+        val playingArt = playerState.song?.thumbnailUrl
+        LaunchedEffect(playingArt) { com.music.laya.ui.theme.AmbientArtwork.url.value = playingArt }
+        // Melo's colour background, from the playing song, over the canvas and under every page.
+        com.music.laya.ui.theme.AmbientBackgroundLayer(
+            com.music.laya.ui.theme.rememberAmbientBackground(com.music.laya.ui.theme.ambientIdleColors(clearIcon = false)),
+            Modifier.fillMaxSize(),
+        )
         AnimatedContent(
             targetState = isRunningSetup,
             transitionSpec = { fadeIn(tween(220)).togetherWith(fadeOut(tween(160))) },
@@ -262,6 +273,7 @@ fun TvApp(
         if (pendingUpdate != null && !updateDismissed && !isRunningSetup && !showAccountDialog) {
             TvUpdateDialog(update = pendingUpdate, onDismiss = { updateDismissed = true })
         }
+        com.music.laya.ui.components.ColdStartSplash()
     }
 }
 
@@ -459,6 +471,12 @@ private fun TvMainShell(
                                 onNavigateToDetail = openDetail,
                                 onNavigateToNowPlaying = openNowPlaying,
                             )
+                            TvDestination.RADIO -> TvRadioScreen(
+                                viewModel = viewModel,
+                                mediaController = mediaController,
+                                onNavigateToDetail = openDetail,
+                                onNavigateToNowPlaying = openNowPlaying,
+                            )
                             TvDestination.LIBRARY -> TvLibraryScreen(
                                 viewModel = viewModel,
                                 mediaController = mediaController,
@@ -532,7 +550,7 @@ private fun TvMainShell(
 
 /**
  * The Apple Music tvOS tab bar: a translucent capsule centred at the top holding
- * the four tabs and, at its end, Search and Settings. Home, Explore and Library
+ * the five tabs and, at its end, Search and Settings. Home, Explore, Radio and Library
  * switch as focus lands on them, the way tvOS tabs do; the rest act on select.
  */
 @Composable
@@ -571,7 +589,7 @@ private fun TvTopBar(
         // The mark only, as the phone's Home heading shows it.
         Icon(
             painter = painterResource(R.drawable.ic_logo),
-            contentDescription = "Laya",
+            contentDescription = stringResource(R.string.app_name),
             tint = TvGlass.TextPrimary,
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -594,7 +612,7 @@ private fun TvTopBar(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            listOf(TvDestination.HOME, TvDestination.EXPLORE, TvDestination.LIBRARY).forEach { tab ->
+            listOf(TvDestination.HOME, TvDestination.EXPLORE, TvDestination.RADIO, TvDestination.LIBRARY).forEach { tab ->
                 val interaction = remember { MutableInteractionSource() }
                 val focused by interaction.collectIsFocusedAsState()
                 LaunchedEffect(focused) {
@@ -604,7 +622,7 @@ private fun TvTopBar(
                     }
                 }
                 TvTabPill(
-                    label = tab.label,
+                    label = stringResource(tab.label),
                     selected = destination == tab,
                     interactionSource = interaction,
                     onClick = { onSelect(tab) },
@@ -612,21 +630,21 @@ private fun TvTopBar(
                 )
             }
             TvTabPill(
-                label = "Now Playing",
+                label = stringResource(R.string.tv_now_playing),
                 selected = false,
                 modifier = downToContent,
                 onClick = onOpenNowPlaying,
             )
             TvTabIcon(
                 icon = Icons.Rounded.Search,
-                contentDescription = "Search",
+                contentDescription = stringResource(R.string.search),
                 selected = destination == TvDestination.SEARCH,
                 onClick = { onSelect(TvDestination.SEARCH) },
                 modifier = downToContent.then(if (destination == TvDestination.SEARCH) Modifier.focusRequester(tabFocus) else Modifier),
             )
             TvTabIcon(
                 icon = Icons.Rounded.Settings,
-                contentDescription = "Settings",
+                contentDescription = stringResource(R.string.settings),
                 selected = destination == TvDestination.SETTINGS,
                 onClick = { onSelect(TvDestination.SETTINGS) },
                 modifier = downToContent.then(if (destination == TvDestination.SETTINGS) Modifier.focusRequester(tabFocus) else Modifier),
@@ -654,7 +672,7 @@ private fun TvAvatarButton(
         if (imageUrl.isNullOrBlank()) {
             Icon(
                 imageVector = Icons.Rounded.Person,
-                contentDescription = "Account",
+                contentDescription = stringResource(R.string.tv_account),
                 tint = TvGlass.TextSecondary,
                 modifier = Modifier.size(18.dp),
             )
@@ -678,7 +696,7 @@ fun TvAppMark(modifier: Modifier = Modifier, size: androidx.compose.ui.unit.Dp =
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_logo),
-            contentDescription = "Laya",
+            contentDescription = stringResource(R.string.app_name),
             tint = Color.White,
             modifier = Modifier.size(size * 0.52f),
         )

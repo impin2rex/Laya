@@ -1,5 +1,8 @@
 package com.music.laya.ui.tv.player
 
+import com.music.laya.data.model.artworkAt
+import androidx.compose.ui.res.stringResource
+import com.music.laya.R
 import android.view.KeyEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -35,6 +38,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.runtime.produceState
+import com.music.laya.data.bestpart.BestPart
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Translate
@@ -72,7 +78,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -104,11 +109,10 @@ import com.music.laya.sharedui.resources.ic_player_play
 import com.music.laya.sharedui.resources.ic_player_previous
 import com.music.laya.ui.icons.LayaIcons
 import com.music.laya.ui.player.ArtworkMeshBackdrop
-import com.music.laya.ui.player.CanvasArtworkPlayer
+import com.music.laya.ui.player.AutoMixCanvasLayer
 import com.music.laya.ui.player.SyncedLyricsPanel
 import com.music.laya.ui.player.rememberArtworkMesh
 import com.music.laya.ui.tv.components.TvActivityIndicator
-import com.music.laya.ui.tv.components.TvArtwork
 import com.music.laya.ui.tv.components.TvButton
 import com.music.laya.ui.tv.components.TvRow
 import com.music.laya.ui.tv.components.TvLockup
@@ -173,6 +177,9 @@ internal fun TvNowPlayingStage(
     modifier: Modifier = Modifier,
     /** A translation or romanization under each line — see [rememberLyricsVersions]. */
     subLines: List<LyricLine>? = null,
+    /** The queue and the song's place in it, for the AutoMix Canvas blend. */
+    queue: List<Song> = emptyList(),
+    queueIndex: Int = 0,
 ) {
     // While the transport is up the lyrics fade out above it rather than run under it.
     val underControls by animateFloatAsState(if (controlsVisible) 1f else 0f, tween(320), label = "lyricsFade")
@@ -209,8 +216,20 @@ internal fun TvNowPlayingStage(
                     clip = true
                 },
         ) {
-            TvArtwork(url = song.thumbnailUrl, px = 720, shape = RectangleShape, modifier = Modifier.fillMaxSize())
-            canvas?.let { CanvasArtworkPlayer(canvas = it, isPlaying = isPlaying, modifier = Modifier.fillMaxSize()) }
+            // The phone's cover: through an Automix blend the next sleeve is revealed over this one in step with
+            // the mix; any other change of song dissolves as before.
+            val cover = com.music.laya.ui.player.rememberMiniAutoMixArtwork(
+                song, queue, queueIndex, px = 720, ownSwitch = true, blur = true,
+            )
+            cover(song.thumbnailUrl.artworkAt(720) ?: song.thumbnailUrl, Modifier.fillMaxSize())
+            AutoMixCanvasLayer(
+                song = song,
+                queue = queue,
+                queueIndex = queueIndex,
+                isPlaying = isPlaying,
+                canvas = canvas,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         // With the transport away, the song is named under the cover: the title and
@@ -352,15 +371,25 @@ internal fun TvTransport(
     /** Opens the music video's quality picker; null while no video plays. */
     onOpenVideoQuality: (() -> Unit)? = null,
     versionSwitching: Boolean = false,
+    /** Seeks straight to a moment; with it, the Best Part button is offered when the song has one. */
+    onSeek: ((Long) -> Unit)? = null,
+    /** The song's synced lyrics, for the Best Part chorus fallback when its replay curve is flat. */
+    lyrics: List<com.music.laya.data.lyrics.LyricLine>? = null,
 ) {
     val showStats by AppSettings.showNerdStats.collectAsState()
+    val bestPartOn by AppSettings.showBestPart.collectAsState()
+    // ponytail: kept up for the whole track rather than hidden once heard as on
+    // the phone, since a button vanishing under the D-pad's focus strands it.
+    val bestPart by produceState<Long?>(null, song.videoId, bestPartOn, lyrics) {
+        value = if (bestPartOn && onSeek != null) BestPart.startFor(song, lyrics) else null
+    }
     val reverbOn by AppSettings.reverbEnabled.collectAsState()
     val karaokeOn by Karaoke.enabled.collectAsState()
     val karaokeMono by Karaoke.unavailable.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(karaokeMono) {
         if (karaokeMono) {
-            Toast.makeText(context, "This track is mono, so its vocals cannot be removed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.tv_mono_toast), Toast.LENGTH_SHORT).show()
         }
     }
     Column(
@@ -390,14 +419,14 @@ internal fun TvTransport(
             Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
                 TvTransportButton(
                     icon = if (isLiked) LayaIcons.HeartFilled else LayaIcons.Heart,
-                    contentDescription = if (isLiked) "Unlove" else "Love",
+                    contentDescription = if (isLiked) stringResource(R.string.tv_unlove) else stringResource(R.string.tv_love),
                     onClick = onToggleLike,
                 )
                 // Audio or video: lit while the video plays, and showing what a press gives.
                 if (onToggleVideo != null) {
                     TvTransportButton(
                         icon = if (playingVideo) LayaIcons.MusicNote else Icons.Rounded.Videocam,
-                        contentDescription = if (playingVideo) "Switch to Audio" else "Switch to Video",
+                        contentDescription = if (playingVideo) stringResource(R.string.tv_switch_to_audio) else stringResource(R.string.tv_switch_to_video),
                         active = playingVideo,
                         enabled = !versionSwitching,
                         onClick = onToggleVideo,
@@ -406,7 +435,7 @@ internal fun TvTransport(
                 if (onOpenVideoQuality != null) {
                     TvTransportButton(
                         icon = Icons.Rounded.Hd,
-                        contentDescription = "Video quality",
+                        contentDescription = stringResource(R.string.tv_video_quality),
                         onClick = onOpenVideoQuality,
                     )
                     // VLC's aspect button: best fit, fit screen, fill — remembered for every video.
@@ -416,9 +445,16 @@ internal fun TvTransport(
                         onClick = { AppSettings.setVideoScale(AppSettings.videoScale.value.next) },
                     )
                 }
+                bestPart?.let { start ->
+                    TvTransportButton(
+                        icon = Icons.Rounded.AutoAwesome,
+                        contentDescription = stringResource(R.string.tv_skip_to_best_part),
+                        onClick = { onSeek?.invoke(start) },
+                    )
+                }
                 TvTransportButton(
                     icon = LayaIcons.LyricsQuote,
-                    contentDescription = "Lyrics",
+                    contentDescription = stringResource(R.string.tv_lyrics),
                     active = lyricsOn,
                     enabled = lyricsAvailable,
                     onClick = onToggleLyrics,
@@ -428,28 +464,28 @@ internal fun TvTransport(
                 if (lyricsOn) {
                     TvTransportButton(
                         icon = Icons.Rounded.Language,
-                        contentDescription = if (lyricVersions.showingRomanization) "Show original lyrics" else "Romanize lyrics",
+                        contentDescription = if (lyricVersions.showingRomanization) stringResource(R.string.tv_show_original_lyrics) else stringResource(R.string.tv_romanize_lyrics),
                         active = lyricVersions.showingRomanization || lyricVersions.romanizing,
                         enabled = !lyricVersions.romanizationPointless,
                         onClick = lyricVersions.toggleRomanization,
                     )
                     TvTransportButton(
                         icon = Icons.Rounded.Translate,
-                        contentDescription = if (lyricVersions.showingTranslation) "Show original lyrics" else "Translate lyrics",
+                        contentDescription = if (lyricVersions.showingTranslation) stringResource(R.string.tv_show_original_lyrics) else stringResource(R.string.tv_translate_lyrics),
                         active = lyricVersions.showingTranslation || lyricVersions.translating,
                         enabled = !lyricVersions.translationPointless,
                         onClick = lyricVersions.toggleTranslation,
                     )
                     TvTransportButton(
                         icon = LayaIcons.KaraokeMic,
-                        contentDescription = if (karaokeOn) "Restore vocals" else "Sing along",
+                        contentDescription = if (karaokeOn) stringResource(R.string.tv_restore_vocals) else stringResource(R.string.tv_sing_along),
                         active = karaokeOn && !karaokeMono,
                         onClick = { Karaoke.setEnabled(!karaokeOn) },
                     )
                 }
                 TvTransportButton(
                     icon = LayaIcons.Queue,
-                    contentDescription = "Up Next",
+                    contentDescription = stringResource(R.string.tv_up_next),
                     active = upNextOpen,
                     onClick = onToggleUpNext,
                 )
@@ -457,13 +493,13 @@ internal fun TvTransport(
                 // the room itself is tuned there.
                 TvTransportButton(
                     icon = Icons.Rounded.Waves,
-                    contentDescription = if (reverbOn) "Reverb On" else "Reverb Off",
+                    contentDescription = if (reverbOn) stringResource(R.string.tv_reverb_on) else stringResource(R.string.tv_reverb_off),
                     active = reverbOn,
                     onClick = { AppSettings.setReverbEnabled(!reverbOn) },
                 )
                 TvTransportButton(
                     icon = Icons.Rounded.MoreHoriz,
-                    contentDescription = "More",
+                    contentDescription = stringResource(R.string.more),
                     onClick = onMore,
                 )
             }
@@ -567,6 +603,13 @@ private fun TvScrubber(
         if (isPlaying) while (true) withFrameNanos { frame.longValue = it }
     }
     val thickness by animateDpAsState(if (focused) 6.dp else 4.dp, tween(160), label = "scrubThickness")
+    // Automix's planned blend, as the phone's scrubber marks it (ThinSlider): a white patch, feathered at both ends,
+    // fading in once known and out when gone. Hidden while scrubbing, as there.
+    val window by AppSettings.smartTransitionWindow.collectAsState()
+    val liveWindow = window?.takeIf { scrubTarget == null && it.end > it.start }
+    var shownWindow by remember { mutableStateOf(liveWindow) }
+    LaunchedEffect(liveWindow) { if (liveWindow != null) shownWindow = liveWindow }
+    val windowAlpha by animateFloatAsState(if (liveWindow != null) 1f else 0f, tween(500), label = "automixWindow")
 
     Column {
         Box(
@@ -606,6 +649,26 @@ private fun TvScrubber(
                         size = Size(size.width * fraction, h),
                         cornerRadius = radius,
                     )
+                    shownWindow?.takeIf { windowAlpha > 0f }?.let { w ->
+                        val from = size.width * w.start.coerceIn(0f, 1f)
+                        val to = size.width * w.end.coerceIn(0f, 1f)
+                        val span = to - from
+                        if (span > 0f) {
+                            val f = (span * 0.4f).coerceIn(6.dp.toPx(), 40.dp.toPx()).coerceAtMost(span / 2f) / span
+                            val full = 0.5f * windowAlpha
+                            val ramp = (0..6).map { step ->
+                                val t = step / 6f
+                                t to Color.White.copy(alpha = full * t * t * (3f - 2f * t))
+                            }
+                            val stops = ramp.map { (t, c) -> f * t to c } + ramp.reversed().map { (t, c) -> 1f - f * t to c }
+                            drawRoundRect(
+                                brush = Brush.horizontalGradient(colorStops = stops.toTypedArray(), startX = from, endX = to),
+                                topLeft = Offset(0f, top),
+                                size = Size(size.width, h),
+                                cornerRadius = radius,
+                            )
+                        }
+                    }
                     if (focused) {
                         val x = (size.width * fraction).coerceIn(h, size.width - h)
                         drawCircle(Color.White, radius = h * 1.15f, center = Offset(x, size.height / 2f))
@@ -678,12 +741,18 @@ private fun TvQualityLine(showStats: Boolean, modifier: Modifier = Modifier) {
     val snapshot by NerdStats.current.collectAsState()
     val stats = snapshot ?: return
     val label = when {
-        stats.isDolbyAtmos -> "Dolby Atmos"
-        stats.isHiRes -> "Hi-Res Lossless"
-        stats.isLossless -> "Lossless"
+        stats.isDolbyAtmos -> stringResource(R.string.dolby_atmos)
+        stats.isHiRes -> stringResource(R.string.tv_hires_lossless)
+        stats.isLossless -> stringResource(R.string.lossless)
         else -> null
     }
-    val detail = if (showStats) streamDetail(stats) else null
+    val channels = when (val n = stats.channels) {
+        null -> null
+        1 -> stringResource(R.string.mono)
+        2 -> stringResource(R.string.stereo)
+        else -> "$n ch"
+    }
+    val detail = if (showStats) streamDetail(stats, channels) else null
     if (label == null && detail.isNullOrBlank()) return
     Row(
         modifier = modifier,
@@ -720,7 +789,8 @@ private fun TvQualityLine(showStats: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-private fun streamDetail(s: NerdStats.Snapshot): String {
+/** The phone's stats line (PlayerControls' describe): "FLAC · 24-bit · 96 kHz · 4608 kbps · Stereo", whichever parts are known. */
+private fun streamDetail(s: NerdStats.Snapshot, channels: String?): String {
     val codec = when (val mime = s.mimeType?.lowercase()) {
         null -> null
         "audio/flac" -> "FLAC"
@@ -735,15 +805,10 @@ private fun streamDetail(s: NerdStats.Snapshot): String {
         "audio/raw" -> "PCM"
         else -> mime.substringAfter('/').uppercase()
     }
-    val rate = s.sampleRateHz
-    val depth = s.bitDepth
-    val format = when {
-        depth != null && rate != null -> "$depth-bit/${khz(rate)}"
-        rate != null -> khz(rate)
-        else -> null
-    }
+    val depth = s.bitDepth?.let { "$it-bit" }
+    val rate = s.sampleRateHz?.let { NerdStats.megahertzLabel(it) ?: khz(it) } // DSD reads in MHz, as on the phone
     val bitrate = s.bitrateKbps?.takeIf { it > 0 }?.let { "$it kbps" }
-    return listOfNotNull(codec, format, bitrate, s.sourceName).joinToString(" · ")
+    return listOfNotNull(codec, depth, rate, bitrate, channels).joinToString(" · ")
 }
 
 private fun khz(hz: Int): String {
@@ -773,7 +838,7 @@ internal fun TvUpNext(
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Up Next",
+                text = stringResource(R.string.tv_up_next),
                 style = TvType.Headline,
                 color = TvGlass.TextPrimary,
                 modifier = Modifier.weight(1f),
@@ -781,7 +846,7 @@ internal fun TvUpNext(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TvTransportButton(
                     icon = LayaIcons.Shuffle,
-                    contentDescription = "Shuffle",
+                    contentDescription = stringResource(R.string.shuffle),
                     active = shuffle,
                     size = 32.dp,
                     onClick = onToggleShuffle,
@@ -789,9 +854,9 @@ internal fun TvUpNext(
                 TvTransportButton(
                     icon = if (repeatMode == Player.REPEAT_MODE_ONE) null else LayaIcons.Repeat,
                     contentDescription = when (repeatMode) {
-                        Player.REPEAT_MODE_ONE -> "Repeat One"
-                        Player.REPEAT_MODE_ALL -> "Repeat All"
-                        else -> "Repeat Off"
+                        Player.REPEAT_MODE_ONE -> stringResource(R.string.tv_repeat_one)
+                        Player.REPEAT_MODE_ALL -> stringResource(R.string.tv_repeat_all)
+                        else -> stringResource(R.string.tv_repeat_off)
                     },
                     active = repeatMode != Player.REPEAT_MODE_OFF,
                     badge = if (repeatMode == Player.REPEAT_MODE_ONE) "1" else null,
@@ -800,7 +865,7 @@ internal fun TvUpNext(
                 )
                 TvTransportButton(
                     icon = LayaIcons.Infinity,
-                    contentDescription = "Autoplay",
+                    contentDescription = stringResource(R.string.tv_autoplay),
                     active = autoplay,
                     size = 32.dp,
                     onClick = onToggleAutoplay,
@@ -809,7 +874,7 @@ internal fun TvUpNext(
         }
         if (upcoming.isEmpty()) {
             Text(
-                text = if (autoplay) "Similar music will play when this song ends." else "Nothing is queued after this song.",
+                text = if (autoplay) stringResource(R.string.tv_autoplay_on) else stringResource(R.string.tv_autoplay_off),
                 style = TvType.Callout,
                 color = TvGlass.TextSecondary,
                 modifier = Modifier
@@ -910,16 +975,16 @@ internal fun TvNothingPlaying(onBrowse: () -> Unit, modifier: Modifier = Modifie
             modifier = Modifier.size(58.dp),
         )
         Spacer(modifier = Modifier.height(19.dp))
-        Text(text = "Not Playing", style = TvType.Title, color = TvGlass.TextPrimary)
+        Text(text = stringResource(R.string.tv_not_playing_title), style = TvType.Title, color = TvGlass.TextPrimary)
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "Choose something from Home, Explore or your Library.",
+            text = stringResource(R.string.tv_not_playing_message),
             style = TvType.Callout,
             color = TvGlass.TextSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = 384.dp),
         )
         Spacer(modifier = Modifier.height(21.dp))
-        TvButton(text = "Browse Music", onClick = onBrowse, modifier = Modifier.width(208.dp).tvInitialFocus())
+        TvButton(text = stringResource(R.string.tv_browse_music), onClick = onBrowse, modifier = Modifier.width(208.dp).tvInitialFocus())
     }
 }

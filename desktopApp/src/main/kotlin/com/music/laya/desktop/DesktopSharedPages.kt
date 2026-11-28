@@ -138,6 +138,39 @@ internal object DesktopSearchHistory {
     private const val MAX_ENTRIES = 20
 }
 
+/** The words searched in the Search page's Addons tab, newest first — the phone's addon recents. */
+internal object DesktopAddonSearchHistory {
+
+    private val persistence = DesktopPersistence()
+    private val json = Json { ignoreUnknownKeys = true }
+    private val serializer = ListSerializer(String.serializer())
+
+    private val _recent = MutableStateFlow(load())
+    val recent: StateFlow<List<String>> = _recent
+
+    /** Puts [query] at the top, dropping an earlier search for the same words. */
+    fun record(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        save((listOf(q) + _recent.value.filterNot { it.equals(q, ignoreCase = true) }).take(MAX_ENTRIES))
+    }
+
+    fun remove(query: String) = save(_recent.value.filterNot { it == query })
+
+    fun clear() = save(emptyList())
+
+    private fun save(value: List<String>) {
+        _recent.value = value
+        persistence.saveString(KEY, json.encodeToString(serializer, value))
+    }
+
+    private fun load(): List<String> =
+        runCatching { json.decodeFromString(serializer, persistence.string(KEY, "[]")) }.getOrDefault(emptyList())
+
+    private const val KEY = "addon_search_queries"
+    private const val MAX_ENTRIES = 20
+}
+
 /**
  * Which sidebar rows the listener has tucked away, and what each was called.
  *

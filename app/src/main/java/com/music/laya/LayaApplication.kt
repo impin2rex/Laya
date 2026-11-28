@@ -110,6 +110,7 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
         migrateScriptOnlyAppLocale()
         registerShortcuts()
         LyricsTranslation.cacheDir = cacheDir.toOkioPath()
+        com.music.laya.data.aifilter.AiSongs.warmUp()
         // PlaybackService shares this process, so seeding the cookie here means
         // stream resolution is authenticated from the first play onwards.
         authStore = AuthStore(this)
@@ -145,6 +146,8 @@ class LayaApplication : Application(), SingletonImageLoader.Factory {
                     android.widget.Toast.LENGTH_LONG,
                 ).show()
             }
+            // Renews a session before it ends even with the app closed; a failure is a notification.
+            com.music.laya.data.sources.LosslessReminderAlarms.install(this, CoroutineScope(Dispatchers.Main))
             AndroidStreamHooks.initInnerTubeX(this)
             // Its own directory: canvas clips are looping video, not audio, and
             // belong in a cache AudioCache's own limit and eviction policy were
