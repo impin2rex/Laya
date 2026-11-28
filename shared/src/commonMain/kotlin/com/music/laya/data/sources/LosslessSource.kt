@@ -124,7 +124,12 @@ class LosslessSource(
                 // again, and the row sat "on" with nothing behind it. No session, no switch — at
                 // startup and whenever it drops. Silent: the notice stays with a real loss. Turning
                 // the switch on by hand doesn't change [verified], so it doesn't fight the verify flow.
-                scope.launch { provider.session.verified.collect { if (!it) switchOff(provider) } }
+                // Not for a loss happening now ([ZarzSession.expired]): that one is the collector above's to switch
+                // off, as it owes the notice only for a switch it turned off itself, and this one used to get there
+                // first — every session lost while the app ran went off without a word.
+                scope.launch {
+                    provider.session.verified.collect { if (!it && !provider.session.expired.value) switchOff(provider) }
+                }
                 scope.launch {
                     while (true) {
                         provider.session.renewOrCheck()

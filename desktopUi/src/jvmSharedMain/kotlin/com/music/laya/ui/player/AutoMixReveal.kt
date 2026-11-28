@@ -21,7 +21,6 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 import org.jetbrains.skia.RuntimeShaderBuilder
 import org.jetbrains.skia.RuntimeEffect
-import androidx.compose.ui.graphics.asComposeShader
 
 /**
  * The incoming AutoMix artwork's organic reveal: a soft value-noise field that the picture grows
@@ -191,7 +190,7 @@ private class SkiaMask(seedX: Float, seedY: Float) : AutoMixMaskShader {
         last?.takeIf { width == lastWidth && height == lastHeight && progress == lastProgress }?.let { return it }
         builder.uniform("bounds", width, height)
         builder.uniform("progress", progress)
-        return builder.makeShader().asComposeShader().also {
+        return builder.makeShader().toComposeShader().also {
             last = it
             lastWidth = width
             lastHeight = height
