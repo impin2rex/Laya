@@ -33,6 +33,9 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesF
     private val tracker = BeatTracker({ IosAutomix.native?.modelPath().orEmpty() }, { AppSettings.automixPerformanceMode.value.inferenceThreads })
     private val results = ConcurrentMap<String, TrackAnalysis>()
     private val running = ConcurrentMap<String, Boolean>()
+    /** Failed passes so far, and when the last one ended: a failure is usually the network (a dropped or throttled
+     *  stream, a URL that expired mid-decode), so it is tried again rather than kept for the session. */
+    private val failures = ConcurrentMap<String, Pair<Int, Long>>()
     private val worker = Dispatchers.Default.limitedParallelism(1)
 
     fun analysisFor(trackId: String): TrackAnalysis =
@@ -53,7 +56,14 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesF
 
     /** Cheap to call every tick: a track measured, failed or already in flight is a no-op. */
     fun request(trackId: String, source: AnalysisSource, durationSeconds: Double) {
-        if (results[trackId] != null || running[trackId] == true || IosAutomix.native == null) return
+        if (running[trackId] == true || IosAutomix.native == null) return
+        results[trackId]?.let { prior ->
+            if (prior.isUsable || prior.isTooLong) return
+            val (attempts, at) = failures[trackId] ?: return
+            if (attempts >= MAX_ATTEMPTS || nowMs() - at < RETRY_AFTER_MS) return
+            println("Automix: retrying the analysis of $trackId (attempt ${attempts + 1} of $MAX_ATTEMPTS)")
+            results.remove(trackId)
+        }
         if (store.load(trackId) != null) return
         // Never decoded: see TrackAnalysis.MAX_WHOLE_TRACK_SECONDS.
         if (durationSeconds > TrackAnalysis.MAX_WHOLE_TRACK_SECONDS) {
@@ -63,15 +73,26 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesF
         running[trackId] = true
         scope.launch(worker) {
             try {
-                results[trackId] = analyze(trackId, source, durationSeconds)
+                val result = analyze(trackId, source, durationSeconds)
+                if (!result.isUsable && !result.isTooLong) noteFailure(trackId)
+                results[trackId] = result
             } catch (e: Throwable) {
                 AnalysisLog.warn("Analysis of $trackId failed", e)
+                noteFailure(trackId)
                 results[trackId] = failed(trackId, durationSeconds)
             } finally {
                 running.remove(trackId)
             }
         }
     }
+
+    private fun noteFailure(trackId: String) {
+        val attempts = (failures[trackId]?.first ?: 0) + 1
+        failures[trackId] = attempts to nowMs()
+        println("Automix: analysis of $trackId failed (attempt $attempts of $MAX_ATTEMPTS)")
+    }
+
+    private fun nowMs() = Clock.System.now().toEpochMilliseconds()
 
     private fun failed(trackId: String, duration: Double) =
         TrackAnalysis(status = TrackAnalysis.STATUS_READY, trackId = trackId, duration = duration)
@@ -179,5 +200,7 @@ class AutomixAnalyzer(private val scope: CoroutineScope, private val chunkBytesF
 
     private companion object {
         const val MIN_DECODED_FRACTION = 0.95
+        const val MAX_ATTEMPTS = 3
+        const val RETRY_AFTER_MS = 15_000L
     }
 }

@@ -9,8 +9,6 @@ import com.music.laya.sharedui.resources.Res
 import com.music.laya.sharedui.resources.all_cache_cleared
 import com.music.laya.sharedui.resources.image_cache_cleared
 import com.music.laya.sharedui.resources.song_cache_cleared
-import com.music.laya.sharedui.resources.lock_screen_lyrics_ios_subtitle
-import com.music.laya.sharedui.resources.lock_screen_player
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.Modifier
 import com.music.laya.data.canvas.CanvasArtwork
@@ -52,10 +50,10 @@ internal object IosSettingsHost : SettingsHost {
     override val hasSongCache = true
     override val hasExportDownloads = false // no shared Music folder on iOS; downloads stay in the app
     override val musicVideoInMiniPlayer = true
+    override val hasDirectSourceStream = true // IosPlayer.open: the sources' copy from the first note
     override val hasQualityOptions = true // the Wi-Fi / mobile-data ceilings decide whether addons are asked
     override val appIconRow: (@Composable () -> Unit)?
         get() = if (IosAppIcon.supported) ({ IosAppIconPicker() }) else null
-    override val lockScreenRow: (@Composable () -> Unit) = { IosLockScreenRow() }
     @Composable
     override fun versionName() =
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "1.0"
@@ -88,28 +86,6 @@ internal object IosSettingsHost : SettingsHost {
         loader.memoryCache?.clear()
         MainScope().launch(kotlinx.coroutines.Dispatchers.Default) { loader.diskCache?.clear() }
     }
-}
-
-/** The lock-screen lyrics Live Activity's switch (IosLyricsActivity): the same setting as Android's lock-screen player. */
-@Composable
-private fun IosLockScreenRow() {
-    val on by AppSettings.lockScreenPlayer.collectAsState()
-    com.music.laya.ui.screens.SettingsRow(
-        icon = androidx.compose.material.icons.Icons.Rounded.Lock,
-        title = stringResource(Res.string.lock_screen_player),
-        subtitle = stringResource(Res.string.lock_screen_lyrics_ios_subtitle),
-        trailing = {
-            androidx.compose.material3.Switch(
-                checked = on,
-                onCheckedChange = AppSettings::setLockScreenPlayer,
-                colors = androidx.compose.material3.SwitchDefaults.colors(
-                    checkedTrackColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                    checkedBorderColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                ),
-            )
-        },
-        onClick = { AppSettings.setLockScreenPlayer(!on) },
-    )
 }
 
 internal object IosAppUiHost : AppUiHost {
@@ -223,9 +199,9 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val lastPlayerScreen get() = AppSettings.lastPlayerScreen
     override val legacyMeshGradient get() = AppSettings.legacyMeshGradient
     override val lyricsBlur get() = AppSettings.lyricsBlur
-    /** The listener's offset plus the measured shift between the playing cut and YouTube's (see IosPlayer.alignLyrics). */
-    override val lyricsOffsetMs: StateFlow<Int> = kotlinx.coroutines.flow.combine(AppSettings.lyricsOffsetMs, IosLyricsAlign.offsetMs) { a, b -> a + b }
-        .stateIn(kotlinx.coroutines.MainScope(), kotlinx.coroutines.flow.SharingStarted.Eagerly, AppSettings.lyricsOffsetMs.value)
+    // The listener's own offset alone, as Android: the lyrics are looked up by the playing copy's length, so they
+    // are timed to it, and shifting them by its distance from YouTube's cut put them off.
+    override val lyricsOffsetMs: StateFlow<Int> get() = AppSettings.lyricsOffsetMs
     override val lyricsSourceOrder get() = AppSettings.lyricsSourceOrder
     override val meteredConnection get() = AppSettings.meteredConnection
     override val preferUsbDac get() = AppSettings.preferUsbDac
@@ -246,6 +222,6 @@ private object IosPlayerSettings : PlayerSettingsSource {
     override val versionAlignmentInProgress get() = AppSettings.versionAlignmentInProgress
 
     override fun setLastPlayerScreen(value: LastPlayerScreen) = AppSettings.setLastPlayerScreen(value)
-    override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value - IosLyricsAlign.offsetMs.value)
+    override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value)
     override fun setReverbEnabled(value: Boolean) = AppSettings.setReverbEnabled(value)
 }

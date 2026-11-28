@@ -744,7 +744,7 @@ fun LayaDesktopApp() {
     var crossfadeSeconds by remember { mutableStateOf(persistence.string("crossfade_seconds", "0").toIntOrNull()?.coerceIn(0, 12) ?: 0) }
     var downloadQuality by remember { mutableStateOf(persistence.string("download_quality", "LOSSLESS")) }
     var trayIconEnabled by remember { mutableStateOf(persistence.boolean("tray_icon", true)) }
-    var closeToTray by remember { mutableStateOf(persistence.boolean("close_to_tray", true)) }
+    var closeToTray by remember { mutableStateOf(persistence.boolean("close_to_tray", !DesktopPlatform.isWindows)) } // Windows: X quits, as its apps do
     // The three the FFmpeg engine unlocked: none of them could exist while JavaFX owned the decode,
     // because none of them can be done without the samples themselves.
     var spatialAudio by remember { mutableStateOf(persistence.boolean("spatial_audio", false)) }

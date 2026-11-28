@@ -1190,12 +1190,14 @@ object YtMusicRepository {
 
     /**
      * Artist page. The landing page only lists ~5 songs, so the linked
-     * "Top songs" playlist is fetched to fill the list out, and any linked
-     * full release shelves (Albums, Singles & EPs) are fetched to populate
-     * their complete discography.
+     * "Top songs" playlist is fetched to fill the list out, and the other
+     * shelves' linked full lists are fetched in place of their first cards.
      */
     suspend fun artistPage(browseId: String): Result<ArtistPage> = call("artist:$browseId") {
-        val page = InnertubeParser.parseArtistPage(Innertube.browse(browseId))
+        val parsed = InnertubeParser.parseArtistPage(Innertube.browse(browseId))
+        // No release shelves (Albums, Singles & EPs, Appears on: every card an MPRE… release): their full lists came
+        // back mostly other artists' records. Also takes the top-release card the pages pick from them.
+        val page = parsed.copy(sections = parsed.sections.filterNot { s -> s.items.all { it.browseId?.startsWith("MPRE") == true } })
         coroutineScope {
             val fullSongsDeferred = async {
                 page.moreSongsBrowseId?.let { playlistId ->

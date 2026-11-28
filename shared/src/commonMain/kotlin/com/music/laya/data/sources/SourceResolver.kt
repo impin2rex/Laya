@@ -1159,6 +1159,8 @@ object SourceResolver {
             if (matches.isEmpty()) continue
             return streamBest(source, matches, target, request)
         }
+        // Named: a silent miss read in the log exactly like a source never asked.
+        TrackLog.d(TAG, "${source.displayName} has no match for '${target.title}' by '${target.artist}'")
         return null
     }
 

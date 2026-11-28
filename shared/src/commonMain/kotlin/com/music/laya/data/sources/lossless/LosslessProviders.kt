@@ -117,7 +117,9 @@ sealed class LosslessProvider(val id: String, val label: String, appVersion: Str
         // LOSSLESS (16/44.1). The broker answers with a plain FLAC URL or, more often now, a DASH
         // manifest of FLAC segments, which is saved where the player can open it.
         override suspend fun stream(trackId: String): LosslessStream? {
+            val startedAt = Clock.System.now()
             val ticket = ticket("tid", trackId)
+            val ticketAt = Clock.System.now()
             val payload = session.post(
                 "/dl/tid",
                 buildJsonObject {
@@ -126,6 +128,7 @@ sealed class LosslessProvider(val id: String, val label: String, appVersion: Str
                 },
                 mapOf("X-Zarz-Ticket" to ticket),
             )
+            slowBroker("Tidal", trackId, startedAt, ticketAt)
             val data = payload["data"] as? JsonObject ?: return null
             if (data.str("assetPresentation").equals("PREVIEW", ignoreCase = true)) return null
             val manifest = Base64.decode(data.str("manifest").ifBlank { return null }).decodeToString()
@@ -192,8 +195,10 @@ sealed class LosslessProvider(val id: String, val label: String, appVersion: Str
 
         override suspend fun stream(trackId: String): LosslessStream? {
             val trackUrl = "https://open.qobuz.com/track/$trackId"
+            val startedAt = Clock.System.now()
             // The broker hashes the ticket on `url`, not the id — see qobuz-web's fetchProviderDownloadInfo.
             val ticket = ticket("qbz", trackUrl)
+            val ticketAt = Clock.System.now()
             val payload = session.post(
                 "/dl/qbz",
                 buildJsonObject {
@@ -205,6 +210,7 @@ sealed class LosslessProvider(val id: String, val label: String, appVersion: Str
                 },
                 mapOf("X-Zarz-Ticket" to ticket),
             )
+            slowBroker("Qobuz", trackId, startedAt, ticketAt)
             val nested = payload["data"] as? JsonObject
             val url = listOf(payload, nested).firstNotNullOfOrNull { obj ->
                 obj?.let { o -> listOf("download_url", "url", "link").map { o.str(it) }.firstOrNull(String::isNotBlank) }
@@ -238,6 +244,20 @@ sealed class LosslessProvider(val id: String, val label: String, appVersion: Str
 
         private fun JsonObject.str(name: String): String =
             (this[name] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull.orEmpty()
+
+        /** Names a broker stream that took over [SLOW_BROKER_MS], split into its ticket and download calls. */
+        private fun slowBroker(label: String, trackId: String, startedAt: Instant, ticketAt: Instant) {
+            val now = Clock.System.now()
+            val total = (now - startedAt).inWholeMilliseconds
+            if (total < SLOW_BROKER_MS) return
+            TrackLog.d(
+                TAG,
+                "  🐢 $label broker took ${total}ms for $trackId " +
+                    "(ticket ${(ticketAt - startedAt).inWholeMilliseconds}ms, link ${(now - ticketAt).inWholeMilliseconds}ms)",
+            )
+        }
+
+        private const val SLOW_BROKER_MS = 3_000L
 
         private suspend fun http(
             url: String,

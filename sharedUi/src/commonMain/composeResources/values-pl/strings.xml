@@ -911,7 +911,6 @@
     <string name="hide_ai_songs">Ukryj utwory wygenerowane przez AI</string>
     <string name="hide_ai_songs_subtitle">Usuwa z ekranu głównego, wyszukiwania i radia utwory z kanałów z listy blokowanych AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
     <string name="lock_screen_player">Odtwarzacz na ekranie blokady</string>
-    <string name="lock_screen_lyrics_ios_subtitle">Aktualny wiersz tekstu na ekranie blokady i w Dynamic Island</string>
     <string name="remove_from_history">Usuń z historii</string>
     <string name="history_removed">Usunięto z historii</string>
     <string name="history_remove_failed">Nie udało się usunąć z historii</string>

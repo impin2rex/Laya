@@ -823,11 +823,6 @@ fun LayaIosApp(engine: AudioEngine, onStatusBarLight: (Boolean) -> Unit = {}) {
             }
         }
     }
-    // The lyrics settled on, handed to the lock-screen card so both show the same.
-    LaunchedEffect(song?.videoId, lyrics, lyricsChecked) {
-        val id = song?.videoId ?: return@LaunchedEffect
-        IosLyricsActivity.shown = if (lyricsChecked) id to lyrics else null
-    }
     LaunchedEffect(song?.videoId, durationKnown, syncedLyrics, lyricsSourceSet) {
         if (song == null || !durationKnown) return@LaunchedEffect
         // The hand-picked provider alone, as MainViewModel.loadLyrics; the usual race only on a miss.

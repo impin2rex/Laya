@@ -889,7 +889,6 @@
     <string name="hide_ai_songs">Sembunyikan lagu buatan AI</string>
     <string name="hide_ai_songs_subtitle">Menjauhkan lagu dari channel di daftar blokir AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) dari Beranda, penelusuran, dan radio</string>
     <string name="lock_screen_player">Pemutar layar kunci</string>
-    <string name="lock_screen_lyrics_ios_subtitle">Baris lirik yang sedang diputar di layar kunci dan Dynamic Island</string>
     <string name="remove_from_history">Hapus dari riwayat</string>
     <string name="history_removed">Dihapus dari riwayat</string>
     <string name="history_remove_failed">Tidak dapat menghapus dari riwayat</string>

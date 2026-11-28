@@ -343,7 +343,11 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
     private suspend fun body(url: String): String = withContext(ioDispatcher) {
         var attempt = 0
         while (true) {
-            (quietUntilMs - currentTimeMillis()).takeIf { it > 0 }?.let { delay(it) }
+            (quietUntilMs - currentTimeMillis()).takeIf { it > 0 }?.let {
+                TrackLog.d(TAG, "  ⏳ addon cooling down after a 429; ${redact(url)} waits ${it}ms")
+                delay(it)
+            }
+            val sentAt = currentTimeMillis()
 
             val response = NetHttp.execute(
                 HttpRequest(
@@ -354,9 +358,12 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
             )
             val wait = response.let {
                 when {
-                    response.isSuccessful ->
+                    response.isSuccessful -> {
+                        val took = currentTimeMillis() - sentAt
+                        if (took >= SLOW_CALL_MS) TrackLog.d(TAG, "  🐢 addon answered ${redact(url)} in ${took}ms")
                         return@withContext response.text().takeIf { it.isNotBlank() }
                             ?: throw AddonException("Empty response")
+                    }
                     response.code == 404 -> throw AddonNotFound()
                     // A 5xx is a server having a bad minute and will be tried
                     // again on the next track; a 4xx is this app asking for
@@ -371,6 +378,7 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
                     else -> retryAfterMs(response.header("Retry-After"), attempt)
                 }
             }
+            TrackLog.w(TAG, "  ⏳ addon rate limited (429) on ${redact(url)}; waiting ${wait}ms (attempt ${attempt + 1})")
             quietUntilMs = currentTimeMillis() + wait
             attempt++
         }
@@ -527,6 +535,8 @@ class AddonClient(rawBaseUrl: String, userAgent: String = "") {
          * five seconds and streams in under three.
          */
         private const val CALL_TIMEOUT_MS = 20_000L
+        /** An answer slower than this is named in the track log. */
+        private const val SLOW_CALL_MS = 3_000L
     }
 }
 

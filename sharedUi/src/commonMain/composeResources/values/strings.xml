@@ -902,7 +902,6 @@
     </plurals>
     <string name="hide_ai_songs">Hide AI-generated songs</string>
     <string name="hide_ai_songs_subtitle">Keeps songs from channels on the AiSList blocklist (AiSList, aisloplist.com, CC BY-NC 4.0) out of Home, search and radio</string>
-    <string name="lock_screen_lyrics_ios_subtitle">The playing lyric line on the lock screen and in the Dynamic Island</string>
     <string name="remove_from_history">Remove from history</string>
     <string name="history_removed">Removed from history</string>
     <string name="history_remove_failed">Couldn\'t remove from history</string>

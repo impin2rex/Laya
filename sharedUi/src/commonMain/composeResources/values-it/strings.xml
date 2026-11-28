@@ -897,7 +897,6 @@
     <string name="hide_ai_songs">Nascondi brani generati dall’IA</string>
     <string name="hide_ai_songs_subtitle">Tiene fuori da Home, ricerca e radio i brani dei canali nella blocklist AiSList (AiSList, aisloplist.com, CC BY-NC 4.0)</string>
     <string name="lock_screen_player">Player nella schermata di blocco</string>
-    <string name="lock_screen_lyrics_ios_subtitle">La riga in riproduzione sulla schermata di blocco e nella Dynamic Island</string>
     <string name="remove_from_history">Rimuovi dalla cronologia</string>
     <string name="history_removed">Rimosso dalla cronologia</string>
     <string name="history_remove_failed">Impossibile rimuovere dalla cronologia</string>

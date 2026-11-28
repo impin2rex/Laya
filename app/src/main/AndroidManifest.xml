@@ -134,6 +134,7 @@
             android:launchMode="singleInstance"
             android:taskAffinity="com.music.laya.lockscreen"
             android:noHistory="true"
+            android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <!-- Android Auto support -->

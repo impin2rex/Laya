@@ -889,7 +889,6 @@
     <string name="hide_ai_songs">Ẩn bài hát do AI tạo</string>
     <string name="hide_ai_songs_subtitle">Loại bài hát từ các kênh trong danh sách chặn AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) khỏi Trang chủ, tìm kiếm và radio</string>
     <string name="lock_screen_player">Trình phát trên màn hình khóa</string>
-    <string name="lock_screen_lyrics_ios_subtitle">Dòng lời đang phát trên màn hình khóa và Dynamic Island</string>
     <string name="remove_from_history">Xóa khỏi lịch sử</string>
     <string name="history_removed">Đã xóa khỏi lịch sử</string>
     <string name="history_remove_failed">Không thể xóa khỏi lịch sử</string>

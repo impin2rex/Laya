@@ -889,7 +889,6 @@
     <string name="hide_ai_songs">ซ่อนเพลงที่สร้างด้วย AI</string>
     <string name="hide_ai_songs_subtitle">กันเพลงจากช่องในรายการบล็อก AiSList (AiSList, aisloplist.com, CC BY-NC 4.0) ออกจากหน้าแรก การค้นหา และวิทยุ</string>
     <string name="lock_screen_player">เครื่องเล่นบนหน้าจอล็อก</string>
-    <string name="lock_screen_lyrics_ios_subtitle">บรรทัดเนื้อเพลงที่กำลังเล่นบนหน้าจอล็อกและ Dynamic Island</string>
     <string name="remove_from_history">ลบออกจากประวัติ</string>
     <string name="history_removed">ลบออกจากประวัติแล้ว</string>
     <string name="history_remove_failed">ไม่สามารถลบออกจากประวัติได้</string>

@@ -897,7 +897,6 @@
     <string name="hide_ai_songs">Yapay zekâ ile üretilmiş şarkıları gizle</string>
     <string name="hide_ai_songs_subtitle">AiSList engel listesindeki kanalların şarkılarını (AiSList, aisloplist.com, CC BY-NC 4.0) Ana Sayfa, arama ve radyodan uzak tutar</string>
     <string name="lock_screen_player">Kilit ekranı oynatıcısı</string>
-    <string name="lock_screen_lyrics_ios_subtitle">Çalan şarkı sözü satırı kilit ekranında ve Dynamic Island\'da</string>
     <string name="remove_from_history">Geçmişten kaldır</string>
     <string name="history_removed">Geçmişten kaldırıldı</string>
     <string name="history_remove_failed">Geçmişten kaldırılamadı</string>

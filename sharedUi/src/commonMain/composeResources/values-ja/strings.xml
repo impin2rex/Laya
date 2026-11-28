@@ -889,7 +889,6 @@
     <string name="hide_ai_songs">AI生成の曲を非表示</string>
     <string name="hide_ai_songs_subtitle">AiSList ブロックリストのチャンネルの曲 (AiSList, aisloplist.com, CC BY-NC 4.0) をホーム、検索、ラジオから除外します</string>
     <string name="lock_screen_player">ロック画面プレーヤー</string>
-    <string name="lock_screen_lyrics_ios_subtitle">再生中の歌詞をロック画面とダイナミックアイランドに表示します</string>
     <string name="remove_from_history">履歴から削除</string>
     <string name="history_removed">履歴から削除しました</string>
     <string name="history_remove_failed">履歴から削除できませんでした</string>

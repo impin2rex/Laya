@@ -15,7 +15,11 @@ enum HlsAssembly {
 
     /// Segments in the air at once. Enough to keep a quick connection busy without analysis taking the
     /// pipe over from the audio being played, which the task priority below settles.
-    private static let window = 8
+    private static let window = 24
+
+    /// Fetches under way, by destination path (see [assemble]).
+    private static let gate = NSLock()
+    private static var inFlight: [String: DispatchGroup] = [:]
 
     /// Where [assemble] would put the track [playlist] names, whether or not it is there yet.
     private static func destination(for playlist: URL, initial: URL) -> URL {
@@ -41,6 +45,26 @@ enum HlsAssembly {
         guard let parts = parse(playlist) else { return nil }
         let file = destination(for: playlist, initial: parts.initial)
         if FileManager.default.fileExists(atPath: file.path) { return file }
+
+        // One fetch per track: the player, the analysis decode and the next-track prefetch all ask, and a second
+        // caller used to delete the first's half-written .part and start over it, so the first then moved a
+        // truncated file into place as the whole track. Later callers wait for the first and take its file.
+        gate.lock()
+        if let running = inFlight[file.path] {
+            gate.unlock()
+            running.wait()
+            return FileManager.default.fileExists(atPath: file.path) ? file : nil
+        }
+        let mine = DispatchGroup()
+        mine.enter()
+        inFlight[file.path] = mine
+        gate.unlock()
+        defer {
+            gate.lock()
+            inFlight[file.path] = nil
+            gate.unlock()
+            mine.leave()
+        }
 
         // Written aside and moved into place at the end, so a fetch cut short partway through is never
         // picked up as a whole track by whoever asks next.
@@ -95,7 +119,7 @@ enum HlsAssembly {
 
     /// The init segment and the media segments [playlist] names, or nil if it names no whole track:
     /// without the init segment the media segments describe no stream at all.
-    private static func parse(_ playlist: URL) -> (initial: URL, segments: [URL])? {
+    static func parse(_ playlist: URL) -> (initial: URL, segments: [URL])? {
         guard let text = try? String(contentsOf: playlist, encoding: .utf8) else { return nil }
         var segments: [URL] = []
         var initial: URL?

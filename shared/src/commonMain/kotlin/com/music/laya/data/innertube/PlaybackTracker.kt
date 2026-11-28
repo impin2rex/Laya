@@ -5,7 +5,10 @@ import com.music.laya.data.TrackLog
 import com.music.laya.data.model.Song
 import com.music.laya.data.stats.ListenIdentity
 import com.music.laya.data.settings.AppSettings
+import com.music.laya.platform.ConcurrentMap
 import com.music.laya.platform.ioDispatcher
+import com.music.laya.data.sources.SourceRegistry
+import com.music.laya.playback.youtubeSeedFor
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -105,6 +108,12 @@ object PlaybackTracker {
     @Volatile
     private var session: Session? = null
 
+    /** A source row's YouTube match, by its media id ("" when YouTube has none), for its history entry. */
+    private val youTubeOf = ConcurrentMap<String, String>()
+    /** Source rows whose YouTube match is being looked up, so the five-second sampler asks only once. */
+    private val seeding = ConcurrentMap<String, Boolean>()
+    private const val MAX_SEEDS = 200
+
     /** The track a session is being opened for, so repeat calls don't stack up. */
     @Volatile
     private var opening: String? = null
@@ -115,6 +124,21 @@ object PlaybackTracker {
      * a pause/resume does not register a second play.
      */
     fun onPlaying(played: Song) {
+        // A row from a source (an Addons search pick, a Tidal or JioSaavn row) has no YouTube id, so it
+        // was never registered. Credited to its YouTube match instead, found once per track.
+        if (SourceRegistry.parseTrackKey(played.videoId) != null) {
+            youTubeOf[played.videoId]?.let { id -> if (id.isNotEmpty()) register(played.copy(videoId = id)); return }
+            if (seeding.put(played.videoId, true) != null) return
+            scope.launch(TrackLog.about(played.videoId)) {
+                val id = runCatching { youtubeSeedFor(played) }.getOrNull()?.takeIf { VIDEO_ID.matches(it) }
+                if (youTubeOf.size > MAX_SEEDS) youTubeOf.clear()
+                youTubeOf[played.videoId] = id.orEmpty()
+                seeding.remove(played.videoId)
+                if (id == null) TrackLog.d(TAG, "no YouTube match for '${played.title}'; its play is not in YouTube history")
+                else register(played.copy(videoId = id))
+            }
+            return
+        }
         // The listen's own track — its audio release, whenever there is one; see [ListenIdentity]
         // — not whichever version of it is playing. Settled before anything is registered.
         val known = ListenIdentity.known(played)
@@ -193,7 +217,7 @@ object PlaybackTracker {
      * [REPORT_INTERVAL_SECONDS] of new audio.
      */
     fun onProgress(playedId: String, positionSeconds: Long) {
-        val videoId = ListenIdentity.idOf(playedId)
+        val videoId = youTubeOf[playedId]?.ifEmpty { null } ?: ListenIdentity.idOf(playedId)
         val current = session ?: return
         if (current.videoId != videoId) return
         if (!current.atrSent && positionSeconds >= current.tracking.atrAfterSeconds) {
